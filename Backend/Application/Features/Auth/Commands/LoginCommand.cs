@@ -51,10 +51,12 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthToke
             return Result<AuthTokenResponse>.Forbidden("Tài khoản của bạn chưa được kích hoạt.");
         }
 
+        // Generate tokens
         var accessToken = _jwtTokenService.GenerateAccessToken(user);
         var refreshToken = _jwtTokenService.GenerateRefreshToken();
         var refreshTokenExpiry = DateTime.UtcNow.AddDays(7);
 
+        // Store refresh token in cache / redis
         await _tokenCacheService.SetRefreshTokenAsync(user.Id, refreshToken, TimeSpan.FromDays(7), ct);
 
         var response = new AuthTokenResponse

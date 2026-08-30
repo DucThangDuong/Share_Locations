@@ -44,6 +44,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
             return Result<AuthTokenResponse>.Unauthorized("Không tìm thấy thông tin người dùng trong Token.");
         }
 
+        // Validate Refresh Token against cache/redis
         var cachedRefreshToken = await _tokenCacheService.GetRefreshTokenAsync(userId.Value, ct);
         if (string.IsNullOrEmpty(cachedRefreshToken) || cachedRefreshToken != request.RefreshToken)
         {
@@ -56,6 +57,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
             return Result<AuthTokenResponse>.Unauthorized("Tài khoản không hợp lệ hoặc đã bị khóa.");
         }
 
+        // Rotate Tokens
         var newAccessToken = _jwtTokenService.GenerateAccessToken(user);
         var newRefreshToken = _jwtTokenService.GenerateRefreshToken();
         var refreshTokenExpiry = DateTime.UtcNow.AddDays(7);
