@@ -1,0 +1,109 @@
+# ==========================================
+# 1. .NET / C# (Backend)
+# ==========================================
+**/bin/
+**/obj/
+**/out/
+[Bb]uild/
+[Pp]ublish/
+**/[Dd]ebug/
+**/[Rr]elease/
+
+# Visual Studio & Rider temporary files
+.vs/
+.idea/
+.vscode/
+*.suo
+*.user
+*.userprefs
+*.sln.docstates
+*.resharper
+*.resharper.user
+*.dotCover
+
+# Test & Coverage artifacts
+TestResults/
+[Tt]est[Rr]esult*/
+coverage/
+*.coverage
+*.coveragexml
+
+# NuGet Packages
+*.nupkg
+*.snupkg
+**/packages/
+!**/packages/build/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# ASP.NET User Secrets & Local AppSettings (Giữ an toàn khi push lên GitHub)
+secrets.json
+**/appsettings.Development.json
+**/appsettings.Production.json
+**/appsettings.Local.json
+**/appsettings.*.local.json
+!**/appsettings.example.json
+!**/appsettings.json
+*.log
+
+# ==========================================
+# 2. Node.js / React / Vite (FrontEnd)
+# ==========================================
+**/node_modules/
+**/dist/
+**/dist-ssr/
+*.local
+.vite/
+.eslintcache
+.stylelintcache
+.oxlintcache
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Environment files (Giữ an toàn token, credentials)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*
+!.env.example
+
+# TypeScript cache
+*.tsbuildinfo
+next-env.d.ts
+
+# ==========================================
+# 3. Docker & Containers & Databases
+# ==========================================
+.docker/
+docker-compose.override.yml
+**/docker/data/
+**/sqlserver_data/
+**/redis_data/
+**/volumes/
+**/data/db/
+
+# ==========================================
+# 4. OS & System Files
+# ==========================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+[Dd]esktop.ini
+
+# ==========================================
+# 5. AI / IDE Helpers
+# ==========================================
+.agents/
+.gemini/
