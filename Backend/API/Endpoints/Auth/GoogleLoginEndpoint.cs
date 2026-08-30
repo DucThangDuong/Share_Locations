@@ -1,26 +1,14 @@
+using API.DTOs;
+using API.DTOs.Auth;
 using API.Extensions;
+using Application.DTOs;
 using Application.Features.Auth.Commands;
 using FastEndpoints;
-using FluentValidation;
 using MediatR;
 
 namespace API.Endpoints.Auth;
 
-public class GoogleLoginRequest
-{
-    public string IdToken { get; set; } = string.Empty;
-}
-
-public class GoogleLoginRequestValidator : Validator<GoogleLoginRequest>
-{
-    public GoogleLoginRequestValidator()
-    {
-        RuleFor(x => x.IdToken)
-            .NotEmpty().WithMessage("Google IdToken không được để trống");
-    }
-}
-
-public class GoogleLoginEndpoint : Endpoint<GoogleLoginRequest, API.DTOs.ApiSuccessResponse<Application.DTOs.AuthTokenResponse>>
+public class GoogleLoginEndpoint : Endpoint<GoogleLoginRequest, ApiSuccessResponse<AuthTokenResponse>>
 {
     public IMediator Mediator { get; set; } = null!;
 
@@ -50,6 +38,8 @@ public class GoogleLoginEndpoint : Endpoint<GoogleLoginRequest, API.DTOs.ApiSucc
                 SameSite = SameSiteMode.Lax,
                 IsEssential = true
             });
+            result.Data.RefreshTokenExpiryTime = DateTime.UtcNow;
+            result.Data.RefreshToken = string.Empty;
         }
 
         await this.SendApiResponseAsync(result, ct);

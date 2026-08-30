@@ -1,37 +1,17 @@
+using API.DTOs;
+using API.DTOs.Auth;
 using API.Extensions;
+using Application.DTOs;
 using Application.Features.Auth.Commands;
 using FastEndpoints;
-using FluentValidation;
 using MediatR;
-using Microsoft.Extensions.Localization;
 
 namespace API.Endpoints.Auth;
 
-public class LoginRequest
-{
-    public string Email { get; set; } = string.Empty;
-    public string Password { get; set; } = string.Empty;
-}
-
-public class LoginRequestValidator : Validator<LoginRequest>
-{
-    public LoginRequestValidator()
-    {
-        RuleFor(x => x.Email)
-            .NotEmpty().WithMessage("Email không được để trống")
-            .MaximumLength(100).WithMessage("Email quá dài")
-            .EmailAddress().WithMessage("Email không đúng định dạng");
-
-        RuleFor(x => x.Password)
-            .NotEmpty().WithMessage("Mật khẩu không được để trống")
-            .MinimumLength(6).WithMessage("Mật khẩu phải từ 6 ký tự trở lên")
-            .MaximumLength(100).WithMessage("Mật khẩu quá dài");
-    }
-}
-
-public class LoginEndpoint : Endpoint<LoginRequest, API.DTOs.ApiSuccessResponse<Application.DTOs.AuthTokenResponse>>
+public class LoginEndpoint : Endpoint<LoginRequest, ApiSuccessResponse<AuthTokenResponse>>
 {
     public IMediator Mediator { get; set; } = null!;
+
     public override void Configure()
     {
         Post("/api/auth/login");
@@ -58,6 +38,8 @@ public class LoginEndpoint : Endpoint<LoginRequest, API.DTOs.ApiSuccessResponse<
                 SameSite = SameSiteMode.Lax,
                 IsEssential = true
             });
+            result.Data.RefreshTokenExpiryTime = DateTime.UtcNow;
+            result.Data.RefreshToken = string.Empty;
         }
 
         await this.SendApiResponseAsync(result, ct);

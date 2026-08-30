@@ -37,27 +37,22 @@ public class GoogleLoginCommandHandler : IRequestHandler<GoogleLoginCommand, Res
             return Result<AuthTokenResponse>.Failure("Google Token không hợp lệ.");
         }
 
-        // Check if user with this google id already exists
         var user = await _unitOfWork.Users.GetByGoogleIdAsync(googleUser.GoogleId, ct);
         if (user == null)
         {
-            // Check if user with this email already exists
             user = await _unitOfWork.Users.GetByEmailAsync(googleUser.Email, ct);
             if (user != null)
             {
-                // Link GoogleId to existing user profile
                 user.Profile?.SetGoogleId(googleUser.GoogleId);
                 await _unitOfWork.SaveChangesAsync(ct);
             }
             else
             {
-                // Create new user with random strong password hash
                 var randomPasswordHash = Guid.NewGuid().ToString("N");
                 user = new User(googleUser.Email, randomPasswordHash, UserRole.User);
                 await _unitOfWork.Users.AddAsync(user, ct);
                 await _unitOfWork.SaveChangesAsync(ct);
 
-                // Create profile with Google info
                 var profile = new UserProfile(
                     user.Id,
                     googleUser.FullName,

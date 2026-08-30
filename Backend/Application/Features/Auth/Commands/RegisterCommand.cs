@@ -34,7 +34,6 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, Result<lo
         await _unitOfWork.Users.AddAsync(user, ct);
         await _unitOfWork.SaveChangesAsync(ct);
 
-        // Create UserProfile linked to the new User.Id
         var profile = new UserProfile(user.Id, request.FullName);
         await _unitOfWork.UserProfiles.AddAsync(profile, ct);
         await _unitOfWork.SaveChangesAsync(ct);

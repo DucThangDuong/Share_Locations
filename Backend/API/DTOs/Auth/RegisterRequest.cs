@@ -1,11 +1,7 @@
-using API.Extensions;
-using Application.Common;
-using Application.Features.Auth.Commands;
 using FastEndpoints;
 using FluentValidation;
-using MediatR;
 
-namespace API.Endpoints.Auth;
+namespace API.DTOs.Auth;
 
 public class RegisterRequest
 {
@@ -34,28 +30,5 @@ public class RegisterRequestValidator : Validator<RegisterRequest>
             .MaximumLength(100).WithMessage("Mật khẩu quá dài")
             .Matches(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z\d]).{8,}$")
             .WithMessage("Mật khẩu phải chứa ít nhất 1 chữ hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt");
-    }
-}
-
-public class RegisterEndpoint : Endpoint<RegisterRequest, API.DTOs.ApiSuccessResponse<long>>
-{
-    public IMediator Mediator { get; set; } = null!;
-
-    public override void Configure()
-    {
-        Post("/api/auth/register");
-        AllowAnonymous();
-        Options(x => x.RequireRateLimiting("auth_strict"));
-        Summary(s =>
-        {
-            s.Summary = "Register a new user account";
-            s.Description = "Creates a User account and UserProfile with a hashed password.";
-        });
-    }
-
-    public override async Task HandleAsync(RegisterRequest req, CancellationToken ct)
-    {
-        var result = await Mediator.Send(new RegisterCommand(req.FullName, req.Email, req.Password), ct);
-        await this.SendApiResponseAsync(result, ct);
     }
 }

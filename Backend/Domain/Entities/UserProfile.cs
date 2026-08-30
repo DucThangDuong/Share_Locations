@@ -15,4 +15,46 @@ public class UserProfile
 
     // Navigation
     public virtual User User { get; private set; } = null!;
+
+    protected UserProfile() { }
+
+    public UserProfile(long userId, string fullName, string? avatarUrl = null, string? phone = null, string? googleId = null)
+    {
+        UserId = userId;
+        FullName = fullName.Trim();
+        AvatarUrl = avatarUrl;
+        Phone = phone?.Trim();
+        GoogleId = googleId;
+        ReputationScore = 0;
+        RankLevel = "Tân binh";
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void UpdateProfile(string fullName, string? phone, string? avatarUrl, string? coverUrl, string? bio)
+    {
+        FullName = fullName.Trim();
+        Phone = phone?.Trim();
+        AvatarUrl = avatarUrl;
+        CoverUrl = coverUrl;
+        Bio = bio?.Trim();
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void SetGoogleId(string googleId)
+    {
+        GoogleId = googleId;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void AddReputationScore(int points)
+    {
+        ReputationScore += points;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void SetRankLevel(string rankLevel)
+    {
+        RankLevel = rankLevel;
+        UpdatedAt = DateTime.UtcNow;
+    }
 }
