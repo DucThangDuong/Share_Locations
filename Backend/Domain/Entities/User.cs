@@ -57,4 +57,53 @@ public class User
 
     private readonly List<Notification> _notifications = new();
     public virtual IReadOnlyCollection<Notification> Notifications => _notifications.AsReadOnly();
+
+    protected User() { }
+
+    public User(string email, string passwordHash, UserRole role = UserRole.User)
+    {
+        Email = email.Trim().ToLowerInvariant();
+        PasswordHash = passwordHash;
+        Role = role;
+        Status = UserStatus.Active;
+        CreatedAt = DateTime.UtcNow;
+        UpdatedAt = DateTime.UtcNow;
+        IsDeleted = false;
+    }
+
+    public void SetPasswordHash(string newPasswordHash)
+    {
+        PasswordHash = newPasswordHash;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void SetRole(UserRole newRole)
+    {
+        Role = newRole;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void SetStatus(UserStatus newStatus)
+    {
+        Status = newStatus;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void SetProfile(UserProfile profile)
+    {
+        Profile = profile;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void SoftDelete()
+    {
+        IsDeleted = true;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void Restore()
+    {
+        IsDeleted = false;
+        UpdatedAt = DateTime.UtcNow;
+    }
 }
