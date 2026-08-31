@@ -6,6 +6,8 @@ export interface UserDto {
   email: string
   fullName: string
   avatarUrl?: string | null
+  coverUrl?: string | null
+  bio?: string | null
   phone?: string | null
   role: UserRole
   status: UserStatus
@@ -18,8 +20,6 @@ export interface UserProfileData {
   email: string
   phone: string
   bio: string
-  job: string
-  address: string
   avatarUrl: string
   coverUrl?: string
   rankLevel: string

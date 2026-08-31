@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { AxiosError } from 'axios'
 import type { ApiErrorResponse } from '@/types/auth'
-import { Loader2 } from 'lucide-react'
+import { Loader2, User, Mail, Lock, Eye, EyeOff, ArrowRight, CheckCircle2 } from 'lucide-react'
 
 export const RegisterPage: React.FC = () => {
   const { register } = useAuth()
@@ -13,6 +13,8 @@ export const RegisterPage: React.FC = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [agreeTerms, setAgreeTerms] = useState(true)
   const [loading, setLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
@@ -23,20 +25,30 @@ export const RegisterPage: React.FC = () => {
     setErrorMessage('')
     setSuccessMessage('')
 
+    if (fullName.trim().length < 2) {
+      setErrorMessage('Họ và tên phải từ 2 ký tự trở lên.')
+      return
+    }
+
+    if (password.length < 6) {
+      setErrorMessage('Mật khẩu phải từ 6 ký tự trở lên.')
+      return
+    }
+
     if (password !== confirmPassword) {
       setErrorMessage('Mật khẩu xác nhận không khớp.')
       return
     }
 
     if (!agreeTerms) {
-      setErrorMessage('Vui lòng đồng ý với Điều khoản sử dụng.')
+      setErrorMessage('Vui lòng đồng ý với Điều khoản dịch vụ.')
       return
     }
 
     setLoading(true)
 
     try {
-      await register({ fullName, email, password })
+      await register({ fullName: fullName.trim(), email: email.trim(), password })
       setSuccessMessage('Đăng ký tài khoản thành công! Đang chuyển đến trang đăng nhập...')
       setTimeout(() => {
         navigate('/login')
@@ -57,111 +69,145 @@ export const RegisterPage: React.FC = () => {
 
   return (
     <div
-      className="min-h-screen flex justify-center items-center bg-cover bg-center bg-fixed p-5"
+      className="min-h-screen flex justify-center items-center bg-cover bg-center bg-fixed p-4 sm:p-6 relative overflow-hidden"
       style={{
-        backgroundImage: `linear-gradient(rgba(10, 20, 10, 0.35), rgba(10, 20, 10, 0.55)), url('https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=1920&auto=format&fit=crop')`
+        backgroundImage: `linear-gradient(rgba(6, 40, 30, 0.45), rgba(6, 40, 30, 0.7)), url('https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=1920&auto=format&fit=crop')`
       }}
     >
-      <div className="w-full max-w-[460px] bg-white/80 backdrop-blur-md border border-white/60 p-7 sm:p-9 rounded-3xl shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-        <div className="text-center mb-5">
+      <div className="w-full max-w-[480px] glass-card p-8 sm:p-10 rounded-3xl shadow-2xl animate-in fade-in zoom-in-95 duration-200 relative z-10 border border-white/70">
+        <div className="text-center mb-6 space-y-2">
           <Link
             to="/"
-            className="inline-block font-serif text-3xl font-bold italic text-secondary-container mb-1 tracking-tight"
+            className="inline-flex items-center gap-2 group mb-1"
           >
-            LangThang<span className="text-primary-container">.</span>
+            <span className="text-3xl font-extrabold tracking-tight text-slate-900">
+              LangThang<span className="text-secondary-container">.</span>
+            </span>
           </Link>
-          <h1 className="font-serif text-2xl text-slate-900 font-bold mb-1">
+
+          <h1 className="text-2xl sm:text-3xl text-slate-900 font-extrabold tracking-tight">
             Tạo tài khoản mới
           </h1>
-          <p className="text-slate-500 text-xs sm:text-sm">
-            Tham gia cộng đồng yêu xê dịch Lang Thang.
+          <p className="text-slate-600 text-xs sm:text-sm font-normal">
+            Gia nhập cộng đồng yêu du lịch & trải nghiệm bản địa.
           </p>
         </div>
 
         {errorMessage && (
-          <div className="mb-4 p-3 rounded-xl bg-red-50/90 border border-red-200 text-red-700 text-xs font-medium leading-relaxed">
+          <div className="mb-4 p-3.5 rounded-2xl bg-red-50/95 border border-red-200 text-red-700 text-xs font-medium leading-relaxed animate-in fade-in">
             {errorMessage}
           </div>
         )}
 
         {successMessage && (
-          <div className="mb-4 p-3 rounded-xl bg-emerald-50/90 border border-emerald-200 text-emerald-700 text-xs font-medium leading-relaxed">
-            {successMessage}
+          <div className="mb-4 p-3.5 rounded-2xl bg-emerald-50/95 border border-emerald-200 text-emerald-800 text-xs font-medium leading-relaxed flex items-center gap-2 animate-in fade-in">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{successMessage}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form onSubmit={handleSubmit} className="space-y-3.5">
           <div>
             <label className="block text-xs font-bold text-slate-800 mb-1" htmlFor="fullname">
-              Họ và tên
+              Họ và tên <span className="text-red-500">*</span>
             </label>
-            <input
-              id="fullname"
-              type="text"
-              required
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="Nhập họ và tên đầy đủ"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white/90 text-slate-900 text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-primary-container/20 focus:border-primary-container focus:bg-white transition-all"
-            />
+            <div className="relative">
+              <input
+                id="fullname"
+                type="text"
+                required
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Nguyễn Văn A"
+                className="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-200 bg-white/95 text-slate-900 text-xs sm:text-sm placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-primary-container/20 focus:border-primary-container focus:bg-white transition-all shadow-2xs"
+              />
+              <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+            </div>
           </div>
 
           <div>
             <label className="block text-xs font-bold text-slate-800 mb-1" htmlFor="reg-email">
-              Email
+              Địa chỉ Email <span className="text-red-500">*</span>
             </label>
-            <input
-              id="reg-email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Nhập địa chỉ email"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white/90 text-slate-900 text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-primary-container/20 focus:border-primary-container focus:bg-white transition-all"
-            />
+            <div className="relative">
+              <input
+                id="reg-email"
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="name@example.com"
+                className="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-200 bg-white/95 text-slate-900 text-xs sm:text-sm placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-primary-container/20 focus:border-primary-container focus:bg-white transition-all shadow-2xs"
+              />
+              <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+            </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-bold text-slate-800 mb-1" htmlFor="reg-password">
-              Mật khẩu
-            </label>
-            <input
-              id="reg-password"
-              type="password"
-              required
-              minLength={6}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white/90 text-slate-900 text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-primary-container/20 focus:border-primary-container focus:bg-white transition-all"
-            />
-          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-800 mb-1" htmlFor="reg-password">
+                Mật khẩu <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <input
+                  id="reg-password"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  minLength={6}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="≥ 6 ký tự"
+                  className="w-full h-11 pl-9 pr-9 rounded-xl border border-slate-200 bg-white/95 text-slate-900 text-xs focus:outline-hidden focus:ring-2 focus:ring-primary-container/20 focus:border-primary-container focus:bg-white transition-all shadow-2xs"
+                />
+                <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3.5" />
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-2.5 top-3.5 text-slate-400 hover:text-slate-700 cursor-pointer p-0.5"
+                >
+                  {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+            </div>
 
-          <div>
-            <label className="block text-xs font-bold text-slate-800 mb-1" htmlFor="confirm-password">
-              Nhập lại mật khẩu
-            </label>
-            <input
-              id="confirm-password"
-              type="password"
-              required
-              minLength={6}
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Nhập lại mật khẩu"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white/90 text-slate-900 text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-primary-container/20 focus:border-primary-container focus:bg-white transition-all"
-            />
+            <div>
+              <label className="block text-xs font-bold text-slate-800 mb-1" htmlFor="confirm-password">
+                Nhập lại mật khẩu <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <input
+                  id="confirm-password"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  required
+                  minLength={6}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Khớp mật khẩu"
+                  className="w-full h-11 pl-9 pr-9 rounded-xl border border-slate-200 bg-white/95 text-slate-900 text-xs focus:outline-hidden focus:ring-2 focus:ring-primary-container/20 focus:border-primary-container focus:bg-white transition-all shadow-2xs"
+                />
+                <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3.5" />
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-2.5 top-3.5 text-slate-400 hover:text-slate-700 cursor-pointer p-0.5"
+                >
+                  {showConfirmPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                </button>
+              </div>
+            </div>
           </div>
 
           <div className="flex items-center text-xs pt-1">
-            <label className="flex items-center gap-1.5 text-slate-600 font-medium cursor-pointer">
+            <label className="flex items-center gap-2 text-slate-600 font-medium cursor-pointer">
               <input
                 type="checkbox"
                 checked={agreeTerms}
                 onChange={(e) => setAgreeTerms(e.target.checked)}
-                className="w-3.5 h-3.5 accent-primary-container rounded cursor-pointer"
+                className="w-4 h-4 accent-primary-container rounded cursor-pointer"
               />
-              Đồng ý với{' '}
+              Tôi đồng ý với{' '}
               <a href="#terms" className="font-bold text-primary-container hover:text-secondary-container underline">
                 Điều khoản dịch vụ
               </a>
@@ -171,17 +217,23 @@ export const RegisterPage: React.FC = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 bg-primary-container hover:bg-primary-hover disabled:opacity-70 text-white rounded-xl text-sm font-semibold shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer mt-3"
+            className="w-full h-12 bg-gradient-to-r from-primary-container to-emerald-700 hover:from-primary-hover hover:to-emerald-800 disabled:opacity-70 text-white rounded-xl text-sm font-bold shadow-md hover:shadow-lg active-press transition-all flex items-center justify-center gap-2 cursor-pointer mt-3"
           >
-            {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-            <span>Đăng ký tài khoản</span>
+            {loading ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <>
+                <span>Đăng ký tài khoản</span>
+                <ArrowRight className="w-4 h-4" />
+              </>
+            )}
           </button>
         </form>
 
-        <p className="text-center text-xs text-slate-500 mt-5 pt-4 border-t border-slate-200/80">
+        <p className="text-center text-xs text-slate-500 pt-4 border-t border-slate-200/70 mt-5">
           Đã có tài khoản?{' '}
           <Link to="/login" className="font-bold text-primary-container hover:text-secondary-container transition-colors">
-            Đăng nhập
+            Đăng nhập ngay
           </Link>
         </p>
       </div>

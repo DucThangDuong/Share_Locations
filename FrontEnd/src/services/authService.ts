@@ -4,7 +4,9 @@ import type {
   AuthTokenResponse, 
   LoginRequest, 
   RegisterRequest, 
-  GoogleLoginRequest 
+  GoogleLoginRequest,
+  UpdateProfileRequest,
+  UserDto
 } from '@/types/auth'
 
 export const authService = {
@@ -30,6 +32,16 @@ export const authService = {
 
   async logout(): Promise<ApiSuccessResponse<boolean>> {
     const response = await apiClient.post<ApiSuccessResponse<boolean>>('/api/auth/logout')
+    return response.data
+  },
+
+  async getProfile(): Promise<ApiSuccessResponse<UserDto>> {
+    const response = await apiClient.get<ApiSuccessResponse<UserDto>>('/api/auth/profile')
+    return response.data
+  },
+
+  async updateProfile(payload: UpdateProfileRequest): Promise<ApiSuccessResponse<UserDto>> {
+    const response = await apiClient.put<ApiSuccessResponse<UserDto>>('/api/auth/profile', payload)
     return response.data
   }
 }

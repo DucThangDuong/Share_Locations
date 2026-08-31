@@ -10,7 +10,7 @@ export const CuisineSection: React.FC = () => {
           <span className="text-xs font-bold text-secondary-container uppercase tracking-widest bg-secondary-container/10 px-3.5 py-1 rounded-full inline-flex items-center gap-1.5 mb-2.5">
             <Utensils className="w-3 h-3" /> Hương vị bản địa
           </span>
-          <h2 className="font-serif text-3xl md:text-4xl text-primary-container font-bold mb-2">
+          <h2 className="text-3xl md:text-4xl text-primary-container font-extrabold tracking-tight mb-2">
             Ẩm thực 3 miền
           </h2>
           <p className="text-slate-500 text-xs sm:text-sm max-w-xl">
@@ -32,17 +32,17 @@ export const CuisineSection: React.FC = () => {
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 loading="lazy"
               />
-              <span className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-xs text-white text-[11px] px-2.5 py-1 rounded-full">
+              <span className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-xs text-white text-[11px] font-semibold px-2.5 py-1 rounded-full">
                 {item.origin}
               </span>
             </div>
 
             <div className="p-5 flex-1 flex flex-col justify-between">
               <div>
-                <h3 className="font-serif text-lg font-bold text-slate-900 mb-2 group-hover:text-primary-container transition-colors">
+                <h3 className="text-base font-bold text-slate-900 mb-2 group-hover:text-primary-container transition-colors tracking-tight">
                   {item.name}
                 </h3>
-                <p className="text-xs text-slate-600 leading-relaxed line-clamp-3 font-light">
+                <p className="text-xs text-slate-600 leading-relaxed line-clamp-3 font-normal">
                   {item.description}
                 </p>
               </div>
