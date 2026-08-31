@@ -10,9 +10,10 @@ public static class CorsConfig
         {
             options.AddPolicy(PolicyName, policy =>
             {
-                policy.AllowAnyOrigin()
+                policy.SetIsOriginAllowed(origin => true)
                       .AllowAnyMethod()
-                      .AllowAnyHeader();
+                      .AllowAnyHeader()
+                      .AllowCredentials();
             });
         });
 

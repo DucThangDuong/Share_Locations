@@ -20,7 +20,9 @@ public class LoginRequestValidator : Validator<LoginRequest>
 
         RuleFor(x => x.Password)
             .NotEmpty().WithMessage("Mật khẩu không được để trống")
-            .MinimumLength(6).WithMessage("Mật khẩu phải từ 6 ký tự trở lên")
-            .MaximumLength(100).WithMessage("Mật khẩu quá dài");
+            .MinimumLength(8).WithMessage("Mật khẩu phải từ 8 ký tự trở lên")
+            .MaximumLength(100).WithMessage("Mật khẩu quá dài")
+            .Matches(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z\d]).{8,}$")
+            .WithMessage("Mật khẩu phải chứa ít nhất 1 chữ hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt");
     }
 }
