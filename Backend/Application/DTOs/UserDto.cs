@@ -8,6 +8,8 @@ public class UserDto
     public string Email { get; set; } = string.Empty;
     public string FullName { get; set; } = string.Empty;
     public string? AvatarUrl { get; set; }
+    public string? CoverUrl { get; set; }
+    public string? Bio { get; set; }
     public string? Phone { get; set; }
     public UserRole Role { get; set; }
     public UserStatus Status { get; set; }
