@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Mail, Send, CheckCircle2 } from 'lucide-react'
 
 export const Footer: React.FC = () => {
   const [email, setEmail] = useState('')
@@ -15,69 +16,86 @@ export const Footer: React.FC = () => {
   }
 
   return (
-    <footer className="bg-[#1a3a2a] text-gray-300 pt-12 pb-8 border-t-2 border-secondary-container mt-auto">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 mb-8 border-b border-[#2d5241] pb-8">
-          <div className="col-span-1 md:col-span-4 lg:col-span-5">
-            <Link to="/" className="font-serif text-2xl italic text-white font-bold tracking-tight inline-block mb-3">
-              LangThang<span className="text-secondary-container">.</span>
+    <footer className="bg-primary text-slate-300 pt-16 pb-10 border-t-2 border-secondary-container/80 relative overflow-hidden mt-auto">
+      <div className="absolute top-0 right-0 -mt-20 -mr-20 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="absolute bottom-0 left-0 -mb-20 -ml-20 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-10 mb-12 border-b border-emerald-900/60 pb-12">
+          <div className="col-span-1 md:col-span-4 lg:col-span-5 space-y-4">
+            <Link to="/" className="flex items-center gap-2 group">
+              <span className="text-2xl font-extrabold text-white tracking-tight">
+                LangThang<span className="text-secondary-container">.</span>
+              </span>
             </Link>
-            <p className="text-xs text-gray-300 max-w-sm leading-relaxed">
-              Khám phá Việt Nam theo cách của bạn. Tìm điểm đến, lưu địa chỉ ăn ngon, đọc blog bản địa và biến mỗi chuyến đi thành một câu chuyện đáng nhớ.
+            <p className="text-xs text-slate-300/80 max-w-sm leading-relaxed font-normal">
+              Khám phá Việt Nam theo cách của bạn. Tìm điểm đến, lưu địa chỉ ẩm thực bản địa, tham khảo lịch trình thực tế và lưu giữ từng khoảnh khắc đáng nhớ.
             </p>
+            <div className="flex items-center gap-3 pt-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">
+                #LangThangVietnam
+              </span>
+            </div>
           </div>
 
-          <div className="col-span-1 md:col-span-2 lg:col-span-2">
-            <h3 className="text-white font-bold mb-3 uppercase tracking-wider text-xs">Khám phá</h3>
-            <ul className="space-y-2 text-xs text-gray-300">
-              <li><Link className="hover:text-secondary-container transition-colors" to="/">Trang chủ</Link></li>
-              <li><a className="hover:text-secondary-container transition-colors" href="/#diadiem">Địa điểm 3 miền</a></li>
-              <li><a className="hover:text-secondary-container transition-colors" href="/#amthuc">Ẩm thực đặc sản</a></li>
-              <li><a className="hover:text-secondary-container transition-colors" href="/#hanhtrinh">Hành trình du lịch</a></li>
+          <div className="col-span-1 md:col-span-2 lg:col-span-2 space-y-3">
+            <h3 className="text-white font-bold text-sm tracking-wide">Khám phá</h3>
+            <ul className="space-y-2.5 text-xs text-slate-300/80">
+              <li><Link className="hover:text-amber-400 transition-colors" to="/">Trang chủ</Link></li>
+              <li><a className="hover:text-amber-400 transition-colors" href="/#diadiem">Địa điểm 3 miền</a></li>
+              <li><a className="hover:text-amber-400 transition-colors" href="/#amthuc">Ẩm thực đặc sản</a></li>
+              <li><a className="hover:text-amber-400 transition-colors" href="/#hanhtrinh">Hành trình du lịch</a></li>
             </ul>
           </div>
 
-          <div className="col-span-1 md:col-span-2 lg:col-span-2">
-            <h3 className="text-white font-bold mb-3 uppercase tracking-wider text-xs">Hỗ trợ</h3>
-            <ul className="space-y-2 text-xs text-gray-300">
-              <li><a className="hover:text-secondary-container transition-colors" href="#about">Về chúng tôi</a></li>
-              <li><a className="hover:text-secondary-container transition-colors" href="#contact">Liên hệ</a></li>
-              <li><a className="hover:text-secondary-container transition-colors" href="#terms">Điều khoản</a></li>
-              <li><a className="hover:text-secondary-container transition-colors" href="#privacy">Bảo mật</a></li>
+          <div className="col-span-1 md:col-span-2 lg:col-span-2 space-y-3">
+            <h3 className="text-white font-bold text-sm tracking-wide">Cộng đồng</h3>
+            <ul className="space-y-2.5 text-xs text-slate-300/80">
+              <li><a className="hover:text-amber-400 transition-colors" href="/#blog">Bài viết chia sẻ</a></li>
+              <li><a className="hover:text-amber-400 transition-colors" href="#guidelines">Quy chuẩn đánh giá</a></li>
+              <li><a className="hover:text-amber-400 transition-colors" href="#terms">Điều khoản sử dụng</a></li>
+              <li><a className="hover:text-amber-400 transition-colors" href="#privacy">Chính sách bảo mật</a></li>
             </ul>
           </div>
 
-          <div className="col-span-1 md:col-span-4 lg:col-span-3">
-            <h3 className="text-white font-bold mb-3 uppercase tracking-wider text-xs">Nhận tin mới</h3>
-            <p className="text-xs text-gray-300 mb-3">Nhận gợi ý điểm đến và món ngon mỗi tuần.</p>
+          <div className="col-span-1 md:col-span-4 lg:col-span-3 space-y-3">
+            <h3 className="text-white font-bold text-sm tracking-wide">Bản tin LangThang</h3>
+            <p className="text-xs text-slate-300/80 leading-relaxed font-normal">
+              Nhận gợi ý điểm đến hoang sơ và quán ngon địa phương mỗi tuần.
+            </p>
             {subscribed ? (
-              <div className="text-xs bg-emerald-800/80 text-emerald-200 px-3 py-2 rounded-lg">
-                Cảm ơn bạn đã đăng ký nhận tin!
+              <div className="text-xs bg-emerald-900/60 border border-emerald-500/40 text-emerald-200 px-3.5 py-2.5 rounded-2xl flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <span>Cảm ơn bạn đã đăng ký nhận tin!</span>
               </div>
             ) : (
-              <form className="flex" onSubmit={handleSubscribe}>
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Email của bạn..."
-                  className="w-full bg-[#2d5241] border border-transparent rounded-l-full px-3 py-1.5 text-xs text-white focus:outline-hidden focus:ring-1 focus:ring-secondary-container placeholder-gray-400"
-                />
-                <button
-                  type="submit"
-                  className="bg-secondary-container hover:bg-secondary-hover text-white px-4 py-1.5 rounded-r-full text-xs font-semibold transition-colors shrink-0"
-                >
-                  Đăng ký
-                </button>
+              <form className="relative flex items-center" onSubmit={handleSubscribe}>
+                <div className="relative w-full">
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Nhập email của bạn..."
+                    className="w-full h-10 bg-emerald-950/60 border border-emerald-800/80 rounded-full pl-9 pr-24 text-xs text-white placeholder:text-slate-400 focus:outline-hidden focus:border-secondary-container focus:ring-2 focus:ring-secondary-container/20 transition-all"
+                  />
+                  <Mail className="w-3.5 h-3.5 text-slate-400 absolute left-3.5 top-3.5" />
+                  <button
+                    type="submit"
+                    className="absolute right-1 top-1 bottom-1 px-3.5 bg-secondary-container hover:bg-secondary-hover text-white rounded-full text-xs font-semibold flex items-center gap-1 active-press transition-all cursor-pointer"
+                  >
+                    <span>Gửi</span>
+                    <Send className="w-3 h-3" />
+                  </button>
+                </div>
               </form>
             )}
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row justify-between items-center text-xs text-gray-400 gap-3">
-          <p>© {new Date().getFullYear()} LangThang. All rights reserved.</p>
-          <p>Thiết kế cho cộng đồng yêu du lịch & ẩm thực Việt Nam.</p>
+        <div className="flex flex-col sm:flex-row justify-between items-center text-xs text-slate-400/80 gap-3 font-normal">
+          <p>© {new Date().getFullYear()} LangThang. Nền tảng chia sẻ địa điểm du lịch & ẩm thực Việt Nam.</p>
+          <p className="text-[11px] text-slate-500">Được xây dựng với tinh thần tôn vinh văn hóa & vẻ đẹp quê hương.</p>
         </div>
       </div>
     </footer>

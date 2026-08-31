@@ -10,7 +10,7 @@ export const BlogSection: React.FC = () => {
           <span className="text-xs font-bold text-secondary-container uppercase tracking-widest bg-secondary-container/10 px-3.5 py-1 rounded-full inline-flex items-center gap-1.5 mb-2.5">
             <BookOpen className="w-3 h-3" /> Góc chia sẻ
           </span>
-          <h2 className="font-serif text-3xl md:text-4xl text-primary-container font-bold">
+          <h2 className="text-3xl md:text-4xl text-primary-container font-extrabold tracking-tight">
             Blog trải nghiệm
           </h2>
         </div>
@@ -42,10 +42,10 @@ export const BlogSection: React.FC = () => {
 
             <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
               <div>
-                <h3 className="font-serif text-lg font-bold text-slate-900 group-hover:text-primary-container transition-colors leading-snug">
+                <h3 className="text-base font-bold text-slate-900 group-hover:text-primary-container transition-colors leading-snug tracking-tight">
                   {item.title}
                 </h3>
-                <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed mt-2 font-light">
+                <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed mt-2 font-normal">
                   {item.summary}
                 </p>
               </div>

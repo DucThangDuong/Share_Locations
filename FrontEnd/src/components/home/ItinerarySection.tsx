@@ -9,7 +9,7 @@ export const ItinerarySection: React.FC = () => {
         <span className="text-xs font-bold text-secondary-container uppercase tracking-widest bg-secondary-container/10 px-3.5 py-1 rounded-full inline-flex items-center gap-1.5 mb-2.5">
           <Compass className="w-3 h-3" /> Gợi ý lịch trình
         </span>
-        <h2 className="font-serif text-3xl md:text-4xl text-primary-container font-bold mb-3">
+        <h2 className="text-3xl md:text-4xl text-primary-container font-extrabold tracking-tight mb-3">
           Hành trình được đề xuất
         </h2>
         <p className="text-slate-500 max-w-2xl mx-auto text-xs sm:text-sm">
@@ -43,10 +43,10 @@ export const ItinerarySection: React.FC = () => {
                 <span className="text-secondary-container text-xs font-bold uppercase tracking-wider flex items-center gap-1 mb-1.5">
                   <MapPin className="w-3 h-3" /> {item.destination}
                 </span>
-                <h3 className="font-serif text-xl font-bold text-slate-900 group-hover:text-primary-container transition-colors leading-snug">
+                <h3 className="text-lg font-bold text-slate-900 group-hover:text-primary-container transition-colors leading-snug tracking-tight">
                   {item.title}
                 </h3>
-                <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed mt-2 font-light">
+                <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed mt-2 font-normal">
                   {item.description}
                 </p>
               </div>

@@ -26,10 +26,10 @@ const RegionTrack: React.FC<RegionTrackProps> = ({ title, subBadge, items }) => 
     <div className="mb-16">
       <div className="flex justify-between items-end mb-5 border-b border-surface-variant pb-3">
         <div>
-          <span className="inline-block px-2.5 py-0.5 bg-slate-100 text-primary-container text-[11px] font-semibold uppercase tracking-wider rounded-sm mb-1">
+          <span className="inline-block px-2.5 py-0.5 bg-slate-100 text-primary-container text-[11px] font-bold uppercase tracking-wider rounded-md mb-1.5">
             {subBadge}
           </span>
-          <h3 className="font-serif text-2xl text-slate-900 font-bold">{title}</h3>
+          <h3 className="text-2xl text-slate-900 font-extrabold tracking-tight">{title}</h3>
         </div>
         <div className="flex space-x-2">
           <button
@@ -67,19 +67,19 @@ const RegionTrack: React.FC<RegionTrackProps> = ({ title, subBadge, items }) => 
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent"></div>
             
             {item.tag && (
-              <div className="absolute top-4 left-4 bg-white/85 backdrop-blur-xs px-2.5 py-1 rounded-full text-[11px] font-semibold text-slate-800 shadow-xs">
+              <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-xs px-2.5 py-1 rounded-full text-[11px] font-bold text-slate-800 shadow-xs">
                 {item.tag}
               </div>
             )}
 
             <div className="absolute bottom-0 inset-x-0 p-5 text-white">
-              <span className="text-secondary-container text-xs font-semibold uppercase tracking-wider block mb-1 flex items-center gap-1">
+              <span className="text-secondary-container text-xs font-bold uppercase tracking-wider block mb-1 flex items-center gap-1">
                 <MapPin className="w-3 h-3 inline" /> {item.province}
               </span>
-              <h4 className="font-serif text-2xl font-bold mb-2 group-hover:text-secondary-container transition-colors">
+              <h4 className="text-xl font-bold mb-2 group-hover:text-secondary-container transition-colors tracking-tight">
                 {item.name}
               </h4>
-              <p className="text-xs text-slate-200 line-clamp-2 leading-relaxed font-light">
+              <p className="text-xs text-slate-200 line-clamp-2 leading-relaxed font-normal">
                 {item.description}
               </p>
             </div>
@@ -97,10 +97,10 @@ export const RegionsSection: React.FC = () => {
         <span className="text-xs font-bold text-secondary-container uppercase tracking-widest bg-secondary-container/10 px-3.5 py-1 rounded-full inline-block mb-2.5">
           Điểm đến nổi bật
         </span>
-        <h2 className="font-serif text-3xl md:text-4xl text-primary-container font-bold mb-3">
+        <h2 className="text-3xl md:text-4xl text-primary-container font-extrabold tracking-tight mb-3">
           Khám phá 3 miền Việt Nam
         </h2>
-        <p className="text-slate-500 max-w-2xl mx-auto text-xs sm:text-sm">
+        <p className="text-slate-500 max-w-2xl mx-auto text-xs sm:text-sm font-normal">
           Từ những đỉnh núi mờ sương Tây Bắc đến vẻ trù phú của miệt vườn phương Nam, mỗi vùng miền là một trang ký ức rực rỡ.
         </p>
       </div>

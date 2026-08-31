@@ -8,7 +8,7 @@ export const NotFoundPage: React.FC = () => {
       <div className="w-16 h-16 rounded-3xl bg-secondary-container/10 text-secondary-container flex items-center justify-center mb-4">
         <Compass className="w-8 h-8" />
       </div>
-      <h1 className="font-serif text-4xl font-bold text-slate-900 mb-2">404</h1>
+      <h1 className="text-4xl font-extrabold text-slate-900 mb-2">404</h1>
       <p className="text-slate-600 text-sm mb-6">Trang bạn tìm kiếm không tồn tại.</p>
       <Link
         to="/"
