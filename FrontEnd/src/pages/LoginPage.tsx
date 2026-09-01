@@ -27,8 +27,11 @@ export const LoginPage: React.FC = () => {
       navigate('/')
     } catch (err) {
       const axiosError = err as AxiosError<ApiErrorResponse>
-      if (axiosError.response?.data?.message) {
-        setErrorMessage(axiosError.response.data.message)
+      const errorData = axiosError.response?.data
+      if (errorData?.errors && errorData.errors.length > 0) {
+        setErrorMessage(errorData.errors.map((e) => e.message).join(' • '))
+      } else if (errorData?.message) {
+        setErrorMessage(errorData.message)
       } else if (axiosError.message) {
         setErrorMessage(axiosError.message)
       } else {

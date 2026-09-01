@@ -1,11 +1,11 @@
 export interface UpdateProfileRequest {
-  fullName: string
+  fullName?: string | null
   phone?: string | null
-  avatarUrl?: string | null
-  coverUrl?: string | null
   bio?: string | null
+  avatarFile?: File | null
+  coverFile?: File | null
 }
 
 export interface UpdateAvatarRequest {
-  avatarUrl: string
+  avatarFile: File
 }
