@@ -41,7 +41,33 @@ export const authService = {
   },
 
   async updateProfile(payload: UpdateProfileRequest): Promise<ApiSuccessResponse<UserDto>> {
-    const response = await apiClient.put<ApiSuccessResponse<UserDto>>('/api/auth/profile', payload)
+    const formData = new FormData()
+
+    if (payload.fullName !== undefined && payload.fullName !== null) {
+      formData.append('FullName', payload.fullName)
+    }
+
+    if (payload.phone !== undefined && payload.phone !== null) {
+      formData.append('Phone', payload.phone)
+    }
+
+    if (payload.bio !== undefined && payload.bio !== null) {
+      formData.append('Bio', payload.bio)
+    }
+
+    if (payload.avatarFile) {
+      formData.append('AvatarFile', payload.avatarFile)
+    }
+
+    if (payload.coverFile) {
+      formData.append('CoverFile', payload.coverFile)
+    }
+
+    const response = await apiClient.put<ApiSuccessResponse<UserDto>>('/api/auth/profile', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
     return response.data
   }
 }

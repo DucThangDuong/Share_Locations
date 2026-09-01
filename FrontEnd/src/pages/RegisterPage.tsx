@@ -5,6 +5,8 @@ import { AxiosError } from 'axios'
 import type { ApiErrorResponse } from '@/types/auth'
 import { Loader2, User, Mail, Lock, Eye, EyeOff, ArrowRight, CheckCircle2 } from 'lucide-react'
 
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z\d]).{8,}$/
+
 export const RegisterPage: React.FC = () => {
   const { register } = useAuth()
   const navigate = useNavigate()
@@ -25,13 +27,18 @@ export const RegisterPage: React.FC = () => {
     setErrorMessage('')
     setSuccessMessage('')
 
-    if (fullName.trim().length < 2) {
-      setErrorMessage('Họ và tên phải từ 2 ký tự trở lên.')
+    if (fullName.trim().length < 2 || fullName.trim().length > 50) {
+      setErrorMessage('Họ và tên phải từ 2 đến 50 ký tự.')
       return
     }
 
-    if (password.length < 6) {
-      setErrorMessage('Mật khẩu phải từ 6 ký tự trở lên.')
+    if (password.length < 8) {
+      setErrorMessage('Mật khẩu phải từ 8 ký tự trở lên.')
+      return
+    }
+
+    if (!PASSWORD_REGEX.test(password)) {
+      setErrorMessage('Mật khẩu phải chứa ít nhất 1 chữ hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt.')
       return
     }
 
@@ -55,8 +62,11 @@ export const RegisterPage: React.FC = () => {
       }, 1500)
     } catch (err) {
       const axiosError = err as AxiosError<ApiErrorResponse>
-      if (axiosError.response?.data?.message) {
-        setErrorMessage(axiosError.response.data.message)
+      const errorData = axiosError.response?.data
+      if (errorData?.errors && errorData.errors.length > 0) {
+        setErrorMessage(errorData.errors.map((e) => e.message).join(' • '))
+      } else if (errorData?.message) {
+        setErrorMessage(errorData.message)
       } else if (axiosError.message) {
         setErrorMessage(axiosError.message)
       } else {
@@ -116,6 +126,7 @@ export const RegisterPage: React.FC = () => {
                 id="fullname"
                 type="text"
                 required
+                maxLength={50}
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="Nguyễn Văn A"
@@ -134,6 +145,7 @@ export const RegisterPage: React.FC = () => {
                 id="reg-email"
                 type="email"
                 required
+                maxLength={100}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@example.com"
@@ -153,10 +165,11 @@ export const RegisterPage: React.FC = () => {
                   id="reg-password"
                   type={showPassword ? 'text' : 'password'}
                   required
-                  minLength={6}
+                  minLength={8}
+                  maxLength={100}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="≥ 6 ký tự"
+                  placeholder="≥ 8 ký tự (hoa, thường, số, ký tự đb)"
                   className="w-full h-11 pl-9 pr-9 rounded-xl border border-slate-200 bg-white/95 text-slate-900 text-xs focus:outline-hidden focus:ring-2 focus:ring-primary-container/20 focus:border-primary-container focus:bg-white transition-all shadow-2xs"
                 />
                 <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3.5" />
@@ -180,7 +193,8 @@ export const RegisterPage: React.FC = () => {
                   id="confirm-password"
                   type={showConfirmPassword ? 'text' : 'password'}
                   required
-                  minLength={6}
+                  minLength={8}
+                  maxLength={100}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Khớp mật khẩu"

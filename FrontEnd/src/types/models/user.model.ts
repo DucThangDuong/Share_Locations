@@ -1,5 +1,5 @@
-export type UserRole = 'User' | 'Moderator' | 'Admin' | number | string
-export type UserStatus = 'Active' | 'Inactive' | 'Banned' | number | string
+export type UserRole = 'User' | 'CategoryAdmin' | 'SystemAdmin' | number | string
+export type UserStatus = 'Inactive' | 'Active' | 'Banned' | number | string
 
 export interface UserDto {
   id: number
@@ -24,4 +24,6 @@ export interface UserProfileData {
   coverUrl?: string
   rankLevel: string
   reputationScore: number
+  role?: UserRole
+  status?: UserStatus
 }
