@@ -2,7 +2,6 @@ using API.Extensions;
 using Application.Features.Auth.Commands;
 using FastEndpoints;
 using MediatR;
-using Microsoft.Extensions.Localization;
 
 namespace API.Endpoints.Auth;
 
@@ -15,11 +14,6 @@ public class RefreshTokenEndpoint : EndpointWithoutRequest
         Post("/api/auth/refresh-token");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("auth_strict"));
-        Summary(s =>
-        {
-            s.Summary = "Refresh Access Token";
-            s.Description = "Validates the refresh token against Redis (not SQL). Rotates both tokens on success.";
-        });
     }
 
     public override async Task HandleAsync(CancellationToken ct)

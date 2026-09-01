@@ -16,11 +16,6 @@ public class RegisterEndpoint : Endpoint<RegisterRequest, ApiSuccessResponse<lon
         Post("/api/auth/register");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("auth_strict"));
-        Summary(s =>
-        {
-            s.Summary = "Register a new user account";
-            s.Description = "Creates a User account and UserProfile with a hashed password.";
-        });
     }
 
     public override async Task HandleAsync(RegisterRequest req, CancellationToken ct)

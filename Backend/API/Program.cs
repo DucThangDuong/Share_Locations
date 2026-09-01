@@ -5,6 +5,7 @@ using Application;
 using FastEndpoints;
 using FastEndpoints.Swagger;
 using Infrastructure;
+using Microsoft.AspNetCore.Http;
 
 namespace API;
 
@@ -19,15 +20,12 @@ public class Program
             serverOptions.AddServerHeader = false;
         });
 
-        // 1. Clean Architecture Layers
         builder.Services.AddApplication();
         builder.Services.AddInfrastructure(builder.Configuration);
 
-        // 2. Global Exception Handler & ProblemDetails
         builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
         builder.Services.AddProblemDetails();
 
-        // 3. Modular Configurations
         builder.Services.AddAppJwtAuthentication(builder.Configuration);
         builder.Services.AddAppRateLimiting();
         builder.Services.AddAppCors();
@@ -36,12 +34,9 @@ public class Program
 
         var app = builder.Build();
 
-        // 4. Database Auto-Initialization
         await app.InitializeDatabaseAsync();
 
-        // 5. Middleware Pipeline
         app.UseExceptionHandler();
-        app.UseAppLocalization();
 
         app.UseHttpsRedirection();
         app.UseCors(CorsConfig.PolicyName);
@@ -53,6 +48,8 @@ public class Program
 
         app.UseFastEndpoints(c =>
         {
+            c.Binding.ValueParserFor<IFormFile>(input => new(true, null));
+
             c.Errors.ResponseBuilder = (failures, ctx, statusCode) =>
             {
                 var errors = failures.Select(f => new ValidationErrorDetail(

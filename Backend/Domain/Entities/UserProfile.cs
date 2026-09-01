@@ -18,24 +18,45 @@ public class UserProfile
 
     protected UserProfile() { }
 
-    public UserProfile(long userId, string fullName, string? avatarUrl = null, string? phone = null, string? googleId = null)
+    public UserProfile(long userId, string fullName, string? avatarUrl = "https://imageshare13.blob.core.windows.net/avatar/default-avatar.webp", string? googleId = null, string? phone = null)
     {
         UserId = userId;
         FullName = fullName.Trim();
         AvatarUrl = avatarUrl;
-        Phone = phone?.Trim();
+        CoverUrl = null;
         GoogleId = googleId;
+        Phone = phone?.Trim();
         ReputationScore = 0;
         RankLevel = "Tân binh";
         UpdatedAt = DateTime.UtcNow;
     }
 
-    public void UpdateProfile(string fullName, string? phone, string? avatarUrl, string? coverUrl, string? bio)
+    public void SetFullName(string fullName)
     {
         FullName = fullName.Trim();
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void SetPhone(string? phone)
+    {
         Phone = phone?.Trim();
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void SetAvatarUrl(string? avatarUrl)
+    {
         AvatarUrl = avatarUrl;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void SetCoverUrl(string? coverUrl)
+    {
         CoverUrl = coverUrl;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void SetBio(string? bio)
+    {
         Bio = bio?.Trim();
         UpdatedAt = DateTime.UtcNow;
     }

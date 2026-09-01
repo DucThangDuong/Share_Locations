@@ -1,3 +1,4 @@
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using API.DTOs;
 using API.Extensions;
@@ -6,6 +7,7 @@ using Application.DTOs;
 using Application.Features.Auth.Queries;
 using FastEndpoints;
 using MediatR;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace API.Endpoints.Auth;
 
@@ -16,16 +18,14 @@ public class GetProfileEndpoint : EndpointWithoutRequest<ApiSuccessResponse<User
     public override void Configure()
     {
         Get("/api/auth/profile");
-        Summary(s =>
-        {
-            s.Summary = "Get current user profile";
-            s.Description = "Returns the profile details of the currently authenticated user based on JWT Bearer Token.";
-        });
+        AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
+        Roles("User", "CategoryAdmin", "SystemAdmin");
     }
 
     public override async Task HandleAsync(CancellationToken ct)
     {
         var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
             ?? User.FindFirst("sub")?.Value;
 
         if (!long.TryParse(userIdStr, out var userId))

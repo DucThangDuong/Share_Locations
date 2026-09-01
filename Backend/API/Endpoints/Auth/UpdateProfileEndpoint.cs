@@ -7,6 +7,7 @@ using Application.DTOs;
 using Application.Features.Auth.Commands;
 using FastEndpoints;
 using MediatR;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace API.Endpoints.Auth;
 
@@ -17,11 +18,9 @@ public class UpdateProfileEndpoint : Endpoint<UpdateProfileRequest, ApiSuccessRe
     public override void Configure()
     {
         Put("/api/auth/profile");
-        Summary(s =>
-        {
-            s.Summary = "Update current user profile";
-            s.Description = "Updates profile details (Full name, phone, avatar, cover, bio) for the authenticated user.";
-        });
+        AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
+        Roles("User", "CategoryAdmin", "SystemAdmin");
+        AllowFileUploads();
     }
 
     public override async Task HandleAsync(UpdateProfileRequest req, CancellationToken ct)
@@ -37,14 +36,33 @@ public class UpdateProfileEndpoint : Endpoint<UpdateProfileRequest, ApiSuccessRe
             return;
         }
 
-        var result = await Mediator.Send(new UpdateProfileCommand(
+        FileUploadModel? avatarFile = null;
+        if (req.AvatarFile != null && req.AvatarFile.Length > 0)
+        {
+            avatarFile = new FileUploadModel(
+                req.AvatarFile.OpenReadStream(),
+                req.AvatarFile.FileName,
+                req.AvatarFile.ContentType);
+        }
+
+        FileUploadModel? coverFile = null;
+        if (req.CoverFile != null && req.CoverFile.Length > 0)
+        {
+            coverFile = new FileUploadModel(
+                req.CoverFile.OpenReadStream(),
+                req.CoverFile.FileName,
+                req.CoverFile.ContentType);
+        }
+
+        var command = new UpdateProfileCommand(
             userId,
             req.FullName,
             req.Phone,
-            req.AvatarUrl,
-            req.CoverUrl,
-            req.Bio), ct);
+            req.Bio,
+            avatarFile,
+            coverFile);
 
+        var result = await Mediator.Send(command, ct);
         await this.SendApiResponseAsync(result, ct);
     }
 }

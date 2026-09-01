@@ -15,11 +15,6 @@ public class LogoutEndpoint : EndpointWithoutRequest
         Post("/api/auth/logout");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Options(x => x.RequireRateLimiting("auth_strict"));
-        Summary(s =>
-        {
-            s.Summary = "Logout the current user";
-            s.Description = "Blacklists both the refresh token and access token JTI in Redis. Clears the refresh token cookie.";
-        });
     }
 
     public override async Task HandleAsync(CancellationToken ct)

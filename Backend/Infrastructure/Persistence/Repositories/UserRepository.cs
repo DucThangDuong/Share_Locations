@@ -14,7 +14,7 @@ public class UserRepository : IUserRepository
 
     public async Task<User?> GetByIdAsync(long id, CancellationToken ct = default)
     {
-        return await _dbContext.Users.FindAsync(new object[] { id }, ct);
+        return await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == id);
     }
 
     public async Task<User?> GetByEmailAsync(string email, CancellationToken ct = default)

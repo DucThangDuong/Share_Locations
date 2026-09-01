@@ -1,12 +1,6 @@
-namespace Application.Common.Interfaces;
+using Application.DTOs;
 
-public class GoogleUserInfo
-{
-    public string GoogleId { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
-    public string FullName { get; set; } = string.Empty;
-    public string? PictureUrl { get; set; }
-}
+namespace Application.Common.Interfaces;
 
 public interface IGoogleAuthService
 {

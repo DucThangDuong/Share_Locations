@@ -32,11 +32,12 @@ public static class DependencyInjection
         services.AddScoped<IUserProfileRepository, UserProfileRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-        // 3. Security & Auth Services
+        // 3. Security, Auth & Cloud Storage Services
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<IGoogleAuthService, GoogleAuthService>();
         services.AddScoped<ITokenCacheService, TokenCacheService>();
+        services.AddScoped<IBlobService, AzureBlobService>();
 
         // 4. Redis / Distributed Cache
         var redisConn = configuration.GetConnectionString("Redis");

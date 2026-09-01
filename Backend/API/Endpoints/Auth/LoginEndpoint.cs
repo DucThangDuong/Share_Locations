@@ -17,11 +17,6 @@ public class LoginEndpoint : Endpoint<LoginRequest, ApiSuccessResponse<AuthToken
         Post("/api/auth/login");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("auth_strict"));
-        Summary(s =>
-        {
-            s.Summary = "Login with email and password";
-            s.Description = "Verifies credentials against 'Local' UserAuthProvider. Returns JWT access token; refresh token is set as HttpOnly cookie.";
-        });
     }
 
     public override async Task HandleAsync(LoginRequest req, CancellationToken ct)
@@ -41,7 +36,6 @@ public class LoginEndpoint : Endpoint<LoginRequest, ApiSuccessResponse<AuthToken
             result.Data.RefreshTokenExpiryTime = DateTime.UtcNow;
             result.Data.RefreshToken = string.Empty;
         }
-
         await this.SendApiResponseAsync(result, ct);
     }
 }

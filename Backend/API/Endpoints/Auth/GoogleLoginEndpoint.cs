@@ -17,11 +17,6 @@ public class GoogleLoginEndpoint : Endpoint<GoogleLoginRequest, ApiSuccessRespon
         Post("/api/auth/google");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("auth_strict"));
-        Summary(s =>
-        {
-            s.Summary = "Login or Register with Google";
-            s.Description = "Validates Google Id Token. Creates or links a 'Google' UserAuthProvider. Returns JWT; refresh token is set as HttpOnly cookie.";
-        });
     }
 
     public override async Task HandleAsync(GoogleLoginRequest req, CancellationToken ct)

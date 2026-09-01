@@ -1,12 +1,12 @@
+using Domain.Interfaces;
 using Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence.Repositories;
 
 public class UnitOfWork : IUnitOfWork
 {
     private readonly TravelReviewDbContext _dbContext;
-    private IDbContextTransaction? _currentTransaction;
 
     private IUserRepository? _users;
     public IUserRepository Users => _users ??= new UserRepository(_dbContext);
@@ -24,49 +24,20 @@ public class UnitOfWork : IUnitOfWork
         return await _dbContext.SaveChangesAsync(ct);
     }
 
-    public async Task BeginTransactionAsync(CancellationToken ct = default)
+    public async Task ExecuteInTransactionAsync(Func<Task> action, CancellationToken ct = default)
     {
-        _currentTransaction ??= await _dbContext.Database.BeginTransactionAsync(ct);
-    }
-
-    public async Task CommitTransactionAsync(CancellationToken ct = default)
-    {
-        try
+        var strategy = _dbContext.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
         {
+            await using var transaction = await _dbContext.Database.BeginTransactionAsync(ct);
+            await action();
             await _dbContext.SaveChangesAsync(ct);
-            if (_currentTransaction != null)
-            {
-                await _currentTransaction.CommitAsync(ct);
-            }
-        }
-        catch
-        {
-            await RollbackTransactionAsync(ct);
-            throw;
-        }
-        finally
-        {
-            if (_currentTransaction != null)
-            {
-                await _currentTransaction.DisposeAsync();
-                _currentTransaction = null;
-            }
-        }
-    }
-
-    public async Task RollbackTransactionAsync(CancellationToken ct = default)
-    {
-        if (_currentTransaction != null)
-        {
-            await _currentTransaction.RollbackAsync(ct);
-            await _currentTransaction.DisposeAsync();
-            _currentTransaction = null;
-        }
+            await transaction.CommitAsync(ct);
+        });
     }
 
     public void Dispose()
     {
-        _currentTransaction?.Dispose();
         _dbContext.Dispose();
         GC.SuppressFinalize(this);
     }

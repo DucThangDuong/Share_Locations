@@ -32,7 +32,6 @@ public class LogoutCommandHandler : IRequestHandler<LogoutCommand, Result<bool>>
             var jti = _jwtTokenService.GetJtiFromToken(request.AccessToken);
             if (!string.IsNullOrWhiteSpace(jti))
             {
-                // Blacklist access token for remaining duration (e.g. 1 day max)
                 await _tokenCacheService.BlacklistAccessTokenAsync(jti, TimeSpan.FromDays(1), ct);
             }
         }
