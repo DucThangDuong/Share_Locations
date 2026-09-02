@@ -1,0 +1,94 @@
+using Application.Common.Interfaces.Repositories;
+using Application.DTOs;
+using Dapper;
+using Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+
+namespace Infrastructure.Persistence.Repositories;
+
+public class PlaceRepository : IPlaceRepository
+{
+    private readonly TravelReviewDbContext _dbContext;
+
+    public PlaceRepository(TravelReviewDbContext dbContext)
+    {
+        _dbContext = dbContext;
+    }
+
+    public async Task<(IReadOnlyList<PlaceSummaryDto> Items, long TotalCount)> SearchAndFilterAsync(
+        PlaceFilterParams p,
+        CancellationToken ct = default)
+    {
+        var connection = _dbContext.Database.GetDbConnection();
+
+        var safePageIndex = p.Page < 1 ? 1 : p.Page;
+        var safePageSize = p.PageSize is < 1 or > 50 ? 12 : p.PageSize;
+        var offset = (safePageIndex - 1) * safePageSize;
+
+        string? keywordPattern = !string.IsNullOrWhiteSpace(p.Keyword) ? $"%{p.Keyword.Trim()}%" : null;
+
+        var parameters = new
+        {
+            Keyword = keywordPattern,
+            RegionId = p.RegionId > 0 ? p.RegionId : null,
+            ProvinceId = p.ProvinceId > 0 ? p.ProvinceId : null,
+            CategoryId = p.CategoryId > 0 ? p.CategoryId : null,
+            PlaceTypeId = p.PlaceTypeId > 0 ? p.PlaceTypeId : null,
+            MinPrice = p.MinPrice > 0 ? p.MinPrice : null,
+            MaxPrice = p.MaxPrice > 0 ? p.MaxPrice : null,
+            MinRating = p.MinRating > 0 ? p.MinRating : null,
+            SortBy = p.SortBy?.ToLowerInvariant(),
+            Offset = offset,
+            PageSize = safePageSize
+        };
+
+        const string sql = @"
+            SELECT COUNT(1)
+            FROM dbo.Places p
+            INNER JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id
+            INNER JOIN dbo.Categories cat ON p.CategoryId = cat.Id
+            WHERE p.Status = 2
+              AND (@Keyword IS NULL OR (p.Name LIKE @Keyword OR p.Address LIKE @Keyword OR p.Description LIKE @Keyword OR prov.Name LIKE @Keyword OR cat.Name LIKE @Keyword))
+              AND (@RegionId IS NULL OR prov.RegionId = @RegionId)
+              AND (@ProvinceId IS NULL OR p.ProvinceId = @ProvinceId)
+              AND (@CategoryId IS NULL OR p.CategoryId = @CategoryId)
+              AND (@PlaceTypeId IS NULL OR cat.PlaceTypeId = @PlaceTypeId)
+              AND (@MinPrice IS NULL OR (p.MaxPrice >= @MinPrice OR p.MinPrice >= @MinPrice))
+              AND (@MaxPrice IS NULL OR (p.MinPrice <= @MaxPrice OR p.MaxPrice <= @MaxPrice))
+              AND (@MinRating IS NULL OR p.AvgRating >= @MinRating);
+
+            SELECT p.Id, p.Name, p.Description, p.Address, p.ProvinceId, prov.Name AS ProvinceName,
+                   prov.RegionId, r.Name AS RegionName, p.CategoryId, cat.Name AS CategoryName,
+                   cat.PlaceTypeId, pt.Name AS PlaceTypeName, p.MinPrice, p.MaxPrice, p.OpeningHours,
+                   p.AvgRating, p.ReviewCount, p.Status, p.CreatedAt,
+                   (SELECT TOP 1 pm.Url FROM dbo.PlaceMedia pm WHERE pm.PlaceId = p.Id AND pm.IsVerified = 1 ORDER BY pm.DisplayOrder) AS ThumbnailUrl
+            FROM dbo.Places p
+            INNER JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id
+            INNER JOIN dbo.Regions r ON prov.RegionId = r.Id
+            INNER JOIN dbo.Categories cat ON p.CategoryId = cat.Id
+            INNER JOIN dbo.PlaceTypes pt ON cat.PlaceTypeId = pt.Id
+            WHERE p.Status = 2
+              AND (@Keyword IS NULL OR (p.Name LIKE @Keyword OR p.Address LIKE @Keyword OR p.Description LIKE @Keyword OR prov.Name LIKE @Keyword OR cat.Name LIKE @Keyword))
+              AND (@RegionId IS NULL OR prov.RegionId = @RegionId)
+              AND (@ProvinceId IS NULL OR p.ProvinceId = @ProvinceId)
+              AND (@CategoryId IS NULL OR p.CategoryId = @CategoryId)
+              AND (@PlaceTypeId IS NULL OR cat.PlaceTypeId = @PlaceTypeId)
+              AND (@MinPrice IS NULL OR (p.MaxPrice >= @MinPrice OR p.MinPrice >= @MinPrice))
+              AND (@MaxPrice IS NULL OR (p.MinPrice <= @MaxPrice OR p.MaxPrice <= @MaxPrice))
+              AND (@MinRating IS NULL OR p.AvgRating >= @MinRating)
+            ORDER BY
+                CASE WHEN @SortBy = 'rating_desc' THEN p.AvgRating END DESC,
+                CASE WHEN @SortBy = 'price_asc' THEN p.MinPrice END ASC,
+                CASE WHEN @SortBy = 'price_desc' THEN p.MaxPrice END DESC,
+                CASE WHEN @SortBy = 'reviews_desc' THEN p.ReviewCount END DESC,
+                CASE WHEN @SortBy = 'popular_desc' THEN (p.ReviewCount * 10 + CAST(p.AvgRating * 20 AS INT)) END DESC,
+                p.CreatedAt DESC
+            OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+
+        using var multi = await connection.QueryMultipleAsync(sql, parameters);
+        var totalCount = await multi.ReadFirstAsync<long>();
+        var items = (await multi.ReadAsync<PlaceSummaryDto>()).ToList();
+
+        return (items, totalCount);
+    }
+}

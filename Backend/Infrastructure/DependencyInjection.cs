@@ -1,4 +1,6 @@
 using Application.Common.Interfaces;
+using Application.Common.Interfaces.Repositories;
+using Domain.Interfaces;
 using Infrastructure.Persistence;
 using Infrastructure.Persistence.Repositories;
 using Infrastructure.Services;
@@ -12,7 +14,6 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        // 1. Database Context
         var connectionString = configuration.GetConnectionString("SqlServer")
             ?? "Server=localhost;Database=TravelReviewDB;Trusted_Connection=True;TrustServerCertificate=True";
 
@@ -27,19 +28,23 @@ public static class DependencyInjection
             });
         });
 
-        // 2. Repositories & UnitOfWork
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IUserProfileRepository, UserProfileRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-        // 3. Security, Auth & Cloud Storage Services
+        services.AddScoped<IRegionRepository, RegionRepository>();
+        services.AddScoped<IProvinceRepository, ProvinceRepository>();
+        services.AddScoped<ICategoryRepository, CategoryRepository>();
+        services.AddScoped<ICollectionRepository, CollectionRepository>();
+        services.AddScoped<IPlaceRepository, PlaceRepository>();
+
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<IGoogleAuthService, GoogleAuthService>();
         services.AddScoped<ITokenCacheService, TokenCacheService>();
+        services.AddScoped<ICacheService, CacheService>();
         services.AddScoped<IBlobService, AzureBlobService>();
 
-        // 4. Redis / Distributed Cache
         var redisConn = configuration.GetConnectionString("Redis");
         if (!string.IsNullOrWhiteSpace(redisConn))
         {
