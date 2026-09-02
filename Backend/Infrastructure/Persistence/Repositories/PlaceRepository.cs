@@ -15,6 +15,58 @@ public class PlaceRepository : IPlaceRepository
         _dbContext = dbContext;
     }
 
+    private class ProvinceLookupRaw
+    {
+        public int Id { get; set; }
+        public int RegionId { get; set; }
+        public string Name { get; set; } = string.Empty;
+    }
+
+    public async Task<PlaceFilterOptionsDto> GetFilterOptionsAsync(CancellationToken ct = default)
+    {
+        var connection = _dbContext.Database.GetDbConnection();
+
+        const string sql = @"
+            SELECT c.Id, c.Name 
+            FROM dbo.Categories c 
+            WHERE c.Status = 1 
+            ORDER BY c.Name;
+
+            SELECT r.Id, r.Name 
+            FROM dbo.Regions r 
+            WHERE r.Status = 1 
+            ORDER BY r.OrderIndex;
+
+            SELECT p.Id, p.RegionId, p.Name 
+            FROM dbo.Provinces p 
+            WHERE p.Status = 1 
+            ORDER BY p.DisplayOrder, p.Name;";
+
+        using var multi = await connection.QueryMultipleAsync(sql);
+        var categories = (await multi.ReadAsync<LookupItemDto>()).ToList();
+        var regions = (await multi.ReadAsync<LookupItemDto>()).ToList();
+        var provinces = (await multi.ReadAsync<ProvinceLookupRaw>()).ToList();
+
+        var provincesByRegion = provinces.ToLookup(p => p.RegionId);
+
+        var regionLookups = regions.Select(r => new RegionLookupDto
+        {
+            Id = r.Id,
+            Name = r.Name,
+            Provinces = provincesByRegion[r.Id].Select(p => new LookupItemDto
+            {
+                Id = p.Id,
+                Name = p.Name
+            }).ToList()
+        }).ToList();
+
+        return new PlaceFilterOptionsDto
+        {
+            Categories = categories,
+            Regions = regionLookups
+        };
+    }
+
     public async Task<(IReadOnlyList<PlaceSummaryDto> Items, long TotalCount)> SearchAndFilterAsync(
         PlaceFilterParams p,
         CancellationToken ct = default)

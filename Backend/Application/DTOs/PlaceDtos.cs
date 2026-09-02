@@ -2,6 +2,25 @@ using Domain.Enums;
 
 namespace Application.DTOs;
 
+public class LookupItemDto
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+}
+
+public class RegionLookupDto
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public IReadOnlyList<LookupItemDto> Provinces { get; set; } = [];
+}
+
+public class PlaceFilterOptionsDto
+{
+    public IReadOnlyList<LookupItemDto> Categories { get; set; } = [];
+    public IReadOnlyList<RegionLookupDto> Regions { get; set; } = [];
+}
+
 public class PlaceSummaryDto
 {
     public long Id { get; set; }
