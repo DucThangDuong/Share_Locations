@@ -4,7 +4,7 @@ import { Utensils } from 'lucide-react'
 
 export const CuisineSection: React.FC = () => {
   return (
-    <section id="amthuc" className="bg-white rounded-3xl p-6 sm:p-10 shadow-xs border border-surface-variant scroll-mt-20">
+    <section id="amthuc" className="bg-white rounded-3xl p-6 sm:p-10 border border-surface-variant scroll-mt-20">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
         <div>
           <span className="text-xs font-bold text-secondary-container uppercase tracking-widest bg-secondary-container/10 px-3.5 py-1 rounded-full inline-flex items-center gap-1.5 mb-2.5">
@@ -23,15 +23,16 @@ export const CuisineSection: React.FC = () => {
         {CUISINE_ITEMS.map((item) => (
           <div
             key={item.id}
-            className="group rounded-2xl overflow-hidden border border-surface-variant bg-surface hover-lift transition-all duration-300 flex flex-col justify-between"
+            className="group rounded-2xl overflow-hidden border border-surface-variant bg-surface transition-colors duration-300 flex flex-col justify-between"
           >
             <div className="relative aspect-4/3 overflow-hidden bg-slate-100">
               <img
                 src={item.imageUrl}
                 alt={item.name}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                className="w-full h-full object-cover"
                 loading="lazy"
               />
+              <div className="absolute inset-0 bg-white/0 group-hover:bg-white/15 transition-colors duration-300 pointer-events-none"></div>
               <span className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-xs text-white text-[11px] font-semibold px-2.5 py-1 rounded-full">
                 {item.origin}
               </span>

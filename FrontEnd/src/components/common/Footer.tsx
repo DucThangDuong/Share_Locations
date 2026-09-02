@@ -16,12 +16,12 @@ export const Footer: React.FC = () => {
   }
 
   return (
-    <footer className="bg-primary text-slate-300 pt-16 pb-10 border-t-2 border-secondary-container/80 relative overflow-hidden mt-auto">
+    <footer className="bg-primary text-slate-300 pt-16 pb-10 relative overflow-hidden mt-auto">
       <div className="absolute top-0 right-0 -mt-20 -mr-20 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
       <div className="absolute bottom-0 left-0 -mb-20 -ml-20 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-10 mb-12 border-b border-emerald-900/60 pb-12">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-10 pb-6">
           <div className="col-span-1 md:col-span-4 lg:col-span-5 space-y-4">
             <Link to="/" className="flex items-center gap-2 group">
               <span className="text-2xl font-extrabold text-white tracking-tight">
@@ -91,11 +91,6 @@ export const Footer: React.FC = () => {
               </form>
             )}
           </div>
-        </div>
-
-        <div className="flex flex-col sm:flex-row justify-between items-center text-xs text-slate-400/80 gap-3 font-normal">
-          <p>© {new Date().getFullYear()} LangThang. Nền tảng chia sẻ địa điểm du lịch & ẩm thực Việt Nam.</p>
-          <p className="text-[11px] text-slate-500">Được xây dựng với tinh thần tôn vinh văn hóa & vẻ đẹp quê hương.</p>
         </div>
       </div>
     </footer>

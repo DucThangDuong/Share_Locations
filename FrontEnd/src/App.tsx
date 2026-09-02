@@ -4,6 +4,7 @@ import { GoogleOAuthProvider } from '@react-oauth/google'
 import { AuthProvider } from '@/context/AuthContext'
 import { MainLayout } from '@/layouts/MainLayout'
 import { HomePage } from '@/pages/HomePage'
+import { ExplorePage } from '@/pages/ExplorePage'
 import { LoginPage } from '@/pages/LoginPage'
 import { RegisterPage } from '@/pages/RegisterPage'
 import { ProfilePage } from '@/pages/ProfilePage'
@@ -19,6 +20,8 @@ export const App: React.FC = () => {
           <Routes>
             <Route path="/" element={<MainLayout />}>
               <Route index element={<HomePage />} />
+              <Route path="explore" element={<ExplorePage />} />
+              <Route path="diadiem" element={<ExplorePage />} />
               <Route path="profile" element={<ProfilePage />} />
               <Route path="*" element={<NotFoundPage />} />
             </Route>

@@ -158,7 +158,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div
-        className="w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-200/80 overflow-hidden animate-in zoom-in-95 duration-150"
+        className="w-full max-w-lg bg-white rounded-3xl border border-slate-200/80 overflow-hidden animate-in zoom-in-95 duration-150"
         role="dialog"
         aria-modal="true"
       >
@@ -350,7 +350,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
             <button
               type="submit"
               disabled={loading}
-              className="px-5 py-2.5 text-xs font-semibold text-white bg-primary-container hover:bg-primary-hover disabled:opacity-70 rounded-xl shadow-xs active-press transition-all cursor-pointer flex items-center gap-2"
+              className="px-5 py-2.5 text-xs font-semibold text-white bg-primary-container hover:bg-primary-hover disabled:opacity-70 rounded-xl active-press transition-all cursor-pointer flex items-center gap-2"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
               <span>Lưu thay đổi</span>

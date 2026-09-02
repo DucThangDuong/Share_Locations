@@ -21,19 +21,20 @@ export const ItinerarySection: React.FC = () => {
         {ITINERARY_ITEMS.map((item) => (
           <div
             key={item.id}
-            className="bg-white rounded-3xl overflow-hidden border border-surface-variant shadow-xs hover-lift transition-all duration-300 flex flex-col group cursor-pointer"
+            className="bg-white rounded-3xl overflow-hidden border border-surface-variant transition-colors duration-300 flex flex-col group cursor-pointer"
           >
             <div className="relative aspect-16/10 overflow-hidden bg-slate-100">
               <img
                 src={item.imageUrl}
                 alt={item.title}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                className="w-full h-full object-cover"
                 loading="lazy"
               />
+              <div className="absolute inset-0 bg-white/0 group-hover:bg-white/15 transition-colors duration-300 pointer-events-none"></div>
               <div className="absolute top-4 left-4 bg-primary-container/90 text-white text-xs font-semibold px-3 py-1 rounded-full flex items-center gap-1 backdrop-blur-xs">
                 <Clock className="w-3 h-3" /> {item.duration}
               </div>
-              <div className="absolute top-4 right-4 bg-white/90 text-slate-800 text-xs font-bold px-2.5 py-1 rounded-full shadow-xs">
+              <div className="absolute top-4 right-4 bg-white/90 text-slate-800 text-xs font-bold px-2.5 py-1 rounded-full">
                 {item.placesCount} điểm dừng
               </div>
             </div>

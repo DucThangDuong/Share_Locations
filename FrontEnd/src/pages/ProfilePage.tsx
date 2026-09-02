@@ -63,14 +63,14 @@ export const ProfilePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50/70 pb-20">
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 glass-dark text-white text-xs font-semibold px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2 animate-in slide-in-from-bottom-5 fade-in border border-emerald-500/30">
+        <div className="fixed bottom-6 right-6 z-50 glass-dark text-white text-xs font-semibold px-4 py-3 rounded-2xl flex items-center gap-2 animate-in slide-in-from-bottom-5 fade-in border border-emerald-500/30">
           <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
           <span>{toastMessage}</span>
         </div>
       )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
-        <div className="relative rounded-3xl overflow-hidden shadow-sm bg-white border border-slate-200/80">
+        <div className="relative rounded-3xl overflow-hidden bg-white border border-slate-200/80">
           <div className="h-48 sm:h-64 lg:h-72 w-full relative bg-slate-200">
             <img
               src={currentProfile.coverUrl}
@@ -86,7 +86,7 @@ export const ProfilePage: React.FC = () => {
           <div className="px-6 sm:px-8 pb-6 pt-0 relative">
             <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-end gap-5">
-                <div className="-mt-14 sm:-mt-20 w-28 sm:w-36 h-28 sm:h-36 rounded-3xl overflow-hidden border-4 border-white shadow-xl bg-slate-200 shrink-0 ring-1 ring-slate-200/50">
+                <div className="-mt-14 sm:-mt-20 w-28 sm:w-36 h-28 sm:h-36 rounded-3xl overflow-hidden border-4 border-white bg-slate-200 shrink-0 ring-1 ring-slate-200/50">
                   <img
                     src={currentProfile.avatarUrl}
                     alt={currentProfile.fullName}
@@ -102,7 +102,7 @@ export const ProfilePage: React.FC = () => {
                     <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 leading-tight tracking-tight">
                       {currentProfile.fullName}
                     </h1>
-                    <span className="bg-emerald-100/90 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 shadow-2xs">
+                    <span className="bg-emerald-100/90 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
                       <Shield className="w-3.5 h-3.5 text-emerald-600" /> {currentProfile.rankLevel}
                     </span>
                   </div>
@@ -115,14 +115,14 @@ export const ProfilePage: React.FC = () => {
               <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-end w-full sm:w-auto sm:pb-1 pt-2">
                 <button
                   onClick={() => setIsEditModalOpen(true)}
-                  className="flex-1 sm:flex-initial px-4 py-2.5 bg-slate-100 hover:bg-slate-200/70 text-slate-700 font-semibold text-xs rounded-xl transition-all flex items-center justify-center gap-2 active-press cursor-pointer shadow-2xs"
+                  className="flex-1 sm:flex-initial px-4 py-2.5 bg-slate-100 hover:bg-slate-200/70 text-slate-700 font-semibold text-xs rounded-xl transition-all flex items-center justify-center gap-2 active-press cursor-pointer"
                 >
                   <Edit3 className="w-3.5 h-3.5" />
                   <span>Sửa hồ sơ</span>
                 </button>
                 <button
                   onClick={() => setIsPasswordModalOpen(true)}
-                  className="flex-1 sm:flex-initial px-4 py-2.5 bg-primary-container hover:bg-primary-hover text-white font-semibold text-xs rounded-xl shadow-xs active-press transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  className="flex-1 sm:flex-initial px-4 py-2.5 bg-primary-container hover:bg-primary-hover text-white font-semibold text-xs rounded-xl active-press transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <Key className="w-3.5 h-3.5" />
                   <span>Đổi mật khẩu</span>
@@ -136,7 +136,7 @@ export const ProfilePage: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-4 space-y-6">
-            <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-4">
+            <div className="bg-white rounded-3xl p-6 border border-slate-200/80 space-y-4">
               <h2 className="text-base font-bold text-slate-900 border-b border-slate-100 pb-3 flex items-center gap-2">
                 <UserCheck className="w-4 h-4 text-emerald-700" />
                 <span>Thông tin cá nhân</span>
@@ -164,7 +164,7 @@ export const ProfilePage: React.FC = () => {
               </ul>
             </div>
 
-            <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-4">
+            <div className="bg-white rounded-3xl p-6 border border-slate-200/80 space-y-4">
               <h2 className="text-base font-bold text-slate-900 border-b border-slate-100 pb-3 flex items-center gap-2">
                 <Award className="w-5 h-5 text-secondary-container" />
                 <span>Điểm cống hiến</span>
@@ -188,12 +188,12 @@ export const ProfilePage: React.FC = () => {
           </div>
 
           <div className="lg:col-span-8 space-y-6">
-            <div className="bg-white rounded-3xl p-2 border border-slate-200/80 shadow-xs flex flex-wrap gap-1.5">
+            <div className="bg-white rounded-3xl p-2 border border-slate-200/80 flex flex-wrap gap-1.5">
               <button
                 onClick={() => setActiveTab('posts')}
                 className={`flex-1 min-w-[120px] py-2.5 px-4 rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
                   activeTab === 'posts'
-                    ? 'bg-primary-container text-white shadow-xs'
+                    ? 'bg-primary-container text-white'
                     : 'text-slate-600 hover:bg-slate-100/80'
                 }`}
               >
@@ -205,7 +205,7 @@ export const ProfilePage: React.FC = () => {
                 onClick={() => setActiveTab('itineraries')}
                 className={`flex-1 min-w-[120px] py-2.5 px-4 rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
                   activeTab === 'itineraries'
-                    ? 'bg-primary-container text-white shadow-xs'
+                    ? 'bg-primary-container text-white'
                     : 'text-slate-600 hover:bg-slate-100/80'
                 }`}
               >
@@ -217,7 +217,7 @@ export const ProfilePage: React.FC = () => {
                 onClick={() => setActiveTab('saved')}
                 className={`flex-1 min-w-[120px] py-2.5 px-4 rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
                   activeTab === 'saved'
-                    ? 'bg-primary-container text-white shadow-xs'
+                    ? 'bg-primary-container text-white'
                     : 'text-slate-600 hover:bg-slate-100/80'
                 }`}
               >
@@ -229,7 +229,7 @@ export const ProfilePage: React.FC = () => {
                 onClick={() => setActiveTab('suggested')}
                 className={`flex-1 min-w-[120px] py-2.5 px-4 rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
                   activeTab === 'suggested'
-                    ? 'bg-primary-container text-white shadow-xs'
+                    ? 'bg-primary-container text-white'
                     : 'text-slate-600 hover:bg-slate-100/80'
                 }`}
               >
@@ -240,7 +240,7 @@ export const ProfilePage: React.FC = () => {
 
             <div className="space-y-4">
               {activeTab === 'posts' && (
-                <div className="bg-white rounded-3xl p-14 border border-slate-200/80 shadow-xs text-center flex flex-col items-center justify-center space-y-3 animate-in fade-in">
+                <div className="bg-white rounded-3xl p-14 border border-slate-200/80 text-center flex flex-col items-center justify-center space-y-3 animate-in fade-in">
                   <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
                     <FileText className="w-8 h-8" />
                   </div>
@@ -254,7 +254,7 @@ export const ProfilePage: React.FC = () => {
               )}
 
               {activeTab === 'itineraries' && (
-                <div className="bg-white rounded-3xl p-14 border border-slate-200/80 shadow-xs text-center flex flex-col items-center justify-center space-y-3 animate-in fade-in">
+                <div className="bg-white rounded-3xl p-14 border border-slate-200/80 text-center flex flex-col items-center justify-center space-y-3 animate-in fade-in">
                   <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center">
                     <Compass className="w-8 h-8" />
                   </div>
@@ -268,7 +268,7 @@ export const ProfilePage: React.FC = () => {
               )}
 
               {activeTab === 'saved' && (
-                <div className="bg-white rounded-3xl p-14 border border-slate-200/80 shadow-xs text-center flex flex-col items-center justify-center space-y-3 animate-in fade-in">
+                <div className="bg-white rounded-3xl p-14 border border-slate-200/80 text-center flex flex-col items-center justify-center space-y-3 animate-in fade-in">
                   <div className="w-16 h-16 rounded-2xl bg-slate-100 text-slate-600 flex items-center justify-center">
                     <Bookmark className="w-8 h-8" />
                   </div>
@@ -282,7 +282,7 @@ export const ProfilePage: React.FC = () => {
               )}
 
               {activeTab === 'suggested' && (
-                <div className="bg-white rounded-3xl p-14 border border-slate-200/80 shadow-xs text-center flex flex-col items-center justify-center space-y-3 animate-in fade-in">
+                <div className="bg-white rounded-3xl p-14 border border-slate-200/80 text-center flex flex-col items-center justify-center space-y-3 animate-in fade-in">
                   <div className="w-16 h-16 rounded-2xl bg-blue-50 text-blue-700 flex items-center justify-center">
                     <Inbox className="w-8 h-8" />
                   </div>

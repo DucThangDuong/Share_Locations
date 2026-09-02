@@ -1,16 +1,31 @@
+export interface ProvinceSummaryDto {
+  id: number
+  name: string
+  imageUrl?: string | null
+  featured: boolean
+  placeCount: number
+}
+
 export interface RegionDto {
   id: number
   name: string
-  code: 'north' | 'central' | 'south' | string
-  description?: string
+  tagline?: string | null
+  description?: string | null
+  imageUrl?: string | null
+  orderIndex: number
+  provinceCount: number
+  provinces?: ProvinceSummaryDto[] | null
 }
 
 export interface ProvinceDto {
   id: number
-  name: string
-  code: string
   regionId: number
-  regionName?: string
-  imageUrl?: string
-  placeCount?: number
+  regionName: string
+  name: string
+  tagline?: string | null
+  description?: string | null
+  imageUrl?: string | null
+  featured: boolean
+  displayOrder: number
+  placeCount: number
 }
