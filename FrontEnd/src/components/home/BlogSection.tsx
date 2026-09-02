@@ -26,16 +26,17 @@ export const BlogSection: React.FC = () => {
         {BLOG_ITEMS.map((item) => (
           <article
             key={item.id}
-            className="bg-white rounded-3xl overflow-hidden border border-surface-variant shadow-xs hover-lift transition-all duration-300 flex flex-col justify-between group cursor-pointer"
+            className="bg-white rounded-3xl overflow-hidden border border-surface-variant transition-colors duration-300 flex flex-col justify-between group cursor-pointer"
           >
             <div className="relative aspect-16/10 overflow-hidden bg-slate-100">
               <img
                 src={item.imageUrl}
                 alt={item.title}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                className="w-full h-full object-cover"
                 loading="lazy"
               />
-              <span className="absolute top-4 left-4 bg-white/90 backdrop-blur-xs text-slate-800 text-[11px] font-bold px-2.5 py-1 rounded-full shadow-xs">
+              <div className="absolute inset-0 bg-white/0 group-hover:bg-white/15 transition-colors duration-300 pointer-events-none"></div>
+              <span className="absolute top-4 left-4 bg-white/90 backdrop-blur-xs text-slate-800 text-[11px] font-bold px-2.5 py-1 rounded-full">
                 {item.category}
               </span>
             </div>

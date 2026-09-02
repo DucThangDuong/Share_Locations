@@ -51,7 +51,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div
-        className="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-200/80 overflow-hidden animate-in zoom-in-95 duration-150"
+        className="w-full max-w-md bg-white rounded-3xl border border-slate-200/80 overflow-hidden animate-in zoom-in-95 duration-150"
         role="dialog"
         aria-modal="true"
       >
@@ -174,7 +174,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
             </button>
             <button
               type="submit"
-              className="px-5 py-2.5 text-xs font-semibold text-white bg-primary-container hover:bg-primary-hover rounded-xl shadow-xs active-press transition-all cursor-pointer flex items-center gap-1.5"
+              className="px-5 py-2.5 text-xs font-semibold text-white bg-primary-container hover:bg-primary-hover rounded-xl active-press transition-all cursor-pointer flex items-center gap-1.5"
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
               <span>Cập nhật mật khẩu</span>

@@ -84,7 +84,7 @@ export const RegisterPage: React.FC = () => {
         backgroundImage: `linear-gradient(rgba(6, 40, 30, 0.45), rgba(6, 40, 30, 0.7)), url('https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=1920&auto=format&fit=crop')`
       }}
     >
-      <div className="w-full max-w-[480px] glass-card p-8 sm:p-10 rounded-3xl shadow-2xl animate-in fade-in zoom-in-95 duration-200 relative z-10 border border-white/70">
+      <div className="w-full max-w-[480px] glass-card p-8 sm:p-10 rounded-3xl animate-in fade-in zoom-in-95 duration-200 relative z-10 border border-white/70">
         <div className="text-center mb-6 space-y-2">
           <Link
             to="/"
@@ -130,7 +130,7 @@ export const RegisterPage: React.FC = () => {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="Nguyễn Văn A"
-                className="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-200 bg-white/95 text-slate-900 text-xs sm:text-sm placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-primary-container/20 focus:border-primary-container focus:bg-white transition-all shadow-2xs"
+                className="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-200 bg-white/95 text-slate-900 text-xs sm:text-sm placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-primary-container/20 focus:border-primary-container focus:bg-white transition-all"
               />
               <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
             </div>
@@ -149,7 +149,7 @@ export const RegisterPage: React.FC = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@example.com"
-                className="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-200 bg-white/95 text-slate-900 text-xs sm:text-sm placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-primary-container/20 focus:border-primary-container focus:bg-white transition-all shadow-2xs"
+                className="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-200 bg-white/95 text-slate-900 text-xs sm:text-sm placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-primary-container/20 focus:border-primary-container focus:bg-white transition-all"
               />
               <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
             </div>
@@ -170,7 +170,7 @@ export const RegisterPage: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="≥ 8 ký tự (hoa, thường, số, ký tự đb)"
-                  className="w-full h-11 pl-9 pr-9 rounded-xl border border-slate-200 bg-white/95 text-slate-900 text-xs focus:outline-hidden focus:ring-2 focus:ring-primary-container/20 focus:border-primary-container focus:bg-white transition-all shadow-2xs"
+                  className="w-full h-11 pl-9 pr-9 rounded-xl border border-slate-200 bg-white/95 text-slate-900 text-xs focus:outline-hidden focus:ring-2 focus:ring-primary-container/20 focus:border-primary-container focus:bg-white transition-all"
                 />
                 <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3.5" />
                 <button
@@ -198,7 +198,7 @@ export const RegisterPage: React.FC = () => {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Khớp mật khẩu"
-                  className="w-full h-11 pl-9 pr-9 rounded-xl border border-slate-200 bg-white/95 text-slate-900 text-xs focus:outline-hidden focus:ring-2 focus:ring-primary-container/20 focus:border-primary-container focus:bg-white transition-all shadow-2xs"
+                  className="w-full h-11 pl-9 pr-9 rounded-xl border border-slate-200 bg-white/95 text-slate-900 text-xs focus:outline-hidden focus:ring-2 focus:ring-primary-container/20 focus:border-primary-container focus:bg-white transition-all"
                 />
                 <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3.5" />
                 <button
@@ -231,7 +231,7 @@ export const RegisterPage: React.FC = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full h-12 bg-gradient-to-r from-primary-container to-emerald-700 hover:from-primary-hover hover:to-emerald-800 disabled:opacity-70 text-white rounded-xl text-sm font-bold shadow-md hover:shadow-lg active-press transition-all flex items-center justify-center gap-2 cursor-pointer mt-3"
+            className="w-full h-12 bg-gradient-to-r from-primary-container to-emerald-700 hover:from-primary-hover hover:to-emerald-800 disabled:opacity-70 text-white rounded-xl text-sm font-bold active-press transition-all flex items-center justify-center gap-2 cursor-pointer mt-3"
           >
             {loading ? (
               <Loader2 className="w-5 h-5 animate-spin" />

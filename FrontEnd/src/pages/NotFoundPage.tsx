@@ -12,7 +12,7 @@ export const NotFoundPage: React.FC = () => {
       <p className="text-slate-600 text-sm mb-6">Trang bạn tìm kiếm không tồn tại.</p>
       <Link
         to="/"
-        className="px-5 py-2.5 bg-primary-container hover:bg-primary-hover text-white rounded-xl text-xs font-semibold shadow-xs flex items-center gap-2 transition-all"
+        className="px-5 py-2.5 bg-primary-container hover:bg-primary-hover text-white rounded-xl text-xs font-semibold flex items-center gap-2 transition-all"
       >
         <Home className="w-4 h-4" /> Về trang chủ
       </Link>

@@ -1,5 +1,85 @@
 export type RegionType = 'north' | 'central' | 'south'
 
+export interface PlaceTypeDto {
+  id: number
+  name: string
+  iconClass?: string | null
+}
+
+export interface LookupItemDto {
+  id: number
+  name: string
+}
+
+export interface RegionLookupDto {
+  id: number
+  name: string
+  provinces: LookupItemDto[]
+}
+
+export interface PlaceFilterOptionsDto {
+  categories: LookupItemDto[]
+  regions: RegionLookupDto[]
+}
+
+export interface CategoryDto {
+  id: number
+  placeTypeId: number
+  placeTypeName: string
+  name: string
+  iconClass?: string | null
+  placeCount: number
+}
+
+export interface CollectionDto {
+  id: number
+  title: string
+  description?: string | null
+  isFeatured: boolean
+  displayOrder: number
+  coverUrl?: string | null
+  placeCount: number
+  places?: PlaceSummaryDto[] | null
+}
+
+export interface PlaceSummaryDto {
+  id: number
+  name: string
+  description?: string | null
+  address: string
+  provinceId: number
+  provinceName: string
+  regionId: number
+  regionName: string
+  categoryId: number
+  categoryName: string
+  placeTypeId: number
+  placeTypeName: string
+  minPrice?: number | null
+  maxPrice?: number | null
+  openingHours?: string | null
+  avgRating: number
+  reviewCount: number
+  thumbnailUrl?: string | null
+  mediaUrls?: string[] | null
+  status: number
+  createdAt: string
+}
+
+export interface PlaceFilterParams {
+  keyword?: string
+  regionId?: number
+  provinceId?: number
+  categoryId?: number
+  placeTypeId?: number
+  minPrice?: number
+  maxPrice?: number
+  minRating?: number
+  sortBy?: string
+  page?: number
+  pageSize?: number
+}
+
 export interface PlaceMediaDto {
   id: number
   mediaUrl: string
@@ -7,30 +87,11 @@ export interface PlaceMediaDto {
   isCover?: boolean
 }
 
-export interface PlaceDto {
-  id: number | string
-  title: string
-  slug: string
-  description: string
-  address: string
-  provinceId?: number
-  provinceName?: string
-  region: RegionType
-  categoryId?: number
-  categoryName?: string
-  rating: number
-  reviewCount: number
-  thumbnailUrl: string
-  mediaList?: PlaceMediaDto[]
-  isFeatured?: boolean
-  createdAt?: string
-}
-
 export interface DestinationItem {
   id: string | number
   name: string
   province: string
-  region: RegionType
+  region: RegionType | string
   regionName: string
   imageUrl: string
   tag?: string
