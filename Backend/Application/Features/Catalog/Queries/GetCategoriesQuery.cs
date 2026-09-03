@@ -6,7 +6,7 @@ using MediatR;
 
 namespace Application.Features.Catalog.Queries;
 
-public record GetCategoriesQuery() : IRequest<Result<IReadOnlyList<CategoryDto>>>;
+public record GetCategoriesQuery(int? PlaceTypeId = null, int PlacesPerCategory = 6) : IRequest<Result<IReadOnlyList<CategoryDto>>>;
 
 public class GetCategoriesQueryHandler : IRequestHandler<GetCategoriesQuery, Result<IReadOnlyList<CategoryDto>>>
 {
@@ -21,7 +21,9 @@ public class GetCategoriesQueryHandler : IRequestHandler<GetCategoriesQuery, Res
 
     public async Task<Result<IReadOnlyList<CategoryDto>>> Handle(GetCategoriesQuery request, CancellationToken ct)
     {
-        const string cacheKey = "catalog:categories:all";
+        var cacheKey = request.PlaceTypeId.HasValue 
+            ? $"catalog:categories:type:{request.PlaceTypeId.Value}:limit:{request.PlacesPerCategory}" 
+            : $"catalog:categories:all:limit:{request.PlacesPerCategory}";
 
         var cached = await _cacheService.GetAsync<IReadOnlyList<CategoryDto>>(cacheKey, ct);
         if (cached != null && cached.Count > 0)
@@ -29,7 +31,7 @@ public class GetCategoriesQueryHandler : IRequestHandler<GetCategoriesQuery, Res
             return Result<IReadOnlyList<CategoryDto>>.Success(cached);
         }
 
-        var categories = await _categoryRepository.GetAllAsync(ct);
+        var categories = await _categoryRepository.GetAllAsync(request.PlaceTypeId, request.PlacesPerCategory, ct);
 
         if (categories.Count > 0)
         {

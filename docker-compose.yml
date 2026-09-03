@@ -46,10 +46,15 @@ services:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
       - ConnectionStrings__SqlServer=Server=sqlserver,1433;Database=TravelReviewDB;User Id=sa;Password=${MSSQL_SA_PASSWORD:-ChangeThisPassword123!};TrustServerCertificate=True;
       - ConnectionStrings__Redis=redis:6379
+      - ConnectionStrings__AzureStorageAccount=${AZURE_STORAGE_CONNECTION_STRING:-}
       - Jwt__SecretKey=${JWT_SECRET_KEY:?CRITICAL: JWT_SECRET_KEY must be configured in .env}
       - Jwt__Issuer=${JWT_ISSUER:-TravelReviewBackend}
       - Jwt__Audience=${JWT_AUDIENCE:-TravelReviewClient}
       - Jwt__ExpireMinutes=${JWT_EXPIRE_MINUTES:-1440}
+      - Authentication__Google__ClientId=${GOOGLE_CLIENT_ID:-}
+      - Cors__AllowedOrigins__0=http://localhost:5173
+      - Cors__AllowedOrigins__1=http://localhost:5177
+      - Cors__AllowedOrigins__2=http://localhost:3000
     depends_on:
       sqlserver:
         condition: service_healthy
@@ -58,7 +63,7 @@ services:
     networks:
       - travel_network
 
-  # 4. React + Vite Frontend (Chạy trực tiếp Vite dev server với Hot Reload)
+  # 4. React + Vite Frontend
   frontend:
     build:
       context: ./FrontEnd
@@ -72,7 +77,7 @@ services:
       - /app/node_modules
     environment:
       - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://localhost:5000}
-      - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID:-223812972896-benbnh6naphnp32srn471kru8dbldf93.apps.googleusercontent.com}
+      - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID:-}
     depends_on:
       - backend
     networks:
