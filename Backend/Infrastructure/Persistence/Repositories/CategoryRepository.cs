@@ -21,9 +21,15 @@ public class CategoryRepository : ICategoryRepository
 
         const string sql = @"
             SELECT c.Id, c.PlaceTypeId, pt.Name AS PlaceTypeName, c.Name, c.IconClass,
-                   (SELECT COUNT(1) FROM dbo.Places pl WHERE pl.CategoryId = c.Id AND pl.Status = 2) AS PlaceCount
+                   COALESCE(counts.PlaceCount, 0) AS PlaceCount
             FROM dbo.Categories c
             INNER JOIN dbo.PlaceTypes pt ON c.PlaceTypeId = pt.Id
+            LEFT JOIN (
+                SELECT pl.CategoryId, COUNT(1) AS PlaceCount
+                FROM dbo.Places pl
+                WHERE pl.Status = 2
+                GROUP BY pl.CategoryId
+            ) counts ON counts.CategoryId = c.Id
             WHERE c.Status = 1
             ORDER BY c.Name;";
 

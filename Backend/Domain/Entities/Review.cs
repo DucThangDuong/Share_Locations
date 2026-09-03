@@ -26,4 +26,44 @@ public class Review
 
     private readonly List<ReviewReport> _reports = new();
     public virtual IReadOnlyCollection<ReviewReport> Reports => _reports.AsReadOnly();
+
+    protected Review() { }
+
+    public Review(long placeId, long userId, byte rating, string? content = null, DateOnly? visitDate = null)
+    {
+        if (rating < 1 || rating > 5)
+            throw new ArgumentOutOfRangeException(nameof(rating), "Điểm đánh giá phải từ 1 đến 5.");
+
+        PlaceId = placeId;
+        UserId = userId;
+        Rating = rating;
+        Content = content;
+        VisitDate = visitDate;
+        Status = ReviewStatus.Active;
+        CreatedAt = DateTime.UtcNow;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void Update(byte rating, string? content, DateOnly? visitDate)
+    {
+        if (rating < 1 || rating > 5)
+            throw new ArgumentOutOfRangeException(nameof(rating), "Điểm đánh giá phải từ 1 đến 5.");
+
+        Rating = rating;
+        Content = content;
+        VisitDate = visitDate;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void Hide()
+    {
+        Status = ReviewStatus.Hidden;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void Restore()
+    {
+        Status = ReviewStatus.Active;
+        UpdatedAt = DateTime.UtcNow;
+    }
 }

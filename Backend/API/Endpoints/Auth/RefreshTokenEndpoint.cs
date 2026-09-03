@@ -34,6 +34,8 @@ public class RefreshTokenEndpoint : EndpointWithoutRequest
                 SameSite = SameSiteMode.None,
                 IsEssential = true
             });
+            result.Data.RefreshTokenExpiryTime = DateTime.UtcNow;
+            result.Data.RefreshToken = string.Empty;
         }
 
         await this.SendApiResponseAsync(result, ct);

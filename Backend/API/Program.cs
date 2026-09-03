@@ -6,6 +6,7 @@ using FastEndpoints;
 using FastEndpoints.Swagger;
 using Infrastructure;
 using Microsoft.AspNetCore.Http;
+using Serilog;
 
 namespace API;
 
@@ -15,6 +16,12 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
+        builder.Host.UseSerilog((context, services, configuration) => configuration
+            .ReadFrom.Configuration(context.Configuration)
+            .ReadFrom.Services(services)
+            .Enrich.FromLogContext()
+            .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}"));
+
         builder.WebHost.ConfigureKestrel(serverOptions =>
         {
             serverOptions.AddServerHeader = false;
@@ -22,17 +29,20 @@ public class Program
 
         builder.Services.AddApplication();
         builder.Services.AddInfrastructure(builder.Configuration);
+        builder.Services.AddAppHealthChecks(builder.Configuration);
 
         builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
         builder.Services.AddProblemDetails();
 
         builder.Services.AddAppJwtAuthentication(builder.Configuration);
         builder.Services.AddAppRateLimiting();
-        builder.Services.AddAppCors();
+        builder.Services.AddAppCors(builder.Configuration);
         builder.Services.AddAppSwagger();
         builder.Services.AddFastEndpoints();
 
         var app = builder.Build();
+
+        app.UseSerilogRequestLogging();
 
         await app.InitializeDatabaseAsync();
 
@@ -40,6 +50,8 @@ public class Program
 
         app.UseHttpsRedirection();
         app.UseCors(CorsConfig.PolicyName);
+
+        app.MapAppHealthChecks();
 
         app.UseRateLimiter();
 

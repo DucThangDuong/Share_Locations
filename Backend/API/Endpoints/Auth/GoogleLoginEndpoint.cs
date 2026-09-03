@@ -30,7 +30,7 @@ public class GoogleLoginEndpoint : Endpoint<GoogleLoginRequest, ApiSuccessRespon
                 HttpOnly = true,
                 Expires = result.Data.RefreshTokenExpiryTime,
                 Secure = true,
-                SameSite = SameSiteMode.Lax,
+                SameSite = SameSiteMode.None,
                 IsEssential = true
             });
             result.Data.RefreshTokenExpiryTime = DateTime.UtcNow;

@@ -15,7 +15,7 @@ public static class DependencyInjection
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         var connectionString = configuration.GetConnectionString("SqlServer")
-            ?? "Server=localhost;Database=TravelReviewDB;Trusted_Connection=True;TrustServerCertificate=True";
+            ?? throw new InvalidOperationException("CRITICAL: ConnectionStrings:SqlServer is not configured!");
 
         services.AddDbContext<TravelReviewDbContext>(options =>
         {
