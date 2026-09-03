@@ -20,7 +20,7 @@ export const ExploreToolbar: React.FC<ExploreToolbarProps> = ({
   const [sortOpen, setSortOpen] = useState(false)
 
   return (
-    <div className="flex items-center justify-between gap-4 p-3.5 bg-white rounded-2xl border border-slate-200/70">
+    <div className="flex items-center justify-between gap-4 p-3.5 bg-white rounded-lg border border-slate-200/70">
       <div className="text-xs text-slate-500 font-medium">
         Tìm thấy <strong className="text-slate-900 font-bold">{totalElements}</strong> địa điểm
       </div>
@@ -30,14 +30,14 @@ export const ExploreToolbar: React.FC<ExploreToolbarProps> = ({
           <button
             onClick={() => setSortOpen(!sortOpen)}
             aria-expanded={sortOpen}
-            className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 cursor-pointer min-h-[36px]"
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200 cursor-pointer min-h-[36px]"
           >
             <span>{SORT_OPTIONS.find((s) => s.value === sortBy)?.label || 'Được đề xuất hàng đầu'}</span>
             <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
           </button>
 
           {sortOpen && (
-            <div className="absolute right-0 top-full mt-1.5 w-56 bg-white rounded-2xl border border-slate-100 py-1.5 z-30 animate-in zoom-in-95">
+            <div className="absolute right-0 top-full mt-1.5 w-56 bg-white rounded-lg border border-slate-100 py-1.5 z-30 animate-in zoom-in-95">
               {SORT_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
@@ -58,7 +58,7 @@ export const ExploreToolbar: React.FC<ExploreToolbarProps> = ({
           )}
         </div>
 
-        <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200">
+        <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200">
           <button
             onClick={() => onViewModeChange('grid')}
             aria-label="Chế độ xem dạng lưới"

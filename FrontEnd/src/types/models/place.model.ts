@@ -31,6 +31,15 @@ export interface CategoryDto {
   placeCount: number
 }
 
+export interface PlaceCardDto {
+  id: number
+  name: string
+  categoryName?: string | null
+  avgRating: number
+  reviewCount: number
+  mediaUrls: string[]
+}
+
 export interface CollectionDto {
   id: number
   title: string
@@ -39,7 +48,7 @@ export interface CollectionDto {
   displayOrder: number
   coverUrl?: string | null
   placeCount: number
-  places?: PlaceSummaryDto[] | null
+  places?: PlaceCardDto[] | null
 }
 
 export interface PlaceSummaryDto {

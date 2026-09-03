@@ -46,7 +46,7 @@ export const HeroBanner: React.FC = () => {
   ]
 
   return (
-    <header className="relative w-full overflow-hidden mx-auto max-w-7xl md:mt-4 md:rounded-3xl border border-slate-200/50">
+    <header className="relative w-full overflow-hidden mx-auto max-w-7xl md:mt-4 md:rounded-lg border border-slate-200/50">
       <div className="relative min-h-[70vh] md:min-h-[80vh] flex flex-col justify-between p-6 sm:p-12 lg:p-16">
         <img
           alt="Việt Nam ngút ngàn"
@@ -68,7 +68,7 @@ export const HeroBanner: React.FC = () => {
           <div className="pt-2 max-w-3xl">
             <form
               onSubmit={handleSearchSubmit}
-              className="bg-white/95 backdrop-blur-md p-2.5 sm:p-3 rounded-2xl sm:rounded-full flex flex-col sm:flex-row gap-2 border border-white/80"
+              className="bg-white/95 backdrop-blur-md p-2.5 sm:p-3 rounded-lg sm:rounded-full flex flex-col sm:flex-row gap-2 border border-white/80"
             >
               <div className="flex-1 flex items-center pl-3">
                 <Search className="w-4 h-4 text-emerald-700 shrink-0" />
@@ -119,7 +119,7 @@ export const HeroBanner: React.FC = () => {
 
               <button
                 type="submit"
-                className="px-6 py-3 bg-gradient-to-r from-primary to-emerald-700 hover:from-primary-hover hover:to-emerald-800 text-white text-xs sm:text-sm font-bold rounded-xl sm:rounded-full active-press transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer min-h-[44px]"
+                className="px-6 py-3 bg-gradient-to-r from-primary to-emerald-700 hover:from-primary-hover hover:to-emerald-800 text-white text-xs sm:text-sm font-bold rounded-lg sm:rounded-full active-press transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer min-h-[44px]"
               >
                 <Compass className="w-4 h-4" />
                 <span>Khám phá ngay</span>

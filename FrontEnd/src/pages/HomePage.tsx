@@ -1,21 +1,17 @@
 import React from 'react'
 import { HeroBanner } from '@/components/home/HeroBanner'
-import { CategoryQuickNav } from '@/components/home/CategoryQuickNav'
-import { FeaturedCollectionsSection } from '@/components/home/FeaturedCollectionsSection'
-import { RegionsSection } from '@/components/home/RegionsSection'
-import { CuisineSection } from '@/components/home/CuisineSection'
+import { PlaceTypeQuickNav } from '@/components/home/PlaceTypeQuickNav'
+import { HomeFeaturedInterleaved } from '@/components/home/HomeFeaturedInterleaved'
 import { TopRatedPlacesSection } from '@/components/home/TopRatedPlacesSection'
 
 export const HomePage: React.FC = () => {
   return (
     <div className="space-y-4 pb-20">
       <HeroBanner />
-      <CategoryQuickNav />
-      <FeaturedCollectionsSection />
+      <PlaceTypeQuickNav />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-16">
-        <RegionsSection />
-        <CuisineSection />
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-20">
+        <HomeFeaturedInterleaved />
         <TopRatedPlacesSection />
       </main>
     </div>
