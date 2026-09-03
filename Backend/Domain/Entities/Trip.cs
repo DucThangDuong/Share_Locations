@@ -24,4 +24,63 @@ public class Trip
 
     private readonly List<Message> _messages = new();
     public virtual IReadOnlyCollection<Message> Messages => _messages.AsReadOnly();
+
+    protected Trip() { }
+
+    public Trip(long userId, string title, string? description = null, TripPrivacy privacy = TripPrivacy.Private, DateOnly? startDate = null, DateOnly? endDate = null)
+    {
+        if (string.IsNullOrWhiteSpace(title))
+            throw new ArgumentException("Tiêu đề chuyến đi không được để trống.", nameof(title));
+        if (startDate.HasValue && endDate.HasValue && startDate > endDate)
+            throw new ArgumentException("Ngày bắt đầu không được sau ngày kết thúc.");
+
+        UserId = userId;
+        Title = title.Trim();
+        Description = description;
+        Privacy = privacy;
+        StartDate = startDate;
+        EndDate = endDate;
+        Status = TripStatus.Planning;
+        CreatedAt = DateTime.UtcNow;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void UpdateInfo(string title, string? description, string? coverImageUrl)
+    {
+        if (string.IsNullOrWhiteSpace(title))
+            throw new ArgumentException("Tiêu đề chuyến đi không được để trống.", nameof(title));
+
+        Title = title.Trim();
+        Description = description;
+        CoverImageUrl = coverImageUrl;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void UpdateDates(DateOnly? startDate, DateOnly? endDate)
+    {
+        if (startDate.HasValue && endDate.HasValue && startDate > endDate)
+            throw new ArgumentException("Ngày bắt đầu không được sau ngày kết thúc.");
+
+        StartDate = startDate;
+        EndDate = endDate;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void ChangePrivacy(TripPrivacy privacy)
+    {
+        Privacy = privacy;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void Start()
+    {
+        Status = TripStatus.Ongoing;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void Complete()
+    {
+        Status = TripStatus.Completed;
+        UpdatedAt = DateTime.UtcNow;
+    }
 }

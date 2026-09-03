@@ -68,6 +68,8 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthToke
                 Email = user.Email,
                 FullName = user.Profile?.FullName ?? user.Email,
                 AvatarUrl = user.Profile?.AvatarUrl,
+                CoverUrl = user.Profile?.CoverUrl,
+                Bio = user.Profile?.Bio,
                 Phone = user.Profile?.Phone,
                 Role = user.Role,
                 Status = user.Status,

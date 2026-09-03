@@ -95,12 +95,18 @@ public class PlaceRepository : IPlaceRepository
         };
 
         const string sql = @"
-            SELECT COUNT(1)
+            SELECT p.Id, p.Name, p.Description, p.Address, p.ProvinceId, prov.Name AS ProvinceName,
+                   prov.RegionId, r.Name AS RegionName, p.CategoryId, cat.Name AS CategoryName,
+                   cat.PlaceTypeId, pt.Name AS PlaceTypeName, p.MinPrice, p.MaxPrice, p.OpeningHours,
+                   p.AvgRating, p.ReviewCount, p.Status, p.CreatedAt
+            INTO #FilteredPlaces
             FROM dbo.Places p
             INNER JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id
+            INNER JOIN dbo.Regions r ON prov.RegionId = r.Id
             INNER JOIN dbo.Categories cat ON p.CategoryId = cat.Id
+            INNER JOIN dbo.PlaceTypes pt ON cat.PlaceTypeId = pt.Id
             WHERE p.Status = 2
-              AND (@Keyword IS NULL OR (p.Name LIKE @Keyword OR p.Address LIKE @Keyword OR p.Description LIKE @Keyword OR prov.Name LIKE @Keyword OR cat.Name LIKE @Keyword))
+              AND (@Keyword IS NULL OR (p.Name LIKE @Keyword OR p.Address LIKE @Keyword OR prov.Name LIKE @Keyword OR cat.Name LIKE @Keyword))
               AND (@RegionId IS NULL OR prov.RegionId = @RegionId)
               AND (@ProvinceId IS NULL OR p.ProvinceId = @ProvinceId)
               AND (@CategoryId IS NULL OR p.CategoryId = @CategoryId)
@@ -109,33 +115,29 @@ public class PlaceRepository : IPlaceRepository
               AND (@MaxPrice IS NULL OR (p.MinPrice <= @MaxPrice OR p.MaxPrice <= @MaxPrice))
               AND (@MinRating IS NULL OR p.AvgRating >= @MinRating);
 
-            SELECT p.Id, p.Name, p.Description, p.Address, p.ProvinceId, prov.Name AS ProvinceName,
-                   prov.RegionId, r.Name AS RegionName, p.CategoryId, cat.Name AS CategoryName,
-                   cat.PlaceTypeId, pt.Name AS PlaceTypeName, p.MinPrice, p.MaxPrice, p.OpeningHours,
-                   p.AvgRating, p.ReviewCount, p.Status, p.CreatedAt,
-                   (SELECT TOP 1 pm.Url FROM dbo.PlaceMedia pm WHERE pm.PlaceId = p.Id AND pm.IsVerified = 1 ORDER BY pm.DisplayOrder) AS ThumbnailUrl
-            FROM dbo.Places p
-            INNER JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id
-            INNER JOIN dbo.Regions r ON prov.RegionId = r.Id
-            INNER JOIN dbo.Categories cat ON p.CategoryId = cat.Id
-            INNER JOIN dbo.PlaceTypes pt ON cat.PlaceTypeId = pt.Id
-            WHERE p.Status = 2
-              AND (@Keyword IS NULL OR (p.Name LIKE @Keyword OR p.Address LIKE @Keyword OR p.Description LIKE @Keyword OR prov.Name LIKE @Keyword OR cat.Name LIKE @Keyword))
-              AND (@RegionId IS NULL OR prov.RegionId = @RegionId)
-              AND (@ProvinceId IS NULL OR p.ProvinceId = @ProvinceId)
-              AND (@CategoryId IS NULL OR p.CategoryId = @CategoryId)
-              AND (@PlaceTypeId IS NULL OR cat.PlaceTypeId = @PlaceTypeId)
-              AND (@MinPrice IS NULL OR (p.MaxPrice >= @MinPrice OR p.MinPrice >= @MinPrice))
-              AND (@MaxPrice IS NULL OR (p.MinPrice <= @MaxPrice OR p.MaxPrice <= @MaxPrice))
-              AND (@MinRating IS NULL OR p.AvgRating >= @MinRating)
-            ORDER BY
-                CASE WHEN @SortBy = 'rating_desc' THEN p.AvgRating END DESC,
-                CASE WHEN @SortBy = 'price_asc' THEN p.MinPrice END ASC,
-                CASE WHEN @SortBy = 'price_desc' THEN p.MaxPrice END DESC,
-                CASE WHEN @SortBy = 'reviews_desc' THEN p.ReviewCount END DESC,
-                CASE WHEN @SortBy = 'popular_desc' THEN (p.ReviewCount * 10 + CAST(p.AvgRating * 20 AS INT)) END DESC,
-                p.CreatedAt DESC
-            OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+            SELECT COUNT(1) FROM #FilteredPlaces;
+
+            SELECT pp.*, thumb.ThumbnailUrl
+            FROM (
+                SELECT *
+                FROM #FilteredPlaces
+                ORDER BY
+                    CASE WHEN @SortBy = 'rating_desc' THEN AvgRating END DESC,
+                    CASE WHEN @SortBy = 'price_asc' THEN MinPrice END ASC,
+                    CASE WHEN @SortBy = 'price_desc' THEN MaxPrice END DESC,
+                    CASE WHEN @SortBy = 'reviews_desc' THEN ReviewCount END DESC,
+                    CASE WHEN @SortBy = 'popular_desc' THEN (ReviewCount * 10 + CAST(AvgRating * 20 AS INT)) END DESC,
+                    CreatedAt DESC
+                OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY
+            ) pp
+            OUTER APPLY (
+                SELECT TOP 1 pm.Url AS ThumbnailUrl
+                FROM dbo.PlaceMedia pm
+                WHERE pm.PlaceId = pp.Id AND pm.IsVerified = 1
+                ORDER BY pm.DisplayOrder
+            ) thumb;
+
+            DROP TABLE #FilteredPlaces;";
 
         using var multi = await connection.QueryMultipleAsync(sql, parameters);
         var totalCount = await multi.ReadFirstAsync<long>();

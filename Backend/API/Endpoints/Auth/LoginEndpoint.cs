@@ -30,7 +30,7 @@ public class LoginEndpoint : Endpoint<LoginRequest, ApiSuccessResponse<AuthToken
                 HttpOnly = true,
                 Expires = result.Data.RefreshTokenExpiryTime,
                 Secure = true,
-                SameSite = SameSiteMode.Lax,
+                SameSite = SameSiteMode.None,
                 IsEssential = true
             });
             result.Data.RefreshTokenExpiryTime = DateTime.UtcNow;

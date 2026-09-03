@@ -11,27 +11,25 @@ namespace Infrastructure.Services;
 
 public class JwtTokenService : IJwtTokenService
 {
-    private readonly IConfiguration _configuration;
+    private readonly string _secretKey;
+    private readonly string _issuer;
+    private readonly string _audience;
+    private readonly int _expireMinutes;
 
     public JwtTokenService(IConfiguration configuration)
     {
-        _configuration = configuration;
+        _secretKey = configuration["Jwt:SecretKey"] 
+            ?? throw new InvalidOperationException("CRITICAL: JWT SecretKey is not configured!");
+        _issuer = configuration["Jwt:Issuer"] 
+            ?? throw new InvalidOperationException("CRITICAL: JWT Issuer is not configured!");
+        _audience = configuration["Jwt:Audience"] 
+            ?? throw new InvalidOperationException("CRITICAL: JWT Audience is not configured!");
+        _expireMinutes = int.TryParse(configuration["Jwt:ExpireMinutes"], out var exp) ? exp : 1440;
     }
 
     public string GenerateAccessToken(User user, string? jti = null)
     {
-        var secretKey = string.IsNullOrWhiteSpace(_configuration["Jwt:SecretKey"])
-            ? "SuperSecretKeyForTravelReviewPlatform2026!MustBeLongEnough"
-            : _configuration["Jwt:SecretKey"]!;
-        var issuer = string.IsNullOrWhiteSpace(_configuration["Jwt:Issuer"])
-            ? "TravelReviewBackend"
-            : _configuration["Jwt:Issuer"]!;
-        var audience = string.IsNullOrWhiteSpace(_configuration["Jwt:Audience"])
-            ? "TravelReviewClient"
-            : _configuration["Jwt:Audience"]!;
-        var expireMinutes = int.TryParse(_configuration["Jwt:ExpireMinutes"], out var exp) ? exp : 1440;
-
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secretKey));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var claims = new List<Claim>
@@ -52,9 +50,9 @@ public class JwtTokenService : IJwtTokenService
         var tokenDescriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(claims),
-            Expires = DateTime.UtcNow.AddMinutes(expireMinutes),
-            Issuer = issuer,
-            Audience = audience,
+            Expires = DateTime.UtcNow.AddMinutes(_expireMinutes),
+            Issuer = _issuer,
+            Audience = _audience,
             SigningCredentials = credentials
         };
 
@@ -73,24 +71,14 @@ public class JwtTokenService : IJwtTokenService
 
     public ClaimsPrincipal? GetPrincipalFromExpiredToken(string token)
     {
-        var secretKey = string.IsNullOrWhiteSpace(_configuration["Jwt:SecretKey"])
-            ? "SuperSecretKeyForTravelReviewPlatform2026!MustBeLongEnough"
-            : _configuration["Jwt:SecretKey"]!;
-        var issuer = string.IsNullOrWhiteSpace(_configuration["Jwt:Issuer"])
-            ? "TravelReviewBackend"
-            : _configuration["Jwt:Issuer"]!;
-        var audience = string.IsNullOrWhiteSpace(_configuration["Jwt:Audience"])
-            ? "TravelReviewClient"
-            : _configuration["Jwt:Audience"]!;
-
         var tokenValidationParameters = new TokenValidationParameters
         {
             ValidateAudience = true,
-            ValidAudience = audience,
+            ValidAudience = _audience,
             ValidateIssuer = true,
-            ValidIssuer = issuer,
+            ValidIssuer = _issuer,
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secretKey)),
             ValidateLifetime = false
         };
 

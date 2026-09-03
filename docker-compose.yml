@@ -1,4 +1,4 @@
-﻿services:
+services:
   # 1. SQL Server 2022 Database
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
@@ -46,7 +46,7 @@
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Development}
       - ConnectionStrings__SqlServer=Server=sqlserver,1433;Database=TravelReviewDB;User Id=sa;Password=${MSSQL_SA_PASSWORD:-ChangeThisPassword123!};TrustServerCertificate=True;
       - ConnectionStrings__Redis=redis:6379
-      - Jwt__SecretKey=${JWT_SECRET_KEY:-SuperSecretKeyForTravelReviewPlatform2026!MustBeLongEnough}
+      - Jwt__SecretKey=${JWT_SECRET_KEY:?CRITICAL: JWT_SECRET_KEY must be configured in .env}
       - Jwt__Issuer=${JWT_ISSUER:-TravelReviewBackend}
       - Jwt__Audience=${JWT_AUDIENCE:-TravelReviewClient}
       - Jwt__ExpireMinutes=${JWT_EXPIRE_MINUTES:-1440}

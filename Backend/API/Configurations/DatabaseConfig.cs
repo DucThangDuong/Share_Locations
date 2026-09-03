@@ -1,4 +1,5 @@
 using Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -14,12 +15,21 @@ public static class DatabaseConfig
         try
         {
             var dbContext = services.GetRequiredService<TravelReviewDbContext>();
-            await dbContext.Database.EnsureCreatedAsync();
+
+            // Chuẩn Big Tech: Dùng EF Core Migrations ở Production, tránh EnsureCreatedAsync
+            if (dbContext.Database.GetMigrations().Any())
+            {
+                await dbContext.Database.MigrateAsync();
+            }
+            else if (app.Environment.IsDevelopment())
+            {
+                await dbContext.Database.EnsureCreatedAsync();
+            }
         }
         catch (Exception ex)
         {
             var logger = services.GetRequiredService<ILogger<Program>>();
-            logger.LogError(ex, "Lỗi trong quá trình tự động khởi tạo bảng database.");
+            logger.LogError(ex, "Lỗi trong quá trình khởi tạo/migrate database.");
         }
     }
 }

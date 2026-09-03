@@ -58,4 +58,117 @@ public class Place
 
     private readonly List<PlaceReport> _reports = new();
     public virtual IReadOnlyCollection<PlaceReport> Reports => _reports.AsReadOnly();
+
+    protected Place() { }
+
+    public Place(
+        int provinceId,
+        int categoryId,
+        string name,
+        string address,
+        long? createdBy = null,
+        string? description = null,
+        decimal? minPrice = null,
+        decimal? maxPrice = null,
+        string? phone = null,
+        string? website = null,
+        string? openingHours = null,
+        decimal? latitude = null,
+        decimal? longitude = null)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException("Tên địa điểm không được để trống.", nameof(name));
+        if (string.IsNullOrWhiteSpace(address))
+            throw new ArgumentException("Địa chỉ không được để trống.", nameof(address));
+        ValidatePriceRange(minPrice, maxPrice);
+
+        ProvinceId = provinceId;
+        CategoryId = categoryId;
+        Name = name.Trim();
+        Address = address.Trim();
+        CreatedBy = createdBy;
+        Description = description;
+        MinPrice = minPrice;
+        MaxPrice = maxPrice;
+        Phone = phone;
+        Website = website;
+        OpeningHours = openingHours;
+        Latitude = latitude;
+        Longitude = longitude;
+        Status = PlaceStatus.Pending;
+        CreatedAt = DateTime.UtcNow;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void UpdatePriceRange(decimal? minPrice, decimal? maxPrice)
+    {
+        ValidatePriceRange(minPrice, maxPrice);
+        MinPrice = minPrice;
+        MaxPrice = maxPrice;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void UpdateDetails(
+        string name,
+        string address,
+        int provinceId,
+        int categoryId,
+        string? description,
+        string? phone,
+        string? website,
+        string? openingHours)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException("Tên địa điểm không được để trống.", nameof(name));
+        if (string.IsNullOrWhiteSpace(address))
+            throw new ArgumentException("Địa chỉ không được để trống.", nameof(address));
+
+        Name = name.Trim();
+        Address = address.Trim();
+        ProvinceId = provinceId;
+        CategoryId = categoryId;
+        Description = description;
+        Phone = phone;
+        Website = website;
+        OpeningHours = openingHours;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void Approve()
+    {
+        Status = PlaceStatus.Approved;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void Reject()
+    {
+        Status = PlaceStatus.Rejected;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void Hide()
+    {
+        Status = PlaceStatus.Hidden;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void UpdateRating(decimal avgRating, int reviewCount)
+    {
+        if (avgRating < 0 || avgRating > 5)
+            throw new ArgumentOutOfRangeException(nameof(avgRating), "Điểm đánh giá phải từ 0 đến 5.");
+        if (reviewCount < 0)
+            throw new ArgumentOutOfRangeException(nameof(reviewCount), "Số lượng đánh giá không được âm.");
+
+        AvgRating = avgRating;
+        ReviewCount = reviewCount;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    private static void ValidatePriceRange(decimal? minPrice, decimal? maxPrice)
+    {
+        if (minPrice < 0 || maxPrice < 0)
+            throw new ArgumentException("Giá không được là số âm.");
+        if (minPrice.HasValue && maxPrice.HasValue && minPrice > maxPrice)
+            throw new ArgumentException("Giá tối thiểu không được lớn hơn giá tối đa.");
+    }
 }
