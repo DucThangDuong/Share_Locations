@@ -7,7 +7,16 @@ using MediatR;
 
 namespace API.Endpoints.Catalog;
 
-public class GetCategoriesEndpoint : EndpointWithoutRequest<ApiSuccessResponse<IReadOnlyList<CategoryDto>>>
+public class GetCategoriesRequest
+{
+    [QueryParam]
+    public int? PlaceTypeId { get; set; }
+
+    [QueryParam]
+    public int PlacesPerCategory { get; set; } = 6;
+}
+
+public class GetCategoriesEndpoint : Endpoint<GetCategoriesRequest, ApiSuccessResponse<IReadOnlyList<CategoryDto>>>
 {
     public IMediator Mediator { get; set; } = null!;
 
@@ -17,9 +26,9 @@ public class GetCategoriesEndpoint : EndpointWithoutRequest<ApiSuccessResponse<I
         AllowAnonymous();
     }
 
-    public override async Task HandleAsync(CancellationToken ct)
+    public override async Task HandleAsync(GetCategoriesRequest req, CancellationToken ct)
     {
-        var result = await Mediator.Send(new GetCategoriesQuery(), ct);
+        var result = await Mediator.Send(new GetCategoriesQuery(req.PlaceTypeId, req.PlacesPerCategory), ct);
         await this.SendApiResponseAsync(result, ct);
     }
 }

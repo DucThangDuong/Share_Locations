@@ -22,9 +22,15 @@ public class ProvinceRepository : IProvinceRepository
         const string sql = @"
             SELECT p.Id, p.RegionId, r.Name AS RegionName, p.Name, p.Tagline, p.Description, 
                    p.ImageUrl, p.Featured, p.DisplayOrder,
-                   (SELECT COUNT(1) FROM dbo.Places pl WHERE pl.ProvinceId = p.Id AND pl.Status = 2) AS PlaceCount
+                   COALESCE(counts.PlaceCount, 0) AS PlaceCount
             FROM dbo.Provinces p
             INNER JOIN dbo.Regions r ON p.RegionId = r.Id
+            LEFT JOIN (
+                SELECT pl.ProvinceId, COUNT(1) AS PlaceCount
+                FROM dbo.Places pl
+                WHERE pl.Status = 1
+                GROUP BY pl.ProvinceId
+            ) counts ON counts.ProvinceId = p.Id
             WHERE p.Status = 1
             ORDER BY p.DisplayOrder, p.Name;";
 

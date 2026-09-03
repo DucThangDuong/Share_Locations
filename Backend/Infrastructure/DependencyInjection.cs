@@ -34,6 +34,7 @@ public static class DependencyInjection
 
         services.AddScoped<IRegionRepository, RegionRepository>();
         services.AddScoped<IProvinceRepository, ProvinceRepository>();
+        services.AddScoped<IPlaceTypeRepository, PlaceTypeRepository>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<ICollectionRepository, CollectionRepository>();
         services.AddScoped<IPlaceRepository, PlaceRepository>();

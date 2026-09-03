@@ -4,5 +4,5 @@ namespace Application.Common.Interfaces.Repositories;
 
 public interface ICategoryRepository
 {
-    Task<IReadOnlyList<CategoryDto>> GetAllAsync(CancellationToken ct = default);
+    Task<IReadOnlyList<CategoryDto>> GetAllAsync(int? placeTypeId = null, int placesPerCategory = 6, CancellationToken ct = default);
 }
