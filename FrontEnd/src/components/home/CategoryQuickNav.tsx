@@ -31,67 +31,27 @@ const COLOR_MAP: Record<string, string> = {
 
 export const CategoryQuickNav: React.FC = () => {
   const [categories, setCategories] = useState<CategoryDto[]>([])
+  const [isLoading, setIsLoading] = useState<boolean>(true)
 
   useEffect(() => {
     const loadCategories = async () => {
+      setIsLoading(true)
       try {
         const res = await catalogService.getCategories()
-        if (res.success && res.data && res.data.length > 0) {
+        if (res.success && res.data) {
           setCategories(res.data)
         }
       } catch {
+      } finally {
+        setIsLoading(false)
       }
     }
     loadCategories()
   }, [])
 
-  const defaultCategories = [
-    {
-      id: 1,
-      name: 'Danh lam thắng cảnh',
-      cat: 'Danh lam thắng cảnh',
-      count: '340+ địa điểm'
-    },
-    {
-      id: 2,
-      name: 'Biển đảo & Nghỉ dưỡng',
-      cat: 'Bãi biển',
-      count: '210+ bãi biển'
-    },
-    {
-      id: 3,
-      name: 'Di tích & Văn hóa',
-      cat: 'Di tích',
-      count: '180+ di sản'
-    },
-    {
-      id: 4,
-      name: 'Ẩm thực bản địa',
-      cat: 'Quán ăn',
-      count: '450+ quán ngon'
-    },
-    {
-      id: 5,
-      name: 'Cà phê & Check-in',
-      cat: 'Cà phê',
-      count: '290+ quán chill'
-    },
-    {
-      id: 6,
-      name: 'Vườn quốc gia & Trekking',
-      cat: 'Vườn quốc gia',
-      count: '85+ cung đường'
-    }
-  ]
-
-  const items = categories.length > 0
-    ? categories.slice(0, 6).map((c) => ({
-        id: c.id,
-        name: c.name,
-        cat: c.name,
-        count: c.placeCount > 0 ? `${c.placeCount} địa điểm` : 'Đang cập nhật'
-      }))
-    : defaultCategories
+  if (!isLoading && categories.length === 0) {
+    return null
+  }
 
   return (
     <section className="py-12 bg-white border-b border-slate-100">
@@ -116,33 +76,45 @@ export const CategoryQuickNav: React.FC = () => {
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-          {items.map((item) => {
-            const IconComponent = ICON_MAP[item.cat] || Compass
-            const colorClass = COLOR_MAP[item.cat] || 'from-emerald-500/10 to-teal-500/10 text-emerald-700 border-emerald-200'
+        {isLoading ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+            {[1, 2, 3, 4, 5, 6].map((n) => (
+              <div key={n} className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col items-center space-y-2.5 animate-pulse">
+                <div className="w-12 h-12 rounded-2xl skeleton-shimmer"></div>
+                <div className="w-20 h-4 rounded-md skeleton-shimmer"></div>
+                <div className="w-14 h-3 rounded-md skeleton-shimmer"></div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+            {categories.slice(0, 6).map((item) => {
+              const IconComponent = ICON_MAP[item.name] || Compass
+              const colorClass = COLOR_MAP[item.name] || 'from-emerald-500/10 to-teal-500/10 text-emerald-700 border-emerald-200'
 
-            return (
-              <Link
-                key={item.id}
-                to={`/explore?cat=${encodeURIComponent(item.cat)}`}
-                className="group relative overflow-hidden p-4 rounded-2xl bg-gradient-to-br border transition-colors duration-300 flex flex-col items-center text-center space-y-2.5"
-              >
-                <div className="absolute inset-0 bg-white/0 group-hover:bg-white/30 transition-colors duration-300 pointer-events-none"></div>
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border ${colorClass}`}>
-                  <IconComponent className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-primary transition-colors line-clamp-1">
-                    {item.name}
-                  </h3>
-                  <p className="text-[11px] text-slate-500 font-medium mt-0.5">
-                    {item.count}
-                  </p>
-                </div>
-              </Link>
-            )
-          })}
-        </div>
+              return (
+                <Link
+                  key={item.id}
+                  to={`/explore?cat=${encodeURIComponent(item.name)}&catId=${item.id}`}
+                  className="group relative overflow-hidden p-4 rounded-2xl bg-gradient-to-br border transition-colors duration-300 flex flex-col items-center text-center space-y-2.5"
+                >
+                  <div className="absolute inset-0 bg-white/0 group-hover:bg-white/30 transition-colors duration-300 pointer-events-none"></div>
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border ${colorClass}`}>
+                    <IconComponent className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-primary transition-colors line-clamp-1">
+                      {item.name}
+                    </h3>
+                    <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                      {item.placeCount > 0 ? `${item.placeCount} địa điểm` : 'Đang cập nhật'}
+                    </p>
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
+        )}
       </div>
     </section>
   )

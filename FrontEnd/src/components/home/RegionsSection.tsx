@@ -1,19 +1,41 @@
-import React, { useRef } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { NORTH_DESTINATIONS, CENTRAL_DESTINATIONS, SOUTH_DESTINATIONS } from '@/services/travelDataService'
-import type { DestinationItem } from '@/types/travel'
-import { ArrowLeft, ArrowRight, MapPin } from 'lucide-react'
+import { ArrowLeft, ArrowRight, MapPin, Star } from 'lucide-react'
+import { geographyService } from '@/services/geographyService'
+import { placeService } from '@/services/placeService'
+import type { RegionDto } from '@/types/models/geography.model'
+import type { PlaceSummaryDto } from '@/types/models/place.model'
 
 interface RegionTrackProps {
-  title: string
-  subBadge: string
-  regionQuery: string
-  items: DestinationItem[]
+  region: RegionDto
 }
 
-const RegionTrack: React.FC<RegionTrackProps> = ({ title, subBadge, regionQuery, items }) => {
+const RegionTrack: React.FC<RegionTrackProps> = ({ region }) => {
   const trackRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
+  const [places, setPlaces] = useState<PlaceSummaryDto[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchRegionPlaces = async () => {
+      setIsLoading(true)
+      try {
+        const res = await placeService.searchPlaces({
+          regionId: region.id,
+          pageSize: 8,
+          sortBy: 'popular_desc'
+        })
+        if (res.success && res.data) {
+          setPlaces(res.data)
+        }
+      } catch {
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchRegionPlaces()
+  }, [region.id])
 
   const scroll = (direction: 'left' | 'right') => {
     if (trackRef.current) {
@@ -25,21 +47,27 @@ const RegionTrack: React.FC<RegionTrackProps> = ({ title, subBadge, regionQuery,
     }
   }
 
+  const fallbackImage = 'https://images.unsplash.com/photo-1528127269322-539801943592?w=800&h=500&fit=crop&auto=format'
+
+  if (!isLoading && places.length === 0) {
+    return null
+  }
+
   return (
     <div className="mb-14">
       <div className="flex justify-between items-end mb-5 border-b border-slate-200/80 pb-3">
         <div>
           <span className="inline-block px-2.5 py-0.5 bg-emerald-50 text-emerald-800 text-[11px] font-bold uppercase tracking-wider rounded-md mb-1.5 border border-emerald-100">
-            {subBadge}
+            {region.tagline || `${region.provinceCount || ''} Tỉnh thành`}
           </span>
-          <h3 className="text-2xl text-slate-900 font-extrabold tracking-tight">{title}</h3>
+          <h3 className="text-2xl text-slate-900 font-extrabold tracking-tight">{region.name}</h3>
         </div>
         <div className="flex items-center gap-3">
           <Link
-            to={`/explore?region=${encodeURIComponent(regionQuery)}`}
+            to={`/explore?region=${encodeURIComponent(region.name)}&regionId=${region.id}`}
             className="hidden sm:inline-flex text-xs font-bold text-primary hover:text-primary-hover transition-colors"
           >
-            Xem tất cả {title} &rarr;
+            Xem tất cả {region.name} &rarr;
           </Link>
           <div className="flex space-x-1.5">
             <button
@@ -60,43 +88,83 @@ const RegionTrack: React.FC<RegionTrackProps> = ({ title, subBadge, regionQuery,
         </div>
       </div>
 
-      <div
-        ref={trackRef}
-        className="flex overflow-x-auto gap-5 pb-4 hide-scrollbar snap-x scroll-smooth"
-      >
-        {items.map((item) => (
-          <div
-            key={item.id}
-            onClick={() => navigate(`/explore?q=${encodeURIComponent(item.name)}&region=${encodeURIComponent(regionQuery)}`)}
-            className="w-[280px] sm:w-[310px] h-[380px] relative rounded-3xl overflow-hidden shrink-0 snap-start group transition-all duration-300 cursor-pointer border border-slate-200/60"
-          >
-            <img
-              src={item.imageUrl}
-              className="w-full h-full object-cover"
-              alt={item.name}
-              loading="lazy"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-transparent"></div>
-            <div className="absolute inset-0 bg-white/0 group-hover:bg-white/15 transition-colors duration-300 pointer-events-none z-10"></div>
-            <div className="absolute bottom-0 inset-x-0 p-5 text-white z-20">
-              <span className="text-secondary-container text-xs font-bold uppercase tracking-wider block mb-1 flex items-center gap-1">
-                <MapPin className="w-3 h-3 inline" /> {item.province}
-              </span>
-              <h4 className="text-xl font-extrabold mb-1.5 group-hover:text-emerald-300 transition-colors tracking-tight">
-                {item.name}
-              </h4>
-              <p className="text-xs text-slate-200/90 line-clamp-2 leading-relaxed font-normal">
-                {item.description}
-              </p>
+      {isLoading ? (
+        <div className="flex gap-5 pb-4 overflow-hidden">
+          {[1, 2, 3, 4].map((n) => (
+            <div key={n} className="w-[280px] sm:w-[310px] h-[380px] rounded-3xl skeleton-shimmer shrink-0"></div>
+          ))}
+        </div>
+      ) : (
+        <div
+          ref={trackRef}
+          className="flex overflow-x-auto gap-5 pb-4 hide-scrollbar snap-x scroll-smooth"
+        >
+          {places.map((place) => (
+            <div
+              key={place.id}
+              onClick={() => navigate(`/explore?q=${encodeURIComponent(place.name)}&regionId=${region.id}`)}
+              className="w-[280px] sm:w-[310px] h-[380px] relative rounded-3xl overflow-hidden shrink-0 snap-start group transition-all duration-300 cursor-pointer border border-slate-200/60"
+            >
+              <img
+                src={place.thumbnailUrl || fallbackImage}
+                className="w-full h-full object-cover"
+                alt={place.name}
+                loading="lazy"
+                onError={(e) => {
+                  ;(e.currentTarget as HTMLImageElement).src = fallbackImage
+                }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-transparent"></div>
+              <div className="absolute inset-0 bg-white/0 group-hover:bg-white/15 transition-colors duration-300 pointer-events-none z-10"></div>
+
+              <div className="absolute top-4 left-4 z-20 flex items-center gap-1.5 bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-full text-white text-[10px] font-bold">
+                <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                <span>{Number(place.avgRating || 0).toFixed(1)}</span>
+              </div>
+
+              <div className="absolute bottom-0 inset-x-0 p-5 text-white z-20">
+                <span className="text-secondary-container text-xs font-bold uppercase tracking-wider block mb-1 flex items-center gap-1">
+                  <MapPin className="w-3 h-3 inline" /> {place.provinceName || region.name}
+                </span>
+                <h4 className="text-xl font-extrabold mb-1.5 group-hover:text-emerald-300 transition-colors tracking-tight line-clamp-1">
+                  {place.name}
+                </h4>
+                <p className="text-xs text-slate-200/90 line-clamp-2 leading-relaxed font-normal">
+                  {place.description || place.address}
+                </p>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
 
 export const RegionsSection: React.FC = () => {
+  const [regions, setRegions] = useState<RegionDto[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchRegions = async () => {
+      setIsLoading(true)
+      try {
+        const res = await geographyService.getRegions()
+        if (res.success && res.data) {
+          setRegions(res.data)
+        }
+      } catch {
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchRegions()
+  }, [])
+
+  if (!isLoading && regions.length === 0) {
+    return null
+  }
+
   return (
     <section id="diadiem" className="py-16 scroll-mt-20">
       <div className="text-center mb-12">
@@ -111,9 +179,9 @@ export const RegionsSection: React.FC = () => {
         </p>
       </div>
 
-      <RegionTrack title="Miền Bắc" subBadge="Vùng cao & Đồng bằng" regionQuery="Miền Bắc" items={NORTH_DESTINATIONS} />
-      <RegionTrack title="Miền Trung" subBadge="Di sản & Duyên hải" regionQuery="Miền Trung" items={CENTRAL_DESTINATIONS} />
-      <RegionTrack title="Miền Nam" subBadge="Đô thị & Sông nước" regionQuery="Miền Nam" items={SOUTH_DESTINATIONS} />
+      {regions.map((region) => (
+        <RegionTrack key={region.id} region={region} />
+      ))}
     </section>
   )
 }
