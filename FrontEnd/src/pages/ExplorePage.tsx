@@ -519,7 +519,7 @@ export const ExplorePage: React.FC = () => {
         <div className="flex items-center justify-between gap-4 lg:hidden">
           <button
             onClick={() => setIsMobileFilterOpen(!isMobileFilterOpen)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white rounded-xl border border-slate-200 text-xs font-bold text-slate-700 cursor-pointer min-h-[44px]"
+            className="flex items-center gap-2 px-4 py-2.5 bg-white rounded-lg border border-slate-200 text-xs font-bold text-slate-700 cursor-pointer min-h-[44px]"
           >
             <SlidersHorizontal className="w-4 h-4 text-primary" />
             <span>Bộ lọc ({activeChips.length})</span>
@@ -566,17 +566,17 @@ export const ExplorePage: React.FC = () => {
             />
 
             {isLoading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 animate-pulse">
-                {[1, 2, 3, 4].map((n) => (
-                  <div key={n} className="bg-white rounded-3xl p-4 border border-slate-200/60 space-y-3">
-                    <div className="h-48 rounded-2xl skeleton-shimmer"></div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4.5 animate-pulse">
+                {[1, 2, 3, 4, 5, 6].map((n) => (
+                  <div key={n} className="bg-white rounded-lg p-4 border border-slate-200/60 space-y-3">
+                    <div className="aspect-square rounded-lg skeleton-shimmer"></div>
                     <div className="h-4 w-3/4 skeleton-shimmer rounded-md"></div>
                     <div className="h-3 w-1/2 skeleton-shimmer rounded-md"></div>
                   </div>
                 ))}
               </div>
             ) : places.length === 0 ? (
-              <div className="text-center py-16 px-6 bg-white rounded-3xl border border-dashed border-slate-300 space-y-4">
+              <div className="text-center py-16 px-6 bg-white rounded-lg border border-dashed border-slate-300 space-y-4">
                 <div className="w-16 h-16 rounded-full bg-emerald-50 text-primary flex items-center justify-center mx-auto">
                   <Compass className="w-8 h-8" />
                 </div>
@@ -590,7 +590,7 @@ export const ExplorePage: React.FC = () => {
                 </div>
               </div>
             ) : (
-              <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 gap-5' : 'space-y-4'}>
+              <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4.5' : 'space-y-4'}>
                 {places.map((place) => (
                   <ExplorePlaceCard
                     key={place.id}

@@ -48,8 +48,8 @@ export const ExploreFilterSidebar: React.FC<ExploreFilterSidebarProps> = ({
         }`}
     >
       <div
-        className={`bg-white rounded-3xl p-6 border border-slate-200/80 space-y-5 overflow-y-auto max-h-[85vh] ${isOpen
-          ? 'w-full max-w-xs h-full rounded-2xl animate-in slide-in-from-right'
+        className={`bg-white rounded-lg p-6 border border-slate-200/80 space-y-5 overflow-y-auto max-h-[85vh] ${isOpen
+          ? 'w-full max-w-xs h-full rounded-lg animate-in slide-in-from-right'
           : 'sticky top-24'
           }`}
       >
@@ -75,7 +75,7 @@ export const ExploreFilterSidebar: React.FC<ExploreFilterSidebarProps> = ({
           </h3>
           <div className="space-y-1 max-h-60 overflow-y-auto pr-1">
             <label
-              className={`flex items-center justify-between text-xs cursor-pointer min-h-[32px] px-2.5 py-1.5 rounded-xl transition-colors ${!draftCategoryId && !draftCategoryName
+              className={`flex items-center justify-between text-xs cursor-pointer min-h-[32px] px-2.5 py-1.5 rounded-lg transition-colors ${!draftCategoryId && !draftCategoryName
                 ? 'bg-emerald-50 text-emerald-900 font-bold border border-emerald-200/60'
                 : 'text-slate-700 hover:text-slate-900 hover:bg-slate-50'
                 }`}
@@ -97,7 +97,7 @@ export const ExploreFilterSidebar: React.FC<ExploreFilterSidebarProps> = ({
               return (
                 <label
                   key={cat.id}
-                  className={`flex items-center justify-between text-xs cursor-pointer min-h-[32px] px-2.5 py-1.5 rounded-xl transition-colors ${isSelected
+                  className={`flex items-center justify-between text-xs cursor-pointer min-h-[32px] px-2.5 py-1.5 rounded-lg transition-colors ${isSelected
                     ? 'bg-emerald-50 text-emerald-900 font-bold border border-emerald-200/60'
                     : 'text-slate-700 hover:text-slate-900 hover:bg-slate-50'
                     }`}
@@ -128,7 +128,7 @@ export const ExploreFilterSidebar: React.FC<ExploreFilterSidebarProps> = ({
             const regionProvinces = region.provinces || []
 
             return (
-              <div key={region.id} className="rounded-xl border border-slate-100 bg-slate-50/50 p-2.5 space-y-2">
+              <div key={region.id} className="rounded-lg border border-slate-100 bg-slate-50/50 p-2.5 space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="flex items-center gap-2 text-xs font-bold text-slate-800 cursor-pointer min-h-[32px]">
                     <input
@@ -217,7 +217,7 @@ export const ExploreFilterSidebar: React.FC<ExploreFilterSidebarProps> = ({
                   key={rating}
                   type="button"
                   onClick={() => onMinRatingChange(rating)}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1 border transition-all cursor-pointer min-h-[36px] ${active
+                  className={`px-3.5 py-2 rounded-lg text-xs font-bold flex items-center gap-1 border transition-all cursor-pointer min-h-[36px] ${active
                     ? 'bg-primary text-white border-primary'
                     : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                     }`}

@@ -18,7 +18,7 @@ export const ExploreActiveChips: React.FC<ExploreActiveChipsProps> = ({
   if (chips.length === 0) return null
 
   return (
-    <div className="flex flex-wrap items-center gap-2 p-3 bg-white rounded-2xl border border-slate-200/70">
+    <div className="flex flex-wrap items-center gap-2 p-3 bg-white rounded-lg border border-slate-200/70">
       <span className="text-xs font-bold text-slate-400 uppercase mr-1">
         Đang lọc:
       </span>

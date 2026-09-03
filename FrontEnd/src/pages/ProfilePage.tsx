@@ -6,7 +6,6 @@ import {
   Mail,
   Phone,
   Shield,
-  Award,
   Edit3,
   Key,
   BookOpen,
@@ -16,7 +15,6 @@ import {
   CheckCircle2,
   FileText,
   Inbox,
-  Sparkles,
   UserCheck
 } from 'lucide-react'
 
@@ -63,14 +61,14 @@ export const ProfilePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50/70 pb-20">
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 glass-dark text-white text-xs font-semibold px-4 py-3 rounded-2xl flex items-center gap-2 animate-in slide-in-from-bottom-5 fade-in border border-emerald-500/30">
+        <div className="fixed bottom-6 right-6 z-50 glass-dark text-white text-xs font-semibold px-4 py-3 rounded-lg flex items-center gap-2 animate-in slide-in-from-bottom-5 fade-in border border-emerald-500/30">
           <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
           <span>{toastMessage}</span>
         </div>
       )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
-        <div className="relative rounded-3xl overflow-hidden bg-white border border-slate-200/80">
+        <div className="relative rounded-lg overflow-hidden bg-white border border-slate-200/80">
           <div className="h-48 sm:h-64 lg:h-72 w-full relative bg-slate-200">
             <img
               src={currentProfile.coverUrl}
@@ -86,7 +84,7 @@ export const ProfilePage: React.FC = () => {
           <div className="px-6 sm:px-8 pb-6 pt-0 relative">
             <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-end gap-5">
-                <div className="-mt-14 sm:-mt-20 w-28 sm:w-36 h-28 sm:h-36 rounded-3xl overflow-hidden border-4 border-white bg-slate-200 shrink-0 ring-1 ring-slate-200/50">
+                <div className="-mt-14 sm:-mt-20 w-28 sm:w-36 h-28 sm:h-36 rounded-lg overflow-hidden border-4 border-white bg-slate-200 shrink-0 ring-1 ring-slate-200/50">
                   <img
                     src={currentProfile.avatarUrl}
                     alt={currentProfile.fullName}
@@ -115,14 +113,14 @@ export const ProfilePage: React.FC = () => {
               <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-end w-full sm:w-auto sm:pb-1 pt-2">
                 <button
                   onClick={() => setIsEditModalOpen(true)}
-                  className="flex-1 sm:flex-initial px-4 py-2.5 bg-slate-100 hover:bg-slate-200/70 text-slate-700 font-semibold text-xs rounded-xl transition-all flex items-center justify-center gap-2 active-press cursor-pointer"
+                  className="flex-1 sm:flex-initial px-4 py-2.5 bg-slate-100 hover:bg-slate-200/70 text-slate-700 font-semibold text-xs rounded-lg transition-all flex items-center justify-center gap-2 active-press cursor-pointer"
                 >
                   <Edit3 className="w-3.5 h-3.5" />
                   <span>Sửa hồ sơ</span>
                 </button>
                 <button
                   onClick={() => setIsPasswordModalOpen(true)}
-                  className="flex-1 sm:flex-initial px-4 py-2.5 bg-primary-container hover:bg-primary-hover text-white font-semibold text-xs rounded-xl active-press transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  className="flex-1 sm:flex-initial px-4 py-2.5 bg-primary-container hover:bg-primary-hover text-white font-semibold text-xs rounded-lg active-press transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <Key className="w-3.5 h-3.5" />
                   <span>Đổi mật khẩu</span>
@@ -136,7 +134,7 @@ export const ProfilePage: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-4 space-y-6">
-            <div className="bg-white rounded-3xl p-6 border border-slate-200/80 space-y-4">
+            <div className="bg-white rounded-lg p-6 border border-slate-200/80 space-y-4">
               <h2 className="text-base font-bold text-slate-900 border-b border-slate-100 pb-3 flex items-center gap-2">
                 <UserCheck className="w-4 h-4 text-emerald-700" />
                 <span>Thông tin cá nhân</span>
@@ -144,7 +142,7 @@ export const ProfilePage: React.FC = () => {
 
               <ul className="space-y-3.5 text-xs text-slate-600">
                 <li className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
                     <Mail className="w-4 h-4" />
                   </div>
                   <div className="truncate">
@@ -153,7 +151,7 @@ export const ProfilePage: React.FC = () => {
                   </div>
                 </li>
                 <li className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center shrink-0">
+                  <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center shrink-0">
                     <Phone className="w-4 h-4" />
                   </div>
                   <div>
@@ -164,38 +162,30 @@ export const ProfilePage: React.FC = () => {
               </ul>
             </div>
 
-            <div className="bg-white rounded-3xl p-6 border border-slate-200/80 space-y-4">
+            <div className="bg-white rounded-lg p-6 border border-slate-200/80 space-y-4">
               <h2 className="text-base font-bold text-slate-900 border-b border-slate-100 pb-3 flex items-center gap-2">
-                <Award className="w-5 h-5 text-secondary-container" />
                 <span>Điểm cống hiến</span>
               </h2>
 
-              <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-200/70 flex items-center justify-between">
+              <div className="p-4 rounded-lg bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-200/70 flex items-center justify-between">
                 <div>
                   <div className="text-3xl font-extrabold text-amber-600 tracking-tight">
                     {currentProfile.reputationScore}
                   </div>
                   <div className="text-xs text-slate-500 font-medium mt-0.5">Điểm uy tín tích lũy</div>
                 </div>
-                <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                  <Sparkles className="w-5 h-5" />
-                </div>
               </div>
-              <p className="text-[11px] text-slate-400 leading-relaxed font-normal">
-                Điểm cống hiến được tích lũy thông qua việc đóng góp địa điểm, viết review chất lượng và chia sẻ lịch trình hữu ích.
-              </p>
             </div>
           </div>
 
           <div className="lg:col-span-8 space-y-6">
-            <div className="bg-white rounded-3xl p-2 border border-slate-200/80 flex flex-wrap gap-1.5">
+            <div className="bg-white rounded-lg p-2 border border-slate-200/80 flex flex-wrap gap-1.5">
               <button
                 onClick={() => setActiveTab('posts')}
-                className={`flex-1 min-w-[120px] py-2.5 px-4 rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                  activeTab === 'posts'
-                    ? 'bg-primary-container text-white'
-                    : 'text-slate-600 hover:bg-slate-100/80'
-                }`}
+                className={`flex-1 min-w-[120px] py-2.5 px-4 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${activeTab === 'posts'
+                  ? 'bg-primary-container text-white'
+                  : 'text-slate-600 hover:bg-slate-100/80'
+                  }`}
               >
                 <BookOpen className="w-3.5 h-3.5" />
                 <span>Bài viết (0)</span>
@@ -203,11 +193,10 @@ export const ProfilePage: React.FC = () => {
 
               <button
                 onClick={() => setActiveTab('itineraries')}
-                className={`flex-1 min-w-[120px] py-2.5 px-4 rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                  activeTab === 'itineraries'
-                    ? 'bg-primary-container text-white'
-                    : 'text-slate-600 hover:bg-slate-100/80'
-                }`}
+                className={`flex-1 min-w-[120px] py-2.5 px-4 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${activeTab === 'itineraries'
+                  ? 'bg-primary-container text-white'
+                  : 'text-slate-600 hover:bg-slate-100/80'
+                  }`}
               >
                 <Compass className="w-3.5 h-3.5" />
                 <span>Lịch trình (0)</span>
@@ -215,11 +204,10 @@ export const ProfilePage: React.FC = () => {
 
               <button
                 onClick={() => setActiveTab('saved')}
-                className={`flex-1 min-w-[120px] py-2.5 px-4 rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                  activeTab === 'saved'
-                    ? 'bg-primary-container text-white'
-                    : 'text-slate-600 hover:bg-slate-100/80'
-                }`}
+                className={`flex-1 min-w-[120px] py-2.5 px-4 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${activeTab === 'saved'
+                  ? 'bg-primary-container text-white'
+                  : 'text-slate-600 hover:bg-slate-100/80'
+                  }`}
               >
                 <Bookmark className="w-3.5 h-3.5" />
                 <span>Đã lưu (0)</span>
@@ -227,11 +215,10 @@ export const ProfilePage: React.FC = () => {
 
               <button
                 onClick={() => setActiveTab('suggested')}
-                className={`flex-1 min-w-[120px] py-2.5 px-4 rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                  activeTab === 'suggested'
-                    ? 'bg-primary-container text-white'
-                    : 'text-slate-600 hover:bg-slate-100/80'
-                }`}
+                className={`flex-1 min-w-[120px] py-2.5 px-4 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${activeTab === 'suggested'
+                  ? 'bg-primary-container text-white'
+                  : 'text-slate-600 hover:bg-slate-100/80'
+                  }`}
               >
                 <PlusCircle className="w-3.5 h-3.5" />
                 <span>Đề xuất (0)</span>
@@ -240,8 +227,8 @@ export const ProfilePage: React.FC = () => {
 
             <div className="space-y-4">
               {activeTab === 'posts' && (
-                <div className="bg-white rounded-3xl p-14 border border-slate-200/80 text-center flex flex-col items-center justify-center space-y-3 animate-in fade-in">
-                  <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                <div className="bg-white rounded-lg p-14 border border-slate-200/80 text-center flex flex-col items-center justify-center space-y-3 animate-in fade-in">
+                  <div className="w-16 h-16 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center">
                     <FileText className="w-8 h-8" />
                   </div>
                   <h3 className="text-base font-bold text-slate-800">
@@ -254,8 +241,8 @@ export const ProfilePage: React.FC = () => {
               )}
 
               {activeTab === 'itineraries' && (
-                <div className="bg-white rounded-3xl p-14 border border-slate-200/80 text-center flex flex-col items-center justify-center space-y-3 animate-in fade-in">
-                  <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center">
+                <div className="bg-white rounded-lg p-14 border border-slate-200/80 text-center flex flex-col items-center justify-center space-y-3 animate-in fade-in">
+                  <div className="w-16 h-16 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center">
                     <Compass className="w-8 h-8" />
                   </div>
                   <h3 className="text-base font-bold text-slate-800">
@@ -268,8 +255,8 @@ export const ProfilePage: React.FC = () => {
               )}
 
               {activeTab === 'saved' && (
-                <div className="bg-white rounded-3xl p-14 border border-slate-200/80 text-center flex flex-col items-center justify-center space-y-3 animate-in fade-in">
-                  <div className="w-16 h-16 rounded-2xl bg-slate-100 text-slate-600 flex items-center justify-center">
+                <div className="bg-white rounded-lg p-14 border border-slate-200/80 text-center flex flex-col items-center justify-center space-y-3 animate-in fade-in">
+                  <div className="w-16 h-16 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center">
                     <Bookmark className="w-8 h-8" />
                   </div>
                   <h3 className="text-base font-bold text-slate-800">
@@ -282,8 +269,8 @@ export const ProfilePage: React.FC = () => {
               )}
 
               {activeTab === 'suggested' && (
-                <div className="bg-white rounded-3xl p-14 border border-slate-200/80 text-center flex flex-col items-center justify-center space-y-3 animate-in fade-in">
-                  <div className="w-16 h-16 rounded-2xl bg-blue-50 text-blue-700 flex items-center justify-center">
+                <div className="bg-white rounded-lg p-14 border border-slate-200/80 text-center flex flex-col items-center justify-center space-y-3 animate-in fade-in">
+                  <div className="w-16 h-16 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center">
                     <Inbox className="w-8 h-8" />
                   </div>
                   <h3 className="text-base font-bold text-slate-800">
