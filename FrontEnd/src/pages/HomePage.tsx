@@ -4,8 +4,7 @@ import { CategoryQuickNav } from '@/components/home/CategoryQuickNav'
 import { FeaturedCollectionsSection } from '@/components/home/FeaturedCollectionsSection'
 import { RegionsSection } from '@/components/home/RegionsSection'
 import { CuisineSection } from '@/components/home/CuisineSection'
-import { ItinerarySection } from '@/components/home/ItinerarySection'
-import { BlogSection } from '@/components/home/BlogSection'
+import { TopRatedPlacesSection } from '@/components/home/TopRatedPlacesSection'
 
 export const HomePage: React.FC = () => {
   return (
@@ -14,11 +13,10 @@ export const HomePage: React.FC = () => {
       <CategoryQuickNav />
       <FeaturedCollectionsSection />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-20">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-16">
         <RegionsSection />
         <CuisineSection />
-        <ItinerarySection />
-        <BlogSection />
+        <TopRatedPlacesSection />
       </main>
     </div>
   )

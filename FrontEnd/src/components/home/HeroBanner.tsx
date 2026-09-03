@@ -1,31 +1,24 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, MapPin, Compass, Navigation, Layers } from 'lucide-react'
-import { geographyService } from '@/services/geographyService'
-import { catalogService } from '@/services/catalogService'
-import type { RegionDto } from '@/types/models/geography.model'
-import type { CategoryDto } from '@/types/models/place.model'
+import { placeService } from '@/services/placeService'
+import type { LookupItemDto, RegionLookupDto } from '@/types/models/place.model'
 
 export const HeroBanner: React.FC = () => {
   const navigate = useNavigate()
   const [keyword, setKeyword] = useState('')
   const [region, setRegion] = useState('')
   const [category, setCategory] = useState('')
-  const [regions, setRegions] = useState<RegionDto[]>([])
-  const [categories, setCategories] = useState<CategoryDto[]>([])
+  const [regions, setRegions] = useState<RegionLookupDto[]>([])
+  const [categories, setCategories] = useState<LookupItemDto[]>([])
 
   useEffect(() => {
     const loadHeroOptions = async () => {
       try {
-        const [regRes, catRes] = await Promise.allSettled([
-          geographyService.getRegions(),
-          catalogService.getCategories()
-        ])
-        if (regRes.status === 'fulfilled' && regRes.value.success && regRes.value.data) {
-          setRegions(regRes.value.data)
-        }
-        if (catRes.status === 'fulfilled' && catRes.value.success && catRes.value.data) {
-          setCategories(catRes.value.data)
+        const res = await placeService.getFilterOptions()
+        if (res.success && res.data) {
+          setRegions(res.data.regions || [])
+          setCategories(res.data.categories || [])
         }
       } catch {
       }
@@ -39,7 +32,7 @@ export const HeroBanner: React.FC = () => {
     const params = new URLSearchParams()
     if (keyword.trim()) params.set('q', keyword.trim())
     if (region) params.set('region', region)
-    if (category && category !== 'Tất cả danh mục') params.set('cat', category)
+    if (category) params.set('cat', category)
 
     navigate(`/explore?${params.toString()}`)
   }
@@ -98,19 +91,11 @@ export const HeroBanner: React.FC = () => {
                     className="bg-transparent text-xs sm:text-sm text-slate-700 font-semibold px-2 py-2 focus:outline-hidden cursor-pointer"
                   >
                     <option value="">Tất cả miền</option>
-                    {regions && regions.length > 0 ? (
-                      regions.map((r) => (
-                        <option key={r.id} value={r.name}>
-                          {r.name}
-                        </option>
-                      ))
-                    ) : (
-                      <>
-                        <option value="Miền Bắc">Miền Bắc</option>
-                        <option value="Miền Trung">Miền Trung</option>
-                        <option value="Miền Nam">Miền Nam</option>
-                      </>
-                    )}
+                    {regions.map((r) => (
+                      <option key={r.id} value={r.name}>
+                        {r.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -123,22 +108,11 @@ export const HeroBanner: React.FC = () => {
                     className="bg-transparent text-xs sm:text-sm text-slate-700 font-semibold px-2 py-2 focus:outline-hidden cursor-pointer"
                   >
                     <option value="">Tất cả danh mục</option>
-                    {categories && categories.length > 0 ? (
-                      categories.map((c) => (
-                        <option key={c.id} value={c.name}>
-                          {c.name}
-                        </option>
-                      ))
-                    ) : (
-                      <>
-                        <option value="Danh lam thắng cảnh">Danh lam thắng cảnh</option>
-                        <option value="Vườn quốc gia">Vườn quốc gia</option>
-                        <option value="Di tích">Di tích lịch sử</option>
-                        <option value="Bãi biển">Bãi biển</option>
-                        <option value="Quán ăn">Ẩm thực & Quán ăn</option>
-                        <option value="Cà phê">Quán cà phê chill</option>
-                      </>
-                    )}
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.name}>
+                        {c.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
