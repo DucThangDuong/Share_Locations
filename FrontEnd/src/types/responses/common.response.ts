@@ -1,4 +1,15 @@
-import type { PaginationMeta, ValidationErrorDetail } from '../models/common.model'
+export interface PaginationMeta {
+  page: number
+  size: number
+  totalElements: number
+  totalPages: number
+}
+
+export interface ValidationErrorDetail {
+  field: string
+  message: string
+  rejectedValue?: unknown
+}
 
 export interface ApiSuccessResponse<T> {
   success: boolean

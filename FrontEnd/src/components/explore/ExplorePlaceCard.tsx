@@ -1,27 +1,8 @@
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 import { MapPin, Star, Heart, Clock } from 'lucide-react'
 import type { PlaceSummaryDto } from '@/types/models/place.model'
 
-const ImgWithFallback: React.FC<{ src?: string | null; alt: string; className?: string }> = ({ src, alt, className }) => {
-  const fallbackUrl = 'https://images.unsplash.com/photo-1528127269322-539801943592?w=800&h=800&fit=crop&auto=format'
-  const [imgSrc, setImgSrc] = useState(src || fallbackUrl)
-
-  useEffect(() => {
-    setImgSrc(src || fallbackUrl)
-  }, [src])
-
-  return (
-    <img
-      src={imgSrc}
-      alt={alt}
-      className={className}
-      loading="lazy"
-      onError={() => {
-        setImgSrc(fallbackUrl)
-      }}
-    />
-  )
-}
+const FALLBACK_IMG = 'https://images.unsplash.com/photo-1528127269322-539801943592?w=800&h=800&fit=crop&auto=format'
 
 interface ExplorePlaceCardProps {
   place: PlaceSummaryDto
@@ -42,23 +23,27 @@ export const ExplorePlaceCard: React.FC<ExplorePlaceCardProps> = ({
       ? `Từ ${place.minPrice.toLocaleString('vi-VN')}đ`
       : 'Miễn phí'
 
+  const tags = [place.categoryName, place.placeTypeName, place.provinceName].filter(Boolean).slice(0, 3)
+
   if (viewMode === 'list') {
     return (
       <div className="group bg-white rounded-lg overflow-hidden border border-slate-200/80 transition-colors duration-300 flex flex-col sm:flex-row">
         <div className="w-full sm:w-52 md:w-56 aspect-square sm:aspect-square relative bg-slate-100 shrink-0 overflow-hidden">
-          <ImgWithFallback
-            src={place.thumbnailUrl}
+          <img
+            src={place.thumbnailUrl || FALLBACK_IMG}
             alt={place.name}
             className="absolute inset-0 w-full h-full object-cover"
+            loading="lazy"
+            onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMG }}
           />
           <div className="absolute inset-0 bg-white/0 group-hover:bg-white/15 transition-colors duration-300 pointer-events-none"></div>
-          <div className="absolute top-3 left-3">
-            {place.categoryName && (
+          {place.categoryName && (
+            <div className="absolute top-3 left-3">
               <span className="px-2.5 py-1 rounded-md bg-slate-900/80 backdrop-blur-md text-white text-[10px] font-bold">
                 {place.categoryName}
               </span>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         <div className="p-4 sm:p-5 flex flex-col flex-1 justify-between space-y-2 overflow-hidden">
@@ -98,7 +83,7 @@ export const ExplorePlaceCard: React.FC<ExplorePlaceCardProps> = ({
 
           <div>
             <div className="flex flex-wrap gap-1.5 py-1">
-              {[place.categoryName, place.placeTypeName, place.provinceName].filter(Boolean).slice(0, 3).map((tag, idx) => (
+              {tags.map((tag, idx) => (
                 <span
                   key={idx}
                   className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-medium"
@@ -128,10 +113,12 @@ export const ExplorePlaceCard: React.FC<ExplorePlaceCardProps> = ({
   return (
     <div className="group bg-white rounded-lg overflow-hidden border border-slate-200/80 transition-colors duration-300 flex flex-col h-full">
       <div className="relative aspect-square w-full bg-slate-100 overflow-hidden shrink-0">
-        <ImgWithFallback
-          src={place.thumbnailUrl}
+        <img
+          src={place.thumbnailUrl || FALLBACK_IMG}
           alt={place.name}
           className="absolute inset-0 w-full h-full object-cover"
+          loading="lazy"
+          onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMG }}
         />
         <div className="absolute inset-0 bg-white/0 group-hover:bg-white/15 transition-colors duration-300 pointer-events-none"></div>
         <button
@@ -169,7 +156,7 @@ export const ExplorePlaceCard: React.FC<ExplorePlaceCardProps> = ({
           </p>
 
           <div className="flex flex-wrap gap-1.5 pt-2">
-            {[place.categoryName, place.placeTypeName, place.provinceName].filter(Boolean).slice(0, 3).map((tag, idx) => (
+            {tags.map((tag, idx) => (
               <span
                 key={idx}
                 className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-medium"

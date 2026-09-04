@@ -251,26 +251,6 @@ export const ExplorePage: React.FC = () => {
   }
 
   const resetFilters = () => {
-    setDraftSearch('')
-    setDraftCategoryName('')
-    setDraftCategoryId(undefined)
-    setDraftRegions([])
-    setDraftRegionIds([])
-    setDraftProvinces([])
-    setDraftProvinceIds([])
-    setDraftPriceTier(0)
-    setDraftMinRating(0)
-
-    setAppliedSearch('')
-    setAppliedCategoryName('')
-    setAppliedCategoryId(undefined)
-    setAppliedRegions([])
-    setAppliedRegionIds([])
-    setAppliedProvinces([])
-    setAppliedProvinceIds([])
-    setAppliedPriceTier(0)
-    setAppliedMinRating(0)
-
     setSearchParams({})
     setIsMobileFilterOpen(false)
   }
@@ -280,15 +260,9 @@ export const ExplorePage: React.FC = () => {
 
     if (type === 'search') {
       params.delete('q')
-      setDraftSearch('')
-      setAppliedSearch('')
     } else if (type === 'category') {
       params.delete('cat')
       params.delete('catId')
-      setDraftCategoryName('')
-      setDraftCategoryId(undefined)
-      setAppliedCategoryName('')
-      setAppliedCategoryId(undefined)
     } else if (type === 'region' && typeof value === 'string') {
       const nextRegs = appliedRegions.filter((r) => r !== value)
       const rObj = regions.find((r) => r.name === value)
@@ -300,10 +274,6 @@ export const ExplorePage: React.FC = () => {
         params.delete('region')
         params.delete('regionId')
       }
-      setDraftRegions(nextRegs)
-      setDraftRegionIds(nextRegIds)
-      setAppliedRegions(nextRegs)
-      setAppliedRegionIds(nextRegIds)
     } else if (type === 'province' && typeof value === 'string') {
       const nextProvs = appliedProvinces.filter((p) => p !== value)
       const pObj = allProvinces.find((p) => p.name === value)
@@ -315,18 +285,10 @@ export const ExplorePage: React.FC = () => {
         params.delete('province')
         params.delete('provinceId')
       }
-      setDraftProvinces(nextProvs)
-      setDraftProvinceIds(nextProvIds)
-      setAppliedProvinces(nextProvs)
-      setAppliedProvinceIds(nextProvIds)
     } else if (type === 'price') {
       params.delete('priceTier')
-      setDraftPriceTier(0)
-      setAppliedPriceTier(0)
     } else if (type === 'rating') {
       params.delete('minRating')
-      setDraftMinRating(0)
-      setAppliedMinRating(0)
     }
 
     params.delete('page')

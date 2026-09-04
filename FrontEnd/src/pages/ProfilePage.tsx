@@ -20,6 +20,50 @@ import {
 
 type TabType = 'posts' | 'itineraries' | 'saved' | 'suggested'
 
+interface TabConfigItem {
+  label: string
+  tabIcon: React.ElementType
+  emptyIcon: React.ElementType
+  color: string
+  title: string
+  desc: string
+}
+
+const TAB_CONFIG: Record<TabType, TabConfigItem> = {
+  posts: {
+    label: 'Bài viết (0)',
+    tabIcon: BookOpen,
+    emptyIcon: FileText,
+    color: 'bg-emerald-50 text-emerald-700',
+    title: 'Chưa có bài viết nào',
+    desc: 'Bạn chưa đăng bài viết chia sẻ kinh nghiệm du lịch nào. Hãy viết bài đầu tiên để chia sẻ với cộng đồng LangThang!'
+  },
+  itineraries: {
+    label: 'Lịch trình (0)',
+    tabIcon: Compass,
+    emptyIcon: Compass,
+    color: 'bg-amber-50 text-amber-700',
+    title: 'Chưa có lịch trình nào',
+    desc: 'Bạn chưa lên lịch trình khám phá nào. Hãy tạo kế hoạch cho chuyến đi tiếp theo của bạn!'
+  },
+  saved: {
+    label: 'Đã lưu (0)',
+    tabIcon: Bookmark,
+    emptyIcon: Bookmark,
+    color: 'bg-slate-100 text-slate-600',
+    title: 'Chưa lưu địa điểm nào',
+    desc: 'Danh sách các địa điểm yêu thích của bạn đang trống. Hãy dạo quanh trang chủ để lưu lại các địa điểm hấp dẫn!'
+  },
+  suggested: {
+    label: 'Đề xuất (0)',
+    tabIcon: PlusCircle,
+    emptyIcon: Inbox,
+    color: 'bg-blue-50 text-blue-700',
+    title: 'Chưa có đề xuất địa điểm nào',
+    desc: 'Bạn chưa gửi đề xuất địa điểm mới nào cho hệ thống. Đóng góp địa điểm để tích lũy điểm cống hiến nhé!'
+  }
+}
+
 export const ProfilePage: React.FC = () => {
   const { profile, user, updateProfile, isLoading } = useAuth()
   const [activeTab, setActiveTab] = useState<TabType>('posts')
@@ -57,6 +101,9 @@ export const ProfilePage: React.FC = () => {
       ? `${currentProfile.phone.slice(0, 4)} *** ${currentProfile.phone.slice(-3)}`
       : currentProfile.phone)
     : 'Chưa cập nhật'
+
+  const activeConf = TAB_CONFIG[activeTab]
+  const EmptyIcon = activeConf.emptyIcon
 
   return (
     <div className="min-h-screen bg-slate-50/70 pb-20">
@@ -180,107 +227,38 @@ export const ProfilePage: React.FC = () => {
 
           <div className="lg:col-span-8 space-y-6">
             <div className="bg-white rounded-lg p-2 border border-slate-200/80 flex flex-wrap gap-1.5">
-              <button
-                onClick={() => setActiveTab('posts')}
-                className={`flex-1 min-w-[120px] py-2.5 px-4 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${activeTab === 'posts'
-                  ? 'bg-primary-container text-white'
-                  : 'text-slate-600 hover:bg-slate-100/80'
-                  }`}
-              >
-                <BookOpen className="w-3.5 h-3.5" />
-                <span>Bài viết (0)</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab('itineraries')}
-                className={`flex-1 min-w-[120px] py-2.5 px-4 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${activeTab === 'itineraries'
-                  ? 'bg-primary-container text-white'
-                  : 'text-slate-600 hover:bg-slate-100/80'
-                  }`}
-              >
-                <Compass className="w-3.5 h-3.5" />
-                <span>Lịch trình (0)</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab('saved')}
-                className={`flex-1 min-w-[120px] py-2.5 px-4 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${activeTab === 'saved'
-                  ? 'bg-primary-container text-white'
-                  : 'text-slate-600 hover:bg-slate-100/80'
-                  }`}
-              >
-                <Bookmark className="w-3.5 h-3.5" />
-                <span>Đã lưu (0)</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab('suggested')}
-                className={`flex-1 min-w-[120px] py-2.5 px-4 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${activeTab === 'suggested'
-                  ? 'bg-primary-container text-white'
-                  : 'text-slate-600 hover:bg-slate-100/80'
-                  }`}
-              >
-                <PlusCircle className="w-3.5 h-3.5" />
-                <span>Đề xuất (0)</span>
-              </button>
+              {(Object.keys(TAB_CONFIG) as TabType[]).map((tabKey) => {
+                const conf = TAB_CONFIG[tabKey]
+                const TabIcon = conf.tabIcon
+                const isActive = activeTab === tabKey
+                return (
+                  <button
+                    key={tabKey}
+                    onClick={() => setActiveTab(tabKey)}
+                    className={`flex-1 min-w-[120px] py-2.5 px-4 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${isActive
+                      ? 'bg-primary-container text-white'
+                      : 'text-slate-600 hover:bg-slate-100/80'
+                      }`}
+                  >
+                    <TabIcon className="w-3.5 h-3.5" />
+                    <span>{conf.label}</span>
+                  </button>
+                )
+              })}
             </div>
 
             <div className="space-y-4">
-              {activeTab === 'posts' && (
-                <div className="bg-white rounded-lg p-14 border border-slate-200/80 text-center flex flex-col items-center justify-center space-y-3 animate-in fade-in">
-                  <div className="w-16 h-16 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center">
-                    <FileText className="w-8 h-8" />
-                  </div>
-                  <h3 className="text-base font-bold text-slate-800">
-                    Chưa có bài viết nào
-                  </h3>
-                  <p className="text-xs text-slate-500 max-w-sm font-normal">
-                    Bạn chưa đăng bài viết chia sẻ kinh nghiệm du lịch nào. Hãy viết bài đầu tiên để chia sẻ với cộng đồng LangThang!
-                  </p>
+              <div className="bg-white rounded-lg p-14 border border-slate-200/80 text-center flex flex-col items-center justify-center space-y-3 animate-in fade-in">
+                <div className={`w-16 h-16 rounded-lg ${activeConf.color} flex items-center justify-center`}>
+                  <EmptyIcon className="w-8 h-8" />
                 </div>
-              )}
-
-              {activeTab === 'itineraries' && (
-                <div className="bg-white rounded-lg p-14 border border-slate-200/80 text-center flex flex-col items-center justify-center space-y-3 animate-in fade-in">
-                  <div className="w-16 h-16 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center">
-                    <Compass className="w-8 h-8" />
-                  </div>
-                  <h3 className="text-base font-bold text-slate-800">
-                    Chưa có lịch trình nào
-                  </h3>
-                  <p className="text-xs text-slate-500 max-w-sm font-normal">
-                    Bạn chưa lên lịch trình khám phá nào. Hãy tạo kế hoạch cho chuyến đi tiếp theo của bạn!
-                  </p>
-                </div>
-              )}
-
-              {activeTab === 'saved' && (
-                <div className="bg-white rounded-lg p-14 border border-slate-200/80 text-center flex flex-col items-center justify-center space-y-3 animate-in fade-in">
-                  <div className="w-16 h-16 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center">
-                    <Bookmark className="w-8 h-8" />
-                  </div>
-                  <h3 className="text-base font-bold text-slate-800">
-                    Chưa lưu địa điểm nào
-                  </h3>
-                  <p className="text-xs text-slate-500 max-w-sm font-normal">
-                    Danh sách các địa điểm yêu thích của bạn đang trống. Hãy dạo quanh trang chủ để lưu lại các địa điểm hấp dẫn!
-                  </p>
-                </div>
-              )}
-
-              {activeTab === 'suggested' && (
-                <div className="bg-white rounded-lg p-14 border border-slate-200/80 text-center flex flex-col items-center justify-center space-y-3 animate-in fade-in">
-                  <div className="w-16 h-16 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center">
-                    <Inbox className="w-8 h-8" />
-                  </div>
-                  <h3 className="text-base font-bold text-slate-800">
-                    Chưa có đề xuất địa điểm nào
-                  </h3>
-                  <p className="text-xs text-slate-500 max-w-sm font-normal">
-                    Bạn chưa gửi đề xuất địa điểm mới nào cho hệ thống. Đóng góp địa điểm để tích lũy điểm cống hiến nhé!
-                  </p>
-                </div>
-              )}
+                <h3 className="text-base font-bold text-slate-800">
+                  {activeConf.title}
+                </h3>
+                <p className="text-xs text-slate-500 max-w-sm font-normal">
+                  {activeConf.desc}
+                </p>
+              </div>
             </div>
           </div>
         </div>

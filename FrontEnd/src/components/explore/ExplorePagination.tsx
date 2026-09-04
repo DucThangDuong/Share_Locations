@@ -15,22 +15,11 @@ export const ExplorePagination: React.FC<ExplorePaginationProps> = ({
   if (totalPages <= 1) return null
 
   const getPageNumbers = (): (number | string)[] => {
-    if (totalPages <= 7) {
-      return Array.from({ length: totalPages }, (_, i) => i + 1)
-    }
-
-    if (currentPage <= 4) {
-      return [1, 2, 3, 4, 5, 'ellipsis-right', totalPages]
-    }
-
-    if (currentPage >= totalPages - 3) {
-      return [1, 'ellipsis-left', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages]
-    }
-
-    return [1, 'ellipsis-left', currentPage - 1, currentPage, currentPage + 1, 'ellipsis-right', totalPages]
+    if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1)
+    if (currentPage <= 4) return [1, 2, 3, 4, 5, 'ellipsis-r', totalPages]
+    if (currentPage >= totalPages - 3) return [1, 'ellipsis-l', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages]
+    return [1, 'ellipsis-l', currentPage - 1, currentPage, currentPage + 1, 'ellipsis-r', totalPages]
   }
-
-  const pages = getPageNumbers()
 
   return (
     <nav aria-label="Phân trang" className="flex items-center justify-center gap-1.5 pt-8 select-none">
@@ -46,35 +35,29 @@ export const ExplorePagination: React.FC<ExplorePaginationProps> = ({
       </button>
 
       <div className="flex items-center gap-1">
-        {pages.map((item, idx) => {
+        {getPageNumbers().map((item, idx) => {
           if (typeof item === 'string') {
             return (
-              <span
-                key={`${item}-${idx}`}
-                className="w-9 h-10 flex items-center justify-center text-slate-400"
-              >
+              <span key={`${item}-${idx}`} className="w-9 h-10 flex items-center justify-center text-slate-400">
                 <MoreHorizontal className="w-4 h-4" />
               </span>
             )
           }
 
-          const pageNum = item as number
-          const isActive = currentPage === pageNum
-
+          const isActive = currentPage === item
           return (
             <button
-              key={pageNum}
+              key={item}
               type="button"
-              onClick={() => onPageChange(pageNum)}
-              aria-label={`Trang ${pageNum}`}
+              onClick={() => onPageChange(item)}
+              aria-label={`Trang ${item}`}
               aria-current={isActive ? 'page' : undefined}
-              className={`w-10 h-10 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center ${
-                isActive
-                  ? 'bg-[#004f32] text-white'
-                  : 'bg-white border border-slate-200/90 text-slate-700 hover:bg-slate-50'
-              }`}
+              className={`w-10 h-10 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center ${isActive
+                ? 'bg-[#004f32] text-white'
+                : 'bg-white border border-slate-200/90 text-slate-700 hover:bg-slate-50'
+                }`}
             >
-              {pageNum}
+              {item}
             </button>
           )
         })}

@@ -10,16 +10,7 @@ import { RegionShowcaseCard } from './RegionShowcaseCard'
 
 const CollectionTrack: React.FC<{ collection: CollectionDto }> = ({ collection }) => {
   const scrollRef = useRef<HTMLDivElement>(null)
-
-  const handleScroll = (direction: 'left' | 'right') => {
-    if (scrollRef.current) {
-      const amount = 320
-      scrollRef.current.scrollBy({
-        left: direction === 'left' ? -amount : amount,
-        behavior: 'smooth'
-      })
-    }
-  }
+  const scroll = (dir: number) => scrollRef.current?.scrollBy({ left: dir * 320, behavior: 'smooth' })
 
   const places = collection.places || []
   if (places.length === 0) return null
@@ -45,7 +36,7 @@ const CollectionTrack: React.FC<{ collection: CollectionDto }> = ({ collection }
           <div className="flex items-center space-x-1.5">
             <button
               type="button"
-              onClick={() => handleScroll('left')}
+              onClick={() => scroll(-1)}
               className="w-8 h-8 rounded-full border border-slate-200 bg-white flex items-center justify-center text-slate-600 hover:bg-primary hover:text-white transition-all cursor-pointer"
               title="Lướt sang trái"
             >
@@ -53,7 +44,7 @@ const CollectionTrack: React.FC<{ collection: CollectionDto }> = ({ collection }
             </button>
             <button
               type="button"
-              onClick={() => handleScroll('right')}
+              onClick={() => scroll(1)}
               className="w-8 h-8 rounded-full border border-slate-200 bg-white flex items-center justify-center text-slate-600 hover:bg-primary hover:text-white transition-all cursor-pointer"
               title="Lướt sang phải"
             >
@@ -120,23 +111,15 @@ export const HomeFeaturedInterleaved: React.FC = () => {
     )
   }
 
+  const maxGroups = Math.max(Math.ceil(collections.length / 2), regions.length)
   const items: React.ReactNode[] = []
-  let colIndex = 0
-  let regIndex = 0
 
-  while (colIndex < collections.length || regIndex < regions.length) {
-    for (let i = 0; i < 2 && colIndex < collections.length; i++) {
-      const col = collections[colIndex++]
-      items.push(
-        <CollectionTrack key={`col-${col.id}`} collection={col} />
-      )
-    }
-
-    if (regIndex < regions.length) {
-      const reg = regions[regIndex++]
-      items.push(
-        <RegionShowcaseCard key={`reg-${reg.id}`} region={reg} />
-      )
+  for (let g = 0; g < maxGroups; g++) {
+    collections.slice(g * 2, g * 2 + 2).forEach((col) => {
+      items.push(<CollectionTrack key={`col-${col.id}`} collection={col} />)
+    })
+    if (regions[g]) {
+      items.push(<RegionShowcaseCard key={`reg-${regions[g].id}`} region={regions[g]} />)
     }
   }
 
