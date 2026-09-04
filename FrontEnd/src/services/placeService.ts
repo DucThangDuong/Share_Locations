@@ -4,7 +4,7 @@ import type { PlaceSummaryDto, PlaceFilterParams, PlaceFilterOptionsDto } from '
 
 export const placeService = {
   async getFilterOptions(): Promise<ApiSuccessResponse<PlaceFilterOptionsDto>> {
-    const response = await apiClient.get<ApiSuccessResponse<PlaceFilterOptionsDto>>('/api/places/filter-options')
+    const response = await apiClient.get<ApiSuccessResponse<PlaceFilterOptionsDto>>('/api/v1/places/filter-options')
     return response.data
   },
 
@@ -23,7 +23,7 @@ export const placeService = {
     cleanParams.Page = params.page || 1
     cleanParams.PageSize = params.pageSize || 12
 
-    const response = await apiClient.get<ApiSuccessResponse<PlaceSummaryDto[]>>('/api/places', {
+    const response = await apiClient.get<ApiSuccessResponse<PlaceSummaryDto[]>>('/api/v1/places', {
       params: cleanParams
     })
     return response.data

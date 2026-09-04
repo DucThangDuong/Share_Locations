@@ -13,8 +13,9 @@ public class GetPlaceFilterOptionsEndpoint : EndpointWithoutRequest<ApiSuccessRe
 
     public override void Configure()
     {
-        Get("/api/places/filter-options");
+        Get("/api/v1/places/filter-options", "/api/places/filter-options");
         AllowAnonymous();
+        Options(x => x.RequireRateLimiting("general_api"));
     }
 
     public override async Task HandleAsync(CancellationToken ct)

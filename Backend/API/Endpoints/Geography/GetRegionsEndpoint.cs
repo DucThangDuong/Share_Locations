@@ -13,8 +13,9 @@ public class GetRegionsEndpoint : EndpointWithoutRequest<ApiSuccessResponse<IRea
 
     public override void Configure()
     {
-        Get("/api/regions");
+        Get("/api/v1/regions", "/api/regions");
         AllowAnonymous();
+        Options(x => x.RequireRateLimiting("general_api"));
     }
 
     public override async Task HandleAsync(CancellationToken ct)

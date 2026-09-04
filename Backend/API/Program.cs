@@ -29,7 +29,7 @@ public class Program
 
         builder.Services.AddApplication();
         builder.Services.AddInfrastructure(builder.Configuration);
-        builder.Services.AddAppHealthChecks(builder.Configuration);
+        builder.Services.AddAppHealthChecks();
 
         builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
         builder.Services.AddProblemDetails();
@@ -48,8 +48,21 @@ public class Program
 
         app.UseExceptionHandler();
 
+        if (!app.Environment.IsDevelopment())
+        {
+            app.UseHsts();
+        }
+
+        app.Use(async (context, next) =>
+        {
+            context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
+            context.Response.Headers.Append("X-Frame-Options", "DENY");
+            context.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
+            await next();
+        });
+
         app.UseHttpsRedirection();
-        app.UseCors(CorsConfig.PolicyName);
+        app.UseCors(AppServiceExtensions.CorsPolicy);
 
         app.MapAppHealthChecks();
 
@@ -81,7 +94,10 @@ public class Program
             c.Errors.StatusCode = StatusCodes.Status422UnprocessableEntity;
         });
 
-        app.UseSwaggerGen();
+        if (app.Environment.IsDevelopment())
+        {
+            app.UseSwaggerGen();
+        }
 
         await app.RunAsync();
     }

@@ -13,8 +13,9 @@ public class GetProvincesEndpoint : EndpointWithoutRequest<ApiSuccessResponse<IR
 
     public override void Configure()
     {
-        Get("/api/provinces");
+        Get("/api/v1/provinces", "/api/provinces");
         AllowAnonymous();
+        Options(x => x.RequireRateLimiting("general_api"));
     }
 
     public override async Task HandleAsync(CancellationToken ct)

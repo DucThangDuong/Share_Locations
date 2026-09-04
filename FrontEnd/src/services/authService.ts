@@ -11,32 +11,32 @@ import type {
 
 export const authService = {
   async login(payload: LoginRequest): Promise<ApiSuccessResponse<AuthTokenResponse>> {
-    const response = await apiClient.post<ApiSuccessResponse<AuthTokenResponse>>('/api/auth/login', payload)
+    const response = await apiClient.post<ApiSuccessResponse<AuthTokenResponse>>('/api/v1/auth/login', payload)
     return response.data
   },
 
   async register(payload: RegisterRequest): Promise<ApiSuccessResponse<number>> {
-    const response = await apiClient.post<ApiSuccessResponse<number>>('/api/auth/register', payload)
+    const response = await apiClient.post<ApiSuccessResponse<number>>('/api/v1/auth/register', payload)
     return response.data
   },
 
   async googleLogin(payload: GoogleLoginRequest): Promise<ApiSuccessResponse<AuthTokenResponse>> {
-    const response = await apiClient.post<ApiSuccessResponse<AuthTokenResponse>>('/api/auth/google', payload)
+    const response = await apiClient.post<ApiSuccessResponse<AuthTokenResponse>>('/api/v1/auth/google', payload)
     return response.data
   },
 
   async refreshToken(): Promise<ApiSuccessResponse<AuthTokenResponse>> {
-    const response = await apiClient.post<ApiSuccessResponse<AuthTokenResponse>>('/api/auth/refresh-token')
+    const response = await apiClient.post<ApiSuccessResponse<AuthTokenResponse>>('/api/v1/auth/refresh-token')
     return response.data
   },
 
   async logout(): Promise<ApiSuccessResponse<boolean>> {
-    const response = await apiClient.post<ApiSuccessResponse<boolean>>('/api/auth/logout')
+    const response = await apiClient.post<ApiSuccessResponse<boolean>>('/api/v1/auth/logout')
     return response.data
   },
 
   async getProfile(): Promise<ApiSuccessResponse<UserDto>> {
-    const response = await apiClient.get<ApiSuccessResponse<UserDto>>('/api/auth/profile')
+    const response = await apiClient.get<ApiSuccessResponse<UserDto>>('/api/v1/auth/profile')
     return response.data
   },
 
@@ -63,7 +63,7 @@ export const authService = {
       formData.append('CoverFile', payload.coverFile)
     }
 
-    const response = await apiClient.put<ApiSuccessResponse<UserDto>>('/api/auth/profile', formData, {
+    const response = await apiClient.put<ApiSuccessResponse<UserDto>>('/api/v1/auth/profile', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },

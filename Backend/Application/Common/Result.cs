@@ -73,24 +73,6 @@ public class Result
     public static Result Forbidden(string message = "Bạn không có quyền thực hiện thao tác này")
         => new(false, message, HttpStatusCode.Forbidden, "FORBIDDEN");
 
-    public static TResponse CreateValidationError<TResponse>(IEnumerable<ValidationErrorItem> errors, string message = "Dữ liệu yêu cầu không hợp lệ.")
-    {
-        if (typeof(TResponse) == typeof(Result))
-        {
-            return (TResponse)(object)ValidationError(message, errors);
-        }
-
-        if (typeof(TResponse).IsGenericType && typeof(TResponse).GetGenericTypeDefinition() == typeof(Result<>))
-        {
-            var method = typeof(TResponse).GetMethod("ValidationError", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static, new[] { typeof(string), typeof(IEnumerable<ValidationErrorItem>) });
-            if (method != null)
-            {
-                return (TResponse)method.Invoke(null, new object[] { message, errors })!;
-            }
-        }
-
-        return default!;
-    }
 }
 
 public class Result<T> : Result

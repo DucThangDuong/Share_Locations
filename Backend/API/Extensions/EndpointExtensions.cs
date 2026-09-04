@@ -1,93 +1,39 @@
 using API.DTOs;
 using Application.Common;
 using FastEndpoints;
+using Microsoft.AspNetCore.Http;
 
 namespace API.Extensions;
 
 public static class EndpointExtensions
 {
-    public static async Task SendApiResponseAsync<T>(
-        this IEndpoint endpoint,
-        Result<T> result,
-        CancellationToken ct = default)
+    public static Task SendApiResponseAsync<T>(this IEndpoint endpoint, Result<T> result, CancellationToken ct = default)
     {
-        var httpContext = endpoint.HttpContext;
-        var path = httpContext.Request.Path.Value ?? string.Empty;
-        var requestId = httpContext.TraceIdentifier;
-
-        if (result.IsSuccess)
-        {
-            var successResponse = new ApiSuccessResponse<T>(result.Data, result.Message);
-            var statusCode = (int)result.StatusCode;
-            await httpContext.Response.SendAsync(successResponse, statusCode, cancellation: ct);
-            return;
-        }
-
-        var errorDetails = result.Errors.Count > 0
-            ? result.Errors.Select(e => new ValidationErrorDetail(e.Field, e.Message, e.RejectedValue)).ToList()
-            : null;
-
-        var errorResponse = new ApiErrorResponse(
-            code: result.ErrorCode,
-            message: result.Message,
-            path: path,
-            requestId: requestId,
-            errors: errorDetails
-        );
-
-        await httpContext.Response.SendAsync(errorResponse, (int)result.StatusCode, cancellation: ct);
+        return result.IsSuccess
+            ? endpoint.HttpContext.Response.SendAsync(new ApiSuccessResponse<T>(result.Data, result.Message), (int)result.StatusCode, cancellation: ct)
+            : SendErrorAsync(endpoint.HttpContext, result, ct);
     }
 
-    public static async Task SendPagedApiResponseAsync<T>(
-        this IEndpoint endpoint,
-        Result<PagedResult<T>> result,
-        CancellationToken ct = default)
+    public static Task SendPagedApiResponseAsync<T>(this IEndpoint endpoint, Result<PagedResult<T>> result, CancellationToken ct = default)
     {
-        var httpContext = endpoint.HttpContext;
-        var path = httpContext.Request.Path.Value ?? string.Empty;
-        var requestId = httpContext.TraceIdentifier;
-
         if (result.IsSuccess && result.Data != null)
         {
             var meta = new PaginationMeta(result.Data.PageIndex, result.Data.PageSize, result.Data.TotalCount);
-            var successResponse = new ApiSuccessResponse<IReadOnlyList<T>>(result.Data.Items, result.Message, meta);
-            var statusCode = (int)result.StatusCode;
-            await httpContext.Response.SendAsync(successResponse, statusCode, cancellation: ct);
-            return;
+            return endpoint.HttpContext.Response.SendAsync(new ApiSuccessResponse<IReadOnlyList<T>>(result.Data.Items, result.Message, meta), (int)result.StatusCode, cancellation: ct);
         }
 
-        var errorDetails = result.Errors.Count > 0
-            ? result.Errors.Select(e => new ValidationErrorDetail(e.Field, e.Message, e.RejectedValue)).ToList()
-            : null;
-
-        var errorResponse = new ApiErrorResponse(
-            code: result.ErrorCode,
-            message: result.Message,
-            path: path,
-            requestId: requestId,
-            errors: errorDetails
-        );
-
-        await httpContext.Response.SendAsync(errorResponse, (int)result.StatusCode, cancellation: ct);
+        return SendErrorAsync(endpoint.HttpContext, result, ct);
     }
 
-    public static async Task SendApiResponseAsync(
-        this IEndpoint endpoint,
-        Result result,
-        CancellationToken ct = default)
+    public static Task SendApiResponseAsync(this IEndpoint endpoint, Result result, CancellationToken ct = default)
     {
-        var httpContext = endpoint.HttpContext;
-        var path = httpContext.Request.Path.Value ?? string.Empty;
-        var requestId = httpContext.TraceIdentifier;
+        return result.IsSuccess
+            ? endpoint.HttpContext.Response.SendAsync(new ApiSuccessResponse<object?>(null, result.Message), (int)result.StatusCode, cancellation: ct)
+            : SendErrorAsync(endpoint.HttpContext, result, ct);
+    }
 
-        if (result.IsSuccess)
-        {
-            var successResponse = new ApiSuccessResponse<object?>(null, result.Message);
-            var statusCode = (int)result.StatusCode;
-            await httpContext.Response.SendAsync(successResponse, statusCode, cancellation: ct);
-            return;
-        }
-
+    private static Task SendErrorAsync(HttpContext ctx, Result result, CancellationToken ct)
+    {
         var errorDetails = result.Errors.Count > 0
             ? result.Errors.Select(e => new ValidationErrorDetail(e.Field, e.Message, e.RejectedValue)).ToList()
             : null;
@@ -95,11 +41,11 @@ public static class EndpointExtensions
         var errorResponse = new ApiErrorResponse(
             code: result.ErrorCode,
             message: result.Message,
-            path: path,
-            requestId: requestId,
+            path: ctx.Request.Path.Value ?? string.Empty,
+            requestId: ctx.TraceIdentifier,
             errors: errorDetails
         );
 
-        await httpContext.Response.SendAsync(errorResponse, (int)result.StatusCode, cancellation: ct);
+        return ctx.Response.SendAsync(errorResponse, (int)result.StatusCode, cancellation: ct);
     }
 }

@@ -12,7 +12,7 @@ public class LogoutEndpoint : EndpointWithoutRequest
 
     public override void Configure()
     {
-        Post("/api/auth/logout");
+        Post("/api/v1/auth/logout", "/api/auth/logout");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Options(x => x.RequireRateLimiting("auth_strict"));
     }

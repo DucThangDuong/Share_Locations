@@ -14,8 +14,9 @@ public class SearchPlacesEndpoint : Endpoint<SearchPlacesRequest, ApiSuccessResp
 
     public override void Configure()
     {
-        Get("/api/places");
+        Get("/api/v1/places", "/api/places");
         AllowAnonymous();
+        Options(x => x.RequireRateLimiting("general_api"));
     }
 
     public override async Task HandleAsync(SearchPlacesRequest req, CancellationToken ct)

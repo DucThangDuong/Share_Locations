@@ -24,7 +24,7 @@ public class JwtTokenService : IJwtTokenService
             ?? throw new InvalidOperationException("CRITICAL: JWT Issuer is not configured!");
         _audience = configuration["Jwt:Audience"] 
             ?? throw new InvalidOperationException("CRITICAL: JWT Audience is not configured!");
-        _expireMinutes = int.TryParse(configuration["Jwt:ExpireMinutes"], out var exp) ? exp : 1440;
+        _expireMinutes = int.TryParse(configuration["Jwt:ExpireMinutes"], out var exp) ? exp : 15;
     }
 
     public string GenerateAccessToken(User user, string? jti = null)

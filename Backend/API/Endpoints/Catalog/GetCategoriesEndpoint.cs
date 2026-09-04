@@ -22,8 +22,9 @@ public class GetCategoriesEndpoint : Endpoint<GetCategoriesRequest, ApiSuccessRe
 
     public override void Configure()
     {
-        Get("/api/categories");
+        Get("/api/v1/categories", "/api/categories");
         AllowAnonymous();
+        Options(x => x.RequireRateLimiting("general_api"));
     }
 
     public override async Task HandleAsync(GetCategoriesRequest req, CancellationToken ct)

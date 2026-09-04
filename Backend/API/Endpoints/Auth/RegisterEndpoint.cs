@@ -13,7 +13,7 @@ public class RegisterEndpoint : Endpoint<RegisterRequest, ApiSuccessResponse<lon
 
     public override void Configure()
     {
-        Post("/api/auth/register");
+        Post("/api/v1/auth/register", "/api/auth/register");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("auth_strict"));
     }

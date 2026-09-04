@@ -14,7 +14,7 @@ public class LoginEndpoint : Endpoint<LoginRequest, ApiSuccessResponse<AuthToken
 
     public override void Configure()
     {
-        Post("/api/auth/login");
+        Post("/api/v1/auth/login", "/api/auth/login");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("auth_strict"));
     }

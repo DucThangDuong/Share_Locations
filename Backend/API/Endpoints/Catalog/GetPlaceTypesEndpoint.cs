@@ -13,8 +13,9 @@ public class GetPlaceTypesEndpoint : EndpointWithoutRequest<ApiSuccessResponse<I
 
     public override void Configure()
     {
-        Get("/api/place-types");
+        Get("/api/v1/place-types", "/api/place-types");
         AllowAnonymous();
+        Options(x => x.RequireRateLimiting("general_api"));
     }
 
     public override async Task HandleAsync(CancellationToken ct)

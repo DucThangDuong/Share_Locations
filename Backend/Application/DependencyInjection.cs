@@ -10,13 +10,7 @@ public static class DependencyInjection
     {
         var assembly = Assembly.GetExecutingAssembly();
 
-        services.AddMediatR(cfg =>
-        {
-            cfg.RegisterServicesFromAssembly(assembly);
-            cfg.AddOpenBehavior(typeof(Application.Common.Behaviors.LoggingBehavior<,>));
-            cfg.AddOpenBehavior(typeof(Application.Common.Behaviors.PerformanceBehavior<,>));
-            cfg.AddOpenBehavior(typeof(Application.Common.Behaviors.ValidationBehavior<,>));
-        });
+        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(assembly));
 
         services.AddValidatorsFromAssembly(assembly);
 
