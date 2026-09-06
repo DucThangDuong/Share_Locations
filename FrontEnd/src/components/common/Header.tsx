@@ -26,7 +26,7 @@ export const Header: React.FC = () => {
 
   const displayName = user?.fullName || profile?.fullName || 'Người dùng'
   const shortName = displayName.split(' ').slice(-2).join(' ')
-  const avatarUrl = user?.avatarUrl || profile?.avatarUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200&auto=format&fit=crop'
+  const avatarUrl = user?.avatarUrl || profile?.avatarUrl || null
   const rankLevel = user?.rankLevel || profile?.rankLevel || 'Tân binh'
 
   useEffect(() => {
@@ -57,10 +57,11 @@ export const Header: React.FC = () => {
 
   const navLinks = [
     { label: 'Trang chủ', href: '/', icon: Compass, isRouter: true, exact: true },
-    { label: 'Khám phá địa điểm', href: '/explore', icon: MapPin, isRouter: true },
-    { label: 'Ẩm thực 3 miền', href: '/#amthuc', icon: Utensils, isRouter: false },
-    { label: 'Lịch trình gợi ý', href: '/#hanhtrinh', icon: Route, isRouter: false },
-    { label: 'Cẩm nang', href: '/#blog', icon: BookOpen, isRouter: false }
+    { label: 'Khám phá', href: '/explore', icon: MapPin, isRouter: true },
+    { label: 'Bản đồ', href: '/map', icon: MapPin, isRouter: true },
+    { label: 'Ẩm thực', href: '/food', icon: Utensils, isRouter: true },
+    { label: 'Lịch trình', href: '/itinerary', icon: Route, isRouter: true },
+    { label: 'Cẩm nang', href: '/blog', icon: BookOpen, isRouter: true }
   ]
 
   return (
@@ -135,14 +136,17 @@ export const Header: React.FC = () => {
                 aria-expanded={isDropdownOpen}
               >
                 <div className="relative">
-                  <img
-                    alt={displayName}
-                    className="w-8 h-8 rounded-full object-cover border border-slate-200 ring-2 ring-emerald-500/20"
-                    src={avatarUrl}
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200&auto=format&fit=crop'
-                    }}
-                  />
+                  {avatarUrl ? (
+                    <img
+                      alt={displayName}
+                      className="w-8 h-8 rounded-full object-cover border border-slate-200 ring-2 ring-emerald-500/20"
+                      src={avatarUrl}
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center text-xs font-bold border border-slate-200 ring-2 ring-emerald-500/20">
+                      {shortName.charAt(0).toUpperCase()}
+                    </div>
+                  )}
                   <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white"></span>
                 </div>
                 <div className="text-left hidden sm:block">
@@ -157,7 +161,7 @@ export const Header: React.FC = () => {
               </button>
 
               {isDropdownOpen && (
-                <div className="absolute right-0 mt-2.5 w-60 bg-white rounded-3xl border border-slate-100 z-50 py-2.5 animate-in fade-in slide-in-from-top-2 duration-150 divide-y divide-slate-100">
+                <div className="absolute right-0 mt-2.5 w-60 bg-white rounded-3xl border border-slate-100 z-50 py-2.5 animate-in fade-in slide-in-from-top-2 duration-150 divide-y divide-slate-100 shadow-xl">
                   <div className="px-4 py-2">
                     <p className="text-xs font-bold text-slate-900 truncate">{displayName}</p>
                     <p className="text-[11px] text-slate-400 truncate">{user?.email || profile?.email}</p>

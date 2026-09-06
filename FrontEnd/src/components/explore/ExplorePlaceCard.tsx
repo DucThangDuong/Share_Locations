@@ -1,8 +1,7 @@
 import React from 'react'
+import { useNavigate } from 'react-router-dom'
 import { MapPin, Star, Heart, Clock } from 'lucide-react'
 import type { PlaceSummaryDto } from '@/types/models/place.model'
-
-const FALLBACK_IMG = 'https://images.unsplash.com/photo-1528127269322-539801943592?w=800&h=800&fit=crop&auto=format'
 
 interface ExplorePlaceCardProps {
   place: PlaceSummaryDto
@@ -17,6 +16,8 @@ export const ExplorePlaceCard: React.FC<ExplorePlaceCardProps> = ({
   isSaved,
   onToggleSave
 }) => {
+  const navigate = useNavigate()
+
   const priceDisplay = place.minPrice && place.maxPrice
     ? `${place.minPrice.toLocaleString('vi-VN')}đ – ${place.maxPrice.toLocaleString('vi-VN')}đ`
     : place.minPrice
@@ -27,15 +28,23 @@ export const ExplorePlaceCard: React.FC<ExplorePlaceCardProps> = ({
 
   if (viewMode === 'list') {
     return (
-      <div className="group bg-white rounded-lg overflow-hidden border border-slate-200/80 transition-colors duration-300 flex flex-col sm:flex-row">
+      <div
+        onClick={() => navigate(`/places/${place.id}`)}
+        className="group bg-white rounded-lg overflow-hidden border border-slate-200/80 transition-colors duration-300 flex flex-col sm:flex-row cursor-pointer"
+      >
         <div className="w-full sm:w-52 md:w-56 aspect-square sm:aspect-square relative bg-slate-100 shrink-0 overflow-hidden">
-          <img
-            src={place.thumbnailUrl || FALLBACK_IMG}
-            alt={place.name}
-            className="absolute inset-0 w-full h-full object-cover"
-            loading="lazy"
-            onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMG }}
-          />
+          {place.thumbnailUrl ? (
+            <img
+              src={place.thumbnailUrl}
+              alt={place.name}
+              className="absolute inset-0 w-full h-full object-cover"
+              loading="lazy"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-slate-100 text-slate-300">
+              <MapPin className="w-10 h-10" />
+            </div>
+          )}
           <div className="absolute inset-0 bg-white/0 group-hover:bg-white/15 transition-colors duration-300 pointer-events-none"></div>
           {place.categoryName && (
             <div className="absolute top-3 left-3">
@@ -60,12 +69,14 @@ export const ExplorePlaceCard: React.FC<ExplorePlaceCardProps> = ({
                   <span className="text-slate-400 font-normal">({place.reviewCount || 0})</span>
                 </div>
                 <button
-                  onClick={() => onToggleSave(place.id)}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onToggleSave(place.id)
+                  }}
                   aria-label={`Lưu ${place.name} vào danh sách yêu thích`}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer active-press ${isSaved
-                    ? 'bg-rose-500 text-white'
-                    : 'bg-slate-100 text-slate-400 hover:text-slate-700'
-                    }`}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer active-press ${
+                    isSaved ? 'bg-rose-500 text-white' : 'bg-slate-100 text-slate-400 hover:text-slate-700'
+                  }`}
                 >
                   <Heart className={`w-3.5 h-3.5 ${isSaved ? 'fill-white' : ''}`} />
                 </button>
@@ -111,23 +122,33 @@ export const ExplorePlaceCard: React.FC<ExplorePlaceCardProps> = ({
   }
 
   return (
-    <div className="group bg-white rounded-lg overflow-hidden border border-slate-200/80 transition-colors duration-300 flex flex-col h-full">
+    <div
+      onClick={() => navigate(`/places/${place.id}`)}
+      className="group bg-white rounded-lg overflow-hidden border border-slate-200/80 transition-colors duration-300 flex flex-col h-full cursor-pointer"
+    >
       <div className="relative aspect-square w-full bg-slate-100 overflow-hidden shrink-0">
-        <img
-          src={place.thumbnailUrl || FALLBACK_IMG}
-          alt={place.name}
-          className="absolute inset-0 w-full h-full object-cover"
-          loading="lazy"
-          onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK_IMG }}
-        />
+        {place.thumbnailUrl ? (
+          <img
+            src={place.thumbnailUrl}
+            alt={place.name}
+            className="absolute inset-0 w-full h-full object-cover"
+            loading="lazy"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-slate-100 text-slate-300">
+            <MapPin className="w-10 h-10" />
+          </div>
+        )}
         <div className="absolute inset-0 bg-white/0 group-hover:bg-white/15 transition-colors duration-300 pointer-events-none"></div>
         <button
-          onClick={() => onToggleSave(place.id)}
+          onClick={(e) => {
+            e.stopPropagation()
+            onToggleSave(place.id)
+          }}
           aria-label={`Lưu ${place.name} vào danh sách yêu thích`}
-          className={`w-8 h-8 absolute top-3 right-3 rounded-full flex items-center justify-center backdrop-blur-md transition-all cursor-pointer active-press ${isSaved
-            ? 'bg-rose-500 text-white'
-            : 'bg-white/80 text-slate-600 hover:bg-white'
-            }`}
+          className={`w-8 h-8 absolute top-3 right-3 rounded-full flex items-center justify-center backdrop-blur-md transition-all cursor-pointer active-press ${
+            isSaved ? 'bg-rose-500 text-white' : 'bg-white/80 text-slate-600 hover:bg-white'
+          }`}
         >
           <Heart className={`w-4 h-4 ${isSaved ? 'fill-white' : ''}`} />
         </button>
@@ -170,7 +191,7 @@ export const ExplorePlaceCard: React.FC<ExplorePlaceCardProps> = ({
         <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs mt-auto">
           <div className="flex items-center gap-1 text-slate-500">
             <Clock className="w-3.5 h-3.5 text-slate-400" />
-            <span>{place.openingHours || 'Thời gian mở cửa không được cung cấp'}</span>
+            <span>{place.openingHours || '08:00 – 17:00'}</span>
           </div>
           <div className="font-extrabold text-emerald-800">
             {priceDisplay}

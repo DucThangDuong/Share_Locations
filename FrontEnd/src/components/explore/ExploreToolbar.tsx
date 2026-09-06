@@ -3,7 +3,6 @@ import { ChevronDown, CheckCircle2, Grid3x3, List } from 'lucide-react'
 import { SORT_OPTIONS } from './explore.types'
 
 interface ExploreToolbarProps {
-  totalElements: number
   sortBy: string
   onSortChange: (newSort: string) => void
   viewMode: 'grid' | 'list'
@@ -11,7 +10,6 @@ interface ExploreToolbarProps {
 }
 
 export const ExploreToolbar: React.FC<ExploreToolbarProps> = ({
-  totalElements,
   sortBy,
   onSortChange,
   viewMode,
@@ -21,10 +19,6 @@ export const ExploreToolbar: React.FC<ExploreToolbarProps> = ({
 
   return (
     <div className="flex items-center justify-between gap-4 p-3.5 bg-white rounded-lg border border-slate-200/70">
-      <div className="text-xs text-slate-500 font-medium">
-        Tìm thấy <strong className="text-slate-900 font-bold">{totalElements}</strong> địa điểm
-      </div>
-
       <div className="flex items-center gap-3">
         <div className="relative">
           <button

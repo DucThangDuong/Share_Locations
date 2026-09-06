@@ -152,8 +152,8 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
     }
   }
 
-  const currentAvatar = avatarPreview || profile.avatarUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200&auto=format&fit=crop'
-  const currentCover = coverPreview || profile.coverUrl || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1920&auto=format&fit=crop'
+  const currentAvatar = avatarPreview || profile.avatarUrl || null
+  const currentCover = coverPreview || profile.coverUrl || null
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200">
@@ -253,14 +253,17 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
                   Ảnh đại diện (Tối đa 5MB)
                 </label>
                 <div className="flex items-center gap-3">
-                  <img
-                    src={currentAvatar}
-                    alt="Avatar preview"
-                    className="w-14 h-14 rounded-lg object-cover border border-slate-200 shrink-0"
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200&auto=format&fit=crop'
-                    }}
-                  />
+                  {currentAvatar ? (
+                    <img
+                      src={currentAvatar}
+                      alt="Avatar preview"
+                      className="w-14 h-14 rounded-lg object-cover border border-slate-200 shrink-0"
+                    />
+                  ) : (
+                    <div className="w-14 h-14 rounded-lg bg-emerald-700 text-white flex items-center justify-center font-bold text-xl shrink-0">
+                      {(profile.fullName || 'U').charAt(0).toUpperCase()}
+                    </div>
+                  )}
                   <div className="flex flex-wrap items-center gap-2">
                     <input
                       type="file"
@@ -296,15 +299,18 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
                   Ảnh bìa (Tối đa 5MB)
                 </label>
                 <div className="space-y-2">
-                  <div className="w-full h-24 rounded-lg overflow-hidden border border-slate-200 bg-slate-100 relative">
-                    <img
-                      src={currentCover}
-                      alt="Cover preview"
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1920&auto=format&fit=crop'
-                      }}
-                    />
+                  <div className="w-full h-24 rounded-lg overflow-hidden border border-slate-200 bg-slate-900 relative flex items-center justify-center">
+                    {currentCover ? (
+                      <img
+                        src={currentCover}
+                        alt="Cover preview"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-950 flex items-center justify-center text-xs text-white/60 font-medium">
+                        Chưa có ảnh bìa
+                      </div>
+                    )}
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <input

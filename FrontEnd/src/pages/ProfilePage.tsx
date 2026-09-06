@@ -89,8 +89,8 @@ export const ProfilePage: React.FC = () => {
     email: user?.email || profile?.email || '',
     phone: user?.phone || profile?.phone || '',
     bio: user?.bio || profile?.bio || 'Chưa có tiểu sử giới thiệu bản thân.',
-    avatarUrl: user?.avatarUrl || profile?.avatarUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200&auto=format&fit=crop',
-    coverUrl: user?.coverUrl || profile?.coverUrl || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1920&auto=format&fit=crop',
+    avatarUrl: user?.avatarUrl || profile?.avatarUrl || undefined,
+    coverUrl: user?.coverUrl || profile?.coverUrl || undefined,
     rankLevel: user?.rankLevel || profile?.rankLevel || 'Tân binh',
     reputationScore: user?.reputationScore ?? profile?.reputationScore ?? 0,
     role: user?.role || 'User'
@@ -116,30 +116,34 @@ export const ProfilePage: React.FC = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
         <div className="relative rounded-lg overflow-hidden bg-white border border-slate-200/80">
-          <div className="h-48 sm:h-64 lg:h-72 w-full relative bg-slate-200">
-            <img
-              src={currentProfile.coverUrl}
-              alt="Cover"
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1920&auto=format&fit=crop'
-              }}
-            />
+          <div className="h-48 sm:h-64 lg:h-72 w-full relative bg-slate-900">
+            {currentProfile.coverUrl ? (
+              <img
+                src={currentProfile.coverUrl}
+                alt="Cover"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-950" />
+            )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent"></div>
           </div>
 
           <div className="px-6 sm:px-8 pb-6 pt-0 relative">
             <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-end gap-5">
-                <div className="-mt-14 sm:-mt-20 w-28 sm:w-36 h-28 sm:h-36 rounded-lg overflow-hidden border-4 border-white bg-slate-200 shrink-0 ring-1 ring-slate-200/50">
-                  <img
-                    src={currentProfile.avatarUrl}
-                    alt={currentProfile.fullName}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200&auto=format&fit=crop'
-                    }}
-                  />
+                <div className="-mt-14 sm:-mt-20 w-28 sm:w-36 h-28 sm:h-36 rounded-lg overflow-hidden border-4 border-white bg-slate-200 shrink-0 ring-1 ring-slate-200/50 flex items-center justify-center">
+                  {currentProfile.avatarUrl ? (
+                    <img
+                      src={currentProfile.avatarUrl}
+                      alt={currentProfile.fullName}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-emerald-700 text-white flex items-center justify-center text-3xl font-extrabold">
+                      {currentProfile.fullName.charAt(0).toUpperCase()}
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-1.5 pt-2 sm:pt-4 sm:pb-1">

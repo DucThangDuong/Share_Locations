@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, Heart, Star } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Heart, Star, MapPin } from 'lucide-react'
+import { placeService } from '@/services/placeService'
 import type { PlaceCardDto } from '@/types/models/place.model'
 
 interface PlaceCardInCollectionProps {
@@ -12,10 +13,7 @@ export const PlaceCardInCollection: React.FC<PlaceCardInCollectionProps> = ({ pl
   const [activeImageIndex, setActiveImageIndex] = useState(0)
   const [isSaved, setIsSaved] = useState(false)
 
-  const mediaList = place.mediaUrls && place.mediaUrls.length > 0
-    ? place.mediaUrls
-    : ['https://images.unsplash.com/photo-1528127269322-539801943592?w=800&h=800&fit=crop&auto=format']
-
+  const mediaList = place.mediaUrls && place.mediaUrls.length > 0 ? place.mediaUrls : []
   const hasMultipleImages = mediaList.length > 1
 
   const handlePrev = (e: React.MouseEvent) => {
@@ -30,30 +28,41 @@ export const PlaceCardInCollection: React.FC<PlaceCardInCollectionProps> = ({ pl
     setActiveImageIndex((prev) => (prev === mediaList.length - 1 ? 0 : prev + 1))
   }
 
-  const handleToggleSave = (e: React.MouseEvent) => {
+  const handleToggleSave = async (e: React.MouseEvent) => {
     e.stopPropagation()
     e.preventDefault()
-    setIsSaved((prev) => !prev)
+    const willSave = !isSaved
+    setIsSaved(willSave)
+    try {
+      if (willSave) {
+        await placeService.savePlace(place.id)
+      } else {
+        await placeService.unsavePlace(place.id)
+      }
+    } catch {
+    }
   }
 
-  const fallbackImage = 'https://images.unsplash.com/photo-1528127269322-539801943592?w=800&h=800&fit=crop&auto=format'
   const ratingScore = Number(place.avgRating || 0)
 
   return (
     <div
-      onClick={() => navigate(`/explore?q=${encodeURIComponent(place.name)}`)}
+      onClick={() => navigate(`/places/${place.id}`)}
       className="group flex flex-col cursor-pointer shrink-0 w-[240px] sm:w-[260px] md:w-[280px] select-none"
     >
       <div className="relative aspect-square w-full rounded-lg overflow-hidden bg-slate-100">
-        <img
-          src={mediaList[activeImageIndex] || fallbackImage}
-          alt={place.name}
-          className="w-full h-full object-cover transition-opacity duration-300"
-          loading="lazy"
-          onError={(e) => {
-            ;(e.currentTarget as HTMLImageElement).src = fallbackImage
-          }}
-        />
+        {mediaList.length > 0 ? (
+          <img
+            src={mediaList[activeImageIndex]}
+            alt={place.name}
+            className="w-full h-full object-cover transition-opacity duration-300"
+            loading="lazy"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-slate-100 text-slate-300">
+            <MapPin className="w-8 h-8" />
+          </div>
+        )}
         <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors duration-300 pointer-events-none"></div>
 
         <button

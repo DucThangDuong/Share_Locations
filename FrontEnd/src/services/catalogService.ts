@@ -8,8 +8,14 @@ export const catalogService = {
     return response.data
   },
 
-  async getCategories(): Promise<ApiSuccessResponse<CategoryDto[]>> {
-    const response = await apiClient.get<ApiSuccessResponse<CategoryDto[]>>('/api/v1/categories')
+  async getCategories(params?: { placeTypeId?: number; placesPerCategory?: number }): Promise<ApiSuccessResponse<CategoryDto[]>> {
+    const cleanParams: Record<string, unknown> = {}
+    if (params?.placeTypeId && params.placeTypeId > 0) cleanParams.placeTypeId = params.placeTypeId
+    if (params?.placesPerCategory && params.placesPerCategory > 0) cleanParams.placesPerCategory = params.placesPerCategory
+
+    const response = await apiClient.get<ApiSuccessResponse<CategoryDto[]>>('/api/v1/categories', {
+      params: Object.keys(cleanParams).length > 0 ? cleanParams : undefined
+    })
     return response.data
   },
 

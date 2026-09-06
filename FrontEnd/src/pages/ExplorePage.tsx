@@ -14,96 +14,27 @@ import { ExplorePagination } from '@/components/explore/ExplorePagination'
 export const ExplorePage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams()
 
-  const [draftSearch, setDraftSearch] = useState<string>(searchParams.get('q') || '')
-  const [draftCategoryName, setDraftCategoryName] = useState<string>(searchParams.get('cat') || '')
-  const [draftCategoryId, setDraftCategoryId] = useState<number | undefined>(
-    searchParams.get('catId') ? Number(searchParams.get('catId')) : undefined
-  )
-  const [draftRegions, setDraftRegions] = useState<string[]>(
-    searchParams.get('region') ? searchParams.get('region')!.split(',').map((s) => s.trim()).filter(Boolean) : []
-  )
-  const [draftRegionIds, setDraftRegionIds] = useState<number[]>(
-    searchParams.get('regionId') ? searchParams.get('regionId')!.split(',').map(Number).filter(Boolean) : []
-  )
-  const [draftProvinces, setDraftProvinces] = useState<string[]>(
-    searchParams.get('province') ? searchParams.get('province')!.split(',').map((s) => s.trim()).filter(Boolean) : []
-  )
-  const [draftProvinceIds, setDraftProvinceIds] = useState<number[]>(
-    searchParams.get('provinceId') ? searchParams.get('provinceId')!.split(',').map(Number).filter(Boolean) : []
-  )
-  const [draftPriceTier, setDraftPriceTier] = useState<number>(
-    searchParams.get('priceTier') ? Number(searchParams.get('priceTier')) : 0
-  )
-  const [draftMinRating, setDraftMinRating] = useState<number>(
-    searchParams.get('minRating') ? Number(searchParams.get('minRating')) : 0
-  )
-
-  const [appliedSearch, setAppliedSearch] = useState<string>(searchParams.get('q') || '')
-  const [appliedCategoryName, setAppliedCategoryName] = useState<string>(searchParams.get('cat') || '')
-  const [appliedCategoryId, setAppliedCategoryId] = useState<number | undefined>(
-    searchParams.get('catId') ? Number(searchParams.get('catId')) : undefined
-  )
-  const [appliedRegions, setAppliedRegions] = useState<string[]>(
-    searchParams.get('region') ? searchParams.get('region')!.split(',').map((s) => s.trim()).filter(Boolean) : []
-  )
-  const [appliedRegionIds, setAppliedRegionIds] = useState<number[]>(
-    searchParams.get('regionId') ? searchParams.get('regionId')!.split(',').map(Number).filter(Boolean) : []
-  )
-  const [appliedProvinces, setAppliedProvinces] = useState<string[]>(
-    searchParams.get('province') ? searchParams.get('province')!.split(',').map((s) => s.trim()).filter(Boolean) : []
-  )
-  const [appliedProvinceIds, setAppliedProvinceIds] = useState<number[]>(
-    searchParams.get('provinceId') ? searchParams.get('provinceId')!.split(',').map(Number).filter(Boolean) : []
-  )
-  const [appliedPriceTier, setAppliedPriceTier] = useState<number>(
-    searchParams.get('priceTier') ? Number(searchParams.get('priceTier')) : 0
-  )
-  const [appliedMinRating, setAppliedMinRating] = useState<number>(
-    searchParams.get('minRating') ? Number(searchParams.get('minRating')) : 0
-  )
-  const [sortBy, setSortBy] = useState<string>(searchParams.get('sort') || 'popular_desc')
-  const [currentPage, setCurrentPage] = useState<number>(
-    searchParams.get('page') ? Number(searchParams.get('page')) : 1
-  )
-
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState<boolean>(false)
-  const [savedPlaceIds, setSavedPlaceIds] = useState<Set<number>>(new Set())
-
   const [categories, setCategories] = useState<LookupItemDto[]>([])
   const [regions, setRegions] = useState<RegionLookupDto[]>([])
   const [places, setPlaces] = useState<PlaceSummaryDto[]>([])
   const [totalElements, setTotalElements] = useState<number>(0)
   const [totalPages, setTotalPages] = useState<number>(1)
   const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState<boolean>(false)
+  const [savedPlaceIds, setSavedPlaceIds] = useState<Set<number>>(new Set())
 
   const pageSize = 12
 
-  const allProvinces = useMemo(() => {
-    return regions.flatMap((r) => r.provinces || [])
-  }, [regions])
+  const allProvinces = useMemo(() => regions.flatMap((r) => r.provinces || []), [regions])
 
-  useEffect(() => {
-    const fetchFilterOptions = async () => {
-      try {
-        const res = await placeService.getFilterOptions()
-        if (res.success && res.data) {
-          setCategories(res.data.categories || [])
-          setRegions(res.data.regions || [])
-        }
-      } catch (err) {
-        console.error('Error fetching filter options:', err)
-      }
-    }
-
-    fetchFilterOptions()
-  }, [])
-
-  useEffect(() => {
+  const appliedFilters = useMemo(() => {
     const q = searchParams.get('q') || ''
     const cat = searchParams.get('cat') || ''
     const catIdStr = searchParams.get('catId')
-    const catId = catIdStr ? Number(catIdStr) : undefined
+    let catId = catIdStr ? Number(catIdStr) : undefined
+    const placeTypeIdStr = searchParams.get('placeTypeId')
+    const placeTypeId = placeTypeIdStr ? Number(placeTypeIdStr) : undefined
     const regionStr = searchParams.get('region') || ''
     const regionIdStr = searchParams.get('regionId') || ''
     const provinceStr = searchParams.get('province') || ''
@@ -111,7 +42,7 @@ export const ExplorePage: React.FC = () => {
     const priceStr = searchParams.get('priceTier')
     const priceTier = priceStr ? Number(priceStr) : 0
     const ratingStr = searchParams.get('minRating')
-    const rating = ratingStr ? Number(ratingStr) : 0
+    const minRating = ratingStr ? Number(ratingStr) : 0
     const sort = searchParams.get('sort') || 'popular_desc'
     const pageStr = searchParams.get('page')
     const page = pageStr ? Number(pageStr) : 1
@@ -121,10 +52,9 @@ export const ExplorePage: React.FC = () => {
     const provList = provinceStr ? provinceStr.split(',').map((s) => s.trim()).filter(Boolean) : []
     const provIdList = provinceIdStr ? provinceIdStr.split(',').map(Number).filter(Boolean) : []
 
-    let resolvedCatId = catId
-    if (!resolvedCatId && cat && categories.length > 0) {
+    if (!catId && cat && categories.length > 0) {
       const found = categories.find((c) => c.name.toLowerCase() === cat.toLowerCase())
-      if (found) resolvedCatId = found.id
+      if (found) catId = found.id
     }
 
     const resolvedRegIds = [...regIdList]
@@ -143,47 +73,63 @@ export const ExplorePage: React.FC = () => {
       })
     }
 
-    setAppliedSearch(q)
-    setAppliedCategoryName(cat)
-    setAppliedCategoryId(resolvedCatId)
-    setAppliedRegions(regList)
-    setAppliedRegionIds(resolvedRegIds)
-    setAppliedProvinces(provList)
-    setAppliedProvinceIds(resolvedProvIds)
-    setAppliedPriceTier(priceTier)
-    setAppliedMinRating(rating)
-    setSortBy(sort)
-    setCurrentPage(page)
-
-    setDraftSearch(q)
-    setDraftCategoryName(cat)
-    setDraftCategoryId(resolvedCatId)
-    setDraftRegions(regList)
-    setDraftRegionIds(resolvedRegIds)
-    setDraftProvinces(provList)
-    setDraftProvinceIds(resolvedProvIds)
-    setDraftPriceTier(priceTier)
-    setDraftMinRating(rating)
+    return {
+      search: q,
+      categoryName: cat,
+      categoryId: catId,
+      placeTypeId,
+      regions: regList,
+      regionIds: resolvedRegIds,
+      provinces: provList,
+      provinceIds: resolvedProvIds,
+      priceTier,
+      minRating,
+      sort,
+      page
+    }
   }, [searchParams, categories, regions, allProvinces])
+
+  const [draftSearch, setDraftSearch] = useState<string>(appliedFilters.search)
+
+  useEffect(() => {
+    setDraftSearch(appliedFilters.search)
+  }, [appliedFilters.search])
+
+  useEffect(() => {
+    const fetchFilterOptions = async () => {
+      try {
+        const res = await placeService.getFilterOptions()
+        if (res.success && res.data) {
+          setCategories(res.data.categories || [])
+          setRegions(res.data.regions || [])
+        }
+      } catch (err) {
+        console.error('Error fetching filter options:', err)
+      }
+    }
+
+    fetchFilterOptions()
+  }, [])
 
   const fetchPlaces = useCallback(async () => {
     setIsLoading(true)
     try {
-      const tier = PRICE_TIERS[appliedPriceTier] || PRICE_TIERS[0]
-      const primaryRegionId = appliedRegionIds.length > 0 ? appliedRegionIds[0] : undefined
-      const primaryProvinceId = appliedProvinceIds.length > 0 ? appliedProvinceIds[0] : undefined
+      const tier = PRICE_TIERS[appliedFilters.priceTier] || PRICE_TIERS[0]
+      const primaryRegionId = appliedFilters.regionIds.length > 0 ? appliedFilters.regionIds[0] : undefined
+      const primaryProvinceId = appliedFilters.provinceIds.length > 0 ? appliedFilters.provinceIds[0] : undefined
 
       const res = await placeService.searchPlaces({
-        keyword: appliedSearch.trim() || undefined,
+        keyword: appliedFilters.search.trim() || undefined,
         regionId: primaryRegionId,
         provinceId: primaryProvinceId,
-        categoryId: appliedCategoryId,
+        categoryId: appliedFilters.categoryId,
+        placeTypeId: appliedFilters.placeTypeId,
         minPrice: tier.min > 0 ? tier.min : undefined,
         maxPrice: tier.max > 0 ? tier.max : undefined,
-        minRating: appliedMinRating > 0 ? appliedMinRating : undefined,
-        sortBy: sortBy,
-        page: currentPage,
-        pageSize: pageSize
+        minRating: appliedFilters.minRating > 0 ? appliedFilters.minRating : undefined,
+        sortBy: appliedFilters.sort,
+        page: appliedFilters.page,
+        pageSize
       })
 
       if (res.success && res.data) {
@@ -205,68 +151,46 @@ export const ExplorePage: React.FC = () => {
     } finally {
       setIsLoading(false)
     }
-  }, [
-    appliedSearch,
-    appliedRegionIds,
-    appliedProvinceIds,
-    appliedCategoryId,
-    appliedPriceTier,
-    appliedMinRating,
-    sortBy,
-    currentPage
-  ])
+  }, [appliedFilters])
 
   useEffect(() => {
     fetchPlaces()
   }, [fetchPlaces])
 
-  const applyFilters = (overrides?: { search?: string; category?: { id?: number; name: string }; regionIds?: number[]; provinceIds?: number[]; regions?: string[]; provinces?: string[]; priceTier?: number; minRating?: number }) => {
-    const finalSearch = overrides?.search !== undefined ? overrides.search : draftSearch
-    const finalCatName = overrides?.category !== undefined ? overrides.category.name : draftCategoryName
-    const finalCatId = overrides?.category !== undefined ? overrides.category.id : draftCategoryId
-    const finalRegs = overrides?.regions !== undefined ? overrides.regions : draftRegions
-    const finalRegIds = overrides?.regionIds !== undefined ? overrides.regionIds : draftRegionIds
-    const finalProvs = overrides?.provinces !== undefined ? overrides.provinces : draftProvinces
-    const finalProvIds = overrides?.provinceIds !== undefined ? overrides.provinceIds : draftProvinceIds
-    const finalPriceTier = overrides?.priceTier !== undefined ? overrides.priceTier : draftPriceTier
-    const finalMinRating = overrides?.minRating !== undefined ? overrides.minRating : draftMinRating
-
-    const params = new URLSearchParams()
-
-    if (finalSearch.trim()) params.set('q', finalSearch.trim())
-    if (finalCatName) params.set('cat', finalCatName)
-    if (finalCatId) params.set('catId', String(finalCatId))
-    if (finalRegs.length > 0) params.set('region', finalRegs.join(','))
-    if (finalRegIds.length > 0) params.set('regionId', finalRegIds.join(','))
-    if (finalProvs.length > 0) params.set('province', finalProvs.join(','))
-    if (finalProvIds.length > 0) params.set('provinceId', finalProvIds.join(','))
-    if (finalPriceTier > 0) params.set('priceTier', String(finalPriceTier))
-    if (finalMinRating > 0) params.set('minRating', String(finalMinRating))
-    if (sortBy !== 'popular_desc') params.set('sort', sortBy)
-
+  const updateFilters = (updates: Record<string, string | number | undefined | null>) => {
+    const params = new URLSearchParams(searchParams)
+    Object.entries(updates).forEach(([key, val]) => {
+      if (val === undefined || val === null || val === '' || val === 0) {
+        params.delete(key)
+      } else {
+        params.set(key, String(val))
+      }
+    })
     params.delete('page')
-
     setSearchParams(params)
     setIsMobileFilterOpen(false)
   }
 
   const resetFilters = () => {
+    setDraftSearch('')
     setSearchParams({})
     setIsMobileFilterOpen(false)
   }
 
-  const removeFilterItem = (type: 'search' | 'category' | 'region' | 'province' | 'price' | 'rating', value?: string | number) => {
+  const removeFilterItem = (type: 'search' | 'category' | 'placeType' | 'region' | 'province' | 'price' | 'rating', value?: string | number) => {
     const params = new URLSearchParams(searchParams)
-
     if (type === 'search') {
       params.delete('q')
+      setDraftSearch('')
     } else if (type === 'category') {
       params.delete('cat')
       params.delete('catId')
+    } else if (type === 'placeType') {
+      params.delete('placeTypeId')
     } else if (type === 'region' && typeof value === 'string') {
-      const nextRegs = appliedRegions.filter((r) => r !== value)
+      const nextRegs = appliedFilters.regions.filter((r) => r !== value)
       const rObj = regions.find((r) => r.name === value)
-      const nextRegIds = rObj ? appliedRegionIds.filter((id) => id !== rObj.id) : appliedRegionIds
+      const nextRegIds = rObj ? appliedFilters.regionIds.filter((id) => id !== rObj.id) : appliedFilters.regionIds
       if (nextRegs.length) {
         params.set('region', nextRegs.join(','))
         params.set('regionId', nextRegIds.join(','))
@@ -275,9 +199,9 @@ export const ExplorePage: React.FC = () => {
         params.delete('regionId')
       }
     } else if (type === 'province' && typeof value === 'string') {
-      const nextProvs = appliedProvinces.filter((p) => p !== value)
+      const nextProvs = appliedFilters.provinces.filter((p) => p !== value)
       const pObj = allProvinces.find((p) => p.name === value)
-      const nextProvIds = pObj ? appliedProvinceIds.filter((id) => id !== pObj.id) : appliedProvinceIds
+      const nextProvIds = pObj ? appliedFilters.provinceIds.filter((id) => id !== pObj.id) : appliedFilters.provinceIds
       if (nextProvs.length) {
         params.set('province', nextProvs.join(','))
         params.set('provinceId', nextProvIds.join(','))
@@ -296,18 +220,17 @@ export const ExplorePage: React.FC = () => {
   }
 
   const handleSortChange = (newSort: string) => {
-    setSortBy(newSort)
     const params = new URLSearchParams(searchParams)
     if (newSort !== 'popular_desc') {
       params.set('sort', newSort)
     } else {
       params.delete('sort')
     }
+    params.delete('page')
     setSearchParams(params)
   }
 
   const handlePageChange = (newPage: number) => {
-    setCurrentPage(newPage)
     const params = new URLSearchParams(searchParams)
     if (newPage > 1) {
       params.set('page', String(newPage))
@@ -318,77 +241,86 @@ export const ExplorePage: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const toggleSave = (id: number) => {
+  const toggleSave = async (id: number) => {
+    const isCurrentlySaved = savedPlaceIds.has(id)
     setSavedPlaceIds((prev) => {
       const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
+      if (isCurrentlySaved) next.delete(id)
       else next.add(id)
       return next
     })
+    try {
+      if (isCurrentlySaved) {
+        await placeService.unsavePlace(id)
+      } else {
+        await placeService.savePlace(id)
+      }
+    } catch {
+    }
   }
 
   const handleRegionCheck = (region: RegionLookupDto) => {
-    const isSelected = draftRegionIds.includes(region.id)
+    const isSelected = appliedFilters.regionIds.includes(region.id)
     let nextRegs: string[]
     let nextRegIds: number[]
-    let nextProvs = [...draftProvinces]
-    let nextProvIds = [...draftProvinceIds]
+    let nextProvs = [...appliedFilters.provinces]
+    let nextProvIds = [...appliedFilters.provinceIds]
 
     if (isSelected) {
-      nextRegs = draftRegions.filter((r) => r !== region.name)
-      nextRegIds = draftRegionIds.filter((id) => id !== region.id)
+      nextRegs = appliedFilters.regions.filter((r) => r !== region.name)
+      nextRegIds = appliedFilters.regionIds.filter((id) => id !== region.id)
       const regionProvinceIds = (region.provinces || []).map((p) => p.id)
       nextProvIds = nextProvIds.filter((id) => !regionProvinceIds.includes(id))
-      nextProvs = nextProvs.filter((name) => {
-        const provObj = (region.provinces || []).find((p) => p.name === name)
-        return !provObj
-      })
+      nextProvs = nextProvs.filter((name) => !(region.provinces || []).some((p) => p.name === name))
     } else {
-      nextRegs = [...draftRegions, region.name]
-      nextRegIds = [...draftRegionIds, region.id]
+      nextRegs = [...appliedFilters.regions, region.name]
+      nextRegIds = [...appliedFilters.regionIds, region.id]
     }
 
-    setDraftRegions(nextRegs)
-    setDraftRegionIds(nextRegIds)
-    setDraftProvinces(nextProvs)
-    setDraftProvinceIds(nextProvIds)
-    applyFilters({ regions: nextRegs, regionIds: nextRegIds, provinces: nextProvs, provinceIds: nextProvIds })
+    const params = new URLSearchParams(searchParams)
+    if (nextRegs.length > 0) {
+      params.set('region', nextRegs.join(','))
+      params.set('regionId', nextRegIds.join(','))
+    } else {
+      params.delete('region')
+      params.delete('regionId')
+    }
+    if (nextProvs.length > 0) {
+      params.set('province', nextProvs.join(','))
+      params.set('provinceId', nextProvIds.join(','))
+    } else {
+      params.delete('province')
+      params.delete('provinceId')
+    }
+    params.delete('page')
+    setSearchParams(params)
+    setIsMobileFilterOpen(false)
   }
 
   const handleProvinceCheck = (province: LookupItemDto) => {
-    const isSelected = draftProvinceIds.includes(province.id)
+    const isSelected = appliedFilters.provinceIds.includes(province.id)
     let nextProvs: string[]
     let nextProvIds: number[]
 
     if (isSelected) {
-      nextProvs = draftProvinces.filter((p) => p !== province.name)
-      nextProvIds = draftProvinceIds.filter((id) => id !== province.id)
+      nextProvs = appliedFilters.provinces.filter((p) => p !== province.name)
+      nextProvIds = appliedFilters.provinceIds.filter((id) => id !== province.id)
     } else {
-      nextProvs = [...draftProvinces, province.name]
-      nextProvIds = [...draftProvinceIds, province.id]
+      nextProvs = [...appliedFilters.provinces, province.name]
+      nextProvIds = [...appliedFilters.provinceIds, province.id]
     }
 
-    setDraftProvinces(nextProvs)
-    setDraftProvinceIds(nextProvIds)
-    applyFilters({ provinces: nextProvs, provinceIds: nextProvIds })
-  }
-
-  const handleCategorySelect = (cat?: LookupItemDto) => {
-    const catName = cat ? cat.name : ''
-    const catId = cat ? cat.id : undefined
-    setDraftCategoryName(catName)
-    setDraftCategoryId(catId)
-    applyFilters({ category: { id: catId, name: catName } })
-  }
-
-  const handlePriceTierChange = (idx: number) => {
-    setDraftPriceTier(idx)
-    applyFilters({ priceTier: idx })
-  }
-
-  const handleMinRatingChange = (rating: number) => {
-    setDraftMinRating(rating)
-    applyFilters({ minRating: rating })
+    const params = new URLSearchParams(searchParams)
+    if (nextProvs.length > 0) {
+      params.set('province', nextProvs.join(','))
+      params.set('provinceId', nextProvIds.join(','))
+    } else {
+      params.delete('province')
+      params.delete('provinceId')
+    }
+    params.delete('page')
+    setSearchParams(params)
+    setIsMobileFilterOpen(false)
   }
 
   const searchSuggestions = useMemo(() => {
@@ -416,57 +348,50 @@ export const ExplorePage: React.FC = () => {
   const activeChips = useMemo(() => {
     const chips: Array<{ label: string; onRemove: () => void }> = []
 
-    if (appliedSearch) {
+    if (appliedFilters.search) {
       chips.push({
-        label: `Từ khóa: "${appliedSearch}"`,
+        label: `Từ khóa: "${appliedFilters.search}"`,
         onRemove: () => removeFilterItem('search')
       })
     }
 
-    if (appliedCategoryName) {
+    if (appliedFilters.categoryName) {
       chips.push({
-        label: `Danh mục: ${appliedCategoryName}`,
+        label: `Danh mục: ${appliedFilters.categoryName}`,
         onRemove: () => removeFilterItem('category')
       })
     }
 
-    appliedRegions.forEach((reg) => {
+    appliedFilters.regions.forEach((reg) => {
       chips.push({
         label: `Vùng: ${reg}`,
         onRemove: () => removeFilterItem('region', reg)
       })
     })
 
-    appliedProvinces.forEach((prov) => {
+    appliedFilters.provinces.forEach((prov) => {
       chips.push({
         label: `Tỉnh: ${prov}`,
         onRemove: () => removeFilterItem('province', prov)
       })
     })
 
-    if (appliedPriceTier > 0) {
+    if (appliedFilters.priceTier > 0) {
       chips.push({
-        label: `Giá: ${PRICE_TIERS[appliedPriceTier]?.label || ''}`,
+        label: `Giá: ${PRICE_TIERS[appliedFilters.priceTier]?.label || ''}`,
         onRemove: () => removeFilterItem('price')
       })
     }
 
-    if (appliedMinRating > 0) {
+    if (appliedFilters.minRating > 0) {
       chips.push({
-        label: `Từ ${appliedMinRating}★ trở lên`,
+        label: `Từ ${appliedFilters.minRating}★ trở lên`,
         onRemove: () => removeFilterItem('rating')
       })
     }
 
     return chips
-  }, [
-    appliedSearch,
-    appliedCategoryName,
-    appliedRegions,
-    appliedProvinces,
-    appliedPriceTier,
-    appliedMinRating
-  ])
+  }, [appliedFilters, regions, allProvinces])
 
   return (
     <div className="min-h-screen bg-slate-50/70 pb-20 pt-6 sm:pt-8">
@@ -474,7 +399,7 @@ export const ExplorePage: React.FC = () => {
         <ExploreSearchBar
           value={draftSearch}
           onChange={setDraftSearch}
-          onSubmit={(val) => applyFilters({ search: val })}
+          onSubmit={(val) => updateFilters({ q: (val || '').trim() || undefined })}
           suggestions={searchSuggestions}
         />
 
@@ -498,19 +423,19 @@ export const ExplorePage: React.FC = () => {
           <ExploreFilterSidebar
             categories={categories}
             regions={regions}
-            draftCategoryId={draftCategoryId}
-            draftCategoryName={draftCategoryName}
-            draftRegionIds={draftRegionIds}
-            draftProvinceIds={draftProvinceIds}
-            draftPriceTier={draftPriceTier}
-            draftMinRating={draftMinRating}
+            draftCategoryId={appliedFilters.categoryId}
+            draftCategoryName={appliedFilters.categoryName}
+            draftRegionIds={appliedFilters.regionIds}
+            draftProvinceIds={appliedFilters.provinceIds}
+            draftPriceTier={appliedFilters.priceTier}
+            draftMinRating={appliedFilters.minRating}
             isOpen={isMobileFilterOpen}
             onClose={() => setIsMobileFilterOpen(false)}
-            onCategorySelect={handleCategorySelect}
+            onCategorySelect={(cat) => updateFilters({ cat: cat?.name, catId: cat?.id })}
             onRegionCheck={handleRegionCheck}
             onProvinceCheck={handleProvinceCheck}
-            onPriceTierChange={handlePriceTierChange}
-            onMinRatingChange={handleMinRatingChange}
+            onPriceTierChange={(idx) => updateFilters({ priceTier: idx || undefined })}
+            onMinRatingChange={(rating) => updateFilters({ minRating: rating || undefined })}
           />
 
           <main className="lg:col-span-3 space-y-5">
@@ -520,8 +445,7 @@ export const ExplorePage: React.FC = () => {
             />
 
             <ExploreToolbar
-              totalElements={totalElements}
-              sortBy={sortBy}
+              sortBy={appliedFilters.sort}
               onSortChange={handleSortChange}
               viewMode={viewMode}
               onViewModeChange={setViewMode}
@@ -566,7 +490,7 @@ export const ExplorePage: React.FC = () => {
             )}
 
             <ExplorePagination
-              currentPage={currentPage}
+              currentPage={appliedFilters.page}
               totalPages={totalPages}
               onPageChange={handlePageChange}
             />
