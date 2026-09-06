@@ -7,32 +7,29 @@ interface RegionShowcaseCardProps {
   region: RegionDto
 }
 
-const REGION_FALLBACK_IMAGES: Record<string, string> = {
-  'Miền Bắc': 'https://images.unsplash.com/photo-1528127269322-539801943592?w=1000&h=750&fit=crop&auto=format',
-  'Miền Trung': 'https://images.unsplash.com/photo-1559592413-7cec4d0cae2b?w=1000&h=750&fit=crop&auto=format',
-  'Miền Nam': 'https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=1000&h=750&fit=crop&auto=format'
-}
-
 export const RegionShowcaseCard: React.FC<RegionShowcaseCardProps> = ({ region }) => {
   const navigate = useNavigate()
 
-  const heroImage = region.imageUrl || REGION_FALLBACK_IMAGES[region.name] || 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1000&h=750&fit=crop&auto=format'
+  const heroImage = region.imageUrl && (region.imageUrl.startsWith('http') || region.imageUrl.startsWith('/')) ? region.imageUrl : null
   const provinces = region.provinces || []
   const displayProvinces = provinces.slice(0, 8)
 
   return (
     <section className="my-8 rounded-lg bg-slate-50/80 border border-slate-200/80 overflow-hidden">
       <div className="flex flex-col lg:flex-row items-stretch">
-        <div className="lg:w-5/12 relative min-h-[280px] lg:min-h-[420px] bg-slate-100 overflow-hidden">
-          <img
-            src={heroImage}
-            alt={region.name}
-            className="absolute inset-0 w-full h-full object-cover"
-            loading="lazy"
-            onError={(e) => {
-              ; (e.currentTarget as HTMLImageElement).src = REGION_FALLBACK_IMAGES[region.name] || heroImage
-            }}
-          />
+        <div className="lg:w-5/12 relative min-h-[280px] lg:min-h-[420px] bg-slate-900 overflow-hidden flex items-center justify-center">
+          {heroImage ? (
+            <img
+              src={heroImage}
+              alt={region.name}
+              className="absolute inset-0 w-full h-full object-cover"
+              loading="lazy"
+            />
+          ) : (
+            <div className="absolute inset-0 bg-gradient-to-br from-emerald-800 via-teal-900 to-slate-950 flex items-center justify-center">
+              <MapPin className="w-16 h-16 text-white/20" />
+            </div>
+          )}
           <div className="absolute inset-0 bg-gradient-to-t lg:bg-gradient-to-r from-slate-950/70 via-slate-950/20 to-transparent"></div>
           <div className="absolute inset-0 bg-white/0 hover:bg-white/10 transition-colors duration-300 pointer-events-none"></div>
 

@@ -2,6 +2,7 @@ namespace Application.DTOs;
 
 public class FoodSuggestedPlaceDto
 {
+    public long? PlaceId { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Address { get; set; } = string.Empty;
     public decimal Rating { get; set; }

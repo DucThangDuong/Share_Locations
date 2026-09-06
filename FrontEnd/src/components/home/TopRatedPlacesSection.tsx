@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowRight, Heart, Star } from 'lucide-react'
+import { ArrowRight, Heart, Star, MapPin } from 'lucide-react'
 import { placeService } from '@/services/placeService'
 import type { PlaceSummaryDto } from '@/types/models/place.model'
 
@@ -30,18 +30,25 @@ export const TopRatedPlacesSection: React.FC = () => {
     fetchTopPlaces()
   }, [])
 
-  const toggleSave = (id: number, e: React.MouseEvent) => {
+  const toggleSave = async (id: number, e: React.MouseEvent) => {
     e.stopPropagation()
     e.preventDefault()
+    const isCurrentlySaved = savedIds.has(id)
     setSavedIds((prev) => {
       const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
+      if (isCurrentlySaved) next.delete(id)
       else next.add(id)
       return next
     })
+    try {
+      if (isCurrentlySaved) {
+        await placeService.unsavePlace(id)
+      } else {
+        await placeService.savePlace(id)
+      }
+    } catch {
+    }
   }
-
-  const fallbackImage = 'https://images.unsplash.com/photo-1528127269322-539801943592?w=800&h=800&fit=crop&auto=format'
 
   if (!isLoading && places.length === 0) {
     return null
@@ -87,19 +94,22 @@ export const TopRatedPlacesSection: React.FC = () => {
             return (
               <div
                 key={place.id}
-                onClick={() => navigate(`/explore?q=${encodeURIComponent(place.name)}`)}
+                onClick={() => navigate(`/places/${place.id}`)}
                 className="group flex flex-col cursor-pointer select-none"
               >
                 <div className="relative aspect-square w-full rounded-lg overflow-hidden bg-slate-100">
-                  <img
-                    src={place.thumbnailUrl || fallbackImage}
-                    alt={place.name}
-                    className="w-full h-full object-cover transition-opacity duration-300"
-                    loading="lazy"
-                    onError={(e) => {
-                      ; (e.currentTarget as HTMLImageElement).src = fallbackImage
-                    }}
-                  />
+                  {place.thumbnailUrl ? (
+                    <img
+                      src={place.thumbnailUrl}
+                      alt={place.name}
+                      className="w-full h-full object-cover transition-opacity duration-300"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-slate-100 text-slate-300">
+                      <MapPin className="w-8 h-8" />
+                    </div>
+                  )}
                   <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors duration-300 pointer-events-none"></div>
 
                   <button
@@ -109,8 +119,9 @@ export const TopRatedPlacesSection: React.FC = () => {
                     className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/95 hover:bg-white text-slate-800 shadow-sm flex items-center justify-center z-10 transition-transform active:scale-95 cursor-pointer"
                   >
                     <Heart
-                      className={`w-4 h-4 transition-colors ${isSaved ? 'fill-rose-500 text-rose-500' : 'text-slate-800 stroke-[2]'
-                        }`}
+                      className={`w-4 h-4 transition-colors ${
+                        isSaved ? 'fill-rose-500 text-rose-500' : 'text-slate-800 stroke-[2]'
+                      }`}
                     />
                   </button>
                 </div>

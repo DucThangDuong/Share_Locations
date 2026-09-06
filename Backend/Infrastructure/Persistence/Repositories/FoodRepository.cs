@@ -29,6 +29,7 @@ public class FoodRepository : IFoodRepository
     private class RawSuggestedPlace
     {
         public long FoodId { get; set; }
+        public long PlaceId { get; set; }
         public string Name { get; set; } = string.Empty;
         public string Address { get; set; } = string.Empty;
         public decimal Rating { get; set; }
@@ -113,6 +114,7 @@ public class FoodRepository : IFoodRepository
         const string placesSql = @"
             SELECT 
                 fp.FoodId,
+                p.Id AS PlaceId,
                 p.Name,
                 p.Address,
                 p.AvgRating AS Rating,
@@ -179,6 +181,7 @@ public class FoodRepository : IFoodRepository
                 Highlights = highlights,
                 SuggestedPlaces = places.Select(p => new FoodSuggestedPlaceDto
                 {
+                    PlaceId = p.PlaceId,
                     Name = p.Name,
                     Address = p.Address,
                     Rating = p.Rating,

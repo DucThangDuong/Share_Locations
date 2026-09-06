@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Link } from 'react-router-dom'
 import { ArrowRight, ArrowLeft } from 'lucide-react'
 import { catalogService } from '@/services/catalogService'
 import { geographyService } from '@/services/geographyService'
@@ -25,14 +24,6 @@ const CollectionTrack: React.FC<{ collection: CollectionDto }> = ({ collection }
         </div>
 
         <div className="flex items-center gap-3">
-          <Link
-            to={`/explore?q=${encodeURIComponent(collection.title)}`}
-            className="text-xs sm:text-sm font-bold text-primary hover:text-primary-hover transition-colors inline-flex items-center gap-1"
-          >
-            <span>Xem tất cả ({places.length} địa điểm)</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-
           <div className="flex items-center space-x-1.5">
             <button
               type="button"
