@@ -8,10 +8,12 @@ public class Place
     public int ProvinceId { get; private set; }
     public int CategoryId { get; private set; }
     public string Name { get; private set; } = string.Empty;
+    public string? Slug { get; private set; }
     public string? Description { get; private set; }
     public string Address { get; private set; } = string.Empty;
     public string? Phone { get; private set; }
     public string? Website { get; private set; }
+    public string? CoverImageUrl { get; private set; }
     public decimal? MinPrice { get; private set; }
     public decimal? MaxPrice { get; private set; }
     public string? OpeningHours { get; private set; }
@@ -74,7 +76,9 @@ public class Place
         string? website = null,
         string? openingHours = null,
         decimal? latitude = null,
-        decimal? longitude = null)
+        decimal? longitude = null,
+        string? slug = null,
+        string? coverImageUrl = null)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("Tên địa điểm không được để trống.", nameof(name));
@@ -85,6 +89,8 @@ public class Place
         ProvinceId = provinceId;
         CategoryId = categoryId;
         Name = name.Trim();
+        Slug = slug;
+        CoverImageUrl = coverImageUrl;
         Address = address.Trim();
         CreatedBy = createdBy;
         Description = description;
@@ -116,7 +122,9 @@ public class Place
         string? description,
         string? phone,
         string? website,
-        string? openingHours)
+        string? openingHours,
+        string? slug = null,
+        string? coverImageUrl = null)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("Tên địa điểm không được để trống.", nameof(name));
@@ -124,6 +132,8 @@ public class Place
             throw new ArgumentException("Địa chỉ không được để trống.", nameof(address));
 
         Name = name.Trim();
+        Slug = slug ?? Slug;
+        CoverImageUrl = coverImageUrl ?? CoverImageUrl;
         Address = address.Trim();
         ProvinceId = provinceId;
         CategoryId = categoryId;

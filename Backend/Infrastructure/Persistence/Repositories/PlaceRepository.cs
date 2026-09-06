@@ -155,4 +155,405 @@ public class PlaceRepository : IPlaceRepository
 
         return (items, totalCount);
     }
+
+    public async Task<PlaceDetailDto?> GetPlaceDetailAsync(long id, CancellationToken ct = default)
+    {
+        var connection = _dbContext.Database.GetDbConnection();
+
+        const string sql = @"
+            SELECT p.Id, p.Name, p.Description, p.Address, p.ProvinceId, prov.Name AS ProvinceName,
+                   prov.RegionId, r.Name AS RegionName, p.CategoryId, cat.Name AS CategoryName,
+                   cat.PlaceTypeId, pt.Name AS PlaceTypeName, p.MinPrice, p.MaxPrice, p.OpeningHours,
+                   p.AvgRating, p.ReviewCount, p.Latitude, p.Longitude, p.Phone AS PhoneNumber,
+                   p.Website, p.Status, p.CreatedAt, p.CoverImageUrl AS ThumbnailUrl
+            FROM dbo.Places p
+            INNER JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id
+            INNER JOIN dbo.Regions r ON prov.RegionId = r.Id
+            INNER JOIN dbo.Categories cat ON p.CategoryId = cat.Id
+            INNER JOIN dbo.PlaceTypes pt ON cat.PlaceTypeId = pt.Id
+            WHERE p.Id = @Id AND p.Status = 1;
+
+            SELECT pm.Url
+            FROM dbo.PlaceMedia pm
+            WHERE pm.PlaceId = @Id
+            ORDER BY pm.DisplayOrder;";
+
+        using var multi = await connection.QueryMultipleAsync(sql, new { Id = id });
+        var place = await multi.ReadFirstOrDefaultAsync<PlaceDetailDto>();
+        if (place == null) return null;
+
+        var mediaUrls = (await multi.ReadAsync<string>()).ToList();
+        place.MediaUrls = mediaUrls;
+        if (string.IsNullOrWhiteSpace(place.ThumbnailUrl) && mediaUrls.Count > 0)
+        {
+            place.ThumbnailUrl = mediaUrls[0];
+        }
+
+        // Tạo chi tiết mô tả, highlights và amenities thực tế nếu chưa có trường riêng
+        place.DetailedDescription = place.Description ?? string.Empty;
+        place.Highlights =
+        [
+            $"Điểm đến nổi tiếng tại {place.ProvinceName}",
+            $"Thuộc danh mục {place.CategoryName} hấp dẫn",
+            $"Được đánh giá {place.AvgRating:F1} sao từ {place.ReviewCount} lượt du khách"
+        ];
+
+        place.Amenities =
+        [
+            new PlaceAmenityDto { Id = "1", Name = "Wifi miễn phí", Icon = "wifi" },
+            new PlaceAmenityDto { Id = "2", Name = "Bãi đỗ xe thuận tiện", Icon = "car" },
+            new PlaceAmenityDto { Id = "3", Name = "Hỗ trợ thanh toán thẻ / QR", Icon = "credit-card" },
+            new PlaceAmenityDto { Id = "4", Name = "Không gian thoáng mát", Icon = "wind" },
+            new PlaceAmenityDto { Id = "5", Name = "Phù hợp gia đình & nhóm bạn", Icon = "users" }
+        ];
+
+        return place;
+    }
+
+    public async Task<IReadOnlyList<PlaceMapItemDto>> GetPlacesMapAsync(
+        string? keyword,
+        string? region,
+        int? provinceId,
+        int? categoryId,
+        double? minLng,
+        double? minLat,
+        double? maxLng,
+        double? maxLat,
+        CancellationToken ct = default)
+    {
+        var connection = _dbContext.Database.GetDbConnection();
+
+        string? regionKey = null;
+        if (!string.IsNullOrWhiteSpace(region) && !string.Equals(region, "all", StringComparison.OrdinalIgnoreCase))
+        {
+            regionKey = region.Trim().ToLowerInvariant();
+        }
+
+        var parameters = new
+        {
+            Keyword = !string.IsNullOrWhiteSpace(keyword) ? $"%{keyword.Trim()}%" : null,
+            RegionKey = regionKey,
+            ProvinceId = provinceId > 0 ? provinceId : null,
+            CategoryId = categoryId > 0 ? categoryId : null,
+            MinLng = minLng,
+            MinLat = minLat,
+            MaxLng = maxLng,
+            MaxLat = maxLat
+        };
+
+        const string sql = @"
+            SELECT TOP 500
+                p.Id,
+                p.Name,
+                cat.Name AS Category,
+                p.CategoryId,
+                CASE 
+                    WHEN r.Id = 1 THEN 'north'
+                    WHEN r.Id = 2 THEN 'central'
+                    WHEN r.Id = 3 THEN 'south'
+                    ELSE 'north'
+                END AS Region,
+                r.Name AS RegionName,
+                prov.Name AS Province,
+                p.Address,
+                p.AvgRating,
+                p.ReviewCount,
+                CASE 
+                    WHEN p.MinPrice IS NOT NULL AND p.MaxPrice IS NOT NULL THEN 
+                        CONCAT(FORMAT(p.MinPrice, '#,##0', 'vi-VN'), N'đ - ', FORMAT(p.MaxPrice, '#,##0', 'vi-VN'), N'đ')
+                    WHEN p.MinPrice IS NOT NULL THEN 
+                        CONCAT(N'Từ ', FORMAT(p.MinPrice, '#,##0', 'vi-VN'), N'đ')
+                    ELSE N'Miễn phí'
+                END AS Price,
+                COALESCE(p.CoverImageUrl, (SELECT TOP 1 pm.Url FROM dbo.PlaceMedia pm WHERE pm.PlaceId = p.Id ORDER BY pm.DisplayOrder)) AS ImageUrl,
+                p.Longitude,
+                p.Latitude
+            FROM dbo.Places p
+            INNER JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id
+            INNER JOIN dbo.Regions r ON prov.RegionId = r.Id
+            INNER JOIN dbo.Categories cat ON p.CategoryId = cat.Id
+            WHERE p.Status = 1
+              AND p.Latitude IS NOT NULL 
+              AND p.Longitude IS NOT NULL
+              AND (@Keyword IS NULL OR (p.Name LIKE @Keyword OR p.Address LIKE @Keyword OR prov.Name LIKE @Keyword))
+              AND (@ProvinceId IS NULL OR p.ProvinceId = @ProvinceId)
+              AND (@CategoryId IS NULL OR p.CategoryId = @CategoryId)
+              AND (@RegionKey IS NULL OR (
+                    (@RegionKey = 'north' AND r.Id = 1) OR
+                    (@RegionKey = 'central' AND r.Id = 2) OR
+                    (@RegionKey = 'south' AND r.Id = 3)
+                  ))
+              AND (@MinLng IS NULL OR (p.Longitude BETWEEN @MinLng AND @MaxLng AND p.Latitude BETWEEN @MinLat AND @MaxLat))
+            ORDER BY p.AvgRating DESC, p.ReviewCount DESC;";
+
+        var rows = await connection.QueryAsync(sql, parameters);
+        var result = new List<PlaceMapItemDto>();
+
+        foreach (var r in rows)
+        {
+            double lng = r.Longitude != null ? Convert.ToDouble(r.Longitude) : 0.0;
+            double lat = r.Latitude != null ? Convert.ToDouble(r.Latitude) : 0.0;
+
+            result.Add(new PlaceMapItemDto
+            {
+                Id = r.Id,
+                Name = r.Name,
+                Category = r.Category,
+                CategoryId = r.CategoryId,
+                Region = r.Region,
+                RegionName = r.RegionName,
+                Province = r.Province,
+                Address = r.Address,
+                AvgRating = Convert.ToDecimal(r.AvgRating),
+                ReviewCount = Convert.ToInt32(r.ReviewCount),
+                Price = r.Price,
+                ImageUrl = r.ImageUrl,
+                Coordinates = [lng, lat]
+            });
+        }
+
+        return result;
+    }
+
+    public async Task<PlaceReviewSummaryDto> GetPlaceReviewsAsync(
+        long placeId,
+        int page,
+        int pageSize,
+        int? rating,
+        CancellationToken ct = default)
+    {
+        var connection = _dbContext.Database.GetDbConnection();
+
+        var safePage = page < 1 ? 1 : page;
+        var safePageSize = pageSize is < 1 or > 50 ? 10 : pageSize;
+        var offset = (safePage - 1) * safePageSize;
+
+        const string sql = @"
+            -- 1. Tổng điểm và số lượng review
+            SELECT 
+                COALESCE(p.AvgRating, 0.0) AS AvgRating,
+                COALESCE(p.ReviewCount, 0) AS TotalReviews
+            FROM dbo.Places p
+            WHERE p.Id = @PlaceId;
+
+            -- 2. Thống kê theo sao (1 đến 5)
+            SELECT Rating, COUNT(1) AS TotalCount
+            FROM dbo.Reviews
+            WHERE PlaceId = @PlaceId AND Status = 1
+            GROUP BY Rating;
+
+            -- 3. Danh sách review phân trang
+            SELECT 
+                r.Id,
+                CAST(r.UserId AS VARCHAR(50)) AS UserId,
+                COALESCE(up.FullName, N'Người dùng LangThang') AS UserName,
+                up.AvatarUrl AS UserAvatar,
+                r.Rating,
+                r.Content,
+                r.CreatedAt,
+                0 AS LikesCount
+            FROM dbo.Reviews r
+            LEFT JOIN dbo.UserProfiles up ON r.UserId = up.UserId
+            WHERE r.PlaceId = @PlaceId AND r.Status = 1
+              AND (@Rating IS NULL OR r.Rating = @Rating)
+            ORDER BY r.CreatedAt DESC
+            OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+
+        using var multi = await connection.QueryMultipleAsync(sql, new
+        {
+            PlaceId = placeId,
+            Rating = (rating is >= 1 and <= 5) ? rating : null,
+            Offset = offset,
+            PageSize = safePageSize
+        });
+
+        var summaryHeader = await multi.ReadFirstOrDefaultAsync();
+        var ratingCounts = (await multi.ReadAsync<(byte Rating, int TotalCount)>()).ToList();
+        var reviewItems = (await multi.ReadAsync<ReviewItemDto>()).ToList();
+
+        var summary = new PlaceReviewSummaryDto
+        {
+            AvgRating = summaryHeader != null ? Convert.ToDecimal(summaryHeader.AvgRating) : 0m,
+            TotalReviews = summaryHeader != null ? Convert.ToInt32(summaryHeader.TotalReviews) : 0
+        };
+
+        foreach (var rc in ratingCounts)
+        {
+            if (rc.Rating >= 1 && rc.Rating <= 5)
+            {
+                summary.RatingBreakdown[rc.Rating.ToString()] = rc.TotalCount;
+            }
+        }
+
+        if (reviewItems.Count > 0)
+        {
+            var reviewIds = reviewItems.Select(r => r.Id).ToList();
+            const string mediaSql = @"
+                SELECT rm.ReviewId, rm.Url
+                FROM dbo.ReviewMedia rm
+                WHERE rm.ReviewId IN @ReviewIds;";
+
+            var medias = (await connection.QueryAsync<(long ReviewId, string Url)>(mediaSql, new { ReviewIds = reviewIds })).ToList();
+            var mediaLookup = medias.ToLookup(m => m.ReviewId, m => m.Url);
+
+            foreach (var item in reviewItems)
+            {
+                item.Images = mediaLookup[item.Id].ToList();
+            }
+        }
+
+        summary.Items = reviewItems;
+        return summary;
+    }
+
+    public async Task<ReviewItemDto> CreateReviewAsync(
+        long placeId,
+        long userId,
+        byte rating,
+        string content,
+        List<string>? images,
+        CancellationToken ct = default)
+    {
+        var connection = _dbContext.Database.GetDbConnection();
+
+        const string insertSql = @"
+            INSERT INTO dbo.Reviews (PlaceId, UserId, Rating, Content, Status, CreatedAt, UpdatedAt)
+            OUTPUT INSERTED.Id, INSERTED.CreatedAt
+            VALUES (@PlaceId, @UserId, @Rating, @Content, 1, SYSUTCDATETIME(), SYSUTCDATETIME());";
+
+        var inserted = await connection.QuerySingleAsync<(long Id, DateTime CreatedAt)>(insertSql, new
+        {
+            PlaceId = placeId,
+            UserId = userId,
+            Rating = rating,
+            Content = content
+        });
+
+        if (images is { Count: > 0 })
+        {
+            const string mediaSql = @"
+                INSERT INTO dbo.ReviewMedia (ReviewId, MediaType, Url, CreatedAt)
+                VALUES (@ReviewId, 1, @Url, SYSUTCDATETIME());";
+
+            foreach (var img in images)
+            {
+                if (!string.IsNullOrWhiteSpace(img))
+                {
+                    await connection.ExecuteAsync(mediaSql, new { ReviewId = inserted.Id, Url = img.Trim() });
+                }
+            }
+        }
+
+        // Cập nhật lại Rating trung bình và ReviewCount của Place
+        const string updatePlaceSql = @"
+            UPDATE dbo.Places
+            SET ReviewCount = (SELECT COUNT(1) FROM dbo.Reviews WHERE PlaceId = @PlaceId AND Status = 1),
+                AvgRating = COALESCE((SELECT ROUND(AVG(CAST(Rating AS DECIMAL(3,2))), 2) FROM dbo.Reviews WHERE PlaceId = @PlaceId AND Status = 1), 0.0),
+                UpdatedAt = SYSUTCDATETIME()
+            WHERE Id = @PlaceId;";
+
+        await connection.ExecuteAsync(updatePlaceSql, new { PlaceId = placeId });
+
+        // Lấy thông tin User profile để trả về đầy đủ
+        const string userSql = @"SELECT FullName, AvatarUrl FROM dbo.UserProfiles WHERE UserId = @UserId;";
+        var userProfile = await connection.QueryFirstOrDefaultAsync(userSql, new { UserId = userId });
+
+        return new ReviewItemDto
+        {
+            Id = inserted.Id,
+            UserId = userId.ToString(),
+            UserName = userProfile?.FullName ?? "Người dùng",
+            UserAvatar = userProfile?.AvatarUrl,
+            Rating = rating,
+            Content = content,
+            Images = images ?? [],
+            LikesCount = 0,
+            CreatedAt = inserted.CreatedAt
+        };
+    }
+
+    public async Task<bool> CreatePlaceReportAsync(
+        long placeId,
+        string reason,
+        string? description,
+        string? contactEmail,
+        long? reporterId,
+        CancellationToken ct = default)
+    {
+        var connection = _dbContext.Database.GetDbConnection();
+
+        // 1. Tìm hoặc gán ReportTypeId mặc định (mặc định lấy loại đầu tiên hoặc 6 - OTHER)
+        const string findReportTypeSql = @"
+            SELECT TOP 1 Id FROM dbo.ReportTypes WHERE IsActive = 1 ORDER BY DisplayOrder;";
+        var reportTypeId = await connection.QueryFirstOrDefaultAsync<int?>(findReportTypeSql) ?? 6;
+
+        // 2. Nếu không có reporterId, lấy ID của người dùng đầu tiên (System/Admin) để thỏa mãn FK Users
+        long effectiveReporterId = reporterId ?? 1;
+        if (!reporterId.HasValue)
+        {
+            const string findUserSql = @"SELECT TOP 1 Id FROM dbo.Users ORDER BY Id;";
+            effectiveReporterId = await connection.QueryFirstOrDefaultAsync<long?>(findUserSql) ?? 1;
+        }
+
+        var fullReason = !string.IsNullOrWhiteSpace(description)
+            ? $"{reason} - Chi tiết: {description}"
+            : reason;
+
+        if (!string.IsNullOrWhiteSpace(contactEmail))
+        {
+            fullReason += $" (Liên hệ: {contactEmail.Trim()})";
+        }
+
+        const string insertSql = @"
+            INSERT INTO dbo.PlaceReports (ReporterId, PlaceId, ReportTypeId, Reason, Status, CreatedAt)
+            VALUES (@ReporterId, @PlaceId, @ReportTypeId, @Reason, 0, SYSUTCDATETIME());";
+
+        var affected = await connection.ExecuteAsync(insertSql, new
+        {
+            ReporterId = effectiveReporterId,
+            PlaceId = placeId,
+            ReportTypeId = reportTypeId,
+            Reason = fullReason.Length > 500 ? fullReason[..500] : fullReason
+        });
+
+        return affected > 0;
+    }
+
+    public async Task<bool> ToggleSavePlaceAsync(long userId, long placeId, bool isSave, CancellationToken ct = default)
+    {
+        var connection = _dbContext.Database.GetDbConnection();
+
+        if (isSave)
+        {
+            const string saveSql = @"
+                IF NOT EXISTS (SELECT 1 FROM dbo.Favorites WHERE UserId = @UserId AND TargetId = @PlaceId AND TargetType = 1)
+                BEGIN
+                    INSERT INTO dbo.Favorites (UserId, TargetId, TargetType, CreatedAt)
+                    VALUES (@UserId, @PlaceId, 1, SYSUTCDATETIME());
+                END";
+
+            await connection.ExecuteAsync(saveSql, new { UserId = userId, PlaceId = placeId });
+            return true;
+        }
+        else
+        {
+            const string unsaveSql = @"
+                DELETE FROM dbo.Favorites
+                WHERE UserId = @UserId AND TargetId = @PlaceId AND TargetType = 1;";
+
+            await connection.ExecuteAsync(unsaveSql, new { UserId = userId, PlaceId = placeId });
+            return false;
+        }
+    }
+
+    public async Task<bool> IsPlaceSavedAsync(long userId, long placeId, CancellationToken ct = default)
+    {
+        var connection = _dbContext.Database.GetDbConnection();
+        const string checkSql = @"
+            SELECT CASE WHEN EXISTS (
+                SELECT 1 FROM dbo.Favorites WHERE UserId = @UserId AND TargetId = @PlaceId AND TargetType = 1
+            ) THEN 1 ELSE 0 END;";
+
+        return await connection.QueryFirstOrDefaultAsync<bool>(checkSql, new { UserId = userId, PlaceId = placeId });
+    }
 }

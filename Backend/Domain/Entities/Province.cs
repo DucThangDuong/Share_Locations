@@ -22,4 +22,7 @@ public class Province
 
     private readonly List<FoodProvince> _foodProvinces = new();
     public virtual IReadOnlyCollection<FoodProvince> FoodProvinces => _foodProvinces.AsReadOnly();
+
+    private readonly List<Collection> _collections = new();
+    public virtual IReadOnlyCollection<Collection> Collections => _collections.AsReadOnly();
 }

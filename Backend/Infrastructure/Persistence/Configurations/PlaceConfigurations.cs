@@ -15,6 +15,10 @@ public class PlaceConfiguration : IEntityTypeConfiguration<Place>
             .HasMaxLength(200)
             .IsRequired();
 
+        builder.Property(e => e.Slug)
+            .HasMaxLength(200)
+            .IsUnicode(false);
+
         builder.Property(e => e.Address)
             .HasMaxLength(255)
             .IsRequired();
@@ -23,6 +27,9 @@ public class PlaceConfiguration : IEntityTypeConfiguration<Place>
             .HasMaxLength(20);
 
         builder.Property(e => e.Website)
+            .HasMaxLength(500);
+
+        builder.Property(e => e.CoverImageUrl)
             .HasMaxLength(500);
 
         builder.Property(e => e.MinPrice)
@@ -137,6 +144,11 @@ public class CollectionConfiguration : IEntityTypeConfiguration<Collection>
 
         builder.Property(e => e.CreatedAt)
             .HasDefaultValueSql("SYSUTCDATETIME()");
+
+        builder.HasOne(e => e.Province)
+            .WithMany(p => p.Collections)
+            .HasForeignKey(e => e.ProvinceId)
+            .OnDelete(DeleteBehavior.ClientSetNull);
     }
 }
 

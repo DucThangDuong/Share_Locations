@@ -58,6 +58,7 @@ public class TravelReviewDbContext : DbContext
     public virtual DbSet<Notification> Notifications => Set<Notification>();
 
     // 11. Moderation
+    public virtual DbSet<ReportType> ReportTypes => Set<ReportType>();
     public virtual DbSet<PlaceReport> PlaceReports => Set<PlaceReport>();
     public virtual DbSet<ReviewReport> ReviewReports => Set<ReviewReport>();
     public virtual DbSet<CommentReport> CommentReports => Set<CommentReport>();

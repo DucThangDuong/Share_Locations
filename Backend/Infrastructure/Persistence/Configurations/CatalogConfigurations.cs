@@ -13,8 +13,8 @@ public class PlaceTypeConfiguration : IEntityTypeConfiguration<PlaceType>
             .HasMaxLength(50)
             .IsRequired();
 
-        builder.Property(e => e.IconClass)
-            .HasMaxLength(50);
+        builder.Property(e => e.ImageUrl)
+            .HasMaxLength(500);
 
         builder.Property(e => e.Status)
             .HasConversion<byte>();
@@ -34,8 +34,8 @@ public class CategoryConfiguration : IEntityTypeConfiguration<Category>
             .HasMaxLength(100)
             .IsRequired();
 
-        builder.Property(e => e.IconClass)
-            .HasMaxLength(50);
+        builder.Property(e => e.ImageUrl)
+            .HasMaxLength(500);
 
         builder.Property(e => e.Status)
             .HasConversion<byte>();

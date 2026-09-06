@@ -38,6 +38,9 @@ public static class DependencyInjection
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<ICollectionRepository, CollectionRepository>();
         services.AddScoped<IPlaceRepository, PlaceRepository>();
+        services.AddScoped<IFoodRepository, FoodRepository>();
+        services.AddScoped<ITripRepository, TripRepository>();
+        services.AddScoped<IBlogRepository, BlogRepository>();
 
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();

@@ -36,7 +36,7 @@ public class CategoryRepository : ICategoryRepository
         var safeLimit = placesPerCategory is < 1 or > 50 ? 6 : placesPerCategory;
 
         const string sql = @"
-            SELECT c.Id, c.PlaceTypeId, pt.Name AS PlaceTypeName, c.Name, c.IconClass,
+            SELECT c.Id, c.PlaceTypeId, pt.Name AS PlaceTypeName, c.Name, c.ImageUrl,
                    COALESCE(counts.PlaceCount, 0) AS PlaceCount
             FROM dbo.Categories c
             INNER JOIN dbo.PlaceTypes pt ON c.PlaceTypeId = pt.Id

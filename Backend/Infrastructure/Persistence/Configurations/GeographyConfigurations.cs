@@ -50,6 +50,8 @@ public class ProvinceConfiguration : IEntityTypeConfiguration<Province>
         builder.Property(e => e.Tagline)
             .HasMaxLength(200);
 
+        builder.Property(e => e.Description);
+
         builder.Property(e => e.ImageUrl)
             .HasMaxLength(500);
 

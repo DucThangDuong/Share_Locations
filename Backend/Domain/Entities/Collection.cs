@@ -5,6 +5,7 @@ namespace Domain.Entities;
 public class Collection
 {
     public int Id { get; private set; }
+    public int? ProvinceId { get; private set; }
     public string Title { get; private set; } = string.Empty;
     public string? Description { get; private set; }
     public bool IsFeatured { get; private set; }
@@ -13,6 +14,8 @@ public class Collection
     public DateTime CreatedAt { get; private set; }
 
     // Navigation
+    public virtual Province? Province { get; private set; }
+
     private readonly List<CollectionPlace> _collectionPlaces = new();
     public virtual IReadOnlyCollection<CollectionPlace> CollectionPlaces => _collectionPlaces.AsReadOnly();
 }

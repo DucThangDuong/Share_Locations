@@ -4,7 +4,8 @@ public class PlaceTypeDto
 {
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
-    public string? IconClass { get; set; }
+    public string? ImageUrl { get; set; }
+    public string? IconClass { get => ImageUrl; set => ImageUrl = value; }
 }
 
 public class PlaceCardDto
@@ -23,7 +24,8 @@ public class CategoryDto
     public int PlaceTypeId { get; set; }
     public string PlaceTypeName { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
-    public string? IconClass { get; set; }
+    public string? ImageUrl { get; set; }
+    public string? IconClass { get => ImageUrl; set => ImageUrl = value; }
     public int PlaceCount { get; set; }
     public IReadOnlyList<PlaceCardDto> Places { get; set; } = [];
 }
@@ -31,6 +33,7 @@ public class CategoryDto
 public class CollectionDto
 {
     public int Id { get; set; }
+    public int? ProvinceId { get; set; }
     public string Title { get; set; } = string.Empty;
     public bool IsFeatured { get; set; }
     public int DisplayOrder { get; set; }

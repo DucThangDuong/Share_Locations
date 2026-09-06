@@ -20,7 +20,7 @@ public class PlaceTypeRepository : IPlaceTypeRepository
         var connection = _dbContext.Database.GetDbConnection();
 
         const string sql = @"
-            SELECT pt.Id, pt.Name, pt.IconClass
+            SELECT pt.Id, pt.Name, pt.ImageUrl
             FROM dbo.PlaceTypes pt
             WHERE pt.Status = 1
             ORDER BY pt.Id;";

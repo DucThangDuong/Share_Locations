@@ -1,0 +1,34 @@
+using API.DTOs;
+using API.DTOs.Blogs;
+using API.Extensions;
+using Application.DTOs;
+using Application.Features.Blogs.Queries;
+using FastEndpoints;
+using MediatR;
+
+namespace API.Endpoints.Blogs;
+
+public class GetBlogsEndpoint : Endpoint<GetBlogsRequest, ApiSuccessResponse<IReadOnlyList<BlogListItemDto>>>
+{
+    public IMediator Mediator { get; set; } = null!;
+
+    public override void Configure()
+    {
+        Get("/api/v1/blogs", "/api/blogs");
+        AllowAnonymous();
+        Options(x => x.RequireRateLimiting("general_api"));
+    }
+
+    public override async Task HandleAsync(GetBlogsRequest req, CancellationToken ct)
+    {
+        var result = await Mediator.Send(
+            new GetBlogsQuery(
+                req.Category,
+                req.Keyword,
+                req.Page,
+                req.PageSize),
+            ct);
+
+        await this.SendApiResponseAsync(result, ct);
+    }
+}
