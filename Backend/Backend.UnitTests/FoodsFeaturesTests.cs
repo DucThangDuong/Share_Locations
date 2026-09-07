@@ -21,10 +21,11 @@ public class FoodsFeaturesTests
             {
                 Id = 1,
                 Name = "Phở Bò Hà Nội",
-                Region = "north",
-                RegionName = "Miền Bắc",
                 PriceRange = "40.000đ - 70.000đ",
-                Highlights = new List<string> { "Nước dùng thanh ngọt" },
+                MinPrice = 40000m,
+                MaxPrice = 70000m,
+                Description = "Món ngon truyền thống Hà Nội",
+                ImageUrl = "https://example.com/pho.jpg",
                 SuggestedPlaces = new List<FoodSuggestedPlaceDto>
                 {
                     new() { Name = "Phở Thìn", Address = "Hà Nội", Rating = 4.7m, Price = "65.000đ" }
@@ -46,7 +47,7 @@ public class FoodsFeaturesTests
         result.IsSuccess.Should().BeTrue();
         result.Data.Should().HaveCount(1);
         result.Data![0].Name.Should().Be("Phở Bò Hà Nội");
-        result.Data[0].Region.Should().Be("north");
+        result.Data[0].PriceRange.Should().Be("40.000đ - 70.000đ");
         result.Data[0].SuggestedPlaces.Should().HaveCount(1);
     }
 }

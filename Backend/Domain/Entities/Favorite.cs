@@ -11,4 +11,14 @@ public class Favorite
 
     // Navigation
     public virtual User User { get; private set; } = null!;
+
+    protected Favorite() { }
+
+    public Favorite(long userId, long targetId, FavoriteTargetType targetType)
+    {
+        UserId = userId;
+        TargetId = targetId;
+        TargetType = targetType;
+        CreatedAt = DateTime.UtcNow;
+    }
 }

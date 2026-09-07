@@ -1,6 +1,8 @@
 using Application.Common;
-using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
+using Domain.Entities;
+using Domain.Enums;
+using Domain.Interfaces;
 using MediatR;
 
 namespace Application.Features.Places.Commands;
@@ -12,20 +14,39 @@ public record ToggleSavePlaceCommand(
 
 public class ToggleSavePlaceCommandHandler : IRequestHandler<ToggleSavePlaceCommand, Result<ToggleSavePlaceDto>>
 {
-    private readonly IPlaceRepository _placeRepository;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public ToggleSavePlaceCommandHandler(IPlaceRepository placeRepository)
+    public ToggleSavePlaceCommandHandler(IUnitOfWork unitOfWork)
     {
-        _placeRepository = placeRepository;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<Result<ToggleSavePlaceDto>> Handle(ToggleSavePlaceCommand request, CancellationToken ct)
     {
-        var success = await _placeRepository.ToggleSavePlaceAsync(request.UserId, request.PlaceId, request.Save, ct);
-
-        if (!success)
+        var place = await _unitOfWork.Places.GetByIdAsync(request.PlaceId, ct);
+        if (place == null)
         {
-            return Result<ToggleSavePlaceDto>.Failure("Không thể cập nhật danh sách lưu địa điểm.");
+            return Result<ToggleSavePlaceDto>.NotFound("Địa điểm không tồn tại.");
+        }
+
+        var existing = await _unitOfWork.Favorites.GetAsync(request.UserId, request.PlaceId, FavoriteTargetType.Place, ct);
+
+        if (request.Save)
+        {
+            if (existing == null)
+            {
+                var favorite = new Favorite(request.UserId, request.PlaceId, FavoriteTargetType.Place);
+                await _unitOfWork.Favorites.AddAsync(favorite, ct);
+                await _unitOfWork.SaveChangesAsync(ct);
+            }
+        }
+        else
+        {
+            if (existing != null)
+            {
+                _unitOfWork.Favorites.Remove(existing);
+                await _unitOfWork.SaveChangesAsync(ct);
+            }
         }
 
         var response = new ToggleSavePlaceDto

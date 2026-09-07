@@ -2,6 +2,7 @@ using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
 using Dapper;
 using Infrastructure.Persistence;
+using Infrastructure.Persistence.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence.Repositories;
@@ -13,22 +14,6 @@ public class CollectionRepository : ICollectionRepository
     public CollectionRepository(TravelReviewDbContext dbContext)
     {
         _dbContext = dbContext;
-    }
-
-    private class PlaceInCollectionRaw
-    {
-        public int CollectionId { get; set; }
-        public long Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public string? CategoryName { get; set; }
-        public decimal AvgRating { get; set; }
-        public int ReviewCount { get; set; }
-    }
-
-    private class PlaceMediaRaw
-    {
-        public long PlaceId { get; set; }
-        public string Url { get; set; } = string.Empty;
     }
 
     public async Task<IReadOnlyList<CollectionDto>> GetFeaturedCollectionsAsync(int count = 6, CancellationToken ct = default)

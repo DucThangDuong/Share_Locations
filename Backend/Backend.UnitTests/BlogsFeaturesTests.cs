@@ -100,7 +100,7 @@ public class BlogsFeaturesTests
     }
 
     [Fact]
-    public async Task GetBlogDetail_ShouldReturnDetailWithRelatedPosts_WhenExists()
+    public async Task GetBlogDetail_ShouldReturnDetail_WhenExists()
     {
         // Arrange
         var detail = new BlogDetailDto
@@ -108,11 +108,7 @@ public class BlogsFeaturesTests
             Id = 1,
             Slug = "kinh-nghiem-ha-long",
             Title = "Kinh nghiệm du lịch Hạ Long 2025",
-            Content = "Nội dung bài viết",
-            RelatedPosts = new List<BlogListItemDto>
-            {
-                new() { Id = 2, Title = "Khám phá đảo Cát Bà" }
-            }
+            Content = "Nội dung bài viết"
         };
 
         _blogRepo.GetBlogDetailAsync("kinh-nghiem-ha-long", Arg.Any<CancellationToken>())
@@ -127,6 +123,6 @@ public class BlogsFeaturesTests
         result.IsSuccess.Should().BeTrue();
         result.Data.Should().NotBeNull();
         result.Data!.Slug.Should().Be("kinh-nghiem-ha-long");
-        result.Data.RelatedPosts.Should().HaveCount(1);
+        result.Data.Title.Should().Be("Kinh nghiệm du lịch Hạ Long 2025");
     }
 }

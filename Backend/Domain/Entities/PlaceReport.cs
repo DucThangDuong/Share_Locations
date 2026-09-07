@@ -19,4 +19,16 @@ public class PlaceReport
     public virtual Place Place { get; private set; } = null!;
     public virtual ReportType ReportType { get; private set; } = null!;
     public virtual User? Resolver { get; private set; }
+
+    protected PlaceReport() { }
+
+    public PlaceReport(long reporterId, long placeId, int reportTypeId, string? reason)
+    {
+        ReporterId = reporterId;
+        PlaceId = placeId;
+        ReportTypeId = reportTypeId;
+        Reason = reason;
+        Status = ReportStatus.Pending;
+        CreatedAt = DateTime.UtcNow;
+    }
 }

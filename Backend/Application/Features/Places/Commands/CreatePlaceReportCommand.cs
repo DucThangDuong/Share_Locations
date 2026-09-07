@@ -1,5 +1,6 @@
 using Application.Common;
-using Application.Common.Interfaces.Repositories;
+using Domain.Entities;
+using Domain.Interfaces;
 using MediatR;
 
 namespace Application.Features.Places.Commands;
@@ -13,27 +14,39 @@ public record CreatePlaceReportCommand(
 
 public class CreatePlaceReportCommandHandler : IRequestHandler<CreatePlaceReportCommand, Result<bool>>
 {
-    private readonly IPlaceRepository _placeRepository;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public CreatePlaceReportCommandHandler(IPlaceRepository placeRepository)
+    public CreatePlaceReportCommandHandler(IUnitOfWork unitOfWork)
     {
-        _placeRepository = placeRepository;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<Result<bool>> Handle(CreatePlaceReportCommand request, CancellationToken ct)
     {
-        var success = await _placeRepository.CreatePlaceReportAsync(
-            request.PlaceId,
-            request.Reason,
-            request.Description,
-            request.ContactEmail,
-            request.ReporterId,
-            ct);
-
-        if (!success)
+        var place = await _unitOfWork.Places.GetByIdAsync(request.PlaceId, ct);
+        if (place == null)
         {
-            return Result<bool>.Failure("Không thể gửi báo cáo vào lúc này. Vui lòng thử lại sau.");
+            return Result<bool>.NotFound("Địa điểm không tồn tại.");
         }
+
+        var reportType = await _unitOfWork.ReportTypes.GetDefaultAsync(ct);
+        var reportTypeId = reportType?.Id ?? 6;
+        var reporterId = request.ReporterId ?? 1;
+
+        var fullReason = !string.IsNullOrWhiteSpace(request.Description)
+            ? $"{request.Reason} - Chi tiết: {request.Description}"
+            : request.Reason;
+
+        if (!string.IsNullOrWhiteSpace(request.ContactEmail))
+        {
+            fullReason += $" (Liên hệ: {request.ContactEmail.Trim()})";
+        }
+
+        var trimmedReason = fullReason.Length > 500 ? fullReason[..500] : fullReason;
+        var report = new PlaceReport(reporterId, request.PlaceId, reportTypeId, trimmedReason);
+
+        await _unitOfWork.PlaceReports.AddAsync(report, ct);
+        await _unitOfWork.SaveChangesAsync(ct);
 
         return Result<bool>.Success(true, "Cảm ơn bạn đã đóng góp thông tin. Báo cáo của bạn đang được xem xét.");
     }

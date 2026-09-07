@@ -2,6 +2,9 @@ using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
 using Application.Features.Itineraries.Commands;
 using Application.Features.Itineraries.Queries;
+using Domain.Entities;
+using Domain.Enums;
+using Domain.Interfaces;
 using FluentAssertions;
 using NSubstitute;
 using Xunit;
@@ -62,10 +65,11 @@ public class ItinerariesFeaturesTests
     public async Task SaveItinerary_ShouldReturnSavedTrue_WhenSuccessful()
     {
         // Arrange
-        _tripRepo.SaveItineraryAsync(10, 1, Arg.Any<CancellationToken>())
-            .Returns(true);
+        var unitOfWork = Substitute.For<IUnitOfWork>();
+        unitOfWork.Favorites.GetAsync(10, 1, FavoriteTargetType.Trip, Arg.Any<CancellationToken>())
+            .Returns((Favorite?)null);
 
-        var handler = new SaveItineraryCommandHandler(_tripRepo);
+        var handler = new SaveItineraryCommandHandler(unitOfWork);
 
         // Act
         var result = await handler.Handle(new SaveItineraryCommand(1, 10), CancellationToken.None);
@@ -75,5 +79,7 @@ public class ItinerariesFeaturesTests
         result.Data.Should().NotBeNull();
         result.Data!.Saved.Should().BeTrue();
         result.Data.ItineraryId.Should().Be(1);
+        await unitOfWork.Favorites.Received(1).AddAsync(Arg.Any<Favorite>(), Arg.Any<CancellationToken>());
+        await unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }

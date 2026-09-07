@@ -185,15 +185,11 @@ export interface FoodSuggestedPlaceDto {
 export interface FoodItemDto {
   id: number
   name: string
-  region: string
-  regionName: string
-  category: string
   priceRange: string
   minPrice?: number | null
   maxPrice?: number | null
   imageUrl?: string | null
   description?: string | null
-  highlights: string[]
   suggestedPlaces: FoodSuggestedPlaceDto[]
 }
 

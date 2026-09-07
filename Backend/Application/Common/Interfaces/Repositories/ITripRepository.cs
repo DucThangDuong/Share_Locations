@@ -12,11 +12,6 @@ public interface ITripRepository
         int pageSize,
         CancellationToken ct = default);
 
-    Task<bool> SaveItineraryAsync(
-        long userId,
-        long tripId,
-        CancellationToken ct = default);
-
     Task<bool> IsItinerarySavedAsync(
         long userId,
         long tripId,

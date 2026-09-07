@@ -1,7 +1,9 @@
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
 using Dapper;
+using Domain.Enums;
 using Infrastructure.Persistence;
+using Infrastructure.Persistence.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence.Repositories;
@@ -13,40 +15,6 @@ public class TripRepository : ITripRepository
     public TripRepository(TravelReviewDbContext dbContext)
     {
         _dbContext = dbContext;
-    }
-
-    private class RawTripRow
-    {
-        public long Id { get; set; }
-        public long UserId { get; set; }
-        public string Title { get; set; } = string.Empty;
-        public string? Description { get; set; }
-        public string? CoverImageUrl { get; set; }
-        public DateTime? StartDate { get; set; }
-        public DateTime? EndDate { get; set; }
-        public byte Privacy { get; set; }
-        public string? AuthorName { get; set; }
-        public string? AuthorAvatar { get; set; }
-        public int DayCount { get; set; }
-    }
-
-    private class RawTripDay
-    {
-        public long TripId { get; set; }
-        public long Id { get; set; }
-        public int DayNumber { get; set; }
-        public string? DayTitle { get; set; }
-    }
-
-    private class RawTripStop
-    {
-        public long TripDayId { get; set; }
-        public int VisitOrder { get; set; }
-        public TimeSpan? PlannedTime { get; set; }
-        public string? Note { get; set; }
-        public string PlaceName { get; set; } = string.Empty;
-        public string? PlaceAddress { get; set; }
-        public string? PlaceDescription { get; set; }
     }
 
     public async Task<IReadOnlyList<ItineraryDto>> GetItinerariesAsync(
@@ -222,33 +190,13 @@ public class TripRepository : ITripRepository
         return result;
     }
 
-    public async Task<bool> SaveItineraryAsync(
-        long userId,
-        long tripId,
-        CancellationToken ct = default)
-    {
-        var connection = _dbContext.Database.GetDbConnection();
-
-        const string sql = @"
-            IF NOT EXISTS (SELECT 1 FROM dbo.Favorites WHERE UserId = @UserId AND TargetId = @TripId AND TargetType = 3)
-            BEGIN
-                INSERT INTO dbo.Favorites (UserId, TargetId, TargetType, CreatedAt)
-                VALUES (@UserId, @TripId, 3, SYSUTCDATETIME());
-            END";
-
-        await connection.ExecuteAsync(sql, new { UserId = userId, TripId = tripId });
-        return true;
-    }
-
     public async Task<bool> IsItinerarySavedAsync(
         long userId,
         long tripId,
         CancellationToken ct = default)
     {
-        var connection = _dbContext.Database.GetDbConnection();
-
-        const string sql = "SELECT COUNT(1) FROM dbo.Favorites WHERE UserId = @UserId AND TargetId = @TripId AND TargetType = 3;";
-        var count = await connection.ExecuteScalarAsync<int>(sql, new { UserId = userId, TripId = tripId });
-        return count > 0;
+        return await _dbContext.Favorites
+            .AsNoTracking()
+            .AnyAsync(f => f.UserId == userId && f.TargetId == tripId && f.TargetType == FavoriteTargetType.Trip, ct);
     }
 }

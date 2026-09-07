@@ -2,6 +2,7 @@ using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
 using Dapper;
 using Infrastructure.Persistence;
+using Infrastructure.Persistence.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence.Repositories;
@@ -13,11 +14,6 @@ public class RegionRepository : IRegionRepository
     public RegionRepository(TravelReviewDbContext dbContext)
     {
         _dbContext = dbContext;
-    }
-
-    private class ProvinceWithRegionRaw : ProvinceSummaryDto
-    {
-        public int RegionId { get; set; }
     }
 
     public async Task<IReadOnlyList<RegionDto>> GetAllAsync(CancellationToken ct = default)

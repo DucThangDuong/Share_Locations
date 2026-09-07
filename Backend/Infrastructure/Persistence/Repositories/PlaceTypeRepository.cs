@@ -1,6 +1,6 @@
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
-using Dapper;
+using Domain.Enums;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,15 +17,16 @@ public class PlaceTypeRepository : IPlaceTypeRepository
 
     public async Task<IReadOnlyList<PlaceTypeDto>> GetAllAsync(CancellationToken ct = default)
     {
-        var connection = _dbContext.Database.GetDbConnection();
-
-        const string sql = @"
-            SELECT pt.Id, pt.Name, pt.ImageUrl
-            FROM dbo.PlaceTypes pt
-            WHERE pt.Status = 1
-            ORDER BY pt.Id;";
-
-        var placeTypes = await connection.QueryAsync<PlaceTypeDto>(sql);
-        return placeTypes.ToList();
+        return await _dbContext.PlaceTypes
+            .AsNoTracking()
+            .Where(pt => pt.Status == RecordStatus.Active)
+            .OrderBy(pt => pt.Id)
+            .Select(pt => new PlaceTypeDto
+            {
+                Id = pt.Id,
+                Name = pt.Name,
+                ImageUrl = pt.ImageUrl
+            })
+            .ToListAsync(ct);
     }
 }

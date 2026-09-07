@@ -66,4 +66,12 @@ public class Review
         Status = ReviewStatus.Active;
         UpdatedAt = DateTime.UtcNow;
     }
+
+    public void AddMedia(string url, FoodMediaType mediaType = FoodMediaType.Image)
+    {
+        if (!string.IsNullOrWhiteSpace(url))
+        {
+            _media.Add(new ReviewMedia(Id, url.Trim(), mediaType));
+        }
+    }
 }

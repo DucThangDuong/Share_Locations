@@ -2,6 +2,9 @@ using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
 using Application.Features.Places.Commands;
 using Application.Features.Places.Queries;
+using Domain.Entities;
+using Domain.Enums;
+using Domain.Interfaces;
 using FluentAssertions;
 using NSubstitute;
 using Xunit;
@@ -94,7 +97,8 @@ public class PlacesFeaturesTests
     public async Task CreatePlaceReview_ShouldFail_WhenRatingIsOutOfRange(byte invalidRating)
     {
         // Arrange
-        var handler = new CreatePlaceReviewCommandHandler(_placeRepo);
+        var unitOfWork = Substitute.For<IUnitOfWork>();
+        var handler = new CreatePlaceReviewCommandHandler(unitOfWork);
 
         // Act
         var result = await handler.Handle(
@@ -104,27 +108,25 @@ public class PlacesFeaturesTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Message.Should().Contain("từ 1 đến 5");
-        await _placeRepo.DidNotReceiveWithAnyArgs().CreateReviewAsync(default, default, default, default!, default, default);
+        await unitOfWork.DidNotReceiveWithAnyArgs().SaveChangesAsync(default);
     }
 
     [Fact]
     public async Task CreatePlaceReview_ShouldReturnCreatedReview_WhenValid()
     {
         // Arrange
-        var createdReview = new ReviewItemDto
-        {
-            Id = 100,
-            UserId = "10",
-            UserName = "Nguyễn Văn A",
-            Rating = 5,
-            Content = "Rất đáng trải nghiệm!",
-            CreatedAt = DateTime.UtcNow
-        };
+        var unitOfWork = Substitute.For<IUnitOfWork>();
+        var samplePlace = new Place(1, 1, "Bà Nà Hills", "Đà Nẵng");
+        var sampleUser = new User("test@example.com", "hash", UserRole.User);
+        sampleUser.SetProfile(new UserProfile(0, "Nguyễn Văn A"));
 
-        _placeRepo.CreateReviewAsync(1, 10, 5, "Rất đáng trải nghiệm!", Arg.Any<List<string>?>(), Arg.Any<CancellationToken>())
-            .Returns(createdReview);
+        unitOfWork.Places.GetByIdAsync(1, Arg.Any<CancellationToken>()).Returns(samplePlace);
+        unitOfWork.Users.GetByIdWithProfileAsync(10, Arg.Any<CancellationToken>()).Returns(sampleUser);
+        unitOfWork.Reviews.GetPlaceStatsAsync(1, Arg.Any<CancellationToken>()).Returns((5.0m, 1));
+        unitOfWork.ExecuteInTransactionAsync(Arg.Any<Func<Task>>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo => callInfo.Arg<Func<Task>>()());
 
-        var handler = new CreatePlaceReviewCommandHandler(_placeRepo);
+        var handler = new CreatePlaceReviewCommandHandler(unitOfWork);
 
         // Act
         var result = await handler.Handle(
@@ -134,18 +136,23 @@ public class PlacesFeaturesTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Data.Should().NotBeNull();
-        result.Data!.Id.Should().Be(100);
-        result.Data.Rating.Should().Be(5);
+        result.Data!.Rating.Should().Be(5);
+        result.Data.UserName.Should().Be("Nguyễn Văn A");
+        result.Data.Content.Should().Be("Rất đáng trải nghiệm!");
     }
 
     [Fact]
     public async Task CreatePlaceReport_ShouldReturnSuccess_WhenRepositorySucceeds()
     {
         // Arrange
-        _placeRepo.CreatePlaceReportAsync(1, "WRONG_INFO", "Địa chỉ sai", "reporter@test.com", 10, Arg.Any<CancellationToken>())
-            .Returns(true);
+        var unitOfWork = Substitute.For<IUnitOfWork>();
+        var samplePlace = new Place(1, 1, "Bà Nà Hills", "Đà Nẵng");
+        var sampleReportType = new ReportType("WRONG_INFO", "Địa chỉ sai", true, 1);
 
-        var handler = new CreatePlaceReportCommandHandler(_placeRepo);
+        unitOfWork.Places.GetByIdAsync(1, Arg.Any<CancellationToken>()).Returns(samplePlace);
+        unitOfWork.ReportTypes.GetDefaultAsync(Arg.Any<CancellationToken>()).Returns(sampleReportType);
+
+        var handler = new CreatePlaceReportCommandHandler(unitOfWork);
 
         // Act
         var result = await handler.Handle(
@@ -155,16 +162,22 @@ public class PlacesFeaturesTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Data.Should().BeTrue();
+        await unitOfWork.PlaceReports.Received(1).AddAsync(Arg.Any<PlaceReport>(), Arg.Any<CancellationToken>());
+        await unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task ToggleSavePlace_ShouldReturnSaved_WhenSaveIsTrue()
     {
         // Arrange
-        _placeRepo.ToggleSavePlaceAsync(10, 1, true, Arg.Any<CancellationToken>())
-            .Returns(true);
+        var unitOfWork = Substitute.For<IUnitOfWork>();
+        var samplePlace = new Place(1, 1, "Bà Nà Hills", "Đà Nẵng");
 
-        var handler = new ToggleSavePlaceCommandHandler(_placeRepo);
+        unitOfWork.Places.GetByIdAsync(1, Arg.Any<CancellationToken>()).Returns(samplePlace);
+        unitOfWork.Favorites.GetAsync(10, 1, FavoriteTargetType.Place, Arg.Any<CancellationToken>())
+            .Returns((Favorite?)null);
+
+        var handler = new ToggleSavePlaceCommandHandler(unitOfWork);
 
         // Act
         var result = await handler.Handle(new ToggleSavePlaceCommand(1, 10, Save: true), CancellationToken.None);
@@ -174,16 +187,23 @@ public class PlacesFeaturesTests
         result.Data.Should().NotBeNull();
         result.Data!.IsSaved.Should().BeTrue();
         result.Data.PlaceId.Should().Be(1);
+        await unitOfWork.Favorites.Received(1).AddAsync(Arg.Any<Favorite>(), Arg.Any<CancellationToken>());
+        await unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task ToggleSavePlace_ShouldReturnUnsaved_WhenSaveIsFalse()
     {
         // Arrange
-        _placeRepo.ToggleSavePlaceAsync(10, 1, false, Arg.Any<CancellationToken>())
-            .Returns(true);
+        var unitOfWork = Substitute.For<IUnitOfWork>();
+        var samplePlace = new Place(1, 1, "Bà Nà Hills", "Đà Nẵng");
+        var sampleFavorite = new Favorite(10, 1, FavoriteTargetType.Place);
 
-        var handler = new ToggleSavePlaceCommandHandler(_placeRepo);
+        unitOfWork.Places.GetByIdAsync(1, Arg.Any<CancellationToken>()).Returns(samplePlace);
+        unitOfWork.Favorites.GetAsync(10, 1, FavoriteTargetType.Place, Arg.Any<CancellationToken>())
+            .Returns(sampleFavorite);
+
+        var handler = new ToggleSavePlaceCommandHandler(unitOfWork);
 
         // Act
         var result = await handler.Handle(new ToggleSavePlaceCommand(1, 10, Save: false), CancellationToken.None);
@@ -193,6 +213,8 @@ public class PlacesFeaturesTests
         result.Data.Should().NotBeNull();
         result.Data!.IsSaved.Should().BeFalse();
         result.Data.PlaceId.Should().Be(1);
+        unitOfWork.Favorites.Received(1).Remove(sampleFavorite);
+        await unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]

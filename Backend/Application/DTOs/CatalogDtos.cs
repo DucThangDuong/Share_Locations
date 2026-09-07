@@ -18,17 +18,6 @@ public class PlaceCardDto
     public IReadOnlyList<string> MediaUrls { get; set; } = [];
 }
 
-public class CategoryDto
-{
-    public int Id { get; set; }
-    public int PlaceTypeId { get; set; }
-    public string PlaceTypeName { get; set; } = string.Empty;
-    public string Name { get; set; } = string.Empty;
-    public string? ImageUrl { get; set; }
-    public string? IconClass { get => ImageUrl; set => ImageUrl = value; }
-    public int PlaceCount { get; set; }
-    public IReadOnlyList<PlaceCardDto> Places { get; set; } = [];
-}
 
 public class CollectionDto
 {

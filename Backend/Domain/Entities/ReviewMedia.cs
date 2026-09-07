@@ -12,4 +12,14 @@ public class ReviewMedia
 
     // Navigation
     public virtual Review Review { get; private set; } = null!;
+
+    protected ReviewMedia() { }
+
+    public ReviewMedia(long reviewId, string url, FoodMediaType mediaType = FoodMediaType.Image)
+    {
+        ReviewId = reviewId;
+        Url = url;
+        MediaType = mediaType;
+        CreatedAt = DateTime.UtcNow;
+    }
 }

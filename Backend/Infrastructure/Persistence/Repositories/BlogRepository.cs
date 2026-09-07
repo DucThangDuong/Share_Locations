@@ -5,6 +5,7 @@ using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
 using Dapper;
 using Infrastructure.Persistence;
+using Infrastructure.Persistence.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence.Repositories;
@@ -16,23 +17,6 @@ public class BlogRepository : IBlogRepository
     public BlogRepository(TravelReviewDbContext dbContext)
     {
         _dbContext = dbContext;
-    }
-
-    private class RawBlogRow
-    {
-        public long Id { get; set; }
-        public long AuthorId { get; set; }
-        public int? CategoryId { get; set; }
-        public string Title { get; set; } = string.Empty;
-        public string? Excerpt { get; set; }
-        public string ContentJSON { get; set; } = "{}";
-        public string? CoverImageUrl { get; set; }
-        public int ReadTimeMinutes { get; set; }
-        public int ViewCount { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public string? AuthorName { get; set; }
-        public string? AuthorAvatar { get; set; }
-        public string? CategoryName { get; set; }
     }
 
     public static string GenerateSlug(string text)
@@ -56,34 +40,6 @@ public class BlogRepository : IBlogRepository
         clean = Regex.Replace(clean, @"[^a-z0-9\s-]", "");
         clean = Regex.Replace(clean, @"\s+", "-").Trim('-');
         return clean;
-    }
-
-    private static BlogListItemDto MapToDto(RawBlogRow b, bool isFeatured = false)
-    {
-        var slug = GenerateSlug(b.Title);
-        var readTime = b.ReadTimeMinutes > 0 ? $"{b.ReadTimeMinutes} phút đọc" : "5 phút đọc";
-        var publishedDate = b.CreatedAt.ToString("dd 'Tháng' MM, yyyy", CultureInfo.GetCultureInfo("vi-VN"));
-
-        return new BlogListItemDto
-        {
-            Id = b.Id,
-            Slug = slug,
-            Title = b.Title,
-            Excerpt = b.Excerpt ?? (b.Title.Length > 80 ? b.Title[..80] + "..." : b.Title),
-            Content = b.ContentJSON,
-            Category = b.CategoryName ?? "Cẩm nang du lịch",
-            ReadTime = readTime,
-            CoverUrl = b.CoverImageUrl,
-            Author = new BlogAuthorDto
-            {
-                Name = b.AuthorName ?? "Ban Biên Tập Lang Thang",
-                Avatar = b.AuthorAvatar,
-                Role = "Travel Blogger"
-            },
-            PublishedAt = publishedDate,
-            Tags = new List<string> { b.CategoryName ?? "Du lịch", "Kinh nghiệm", "Việt Nam" },
-            Featured = isFeatured || b.ViewCount > 500
-        };
     }
 
     public async Task<IReadOnlyList<BlogListItemDto>> GetBlogsAsync(
@@ -138,7 +94,7 @@ public class BlogRepository : IBlogRepository
             OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 
         var rows = (await connection.QueryAsync<RawBlogRow>(sql, parameters)).ToList();
-        return rows.Select(r => MapToDto(r)).ToList();
+        return rows.Select(r => r.ToDto()).ToList();
     }
 
     public async Task<BlogListItemDto?> GetFeaturedBlogAsync(CancellationToken ct = default)
@@ -167,11 +123,10 @@ public class BlogRepository : IBlogRepository
             ORDER BY b.ViewCount DESC, b.CreatedAt DESC;";
 
         var row = await connection.QueryFirstOrDefaultAsync<RawBlogRow>(sql);
-        return row != null ? MapToDto(row, isFeatured: true) : null;
+        return row != null ? row.ToDto(isFeatured: true) : null;
     }
 
-    public async Task<BlogDetailDto?> GetBlogDetailAsync(string idOrSlug, CancellationToken ct = default)
-    {
+    public async Task<BlogDetailDto?> GetBlogDetailAsync(string idOrSlug, CancellationToken ct = default){
         var connection = _dbContext.Database.GetDbConnection();
 
         RawBlogRow? blog = null;
@@ -201,7 +156,6 @@ public class BlogRepository : IBlogRepository
         }
         else
         {
-            // Match all published blogs and find matching slug
             const string sqlAll = @"
                 SELECT 
                     b.Id,
@@ -228,34 +182,9 @@ public class BlogRepository : IBlogRepository
 
         if (blog == null) return null;
 
-        // Increase view count asynchronously
         _ = connection.ExecuteAsync("UPDATE dbo.Blogs SET ViewCount = ViewCount + 1 WHERE Id = @Id;", new { Id = blog.Id });
 
-        // Query related posts
-        const string relatedSql = @"
-            SELECT TOP 3
-                b.Id,
-                b.AuthorId,
-                b.CategoryId,
-                b.Title,
-                b.Excerpt,
-                b.ContentJSON,
-                b.CoverImageUrl,
-                b.ReadTimeMinutes,
-                b.ViewCount,
-                b.CreatedAt,
-                ISNULL(up.FullName, N'Lang Thang Blogger') AS AuthorName,
-                up.AvatarUrl AS AuthorAvatar,
-                c.Name AS CategoryName
-            FROM dbo.Blogs b
-            LEFT JOIN dbo.UserProfiles up ON b.AuthorId = up.UserId
-            LEFT JOIN dbo.Categories c ON b.CategoryId = c.Id
-            WHERE b.Id <> @CurrentId AND b.Status = 1
-            ORDER BY b.ViewCount DESC, b.CreatedAt DESC;";
-
-        var relatedRows = (await connection.QueryAsync<RawBlogRow>(relatedSql, new { CurrentId = blog.Id })).ToList();
-        var baseDto = MapToDto(blog);
-
+        var baseDto = blog.ToDto();
         return new BlogDetailDto
         {
             Id = baseDto.Id,
@@ -269,8 +198,7 @@ public class BlogRepository : IBlogRepository
             Author = baseDto.Author,
             PublishedAt = baseDto.PublishedAt,
             Tags = baseDto.Tags,
-            Featured = baseDto.Featured,
-            RelatedPosts = relatedRows.Select(r => MapToDto(r)).ToList()
+            Featured = baseDto.Featured
         };
     }
 }

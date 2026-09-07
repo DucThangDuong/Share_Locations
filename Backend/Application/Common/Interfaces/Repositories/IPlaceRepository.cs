@@ -30,28 +30,6 @@ public interface IPlaceRepository
         int? rating,
         CancellationToken ct = default);
 
-    Task<ReviewItemDto> CreateReviewAsync(
-        long placeId,
-        long userId,
-        byte rating,
-        string content,
-        List<string>? images,
-        CancellationToken ct = default);
-
-    Task<bool> CreatePlaceReportAsync(
-        long placeId,
-        string reason,
-        string? description,
-        string? contactEmail,
-        long? reporterId,
-        CancellationToken ct = default);
-
-    Task<bool> ToggleSavePlaceAsync(
-        long userId,
-        long placeId,
-        bool isSave,
-        CancellationToken ct = default);
-
     Task<bool> IsPlaceSavedAsync(
         long userId,
         long placeId,

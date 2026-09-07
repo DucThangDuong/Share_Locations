@@ -14,6 +14,21 @@ public class UnitOfWork : IUnitOfWork
     private IUserProfileRepository? _userProfiles;
     public IUserProfileRepository UserProfiles => _userProfiles ??= new UserProfileRepository(_dbContext);
 
+    private IPlaceWriteRepository? _places;
+    public IPlaceWriteRepository Places => _places ??= new PlaceWriteRepository(_dbContext);
+
+    private IReviewRepository? _reviews;
+    public IReviewRepository Reviews => _reviews ??= new ReviewRepository(_dbContext);
+
+    private IFavoriteRepository? _favorites;
+    public IFavoriteRepository Favorites => _favorites ??= new FavoriteRepository(_dbContext);
+
+    private IPlaceReportRepository? _placeReports;
+    public IPlaceReportRepository PlaceReports => _placeReports ??= new PlaceReportRepository(_dbContext);
+
+    private IReportTypeRepository? _reportTypes;
+    public IReportTypeRepository ReportTypes => _reportTypes ??= new ReportTypeRepository(_dbContext);
+
     public UnitOfWork(TravelReviewDbContext dbContext)
     {
         _dbContext = dbContext;

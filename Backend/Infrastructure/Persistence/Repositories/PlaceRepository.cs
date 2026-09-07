@@ -1,7 +1,9 @@
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
 using Dapper;
+using Domain.Enums;
 using Infrastructure.Persistence;
+using Infrastructure.Persistence.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence.Repositories;
@@ -15,62 +17,50 @@ public class PlaceRepository : IPlaceRepository
         _dbContext = dbContext;
     }
 
-    private class ProvinceLookupRaw
-    {
-        public int Id { get; set; }
-        public int RegionId { get; set; }
-        public string Name { get; set; } = string.Empty;
-    }
-
     public async Task<PlaceFilterOptionsDto> GetFilterOptionsAsync(CancellationToken ct = default)
     {
-        var connection = _dbContext.Database.GetDbConnection();
-
-        const string sql = @"
-            SELECT c.Id, c.Name 
-            FROM dbo.Categories c 
-            WHERE c.Status = 1 
-            ORDER BY c.Name;
-
-            SELECT r.Id, r.Name 
-            FROM dbo.Regions r 
-            WHERE r.Status = 1 
-            ORDER BY r.OrderIndex;
-
-            SELECT p.Id, p.RegionId, p.Name 
-            FROM dbo.Provinces p 
-            WHERE p.Status = 1 
-            ORDER BY p.DisplayOrder, p.Name;";
-
-        using var multi = await connection.QueryMultipleAsync(sql);
-        var categories = (await multi.ReadAsync<LookupItemDto>()).ToList();
-        var regions = (await multi.ReadAsync<LookupItemDto>()).ToList();
-        var provinces = (await multi.ReadAsync<ProvinceLookupRaw>()).ToList();
-
-        var provincesByRegion = provinces.ToLookup(p => p.RegionId);
-
-        var regionLookups = regions.Select(r => new RegionLookupDto
-        {
-            Id = r.Id,
-            Name = r.Name,
-            Provinces = provincesByRegion[r.Id].Select(p => new LookupItemDto
+        var categories = await _dbContext.Categories
+            .AsNoTracking()
+            .Where(c => c.Status == RecordStatus.Active)
+            .OrderBy(c => c.Name)
+            .Select(c => new LookupItemDto
             {
-                Id = p.Id,
-                Name = p.Name
-            }).ToList()
-        }).ToList();
+                Id = c.Id,
+                Name = c.Name
+            })
+            .ToListAsync(ct);
+
+        var regions = await _dbContext.Regions
+            .AsNoTracking()
+            .Where(r => r.Status == RecordStatus.Active)
+            .OrderBy(r => r.OrderIndex)
+            .Select(r => new RegionLookupDto
+            {
+                Id = r.Id,
+                Name = r.Name,
+                Provinces = r.Provinces
+                    .Where(p => p.Status == RecordStatus.Active)
+                    .OrderBy(p => p.DisplayOrder)
+                    .ThenBy(p => p.Name)
+                    .Select(p => new LookupItemDto
+                    {
+                        Id = p.Id,
+                        Name = p.Name
+                    })
+                    .ToList()
+            })
+            .ToListAsync(ct);
 
         return new PlaceFilterOptionsDto
         {
             Categories = categories,
-            Regions = regionLookups
+            Regions = regions
         };
     }
 
     public async Task<(IReadOnlyList<PlaceSummaryDto> Items, long TotalCount)> SearchAndFilterAsync(
         PlaceFilterParams p,
-        CancellationToken ct = default)
-    {
+        CancellationToken ct = default) {
         var connection = _dbContext.Database.GetDbConnection();
 
         var safePageIndex = p.Page < 1 ? 1 : p.Page;
@@ -156,8 +146,7 @@ public class PlaceRepository : IPlaceRepository
         return (items, totalCount);
     }
 
-    public async Task<PlaceDetailDto?> GetPlaceDetailAsync(long id, CancellationToken ct = default)
-    {
+    public async Task<PlaceDetailDto?> GetPlaceDetailAsync(long id, CancellationToken ct = default) {
         var connection = _dbContext.Database.GetDbConnection();
 
         const string sql = @"
@@ -189,7 +178,6 @@ public class PlaceRepository : IPlaceRepository
             place.ThumbnailUrl = mediaUrls[0];
         }
 
-        // Tạo chi tiết mô tả, highlights và amenities thực tế nếu chưa có trường riêng
         place.DetailedDescription = place.Description ?? string.Empty;
         place.Highlights =
         [
@@ -222,13 +210,11 @@ public class PlaceRepository : IPlaceRepository
         CancellationToken ct = default)
     {
         var connection = _dbContext.Database.GetDbConnection();
-
         string? regionKey = null;
         if (!string.IsNullOrWhiteSpace(region) && !string.Equals(region, "all", StringComparison.OrdinalIgnoreCase))
         {
             regionKey = region.Trim().ToLowerInvariant();
         }
-
         var parameters = new
         {
             Keyword = !string.IsNullOrWhiteSpace(keyword) ? $"%{keyword.Trim()}%" : null,
@@ -240,7 +226,6 @@ public class PlaceRepository : IPlaceRepository
             MaxLng = maxLng,
             MaxLat = maxLat
         };
-
         const string sql = @"
             SELECT TOP 500
                 p.Id,
@@ -286,13 +271,13 @@ public class PlaceRepository : IPlaceRepository
               AND (@MinLng IS NULL OR (p.Longitude BETWEEN @MinLng AND @MaxLng AND p.Latitude BETWEEN @MinLat AND @MaxLat))
             ORDER BY p.AvgRating DESC, p.ReviewCount DESC;";
 
-        var rows = await connection.QueryAsync(sql, parameters);
+        var rows = (await connection.QueryAsync<RawPlaceMapRow>(sql, parameters)).ToList();
         var result = new List<PlaceMapItemDto>();
 
         foreach (var r in rows)
         {
-            double lng = r.Longitude != null ? Convert.ToDouble(r.Longitude) : 0.0;
-            double lat = r.Latitude != null ? Convert.ToDouble(r.Latitude) : 0.0;
+            double lng = r.Longitude.HasValue ? Convert.ToDouble(r.Longitude.Value) : 0.0;
+            double lat = r.Latitude.HasValue ? Convert.ToDouble(r.Latitude.Value) : 0.0;
 
             result.Add(new PlaceMapItemDto
             {
@@ -304,8 +289,8 @@ public class PlaceRepository : IPlaceRepository
                 RegionName = r.RegionName,
                 Province = r.Province,
                 Address = r.Address,
-                AvgRating = Convert.ToDecimal(r.AvgRating),
-                ReviewCount = Convert.ToInt32(r.ReviewCount),
+                AvgRating = r.AvgRating,
+                ReviewCount = r.ReviewCount,
                 Price = r.Price,
                 ImageUrl = r.ImageUrl,
                 Coordinates = [lng, lat]
@@ -320,8 +305,7 @@ public class PlaceRepository : IPlaceRepository
         int page,
         int pageSize,
         int? rating,
-        CancellationToken ct = default)
-    {
+        CancellationToken ct = default){
         var connection = _dbContext.Database.GetDbConnection();
 
         var safePage = page < 1 ? 1 : page;
@@ -406,154 +390,10 @@ public class PlaceRepository : IPlaceRepository
         return summary;
     }
 
-    public async Task<ReviewItemDto> CreateReviewAsync(
-        long placeId,
-        long userId,
-        byte rating,
-        string content,
-        List<string>? images,
-        CancellationToken ct = default)
-    {
-        var connection = _dbContext.Database.GetDbConnection();
-
-        const string insertSql = @"
-            INSERT INTO dbo.Reviews (PlaceId, UserId, Rating, Content, Status, CreatedAt, UpdatedAt)
-            OUTPUT INSERTED.Id, INSERTED.CreatedAt
-            VALUES (@PlaceId, @UserId, @Rating, @Content, 1, SYSUTCDATETIME(), SYSUTCDATETIME());";
-
-        var inserted = await connection.QuerySingleAsync<(long Id, DateTime CreatedAt)>(insertSql, new
-        {
-            PlaceId = placeId,
-            UserId = userId,
-            Rating = rating,
-            Content = content
-        });
-
-        if (images is { Count: > 0 })
-        {
-            const string mediaSql = @"
-                INSERT INTO dbo.ReviewMedia (ReviewId, MediaType, Url, CreatedAt)
-                VALUES (@ReviewId, 1, @Url, SYSUTCDATETIME());";
-
-            foreach (var img in images)
-            {
-                if (!string.IsNullOrWhiteSpace(img))
-                {
-                    await connection.ExecuteAsync(mediaSql, new { ReviewId = inserted.Id, Url = img.Trim() });
-                }
-            }
-        }
-
-        // Cập nhật lại Rating trung bình và ReviewCount của Place
-        const string updatePlaceSql = @"
-            UPDATE dbo.Places
-            SET ReviewCount = (SELECT COUNT(1) FROM dbo.Reviews WHERE PlaceId = @PlaceId AND Status = 1),
-                AvgRating = COALESCE((SELECT ROUND(AVG(CAST(Rating AS DECIMAL(3,2))), 2) FROM dbo.Reviews WHERE PlaceId = @PlaceId AND Status = 1), 0.0),
-                UpdatedAt = SYSUTCDATETIME()
-            WHERE Id = @PlaceId;";
-
-        await connection.ExecuteAsync(updatePlaceSql, new { PlaceId = placeId });
-
-        // Lấy thông tin User profile để trả về đầy đủ
-        const string userSql = @"SELECT FullName, AvatarUrl FROM dbo.UserProfiles WHERE UserId = @UserId;";
-        var userProfile = await connection.QueryFirstOrDefaultAsync(userSql, new { UserId = userId });
-
-        return new ReviewItemDto
-        {
-            Id = inserted.Id,
-            UserId = userId.ToString(),
-            UserName = userProfile?.FullName ?? "Người dùng",
-            UserAvatar = userProfile?.AvatarUrl,
-            Rating = rating,
-            Content = content,
-            Images = images ?? [],
-            LikesCount = 0,
-            CreatedAt = inserted.CreatedAt
-        };
-    }
-
-    public async Task<bool> CreatePlaceReportAsync(
-        long placeId,
-        string reason,
-        string? description,
-        string? contactEmail,
-        long? reporterId,
-        CancellationToken ct = default)
-    {
-        var connection = _dbContext.Database.GetDbConnection();
-
-        // 1. Tìm hoặc gán ReportTypeId mặc định (mặc định lấy loại đầu tiên hoặc 6 - OTHER)
-        const string findReportTypeSql = @"
-            SELECT TOP 1 Id FROM dbo.ReportTypes WHERE IsActive = 1 ORDER BY DisplayOrder;";
-        var reportTypeId = await connection.QueryFirstOrDefaultAsync<int?>(findReportTypeSql) ?? 6;
-
-        // 2. Nếu không có reporterId, lấy ID của người dùng đầu tiên (System/Admin) để thỏa mãn FK Users
-        long effectiveReporterId = reporterId ?? 1;
-        if (!reporterId.HasValue)
-        {
-            const string findUserSql = @"SELECT TOP 1 Id FROM dbo.Users ORDER BY Id;";
-            effectiveReporterId = await connection.QueryFirstOrDefaultAsync<long?>(findUserSql) ?? 1;
-        }
-
-        var fullReason = !string.IsNullOrWhiteSpace(description)
-            ? $"{reason} - Chi tiết: {description}"
-            : reason;
-
-        if (!string.IsNullOrWhiteSpace(contactEmail))
-        {
-            fullReason += $" (Liên hệ: {contactEmail.Trim()})";
-        }
-
-        const string insertSql = @"
-            INSERT INTO dbo.PlaceReports (ReporterId, PlaceId, ReportTypeId, Reason, Status, CreatedAt)
-            VALUES (@ReporterId, @PlaceId, @ReportTypeId, @Reason, 0, SYSUTCDATETIME());";
-
-        var affected = await connection.ExecuteAsync(insertSql, new
-        {
-            ReporterId = effectiveReporterId,
-            PlaceId = placeId,
-            ReportTypeId = reportTypeId,
-            Reason = fullReason.Length > 500 ? fullReason[..500] : fullReason
-        });
-
-        return affected > 0;
-    }
-
-    public async Task<bool> ToggleSavePlaceAsync(long userId, long placeId, bool isSave, CancellationToken ct = default)
-    {
-        var connection = _dbContext.Database.GetDbConnection();
-
-        if (isSave)
-        {
-            const string saveSql = @"
-                IF NOT EXISTS (SELECT 1 FROM dbo.Favorites WHERE UserId = @UserId AND TargetId = @PlaceId AND TargetType = 1)
-                BEGIN
-                    INSERT INTO dbo.Favorites (UserId, TargetId, TargetType, CreatedAt)
-                    VALUES (@UserId, @PlaceId, 1, SYSUTCDATETIME());
-                END";
-
-            await connection.ExecuteAsync(saveSql, new { UserId = userId, PlaceId = placeId });
-            return true;
-        }
-        else
-        {
-            const string unsaveSql = @"
-                DELETE FROM dbo.Favorites
-                WHERE UserId = @UserId AND TargetId = @PlaceId AND TargetType = 1;";
-
-            await connection.ExecuteAsync(unsaveSql, new { UserId = userId, PlaceId = placeId });
-            return false;
-        }
-    }
-
     public async Task<bool> IsPlaceSavedAsync(long userId, long placeId, CancellationToken ct = default)
     {
-        var connection = _dbContext.Database.GetDbConnection();
-        const string checkSql = @"
-            SELECT CASE WHEN EXISTS (
-                SELECT 1 FROM dbo.Favorites WHERE UserId = @UserId AND TargetId = @PlaceId AND TargetType = 1
-            ) THEN 1 ELSE 0 END;";
-
-        return await connection.QueryFirstOrDefaultAsync<bool>(checkSql, new { UserId = userId, PlaceId = placeId });
+        return await _dbContext.Favorites
+            .AsNoTracking()
+            .AnyAsync(f => f.UserId == userId && f.TargetId == placeId && f.TargetType == FavoriteTargetType.Place, ct);
     }
 }

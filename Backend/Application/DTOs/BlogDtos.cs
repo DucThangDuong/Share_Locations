@@ -25,5 +25,4 @@ public class BlogListItemDto
 
 public class BlogDetailDto : BlogListItemDto
 {
-    public IReadOnlyList<BlogListItemDto> RelatedPosts { get; set; } = [];
 }

@@ -1,6 +1,8 @@
 using Application.Common;
-using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
+using Domain.Entities;
+using Domain.Enums;
+using Domain.Interfaces;
 using MediatR;
 
 namespace Application.Features.Itineraries.Commands;
@@ -9,19 +11,21 @@ public record SaveItineraryCommand(long TripId, long UserId) : IRequest<Result<S
 
 public class SaveItineraryCommandHandler : IRequestHandler<SaveItineraryCommand, Result<SaveItineraryResponseDto>>
 {
-    private readonly ITripRepository _tripRepository;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public SaveItineraryCommandHandler(ITripRepository tripRepository)
+    public SaveItineraryCommandHandler(IUnitOfWork unitOfWork)
     {
-        _tripRepository = tripRepository;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<Result<SaveItineraryResponseDto>> Handle(SaveItineraryCommand request, CancellationToken ct)
     {
-        var saved = await _tripRepository.SaveItineraryAsync(request.UserId, request.TripId, ct);
-        if (!saved)
+        var existing = await _unitOfWork.Favorites.GetAsync(request.UserId, request.TripId, FavoriteTargetType.Trip, ct);
+        if (existing == null)
         {
-            return Result<SaveItineraryResponseDto>.Failure("Không thể lưu lịch trình vào bộ sưu tập cá nhân.");
+            var favorite = new Favorite(request.UserId, request.TripId, FavoriteTargetType.Trip);
+            await _unitOfWork.Favorites.AddAsync(favorite, ct);
+            await _unitOfWork.SaveChangesAsync(ct);
         }
 
         var response = new SaveItineraryResponseDto
