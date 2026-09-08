@@ -21,17 +21,6 @@ export interface PlaceFilterOptionsDto {
   regions: RegionLookupDto[]
 }
 
-export interface CategoryDto {
-  id: number
-  placeTypeId: number
-  placeTypeName: string
-  name: string
-  imageUrl?: string | null
-  iconClass?: string | null
-  placeCount: number
-  places?: PlaceCardDto[]
-}
-
 export interface PlaceCardDto {
   id: number
   name: string
@@ -158,6 +147,8 @@ export interface CreateReviewRequest {
   content?: string
   visitDate?: string
   images?: string[]
+  photos?: File[]
+  videos?: File[]
 }
 
 export interface ReportPlaceRequest {
