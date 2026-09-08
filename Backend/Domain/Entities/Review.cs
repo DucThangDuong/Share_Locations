@@ -71,7 +71,7 @@ public class Review
     {
         if (!string.IsNullOrWhiteSpace(url))
         {
-            _media.Add(new ReviewMedia(Id, url.Trim(), mediaType));
+            _media.Add(new ReviewMedia(this, url.Trim(), mediaType));
         }
     }
 }

@@ -1,153 +1,127 @@
 # 🌍 Hệ Thống Chia Sẻ Địa Điểm (Travel & Place Sharing Platform)
 
-Dự án nền tảng chia sẻ và đánh giá địa điểm du lịch, ẩm thực, hành trình và cộng đồng được xây dựng theo kiến trúc **Clean Architecture** kết hợp với **Domain-Driven Design (DDD)** trên nền tảng **.NET 8** và **React 19 + Vite + Tailwind CSS v4**.
+Nền tảng chia sẻ, đánh giá địa điểm du lịch, ẩm thực, lịch trình và kết nối cộng đồng.
 
 ---
 
-## 📌 Mục Lục
-1. [Kiến Trúc & Công Nghệ](#-kiến-trúc--công-nghệ)
-2. [Cấu Trúc Thư Mục](#-cấu-trúc-thư-mục)
-3. [Bảo Mật Thông Tin & Cấu Hình Môi Trường](#-bảo-mật-thông-tin--cấu-hình-môi-trường)
-4. [Cách 1: Chạy Bằng Docker (Khuyên Dùng - Nhanh Nhất)](#-cách-1-chạy-bằng-docker-khuyên-dùng)
-5. [Cách 2: Chạy Thủ Công Trên Máy Thật (Local Development)](#-cách-2-chạy-thủ-công-trên-máy-thật)
-6. [Cơ Chế Tự Động Tạo Bảng Database](#-cơ-chế-tự-động-tạo-bảng-database)
-7. [Danh Sách Thực Thể (34 Entities)](#-danh-sách-thực-thể-34-entities)
-8. [Các Lệnh Hữu Ích](#-các-lệnh-hữu-ích)
-
----
-
-## 🚀 Kiến Trúc & Công Nghệ
+## 🚀 Công Nghệ Sử Dụng
 
 ### 🔹 Backend (.NET 8 Web API)
-* **Kiến trúc**: Clean Architecture (Domain, Application, Infrastructure, API Presentation).
-* **Framework & Thư viện**:
-  * **FastEndpoints**: Xử lý HTTP Endpoints theo chuẩn REPR (Request-Endpoint-Response).
-  * **Entity Framework Core 8**: Quản lý và ánh xạ dữ liệu trực tiếp với 34 Entities và 11 Module Fluent API Configurations.
-  * **MediatR (CQRS)**: Tách biệt rõ ràng Commands và Queries.
-  * **FluentValidation**: Kiểm tra hợp lệ dữ liệu đầu vào.
-  * **MassTransit**: Hỗ trợ Message Broker / Event-Driven.
-  * **StackExchange.Redis**: Caching & token management.
-  * **Database**: Microsoft SQL Server 2022.
+- **Kiến trúc**: Clean Architecture kết hợp CQRS & Domain-Driven Design (DDD).
+- **Web API Framework**: **FastEndpoints** (chuẩn REPR - Request-Endpoint-Response).
+- **ORM & Data Access**: 
+  - **Entity Framework Core 8** & **LINQ**: Quản lý nghiệp vụ, Command ghi dữ liệu và truy vấn đơn giản (`AsNoTracking`).
+  - **Dapper**: Tối ưu hóa hiệu năng cho các truy vấn phức tạp (nhiều bảng JOIN, phân trang, lọc đa tiêu chí).
+- **CQRS & Validation**: **MediatR**, **FluentValidation**.
+- **Xác thực & Bảo mật**: **JWT Bearer Authentication**, **Google OAuth 2.0**, Rate Limiting.
+- **Logging**: **Serilog**.
 
 ### 🔹 Frontend (SPA Web Client)
-* **Framework**: React 19 + TypeScript.
-* **Build Tool**: Vite (cực nhanh, hỗ trợ HMR).
-* **Styling**: Tailwind CSS v4.
-* **Web Server trong Docker**: Nginx Alpine hỗ trợ SPA Routing & Reverse Proxy.
+- **Framework**: **React 19** + **TypeScript**.
+- **Build Tool**: **Vite** (HMR cực nhanh, tối ưu hóa bundle).
+- **Styling**: **Tailwind CSS v4** (thiết kế hiện đại, responsive).
+- **Bản đồ số**: **Mapbox GL JS** (tương tác trực quan vị trí địa điểm, tọa độ).
+- **HTTP Client**: **Axios** (kèm interceptor tự động gắn token và xử lý refresh token khi hết hạn).
+- **Icons**: **Lucide React**.
+
+### 🔹 Cơ Sở Dữ Liệu & Hạ Tầng
+- **Database chính**: **Microsoft SQL Server 2022**.
+- **Bộ nhớ đệm (Cache)**: **Redis 7** (quản lý session, cache dữ liệu và blacklist token).
+- **Lưu trữ tệp tin**: **Azure Blob Storage** (lưu trữ ảnh đại diện, ảnh địa điểm, đánh giá).
+- **Containerization**: **Docker** & **Docker Compose**.
 
 ---
 
-## 📂 Cấu Trúc Thư Mục
+## 🛠️ Hướng Dẫn Cài Đặt & Chạy Ứng Dụng
 
-```text
-├── Backend/
-│   ├── Domain/                 # Tầng lõi nghiệp vụ: 34 Entities, Enums, Repository Interfaces
-│   ├── Application/            # Tầng ứng dụng: Use Cases, CQRS (MediatR), DTOs, Service Interfaces
-│   ├── Infrastructure/         # Tầng hạ tầng: DbContext, Repositories, Redis, Services
-│   ├── API/                    # Tầng Presentation API: Endpoints, DTOs, Configurations, Program.cs
-│   │   ├── Configurations/     # Các cấu hình tập trung (JWT, RateLimiter, CORS, Swagger, GlobalException)
-│   │   ├── DTOs/               # Các Request/Response DTOs đầu vào và Schema chuẩn
-│   │   ├── Endpoints/          # FastEndpoints (Auth, Places, Foods, Trips, Reviews...)
-│   │   ├── Extensions/         # EndpointExtensions (SendApiResponseAsync)
-│   │   ├── appsettings.json    # File cấu hình chung
-│   │   └── appsettings.example.json # File mẫu cấu hình chi tiết cho developer
-│   └── Backend.slnx            # Solution file quản lý 4 projects (Domain, Application, Infrastructure, API)
-├── FrontEnd/                   # Giao diện React + TypeScript + Tailwind CSS v4
-│   ├── src/                    # Source code giao diện React
-│   ├── .env.example            # File mẫu cấu hình URL API Backend cho Frontend
-│   ├── Dockerfile              # Multi-stage Dockerfile cho Frontend
-│   └── nginx.conf              # Cấu hình Nginx reverse proxy và SPA
-├── docker-compose.yml          # Điều phối các container (SQL Server, Redis, Backend API, Frontend)
-├── .env.example                # File mẫu cấu hình cổng và mật khẩu Docker
-├── .gitignore                  # File loại trừ git chuẩn bảo mật
-└── README.md                   # Tài liệu hướng dẫn sử dụng
-```
+### 1. Yêu Cầu Hệ Thống (Prerequisites)
+- Đã cài đặt **Docker** & **Docker Desktop** (nếu chạy qua Docker).
+- Hoặc nếu chạy thủ công:
+  - **.NET 8 SDK**
+  - **Node.js 20+** & **npm**
+  - **SQL Server 2022** & **Redis**
 
 ---
 
-## 🔒 Bảo Mật Thông Tin & Cấu Hình Môi Trường
+### 2. Cấu Hình Biến Môi Trường (`.env`)
 
-> ⚠️ **Quy tắc bảo mật khi đẩy code lên GitHub:**
-> Toàn bộ file chứa thông tin nhạy cảm thực tế (`.env`, `appsettings.Development.json`, `appsettings.Production.json`, `secrets.json`) đã được thêm vào [.gitignore](file:///d:/Y4-HK1/KLCN/H%E1%BB%87%20th%E1%BB%91ng%20chia%20s%E1%BA%BB%20%C4%91%E1%BB%8Ba%20%C4%91i%E1%BB%83m/.gitignore) để **không bao giờ bị lộ lên GitHub**. 
-> Khi clone dự án về máy, bạn chỉ cần tạo file cấu hình từ các file `.example` tương ứng.
-
-### 1. Cấu hình Backend (`Backend/API/`)
-
-Sao chép từ file mẫu [appsettings.example.json](file:///d:/Y4-HK1/KLCN/H%E1%BB%87%20th%E1%BB%91ng%20chia%20s%E1%BA%BB%20%C4%91%E1%BB%8Ba%20%C4%91i%E1%BB%83m/Backend/API/appsettings.example.json) thành `appsettings.Development.json`:
-
-```json
-{
-  "ConnectionStrings": {
-    "SqlServer": "Server=localhost;Database=TravelReviewDB;Trusted_Connection=True;TrustServerCertificate=True;",
-    "Redis": "localhost:6379"
-  },
-  "Jwt": {
-    "SecretKey": "YOUR_STRONG_SECRET_KEY_HERE_MIN_32_CHARS",
-    "Issuer": "TravelReviewBackend",
-    "Audience": "TravelReviewClient",
-    "ExpireMinutes": 1440
-  }
-}
-```
-
----
-
-### 2. Cấu hình Docker (`Root/.env.example`)
-
-Tại thư mục gốc dự án, sao chép file [.env.example](file:///d:/Y4-HK1/KLCN/H%E1%BB%87%20th%E1%BB%91ng%20chia%20s%E1%BA%BB%20%C4%91%E1%BB%8Ba%20%C4%91i%E1%BB%83m/.env.example) thành `.env`:
+Tại thư mục gốc của dự án, sao chép file `.env.example` thành `.env`:
 
 ```bash
 cp .env.example .env
 ```
 
+Kiểm tra và điền các giá trị trong file `.env`:
+
+```env
+# Database & Cache
+MSSQL_SA_PASSWORD=ChangeThisPassword123!
+SQLSERVER_PORT=14333
+REDIS_PORT=63799
+
+# Backend
+BACKEND_PORT=5000
+ASPNETCORE_ENVIRONMENT=Development
+JWT_SECRET_KEY=SuperSecretKeyForTravelReviewPlatform2026!MustBeLongEnough
+JWT_ISSUER=TravelReviewBackend
+JWT_AUDIENCE=TravelReviewClient
+JWT_EXPIRE_MINUTES=1440
+
+# Azure Blob Storage & Google Auth
+AZURE_STORAGE_CONNECTION_STRING=your_azure_storage_connection_string
+GOOGLE_CLIENT_ID=your_google_client_id
+
+# Frontend
+FRONTEND_PORT=5173
+VITE_API_BASE_URL=http://localhost:5000
+VITE_GOOGLE_CLIENT_ID=your_google_client_id
+VITE_MAPBOX_ACCESS_TOKEN=your_mapbox_access_token_here
+```
+
 ---
 
-## 🐳 Cách 1: Chạy Bằng Docker (Khuyên Dùng)
+### 3. Cách 1: Chạy Bằng Docker (Khuyên Dùng - Nhanh Nhất) 🐳
+
+Chỉ cần một câu lệnh duy nhất tại thư mục gốc dự án:
 
 ```bash
 docker compose up --build -d
 ```
 
-### Địa chỉ truy cập các dịch vụ:
+Hệ thống sẽ tự động khởi dựng cả 4 dịch vụ: SQL Server, Redis, Backend API và Frontend.
+
+#### 📌 Danh Sách Cổng & Địa Chỉ Truy Cập:
+
 | Dịch vụ | Địa chỉ URL / Cổng | Ghi chú |
 | :--- | :--- | :--- |
-| **Frontend UI (React)** | [http://localhost:3000](http://localhost:3000) | Giao diện người dùng |
-| **Backend Web API** | [http://localhost:5000](http://localhost:5000) | API Endpoint |
-| **Swagger UI (Tài liệu API)** | [http://localhost:5000/swagger](http://localhost:5000/swagger) | Giao diện test API trực tiếp |
-| **SQL Server 2022** | `localhost:14333` | Cổng riêng biệt không xung đột |
-| **Redis Cache** | `localhost:63799` | Cổng riêng biệt |
+| **Frontend Web App** | [http://localhost:5173](http://localhost:5173) | Giao diện người dùng |
+| **Backend Web API** | [http://localhost:5000](http://localhost:5000) | Cổng API backend |
+| **Swagger UI (Tài liệu API)** | [http://localhost:5000/swagger](http://localhost:5000/swagger) | Giao diện kiểm thử API |
+| **SQL Server 2022** | `localhost:14333` | Tài khoản `sa` |
+| **Redis Cache** | `localhost:63799` | Cache server |
+
+*Để dừng toàn bộ dịch vụ:*
+```bash
+docker compose down
+```
 
 ---
 
-## 💻 Cách 2: Chạy Thủ Công Trên Máy Thật (Local Development)
+### 4. Cách 2: Chạy Thủ Công (Local Development) 💻
 
-### 1. Khởi chạy Backend:
+#### Bước 1: Khởi động Backend
 ```bash
 cd Backend/API
 dotnet run
 ```
-Truy cập Swagger API tại: `https://localhost:7000/swagger` hoặc `http://localhost:5000/swagger`.
+Backend sẽ khởi chạy tại: `https://localhost:7027` hoặc `http://localhost:5000`.  
+Xem tài liệu API Swagger tại: `https://localhost:7027/swagger` hoặc `http://localhost:5000/swagger`.
 
-### 2. Khởi chạy Frontend:
+#### Bước 2: Khởi động Frontend
+Mở một terminal mới:
 ```bash
 cd FrontEnd
 npm install
 npm run dev
 ```
-Truy cập giao diện tại: [http://localhost:3000](http://localhost:3000).
-
----
-
-## 📋 Danh Sách Thực Thể (34 Entities)
-
-1. **Identity**: `User`, `UserProfile`, `Friendship`
-2. **Geography**: `Region`, `Province`
-3. **Catalog**: `PlaceType`, `Category`
-4. **Places**: `Place`, `PlaceMedia`, `Collection`, `CollectionPlace`
-5. **Foods**: `Food`, `FoodMedia`, `FoodPlace`, `FoodProvince`
-6. **Trips**: `Trip`, `TripDay`, `TripPlace`
-7. **Reviews**: `Review`, `ReviewMedia`, `Comment`
-8. **Community**: `Proposal`, `Blog`
-9. **Chat**: `ChatRoom`, `ChatRoomMember`, `Message`
-10. **Personalization**: `Favorite`, `VisitLog`, `AccessHistory`, `Notification`
-11. **Moderation**: `PlaceReport`, `ReviewReport`, `CommentReport`, `BlogReport`
+Giao diện người dùng sẽ chạy tại: [http://localhost:5173](http://localhost:5173).

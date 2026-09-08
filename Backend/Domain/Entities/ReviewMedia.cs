@@ -22,4 +22,13 @@ public class ReviewMedia
         MediaType = mediaType;
         CreatedAt = DateTime.UtcNow;
     }
+
+    public ReviewMedia(Review review, string url, FoodMediaType mediaType = FoodMediaType.Image)
+    {
+        Review = review;
+        ReviewId = review.Id;
+        Url = url;
+        MediaType = mediaType;
+        CreatedAt = DateTime.UtcNow;
+    }
 }
