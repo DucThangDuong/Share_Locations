@@ -57,6 +57,28 @@ export const placeService = {
   },
 
   async submitReview(data: CreateReviewRequest): Promise<ApiSuccessResponse<ReviewItemDto>> {
+    if ((data.photos && data.photos.length > 0) || (data.videos && data.videos.length > 0)) {
+      const formData = new FormData()
+      formData.append('Rating', String(data.rating))
+      if (data.content) formData.append('Content', data.content)
+      if (data.visitDate) formData.append('VisitDate', data.visitDate)
+      if (data.images && data.images.length > 0) {
+        data.images.forEach((url) => formData.append('Images', url))
+      }
+      if (data.photos) {
+        data.photos.forEach((file) => formData.append('Photos', file))
+      }
+      if (data.videos) {
+        data.videos.forEach((file) => formData.append('Videos', file))
+      }
+      const response = await apiClient.post<ApiSuccessResponse<ReviewItemDto>>(`/api/v1/places/${data.placeId}/reviews`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+      return response.data
+    }
+
     const response = await apiClient.post<ApiSuccessResponse<ReviewItemDto>>(`/api/v1/places/${data.placeId}/reviews`, {
       rating: data.rating,
       content: data.content,
