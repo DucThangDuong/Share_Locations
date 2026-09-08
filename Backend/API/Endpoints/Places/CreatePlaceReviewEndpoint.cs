@@ -21,6 +21,7 @@ public class CreatePlaceReviewEndpoint : Endpoint<CreatePlaceReviewRequest, ApiS
         Post("/api/v1/places/{id}/reviews", "/api/places/{id}/reviews");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
+        AllowFileUploads();
         Options(x => x.RequireRateLimiting("write_api"));
     }
 
@@ -38,6 +39,16 @@ public class CreatePlaceReviewEndpoint : Endpoint<CreatePlaceReviewRequest, ApiS
             return;
         }
 
+        var photoUploads = req.Photos?
+            .Where(f => f.Length > 0)
+            .Select(f => new FileUploadModel(f.OpenReadStream(), f.FileName, f.ContentType))
+            .ToList();
+
+        var videoUploads = req.Videos?
+            .Where(f => f.Length > 0)
+            .Select(f => new FileUploadModel(f.OpenReadStream(), f.FileName, f.ContentType))
+            .ToList();
+
         var result = await Mediator.Send(
             new CreatePlaceReviewCommand(
                 req.Id,
@@ -45,6 +56,8 @@ public class CreatePlaceReviewEndpoint : Endpoint<CreatePlaceReviewRequest, ApiS
                 req.Rating,
                 req.Content,
                 req.VisitDate,
+                photoUploads,
+                videoUploads,
                 req.Images),
             ct);
 

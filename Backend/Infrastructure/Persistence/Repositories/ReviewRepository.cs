@@ -19,6 +19,18 @@ public class ReviewRepository : IReviewRepository
         await _dbContext.Reviews.AddAsync(review, ct);
     }
 
+    public async Task<Review?> GetByIdAsync(long id, CancellationToken ct = default)
+    {
+        return await _dbContext.Reviews
+            .FirstOrDefaultAsync(r => r.Id == id && r.Status == ReviewStatus.Active, ct);
+    }
+
+    public async Task<bool> ExistsAsync(long id, CancellationToken ct = default)
+    {
+        return await _dbContext.Reviews
+            .AnyAsync(r => r.Id == id && r.Status == ReviewStatus.Active, ct);
+    }
+
     public async Task<(decimal AvgRating, int ReviewCount)> GetPlaceStatsAsync(long placeId, CancellationToken ct = default)
     {
         var ratings = await _dbContext.Reviews

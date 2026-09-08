@@ -207,8 +207,7 @@ public class PlaceRepository : IPlaceRepository
         double? minLat,
         double? maxLng,
         double? maxLat,
-        CancellationToken ct = default)
-    {
+        CancellationToken ct = default){
         var connection = _dbContext.Database.GetDbConnection();
         string? regionKey = null;
         if (!string.IsNullOrWhiteSpace(region) && !string.Equals(region, "all", StringComparison.OrdinalIgnoreCase))
@@ -335,7 +334,8 @@ public class PlaceRepository : IPlaceRepository
                 r.Rating,
                 r.Content,
                 r.CreatedAt,
-                0 AS LikesCount
+                0 AS LikesCount,
+                (SELECT COUNT(1) FROM dbo.Comments c WHERE c.ReviewId = r.Id AND c.Status = 1) AS CommentsCount
             FROM dbo.Reviews r
             LEFT JOIN dbo.UserProfiles up ON r.UserId = up.UserId
             WHERE r.PlaceId = @PlaceId AND r.Status = 1
@@ -373,16 +373,18 @@ public class PlaceRepository : IPlaceRepository
         {
             var reviewIds = reviewItems.Select(r => r.Id).ToList();
             const string mediaSql = @"
-                SELECT rm.ReviewId, rm.Url
+                SELECT rm.ReviewId, rm.MediaType, rm.Url
                 FROM dbo.ReviewMedia rm
                 WHERE rm.ReviewId IN @ReviewIds;";
 
-            var medias = (await connection.QueryAsync<(long ReviewId, string Url)>(mediaSql, new { ReviewIds = reviewIds })).ToList();
-            var mediaLookup = medias.ToLookup(m => m.ReviewId, m => m.Url);
+            var medias = (await connection.QueryAsync<(long ReviewId, byte MediaType, string Url)>(mediaSql, new { ReviewIds = reviewIds })).ToList();
+            var imagesLookup = medias.Where(m => m.MediaType == (byte)FoodMediaType.Image).ToLookup(m => m.ReviewId, m => m.Url);
+            var videosLookup = medias.Where(m => m.MediaType == (byte)FoodMediaType.Video).ToLookup(m => m.ReviewId, m => m.Url);
 
             foreach (var item in reviewItems)
             {
-                item.Images = mediaLookup[item.Id].ToList();
+                item.Images = imagesLookup[item.Id].ToList();
+                item.Videos = videosLookup[item.Id].ToList();
             }
         }
 

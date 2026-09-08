@@ -1,6 +1,8 @@
 using Application.Common;
+using Application.Common.Interfaces;
 using Application.DTOs;
 using Domain.Entities;
+using Domain.Enums;
 using Domain.Interfaces;
 using MediatR;
 
@@ -12,15 +14,19 @@ public record CreatePlaceReviewCommand(
     byte Rating,
     string? Content,
     DateOnly? VisitDate,
-    List<string>? MediaUrls) : IRequest<Result<ReviewItemDto>>;
+    List<FileUploadModel>? Photos = null,
+    List<FileUploadModel>? Videos = null,
+    List<string>? MediaUrls = null) : IRequest<Result<ReviewItemDto>>;
 
 public class CreatePlaceReviewCommandHandler : IRequestHandler<CreatePlaceReviewCommand, Result<ReviewItemDto>>
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IBlobService? _blobService;
 
-    public CreatePlaceReviewCommandHandler(IUnitOfWork unitOfWork)
+    public CreatePlaceReviewCommandHandler(IUnitOfWork unitOfWork, IBlobService? blobService = null)
     {
         _unitOfWork = unitOfWork;
+        _blobService = blobService;
     }
 
     public async Task<Result<ReviewItemDto>> Handle(CreatePlaceReviewCommand request, CancellationToken ct)
@@ -43,12 +49,53 @@ public class CreatePlaceReviewCommandHandler : IRequestHandler<CreatePlaceReview
         }
 
         var review = new Review(request.PlaceId, request.UserId, request.Rating, request.Content, request.VisitDate);
+        var uploadedImages = new List<string>();
+        var uploadedVideos = new List<string>();
 
         if (request.MediaUrls is { Count: > 0 })
         {
             foreach (var url in request.MediaUrls)
             {
-                review.AddMedia(url);
+                if (!string.IsNullOrWhiteSpace(url))
+                {
+                    review.AddMedia(url, FoodMediaType.Image);
+                    uploadedImages.Add(url);
+                }
+            }
+        }
+
+        if (_blobService != null)
+        {
+            if (request.Photos is { Count: > 0 })
+            {
+                foreach (var photo in request.Photos)
+                {
+                    var url = await _blobService.UploadImageAsync(
+                        photo.Content,
+                        photo.FileName,
+                        photo.ContentType,
+                        "reviews",
+                        ct);
+
+                    review.AddMedia(url, FoodMediaType.Image);
+                    uploadedImages.Add(url);
+                }
+            }
+
+            if (request.Videos is { Count: > 0 })
+            {
+                foreach (var video in request.Videos)
+                {
+                    var url = await _blobService.UploadVideoAsync(
+                        video.Content,
+                        video.FileName,
+                        video.ContentType,
+                        "reviews",
+                        ct);
+
+                    review.AddMedia(url, FoodMediaType.Video);
+                    uploadedVideos.Add(url);
+                }
             }
         }
 
@@ -71,7 +118,8 @@ public class CreatePlaceReviewCommandHandler : IRequestHandler<CreatePlaceReview
             UserAvatar = user.Profile?.AvatarUrl,
             Rating = review.Rating,
             Content = review.Content,
-            Images = request.MediaUrls ?? [],
+            Images = uploadedImages,
+            Videos = uploadedVideos,
             LikesCount = 0,
             CreatedAt = review.CreatedAt
         };

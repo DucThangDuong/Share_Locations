@@ -9,8 +9,29 @@ public class ReviewItemDto
     public byte Rating { get; set; }
     public string? Content { get; set; }
     public IReadOnlyList<string> Images { get; set; } = [];
+    public IReadOnlyList<string> Videos { get; set; } = [];
     public int LikesCount { get; set; }
+    public int CommentsCount { get; set; }
     public DateTime CreatedAt { get; set; }
+}
+
+public class CommentDto
+{
+    public long Id { get; set; }
+    public long ReviewId { get; set; }
+    public string UserId { get; set; } = string.Empty;
+    public string UserName { get; set; } = string.Empty;
+    public string? UserAvatar { get; set; }
+    public string Content { get; set; } = string.Empty;
+    public long? ParentId { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public List<CommentDto> Replies { get; set; } = [];
+}
+
+public class ReviewCommentsDto
+{
+    public int TotalComments { get; set; }
+    public IReadOnlyList<CommentDto> Items { get; set; } = [];
 }
 
 public class PlaceReviewSummaryDto

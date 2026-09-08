@@ -11,7 +11,10 @@ import type {
   ReportPlaceRequest,
   ToggleSavePlaceDto,
   PlaceMapItemDto,
-  PlaceMapFilterParams
+  PlaceMapFilterParams,
+  CommentDto,
+  CreateReviewCommentRequest,
+  ReviewCommentsDto
 } from '@/types/models/place.model'
 
 export const placeService = {
@@ -59,6 +62,19 @@ export const placeService = {
       content: data.content,
       visitDate: data.visitDate,
       images: data.images
+    })
+    return response.data
+  },
+
+  async getReviewComments(reviewId: number | string): Promise<ApiSuccessResponse<ReviewCommentsDto>> {
+    const response = await apiClient.get<ApiSuccessResponse<ReviewCommentsDto>>(`/api/v1/reviews/${reviewId}/comments`)
+    return response.data
+  },
+
+  async createReviewComment(data: CreateReviewCommentRequest): Promise<ApiSuccessResponse<CommentDto>> {
+    const response = await apiClient.post<ApiSuccessResponse<CommentDto>>(`/api/v1/reviews/${data.reviewId}/comments`, {
+      content: data.content,
+      parentId: data.parentId ?? null
     })
     return response.data
   },

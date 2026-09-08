@@ -97,6 +97,69 @@ public class AzureBlobService : IBlobService
         return await UploadImageAsync(stream, file.FileName, file.ContentType, containerName);
     }
 
+    public async Task<string> UploadVideoAsync(
+        Stream stream,
+        string fileName,
+        string contentType,
+        string containerName = "videos",
+        CancellationToken ct = default)
+    {
+        if (_blobServiceClient == null)
+        {
+            throw new InvalidOperationException("Azure Storage ConnectionString chưa được cấu hình.");
+        }
+
+        if (stream == null || stream.Length == 0)
+        {
+            throw new ArgumentException("Stream is null or empty.");
+        }
+
+        const long videoSizeLimit = 30 * 1024 * 1024; // 30 MB
+        if (stream.Length > videoSizeLimit)
+        {
+            throw new ArgumentException("Dung lượng video vượt quá giới hạn 30 MB.");
+        }
+
+        string safeFileName = Path.GetFileName(fileName);
+        string fileExtension = Path.GetExtension(safeFileName).ToLowerInvariant();
+
+        if (string.IsNullOrEmpty(fileExtension) || !AllowedVideoExtensions.Contains(fileExtension))
+        {
+            throw new ArgumentException($"Định dạng video '{fileExtension}' không được hỗ trợ. Chỉ chấp nhận .mp4, .mov, .webm.");
+        }
+
+        var containerClient = _blobServiceClient.GetBlobContainerClient(containerName.ToLower());
+        await containerClient.CreateIfNotExistsAsync(PublicAccessType.Blob, cancellationToken: ct);
+
+        string uniqueFileName = $"{Guid.NewGuid():N}{fileExtension}";
+        var blobClient = containerClient.GetBlobClient(uniqueFileName);
+
+        var resolvedContentType = fileExtension switch
+        {
+            ".mp4" => "video/mp4",
+            ".mov" => "video/quicktime",
+            ".webm" => "video/webm",
+            _ => string.IsNullOrWhiteSpace(contentType) ? "video/mp4" : contentType
+        };
+
+        var blobHttpHeaders = new BlobHttpHeaders
+        {
+            ContentType = resolvedContentType
+        };
+
+        if (stream.CanSeek)
+        {
+            stream.Position = 0;
+        }
+
+        await blobClient.UploadAsync(stream, new BlobUploadOptions
+        {
+            HttpHeaders = blobHttpHeaders
+        }, ct);
+
+        return blobClient.Uri.ToString();
+    }
+
     public async Task<bool> DeleteImageAsync(string blobUrlOrName, string containerName = "images", CancellationToken ct = default)
     {
         if (_blobServiceClient == null) return false;
@@ -120,6 +183,11 @@ public class AzureBlobService : IBlobService
     private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
     {
         ".jpg", ".jpeg", ".png", ".webp"
+    };
+
+    private static readonly HashSet<string> AllowedVideoExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".mp4", ".mov", ".webm", ".m4v"
     };
 
     private static bool ValidateImageMagicBytes(Stream stream, out string detectedContentType)

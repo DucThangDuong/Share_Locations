@@ -103,8 +103,33 @@ export interface ReviewItemDto {
   rating: number
   content?: string | null
   images: string[]
+  videos?: string[]
   likesCount: number
+  commentsCount?: number
   createdAt: string
+}
+
+export interface CommentDto {
+  id: number
+  reviewId: number
+  userId: string
+  userName: string
+  userAvatar?: string | null
+  content: string
+  parentId?: number | null
+  createdAt: string
+  replies?: CommentDto[]
+}
+
+export interface CreateReviewCommentRequest {
+  reviewId: number
+  content: string
+  parentId?: number | null
+}
+
+export interface ReviewCommentsDto {
+  totalComments: number
+  items: CommentDto[]
 }
 
 export interface PlaceReviewSummaryDto {

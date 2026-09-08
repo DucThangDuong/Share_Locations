@@ -35,6 +35,12 @@ public static class AppServiceExtensions
                 o.Window = TimeSpan.FromMinutes(1);
                 o.QueueLimit = 0;
             });
+            opt.AddFixedWindowLimiter("write_api", o =>
+            {
+                o.PermitLimit = 30;
+                o.Window = TimeSpan.FromMinutes(1);
+                o.QueueLimit = 0;
+            });
             opt.AddFixedWindowLimiter("general_api", o =>
             {
                 o.PermitLimit = 100;

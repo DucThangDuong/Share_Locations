@@ -29,6 +29,9 @@ public class UnitOfWork : IUnitOfWork
     private IReportTypeRepository? _reportTypes;
     public IReportTypeRepository ReportTypes => _reportTypes ??= new ReportTypeRepository(_dbContext);
 
+    private ICommentRepository? _comments;
+    public ICommentRepository Comments => _comments ??= new CommentRepository(_dbContext);
+
     public UnitOfWork(TravelReviewDbContext dbContext)
     {
         _dbContext = dbContext;

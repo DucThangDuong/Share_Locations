@@ -22,4 +22,37 @@ public class Comment
 
     private readonly List<CommentReport> _reports = new();
     public virtual IReadOnlyCollection<CommentReport> Reports => _reports.AsReadOnly();
+
+    protected Comment() { }
+
+    public Comment(long reviewId, long userId, string content, long? parentId = null)
+    {
+        if (string.IsNullOrWhiteSpace(content))
+            throw new ArgumentException("Nội dung bình luận không được để trống.", nameof(content));
+
+        ReviewId = reviewId;
+        UserId = userId;
+        Content = content.Trim();
+        ParentId = parentId;
+        Status = CommentStatus.Active;
+        CreatedAt = DateTime.UtcNow;
+    }
+
+    public void UpdateContent(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content))
+            throw new ArgumentException("Nội dung bình luận không được để trống.", nameof(content));
+
+        Content = content.Trim();
+    }
+
+    public void Hide()
+    {
+        Status = CommentStatus.Hidden;
+    }
+
+    public void Restore()
+    {
+        Status = CommentStatus.Active;
+    }
 }
