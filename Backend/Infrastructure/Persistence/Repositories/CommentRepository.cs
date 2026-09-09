@@ -42,4 +42,9 @@ public class CommentRepository : ICommentRepository
     {
         _dbContext.Comments.Update(comment);
     }
+
+    public void Delete(Comment comment)
+    {
+        _dbContext.Comments.Remove(comment);
+    }
 }
