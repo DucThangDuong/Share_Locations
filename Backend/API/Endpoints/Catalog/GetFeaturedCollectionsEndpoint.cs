@@ -16,6 +16,11 @@ public class GetFeaturedCollectionsEndpoint : EndpointWithoutRequest<ApiSuccessR
         Get("/api/v1/collections/featured", "/api/collections/featured");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
+        Summary(s =>
+        {
+            s.Summary = "Lấy danh sách bộ sưu tập nổi bật";
+            s.Description = "Lấy danh sách các bộ sưu tập địa điểm du lịch theo chủ đề hấp dẫn (check-in, ẩm thực, nghỉ dưỡng) để hiển thị tại trang chủ.";
+        });
     }
 
     public override async Task HandleAsync(CancellationToken ct)

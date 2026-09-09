@@ -16,6 +16,11 @@ public class GetPlaceFilterOptionsEndpoint : EndpointWithoutRequest<ApiSuccessRe
         Get("/api/v1/places/filter-options", "/api/places/filter-options");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
+        Summary(s =>
+        {
+            s.Summary = "Lấy các tùy chọn cho bộ lọc địa điểm";
+            s.Description = "Lấy danh sách dữ liệu phục vụ bộ lọc trên giao diện (danh sách vùng miền, tỉnh thành, danh mục, khoảng giá tối thiểu/tối đa).";
+        });
     }
 
     public override async Task HandleAsync(CancellationToken ct)

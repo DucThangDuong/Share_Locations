@@ -18,6 +18,11 @@ public class CreatePlaceReportEndpoint : Endpoint<CreatePlaceReportRequest, ApiS
         Post("/api/v1/places/{id}/reports", "/api/places/{id}/reports");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("write_api"));
+        Summary(s =>
+        {
+            s.Summary = "Gửi báo cáo vi phạm địa điểm";
+            s.Description = "Gửi phản ánh hoặc báo cáo vi phạm (thông tin sai lệch, địa điểm đóng cửa, hình ảnh không phù hợp) của một địa điểm đến quản trị viên.";
+        });
     }
 
     public override async Task HandleAsync(CreatePlaceReportRequest req, CancellationToken ct)

@@ -16,6 +16,11 @@ public class GetProvincesEndpoint : EndpointWithoutRequest<ApiSuccessResponse<IR
         Get("/api/v1/provinces", "/api/provinces");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
+        Summary(s =>
+        {
+            s.Summary = "Lấy danh sách tỉnh thành";
+            s.Description = "Lấy danh sách các tỉnh/thành phố trên cả nước kèm thông tin mã vùng miền tương ứng.";
+        });
     }
 
     public override async Task HandleAsync(CancellationToken ct)

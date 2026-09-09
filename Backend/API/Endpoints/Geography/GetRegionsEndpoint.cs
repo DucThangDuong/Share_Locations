@@ -16,6 +16,11 @@ public class GetRegionsEndpoint : EndpointWithoutRequest<ApiSuccessResponse<IRea
         Get("/api/v1/regions", "/api/regions");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
+        Summary(s =>
+        {
+            s.Summary = "Lấy danh sách các vùng miền";
+            s.Description = "Lấy danh sách các vùng miền địa lý (Bắc Bộ, Trung Bộ, Nam Bộ) để phục vụ tìm kiếm và điều hướng du lịch.";
+        });
     }
 
     public override async Task HandleAsync(CancellationToken ct)

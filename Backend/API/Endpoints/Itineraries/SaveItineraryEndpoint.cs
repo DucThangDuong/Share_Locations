@@ -27,6 +27,11 @@ public class SaveItineraryEndpoint : Endpoint<SaveItineraryRequest, ApiSuccessRe
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));
+        Summary(s =>
+        {
+            s.Summary = "Lưu lịch trình du lịch cá nhân";
+            s.Description = "Lưu một lịch trình du lịch mẫu vào danh sách lịch trình cá nhân của người dùng đang đăng nhập.";
+        });
     }
 
     public override async Task HandleAsync(SaveItineraryRequest req, CancellationToken ct)

@@ -22,6 +22,11 @@ public class CreateReviewCommentEndpoint : Endpoint<CreateReviewCommentRequest, 
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));
+        Summary(s =>
+        {
+            s.Summary = "Bình luận hoặc trả lời bình luận trong bài đánh giá";
+            s.Description = "Thêm bình luận mới vào bài đánh giá, hoặc trả lời một bình luận khác khi truyền parentId.";
+        });
     }
 
     public override async Task HandleAsync(CreateReviewCommentRequest req, CancellationToken ct)

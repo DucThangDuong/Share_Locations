@@ -17,6 +17,11 @@ public class GetPlacesMapEndpoint : Endpoint<GetPlacesMapRequest, ApiSuccessResp
         Get("/api/v1/places/map", "/api/places/map");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
+        Summary(s =>
+        {
+            s.Summary = "Lấy danh sách địa điểm hiển thị trên bản đồ";
+            s.Description = "Lấy danh sách các địa điểm có tọa độ vị trí (kinh độ/vĩ độ) trong phạm vi màn hình bản đồ (bounding box) hoặc theo các tiêu chí lọc.";
+        });
     }
 
     public override async Task HandleAsync(GetPlacesMapRequest req, CancellationToken ct)

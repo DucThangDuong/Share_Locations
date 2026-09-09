@@ -17,6 +17,11 @@ public class GetPlaceReviewsEndpoint : Endpoint<GetPlaceReviewsRequest, ApiSucce
         Get("/api/v1/places/{id}/reviews", "/api/places/{id}/reviews");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
+        Summary(s =>
+        {
+            s.Summary = "Lấy danh sách đánh giá của địa điểm";
+            s.Description = "Lấy danh sách các bài đánh giá của một địa điểm kèm thống kê điểm sao trung bình, phân bổ số lượng đánh giá theo sao và media đính kèm.";
+        });
     }
 
     public override async Task HandleAsync(GetPlaceReviewsRequest req, CancellationToken ct)

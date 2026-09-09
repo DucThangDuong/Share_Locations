@@ -27,6 +27,11 @@ public class SavePlaceEndpoint : Endpoint<SavePlaceRequest, ApiSuccessResponse<T
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));
+        Summary(s =>
+        {
+            s.Summary = "Lưu địa điểm vào danh sách yêu thích";
+            s.Description = "Lưu địa điểm vào danh sách yêu thích cá nhân của người dùng đã đăng nhập.";
+        });
     }
 
     public override async Task HandleAsync(SavePlaceRequest req, CancellationToken ct)

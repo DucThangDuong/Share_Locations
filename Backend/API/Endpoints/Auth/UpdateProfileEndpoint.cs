@@ -21,6 +21,11 @@ public class UpdateProfileEndpoint : Endpoint<UpdateProfileRequest, ApiSuccessRe
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         AllowFileUploads();
+        Summary(s =>
+        {
+            s.Summary = "Cập nhật thông tin hồ sơ cá nhân";
+            s.Description = "Cập nhật họ tên, số điện thoại, tiểu sử, ảnh đại diện hoặc ảnh bìa của người dùng hiện tại.";
+        });
     }
 
     public override async Task HandleAsync(UpdateProfileRequest req, CancellationToken ct)

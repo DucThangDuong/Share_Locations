@@ -22,6 +22,11 @@ public class GetBlogDetailEndpoint : Endpoint<GetBlogDetailRequest, ApiSuccessRe
         Get("/api/v1/blogs/{idOrSlug}", "/api/blogs/{idOrSlug}");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
+        Summary(s =>
+        {
+            s.Summary = "Lấy chi tiết bài viết blog";
+            s.Description = "Lấy toàn bộ nội dung chi tiết bài viết blog du lịch theo định danh ID hoặc đường dẫn thân thiện slug.";
+        });
     }
 
     public override async Task HandleAsync(GetBlogDetailRequest req, CancellationToken ct)

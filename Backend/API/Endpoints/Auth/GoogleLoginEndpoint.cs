@@ -17,6 +17,11 @@ public class GoogleLoginEndpoint : Endpoint<GoogleLoginRequest, ApiSuccessRespon
         Post("/api/v1/auth/google", "/api/auth/google");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("auth_strict"));
+        Summary(s =>
+        {
+            s.Summary = "Đăng nhập bằng Google";
+            s.Description = "Xác thực tài khoản qua Google ID Token (Google OAuth 2.0). Tự động liên kết hoặc tạo tài khoản mới nếu chưa tồn tại.";
+        });
     }
 
     public override async Task HandleAsync(GoogleLoginRequest req, CancellationToken ct)

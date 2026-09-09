@@ -22,6 +22,11 @@ public class GetItinerariesEndpoint : Endpoint<GetItinerariesRequest, ApiSuccess
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("general_api"));
+        Summary(s =>
+        {
+            s.Summary = "Lấy danh sách lịch trình du lịch";
+            s.Description = "Lấy danh sách các lịch trình du lịch gợi ý kèm thời lượng, vùng miền, chi phí dự kiến và các điểm đến trong chuyến đi.";
+        });
     }
 
     public override async Task HandleAsync(GetItinerariesRequest req, CancellationToken ct)

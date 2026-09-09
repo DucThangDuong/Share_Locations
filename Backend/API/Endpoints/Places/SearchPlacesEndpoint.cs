@@ -17,6 +17,11 @@ public class SearchPlacesEndpoint : Endpoint<SearchPlacesRequest, ApiSuccessResp
         Get("/api/v1/places", "/api/places");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
+        Summary(s =>
+        {
+            s.Summary = "Tìm kiếm và lọc danh sách địa điểm";
+            s.Description = "Tìm kiếm các địa điểm du lịch với nhiều tiêu chí: từ khóa, vùng miền, tỉnh thành, loại hình, danh mục, khoảng giá, điểm đánh giá và sắp xếp phân trang.";
+        });
     }
 
     public override async Task HandleAsync(SearchPlacesRequest req, CancellationToken ct)

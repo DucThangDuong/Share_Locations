@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Camera, ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { Camera, ChevronLeft, ChevronRight, X, Images } from 'lucide-react'
 
 interface PlaceDetailGalleryProps {
   images: string[]
@@ -32,6 +32,25 @@ export const PlaceDetailGallery = ({ images, placeName }: PlaceDetailGalleryProp
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
           <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors" />
+
+          {images.length > 1 && (
+            <div
+              onClick={(e) => {
+                e.stopPropagation()
+                setActiveImageIndex(images.length > 5 ? 5 : 0)
+                setIsLightboxOpen(true)
+              }}
+              className={`absolute bottom-3 right-3 sm:bottom-4 sm:right-4 z-10 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-black/60 hover:bg-black/80 backdrop-blur-xs text-white text-xs font-semibold shadow-md transition-all cursor-pointer ${
+                images.length <= 5 ? 'md:hidden' : ''
+              }`}
+            >
+              <Images className="w-4 h-4 text-white/90" />
+              <span className="md:hidden">+{images.length - 1} ảnh</span>
+              {images.length > 5 && (
+                <span className="hidden md:inline">+{images.length - 5} ảnh</span>
+              )}
+            </div>
+          )}
         </div>
 
         {images.slice(1, 5).map((img, idx) => (

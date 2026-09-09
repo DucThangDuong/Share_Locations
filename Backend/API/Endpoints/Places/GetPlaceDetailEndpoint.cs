@@ -22,6 +22,11 @@ public class GetPlaceDetailEndpoint : Endpoint<GetPlaceDetailRequest, ApiSuccess
         Get("/api/v1/places/{id}", "/api/places/{id}");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
+        Summary(s =>
+        {
+            s.Summary = "Lấy thông tin chi tiết địa điểm";
+            s.Description = "Lấy đầy đủ thông tin chi tiết địa điểm bao gồm mô tả, địa chỉ, ảnh đại diện, danh sách ảnh (ảnh địa điểm và ảnh từ đánh giá), tiện ích và đánh giá sao.";
+        });
     }
 
     public override async Task HandleAsync(GetPlaceDetailRequest req, CancellationToken ct)

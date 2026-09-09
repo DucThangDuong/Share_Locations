@@ -15,6 +15,11 @@ public class LogoutEndpoint : EndpointWithoutRequest
         Post("/api/v1/auth/logout", "/api/auth/logout");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Options(x => x.RequireRateLimiting("auth_strict"));
+        Summary(s =>
+        {
+            s.Summary = "Đăng xuất khỏi hệ thống";
+            s.Description = "Hủy phiên đăng nhập hiện tại, thu hồi Refresh Token và xóa cookie phía client.";
+        });
     }
 
     public override async Task HandleAsync(CancellationToken ct)

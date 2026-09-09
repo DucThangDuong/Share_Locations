@@ -16,6 +16,11 @@ public class RegisterEndpoint : Endpoint<RegisterRequest, ApiSuccessResponse<lon
         Post("/api/v1/auth/register", "/api/auth/register");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("auth_strict"));
+        Summary(s =>
+        {
+            s.Summary = "Đăng ký tài khoản mới";
+            s.Description = "Đăng ký tài khoản người dùng với họ tên, email và mật khẩu. Tự động tạo hồ sơ người dùng ban đầu.";
+        });
     }
 
     public override async Task HandleAsync(RegisterRequest req, CancellationToken ct)

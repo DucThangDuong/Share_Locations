@@ -20,6 +20,11 @@ public class GetProfileEndpoint : EndpointWithoutRequest<ApiSuccessResponse<User
         Get("/api/v1/auth/profile", "/api/auth/profile");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
+        Summary(s =>
+        {
+            s.Summary = "Lấy thông tin hồ sơ cá nhân";
+            s.Description = "Lấy thông tin chi tiết hồ sơ cá nhân của người dùng hiện đang đăng nhập.";
+        });
     }
 
     public override async Task HandleAsync(CancellationToken ct)
