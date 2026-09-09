@@ -8,4 +8,5 @@ public interface ICommentRepository
     Task<Comment?> GetByIdAsync(long id, CancellationToken ct = default);
     Task<IReadOnlyList<Comment>> GetByReviewIdAsync(long reviewId, CancellationToken ct = default);
     void Update(Comment comment);
+    void Delete(Comment comment);
 }

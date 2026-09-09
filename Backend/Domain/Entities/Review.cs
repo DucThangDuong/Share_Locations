@@ -74,4 +74,9 @@ public class Review
             _media.Add(new ReviewMedia(this, url.Trim(), mediaType));
         }
     }
+
+    public void ClearMedia()
+    {
+        _media.Clear();
+    }
 }

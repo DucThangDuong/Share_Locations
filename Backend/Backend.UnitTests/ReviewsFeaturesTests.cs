@@ -16,6 +16,12 @@ public class ReviewsFeaturesTests
 {
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
+    public ReviewsFeaturesTests()
+    {
+        _unitOfWork.ExecuteInTransactionAsync(Arg.Any<Func<Task>>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo => callInfo.Arg<Func<Task>>()());
+    }
+
     [Fact]
     public async Task CreateReviewComment_ShouldFail_WhenContentIsEmpty()
     {
@@ -181,5 +187,140 @@ public class ReviewsFeaturesTests
         var result = validator.Validate(request);
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == nameof(CreateReviewCommentRequest.Content));
+    }
+
+    [Fact]
+    public async Task UpdatePlaceReview_ShouldReturnForbidden_WhenUserIsNotOwnerAndNotAdmin()
+    {
+        // Arrange
+        var review = new Review(1, 10, 5, "Ban đầu");
+        _unitOfWork.Reviews.GetByIdWithMediaAsync(100, Arg.Any<CancellationToken>())
+            .Returns(review);
+
+        var handler = new UpdatePlaceReviewCommandHandler(_unitOfWork);
+        var command = new UpdatePlaceReviewCommand(100, 999, false, 4, "Chỉnh sửa");
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.StatusCode.Should().Be(System.Net.HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task UpdatePlaceReview_ShouldReturnSuccess_WhenOwnerUpdatesReview()
+    {
+        // Arrange
+        var review = new Review(1, 10, 5, "Ban đầu");
+        _unitOfWork.Reviews.GetByIdWithMediaAsync(100, Arg.Any<CancellationToken>())
+            .Returns(review);
+
+        var user = new User("user@example.com", "hash", UserRole.User);
+        user.SetProfile(new UserProfile(10L, "Nguyễn Văn A"));
+        _unitOfWork.Users.GetByIdWithProfileAsync(10, Arg.Any<CancellationToken>())
+            .Returns(user);
+
+        var place = new Place(1, 1, "Hồ Gươm", "Hà Nội");
+        _unitOfWork.Places.GetByIdAsync(1, Arg.Any<CancellationToken>())
+            .Returns(place);
+
+        _unitOfWork.Reviews.GetPlaceStatsAsync(1, Arg.Any<CancellationToken>())
+            .Returns((4.5m, 10));
+
+        var handler = new UpdatePlaceReviewCommandHandler(_unitOfWork);
+        var command = new UpdatePlaceReviewCommand(100, 10, false, 4, "Cập nhật lại 4 sao");
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Data.Should().NotBeNull();
+        result.Data!.Rating.Should().Be(4);
+        result.Data.Content.Should().Be("Cập nhật lại 4 sao");
+    }
+
+    [Fact]
+    public async Task DeletePlaceReview_ShouldReturnForbidden_WhenUserIsNotOwnerAndNotAdmin()
+    {
+        // Arrange
+        var review = new Review(1, 10, 5, "Đánh giá của tôi");
+        _unitOfWork.Reviews.GetByIdAsync(100, Arg.Any<CancellationToken>())
+            .Returns(review);
+
+        var handler = new DeletePlaceReviewCommandHandler(_unitOfWork);
+        var command = new DeletePlaceReviewCommand(100, 999, false);
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.StatusCode.Should().Be(System.Net.HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task DeletePlaceReview_ShouldReturnSuccess_WhenOwnerDeletes()
+    {
+        // Arrange
+        var review = new Review(1, 10, 5, "Đánh giá của tôi");
+        _unitOfWork.Reviews.GetByIdAsync(100, Arg.Any<CancellationToken>())
+            .Returns(review);
+
+        var place = new Place(1, 1, "Hồ Gươm", "Hà Nội");
+        _unitOfWork.Places.GetByIdAsync(1, Arg.Any<CancellationToken>())
+            .Returns(place);
+
+        _unitOfWork.Reviews.GetPlaceStatsAsync(1, Arg.Any<CancellationToken>())
+            .Returns((4.0m, 5));
+
+        var handler = new DeletePlaceReviewCommandHandler(_unitOfWork);
+        var command = new DeletePlaceReviewCommand(100, 10, false);
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        review.Status.Should().Be(ReviewStatus.Hidden);
+    }
+
+    [Fact]
+    public async Task UpdateReviewComment_ShouldReturnSuccess_WhenOwnerUpdates()
+    {
+        // Arrange
+        var comment = new Comment(1, 10, "Bình luận cũ");
+        _unitOfWork.Comments.GetByIdAsync(50, Arg.Any<CancellationToken>())
+            .Returns(comment);
+
+        var handler = new UpdateReviewCommentCommandHandler(_unitOfWork);
+        var command = new UpdateReviewCommentCommand(50, 10, false, "Bình luận mới đã sửa");
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Data!.Content.Should().Be("Bình luận mới đã sửa");
+    }
+
+    [Fact]
+    public async Task DeleteReviewComment_ShouldReturnSuccess_WhenOwnerDeletes()
+    {
+        // Arrange
+        var comment = new Comment(1, 10, "Bình luận sắp xóa");
+        _unitOfWork.Comments.GetByIdAsync(50, Arg.Any<CancellationToken>())
+            .Returns(comment);
+
+        var handler = new DeleteReviewCommentCommandHandler(_unitOfWork);
+        var command = new DeleteReviewCommentCommand(50, 10, false);
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        comment.Status.Should().Be(CommentStatus.Hidden);
     }
 }
