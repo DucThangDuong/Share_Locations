@@ -22,6 +22,11 @@ public class GetReviewCommentsEndpoint : Endpoint<GetReviewCommentsRequest, ApiS
         Get("/api/v1/reviews/{id}/comments", "/api/reviews/{id}/comments");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
+        Summary(s =>
+        {
+            s.Summary = "Lấy danh sách bình luận của bài đánh giá";
+            s.Description = "Trả về tổng số lượng bình luận và cây bình luận lồng nhau (kèm các phản hồi) của bài review.";
+        });
     }
 
     public override async Task HandleAsync(GetReviewCommentsRequest req, CancellationToken ct)

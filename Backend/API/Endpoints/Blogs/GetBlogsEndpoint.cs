@@ -17,6 +17,11 @@ public class GetBlogsEndpoint : Endpoint<GetBlogsRequest, ApiSuccessResponse<IRe
         Get("/api/v1/blogs", "/api/blogs");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
+        Summary(s =>
+        {
+            s.Summary = "Lấy danh sách bài viết blog";
+            s.Description = "Tìm kiếm và lấy danh sách các bài viết chia sẻ kinh nghiệm du lịch, có hỗ trợ lọc theo danh mục, từ khóa và phân trang.";
+        });
     }
 
     public override async Task HandleAsync(GetBlogsRequest req, CancellationToken ct)

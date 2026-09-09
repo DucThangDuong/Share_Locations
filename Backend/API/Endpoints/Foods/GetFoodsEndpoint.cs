@@ -17,6 +17,11 @@ public class GetFoodsEndpoint : Endpoint<GetFoodsRequest, ApiSuccessResponse<IRe
         Get("/api/v1/foods", "/api/foods");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
+        Summary(s =>
+        {
+            s.Summary = "Lấy danh sách món ăn đặc sản";
+            s.Description = "Tìm kiếm và lọc danh sách các món ăn đặc sản vùng miền theo khu vực, danh mục, từ khóa, khoảng giá và phân trang.";
+        });
     }
 
     public override async Task HandleAsync(GetFoodsRequest req, CancellationToken ct)

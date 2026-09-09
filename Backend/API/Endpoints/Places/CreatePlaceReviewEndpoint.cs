@@ -23,6 +23,11 @@ public class CreatePlaceReviewEndpoint : Endpoint<CreatePlaceReviewRequest, ApiS
         Roles("User", "CategoryAdmin", "SystemAdmin");
         AllowFileUploads();
         Options(x => x.RequireRateLimiting("write_api"));
+        Summary(s =>
+        {
+            s.Summary = "Đăng đánh giá mới cho địa điểm";
+            s.Description = "Gửi đánh giá (1-5 sao, nội dung nhận xét, ngày ghé thăm) kèm tải lên trực tiếp hình ảnh (tối đa 10 ảnh, mỗi ảnh <= 2MB) và video (tối đa 2 video, mỗi video <= 30MB).";
+        });
     }
 
     public override async Task HandleAsync(CreatePlaceReviewRequest req, CancellationToken ct)

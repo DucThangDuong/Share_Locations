@@ -16,6 +16,11 @@ public class GetFeaturedBlogEndpoint : EndpointWithoutRequest<ApiSuccessResponse
         Get("/api/v1/blogs/featured", "/api/blogs/featured");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
+        Summary(s =>
+        {
+            s.Summary = "Lấy bài viết blog nổi bật";
+            s.Description = "Lấy thông tin bài viết blog du lịch được đánh dấu nổi bật nhất để hiển thị tại trang chủ hoặc banner.";
+        });
     }
 
     public override async Task HandleAsync(CancellationToken ct)

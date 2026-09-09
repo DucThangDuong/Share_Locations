@@ -165,17 +165,31 @@ public class PlaceRepository : IPlaceRepository
             SELECT pm.Url
             FROM dbo.PlaceMedia pm
             WHERE pm.PlaceId = @Id
-            ORDER BY pm.DisplayOrder;";
+            ORDER BY pm.DisplayOrder;
+
+            SELECT rm.Url
+            FROM dbo.ReviewMedia rm
+            INNER JOIN dbo.Reviews r ON rm.ReviewId = r.Id
+            WHERE r.PlaceId = @Id AND r.Status = 1 AND rm.MediaType = 1
+            ORDER BY r.CreatedAt DESC, rm.Id ASC;";
 
         using var multi = await connection.QueryMultipleAsync(sql, new { Id = id });
         var place = await multi.ReadFirstOrDefaultAsync<PlaceDetailDto>();
         if (place == null) return null;
 
-        var mediaUrls = (await multi.ReadAsync<string>()).ToList();
-        place.MediaUrls = mediaUrls;
-        if (string.IsNullOrWhiteSpace(place.ThumbnailUrl) && mediaUrls.Count > 0)
+        var placeMediaUrls = (await multi.ReadAsync<string>()).ToList();
+        var reviewMediaUrls = (await multi.ReadAsync<string>()).ToList();
+
+        var allMediaUrls = placeMediaUrls
+            .Concat(reviewMediaUrls)
+            .Where(url => !string.IsNullOrWhiteSpace(url))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        place.MediaUrls = allMediaUrls;
+        if (string.IsNullOrWhiteSpace(place.ThumbnailUrl) && allMediaUrls.Count > 0)
         {
-            place.ThumbnailUrl = mediaUrls[0];
+            place.ThumbnailUrl = allMediaUrls[0];
         }
 
         place.DetailedDescription = place.Description ?? string.Empty;

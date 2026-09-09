@@ -27,6 +27,11 @@ public class UnsavePlaceEndpoint : Endpoint<UnsavePlaceRequest, ApiSuccessRespon
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));
+        Summary(s =>
+        {
+            s.Summary = "Bỏ lưu địa điểm khỏi danh sách yêu thích";
+            s.Description = "Xóa địa điểm khỏi danh sách yêu thích cá nhân của người dùng đã đăng nhập.";
+        });
     }
 
     public override async Task HandleAsync(UnsavePlaceRequest req, CancellationToken ct)

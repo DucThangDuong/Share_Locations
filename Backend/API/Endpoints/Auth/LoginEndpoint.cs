@@ -17,6 +17,11 @@ public class LoginEndpoint : Endpoint<LoginRequest, ApiSuccessResponse<AuthToken
         Post("/api/v1/auth/login", "/api/auth/login");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("auth_strict"));
+        Summary(s =>
+        {
+            s.Summary = "Đăng nhập bằng Email và Mật khẩu";
+            s.Description = "Xác thực tài khoản người dùng, trả về Access Token trong body và thiết lập Refresh Token trong HttpOnly cookie.";
+        });
     }
 
     public override async Task HandleAsync(LoginRequest req, CancellationToken ct)

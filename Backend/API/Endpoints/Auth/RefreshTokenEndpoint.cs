@@ -14,6 +14,11 @@ public class RefreshTokenEndpoint : EndpointWithoutRequest
         Post("/api/v1/auth/refresh-token", "/api/auth/refresh-token");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("auth_strict"));
+        Summary(s =>
+        {
+            s.Summary = "Làm mới Access Token";
+            s.Description = "Cấp Access Token mới khi token hiện tại hết hạn, sử dụng Refresh Token được lưu trong HttpOnly cookie.";
+        });
     }
 
     public override async Task HandleAsync(CancellationToken ct)
