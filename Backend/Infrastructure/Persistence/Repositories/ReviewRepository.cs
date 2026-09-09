@@ -25,10 +25,27 @@ public class ReviewRepository : IReviewRepository
             .FirstOrDefaultAsync(r => r.Id == id && r.Status == ReviewStatus.Active, ct);
     }
 
+    public async Task<Review?> GetByIdWithMediaAsync(long id, CancellationToken ct = default)
+    {
+        return await _dbContext.Reviews
+            .Include(r => r.Media)
+            .FirstOrDefaultAsync(r => r.Id == id && r.Status == ReviewStatus.Active, ct);
+    }
+
     public async Task<bool> ExistsAsync(long id, CancellationToken ct = default)
     {
         return await _dbContext.Reviews
             .AnyAsync(r => r.Id == id && r.Status == ReviewStatus.Active, ct);
+    }
+
+    public void Update(Review review)
+    {
+        _dbContext.Reviews.Update(review);
+    }
+
+    public void Delete(Review review)
+    {
+        _dbContext.Reviews.Remove(review);
     }
 
     public async Task<(decimal AvgRating, int ReviewCount)> GetPlaceStatsAsync(long placeId, CancellationToken ct = default)
