@@ -12,6 +12,8 @@ interface PlaceDetailReviewsProps {
   avgRating: number
   isAuthenticated: boolean
   onReviewAdded: (newReview: ReviewItemDto) => void
+  onReviewUpdated?: (updatedReview: ReviewItemDto) => void
+  onReviewDeleted?: (reviewId: number) => void
 }
 
 export const PlaceDetailReviews: React.FC<PlaceDetailReviewsProps> = ({
@@ -20,7 +22,9 @@ export const PlaceDetailReviews: React.FC<PlaceDetailReviewsProps> = ({
   ratingBreakdown,
   avgRating,
   isAuthenticated,
-  onReviewAdded
+  onReviewAdded,
+  onReviewUpdated,
+  onReviewDeleted
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false)
 
@@ -113,6 +117,8 @@ export const PlaceDetailReviews: React.FC<PlaceDetailReviewsProps> = ({
               key={r.id}
               review={r}
               isAuthenticated={isAuthenticated}
+              onReviewUpdated={onReviewUpdated}
+              onReviewDeleted={onReviewDeleted}
             />
           ))
         )}

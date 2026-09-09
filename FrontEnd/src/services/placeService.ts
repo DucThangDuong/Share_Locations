@@ -8,12 +8,14 @@ import type {
   PlaceReviewSummaryDto,
   ReviewItemDto,
   CreateReviewRequest,
+  UpdateReviewRequest,
   ReportPlaceRequest,
   ToggleSavePlaceDto,
   PlaceMapItemDto,
   PlaceMapFilterParams,
   CommentDto,
   CreateReviewCommentRequest,
+  UpdateReviewCommentRequest,
   ReviewCommentsDto
 } from '@/types/models/place.model'
 
@@ -88,6 +90,33 @@ export const placeService = {
     return response.data
   },
 
+  async updateReview(data: UpdateReviewRequest): Promise<ApiSuccessResponse<ReviewItemDto>> {
+    const formData = new FormData()
+    formData.append('Rating', String(data.rating))
+    if (data.content) formData.append('Content', data.content)
+    if (data.visitDate) formData.append('VisitDate', data.visitDate)
+    if (data.existingMediaUrls && data.existingMediaUrls.length > 0) {
+      data.existingMediaUrls.forEach((url: string) => formData.append('ExistingMediaUrls', url))
+    }
+    if (data.photos && data.photos.length > 0) {
+      data.photos.forEach((file: File) => formData.append('Photos', file))
+    }
+    if (data.videos && data.videos.length > 0) {
+      data.videos.forEach((file: File) => formData.append('Videos', file))
+    }
+    const response = await apiClient.put<ApiSuccessResponse<ReviewItemDto>>(`/api/v1/reviews/${data.reviewId}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+    return response.data
+  },
+
+  async deleteReview(reviewId: number | string): Promise<ApiSuccessResponse<boolean>> {
+    const response = await apiClient.delete<ApiSuccessResponse<boolean>>(`/api/v1/reviews/${reviewId}`)
+    return response.data
+  },
+
   async getReviewComments(reviewId: number | string): Promise<ApiSuccessResponse<ReviewCommentsDto>> {
     const response = await apiClient.get<ApiSuccessResponse<ReviewCommentsDto>>(`/api/v1/reviews/${reviewId}/comments`)
     return response.data
@@ -98,6 +127,18 @@ export const placeService = {
       content: data.content,
       parentId: data.parentId ?? null
     })
+    return response.data
+  },
+
+  async updateReviewComment(data: UpdateReviewCommentRequest): Promise<ApiSuccessResponse<CommentDto>> {
+    const response = await apiClient.put<ApiSuccessResponse<CommentDto>>(`/api/v1/reviews/comments/${data.commentId}`, {
+      content: data.content
+    })
+    return response.data
+  },
+
+  async deleteReviewComment(commentId: number | string): Promise<ApiSuccessResponse<boolean>> {
+    const response = await apiClient.delete<ApiSuccessResponse<boolean>>(`/api/v1/reviews/comments/${commentId}`)
     return response.data
   },
 

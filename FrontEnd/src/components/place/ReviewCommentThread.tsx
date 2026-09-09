@@ -116,6 +116,79 @@ export const ReviewCommentThread: React.FC<ReviewCommentThreadProps> = ({
     }
   }
 
+  const handleCommentUpdate = async (commentId: number, content: string): Promise<boolean> => {
+    try {
+      const res = await placeService.updateReviewComment({
+        commentId,
+        content
+      })
+      if (res.success && res.data) {
+        setComments((prev) =>
+          prev.map((c) => {
+            if (c.id === commentId) {
+              return {
+                ...c,
+                content: res.data?.content || content
+              }
+            }
+            if (c.replies && c.replies.length > 0) {
+              return {
+                ...c,
+                replies: c.replies.map((r) =>
+                  r.id === commentId ? { ...r, content: res.data?.content || content } : r
+                )
+              }
+            }
+            return c
+          })
+        )
+        return true
+      }
+      alert(res.message || 'Không thể cập nhật bình luận.')
+      return false
+    } catch {
+      alert('Đã xảy ra lỗi khi cập nhật bình luận.')
+      return false
+    }
+  }
+
+  const handleCommentDelete = async (commentId: number): Promise<boolean> => {
+    try {
+      const res = await placeService.deleteReviewComment(commentId)
+      if (res.success) {
+        let removedCount = 0
+        setComments((prev) => {
+          const next: CommentDto[] = []
+          for (const c of prev) {
+            if (c.id === commentId) {
+              removedCount += 1 + (c.replies ? c.replies.length : 0)
+              continue
+            }
+            if (c.replies && c.replies.some((r) => r.id === commentId)) {
+              removedCount += 1
+              next.push({
+                ...c,
+                replies: c.replies.filter((r) => r.id !== commentId)
+              })
+            } else {
+              next.push(c)
+            }
+          }
+          return next
+        })
+        const updatedTotal = Math.max(0, totalComments - (removedCount || 1))
+        setTotalComments(updatedTotal)
+        onCommentsCountChange?.(updatedTotal)
+        return true
+      }
+      alert(res.message || 'Không thể xóa bình luận.')
+      return false
+    } catch {
+      alert('Đã xảy ra lỗi khi xóa bình luận.')
+      return false
+    }
+  }
+
   return (
     <div className="pt-3 border-t border-slate-100 space-y-4">
       <form onSubmit={handleRootSubmit} className="flex items-center gap-3">
@@ -181,9 +254,12 @@ export const ReviewCommentThread: React.FC<ReviewCommentThreadProps> = ({
               key={comment.id}
               comment={comment}
               isAuthenticated={isAuthenticated}
+              currentUserId={user?.id}
               currentUserAvatar={user?.avatarUrl}
               currentUserName={user?.fullName}
               onReplySubmit={handleReplySubmit}
+              onCommentUpdate={handleCommentUpdate}
+              onCommentDelete={handleCommentDelete}
             />
           ))}
         </div>

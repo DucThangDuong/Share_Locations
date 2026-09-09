@@ -93,6 +93,26 @@ export const PlaceDetailPage = () => {
     })
   }
 
+  const handleReviewUpdated = (updatedReview: ReviewItemDto) => {
+    setReviewsList((prev) =>
+      prev.map((r) => (r.id === updatedReview.id ? updatedReview : r))
+    )
+  }
+
+  const handleReviewDeleted = (deletedReviewId: number) => {
+    const target = reviewsList.find((r) => r.id === deletedReviewId)
+    setReviewsList((prev) => prev.filter((r) => r.id !== deletedReviewId))
+    if (target) {
+      setRatingBreakdown((prev) => {
+        const starKey = target.rating.toString()
+        return {
+          ...prev,
+          [starKey]: Math.max(0, (prev[starKey] || 0) - 1)
+        }
+      })
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50/50 pb-20">
@@ -167,6 +187,8 @@ export const PlaceDetailPage = () => {
               avgRating={place.avgRating}
               isAuthenticated={isAuthenticated}
               onReviewAdded={handleReviewAdded}
+              onReviewUpdated={handleReviewUpdated}
+              onReviewDeleted={handleReviewDeleted}
             />
           </div>
 
