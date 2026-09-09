@@ -151,6 +151,21 @@ export interface CreateReviewRequest {
   videos?: File[]
 }
 
+export interface UpdateReviewRequest {
+  reviewId: number
+  rating: number
+  content?: string
+  visitDate?: string
+  existingMediaUrls?: string[]
+  photos?: File[]
+  videos?: File[]
+}
+
+export interface UpdateReviewCommentRequest {
+  commentId: number
+  content: string
+}
+
 export interface ReportPlaceRequest {
   placeId: number
   reason: string

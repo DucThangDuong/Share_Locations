@@ -1,23 +1,35 @@
 import React, { useState } from 'react'
-import { Star, ThumbsUp, MessageSquare, Share2, Play } from 'lucide-react'
+import { Star, ThumbsUp, MessageSquare, Share2, Play, Pencil, Trash2 } from 'lucide-react'
+import { useAuth } from '@/context/AuthContext'
+import { placeService } from '@/services/placeService'
 import { ReviewCommentThread } from './ReviewCommentThread'
 import { MediaLightboxModal } from './MediaLightboxModal'
-import type { ReviewItemDto } from '@/types/models/place.model'
+import { EditReviewModal } from './EditReviewModal'
+import type { ReviewItemDto, UpdateReviewRequest } from '@/types/models/place.model'
 
 interface ReviewItemCardProps {
   review: ReviewItemDto
   isAuthenticated: boolean
+  onReviewUpdated?: (updatedReview: ReviewItemDto) => void
+  onReviewDeleted?: (reviewId: number) => void
 }
 
 export const ReviewItemCard: React.FC<ReviewItemCardProps> = ({
   review,
-  isAuthenticated
+  isAuthenticated,
+  onReviewUpdated,
+  onReviewDeleted
 }) => {
+  const { user } = useAuth()
   const [isCommentsOpen, setIsCommentsOpen] = useState(false)
   const [likesCount, setLikesCount] = useState(review.likesCount || 0)
   const [isLiked, setIsLiked] = useState(false)
   const [commentsCount, setCommentsCount] = useState(review.commentsCount || 0)
   const [activeMedia, setActiveMedia] = useState<{ url: string; type: 'image' | 'video' } | null>(null)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  const isOwner = Boolean(isAuthenticated && user && String(user.id) === String(review.userId))
 
   const handleLikeToggle = () => {
     if (!isAuthenticated) {
@@ -36,6 +48,33 @@ export const ReviewItemCard: React.FC<ReviewItemCardProps> = ({
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href)
     alert('Đã sao chép liên kết đánh giá vào bộ nhớ tạm!')
+  }
+
+  const handleUpdateReview = async (data: UpdateReviewRequest) => {
+    const res = await placeService.updateReview(data)
+    if (res.success && res.data) {
+      onReviewUpdated?.(res.data)
+      return { success: true, data: res.data }
+    }
+    return { success: false, message: res.message || 'Không thể cập nhật đánh giá.' }
+  }
+
+  const handleDeleteReview = async () => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa bài đánh giá này?')) return
+
+    setIsDeleting(true)
+    try {
+      const res = await placeService.deleteReview(review.id)
+      if (res.success) {
+        onReviewDeleted?.(review.id)
+      } else {
+        alert(res.message || 'Không thể xóa bài đánh giá.')
+      }
+    } catch {
+      alert('Đã xảy ra lỗi khi xóa bài đánh giá.')
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   const hasPhotos = review.images && review.images.length > 0
@@ -65,9 +104,33 @@ export const ReviewItemCard: React.FC<ReviewItemCardProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-1 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200/60">
-          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-          <span className="text-xs font-bold text-amber-900">{review.rating}</span>
+        <div className="flex items-center gap-2">
+          {isOwner && (
+            <div className="flex items-center gap-1 bg-slate-50 p-1 rounded-lg border border-slate-200/60">
+              <button
+                type="button"
+                onClick={() => setIsEditModalOpen(true)}
+                className="p-1.5 text-slate-500 hover:text-emerald-700 hover:bg-white rounded-md transition-colors cursor-pointer"
+                title="Chỉnh sửa đánh giá"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={handleDeleteReview}
+                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-white rounded-md transition-colors cursor-pointer disabled:opacity-50"
+                title="Xóa đánh giá"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
+          <div className="flex items-center gap-1 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200/60">
+            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+            <span className="text-xs font-bold text-amber-900">{review.rating}</span>
+          </div>
         </div>
       </div>
 
@@ -164,6 +227,15 @@ export const ReviewItemCard: React.FC<ReviewItemCardProps> = ({
         <ReviewCommentThread
           reviewId={review.id}
           onCommentsCountChange={setCommentsCount}
+        />
+      )}
+
+      {isEditModalOpen && (
+        <EditReviewModal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          review={review}
+          onUpdateReview={handleUpdateReview}
         />
       )}
 
