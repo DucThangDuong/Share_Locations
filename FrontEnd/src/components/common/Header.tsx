@@ -5,7 +5,6 @@ import {
   Search,
   Compass,
   MapPin,
-  Utensils,
   Route,
   BookOpen,
   User,
@@ -59,7 +58,6 @@ export const Header: React.FC = () => {
     { label: 'Trang chủ', href: '/', icon: Compass, isRouter: true, exact: true },
     { label: 'Khám phá', href: '/explore', icon: MapPin, isRouter: true },
     { label: 'Bản đồ', href: '/map', icon: MapPin, isRouter: true },
-    { label: 'Ẩm thực', href: '/food', icon: Utensils, isRouter: true },
     { label: 'Lịch trình', href: '/itinerary', icon: Route, isRouter: true },
     { label: 'Cẩm nang', href: '/blog', icon: BookOpen, isRouter: true }
   ]

@@ -21,7 +21,7 @@ public class GetFeaturedCollectionsQueryHandler : IRequestHandler<GetFeaturedCol
 
     public async Task<Result<IReadOnlyList<CollectionDto>>> Handle(GetFeaturedCollectionsQuery request, CancellationToken ct)
     {
-        var cacheKey = $"catalog:collections:featured:{request.Count}";
+        var cacheKey = $"catalog:collections:featured:v2:{request.Count}";
 
         var cached = await _cacheService.GetAsync<IReadOnlyList<CollectionDto>>(cacheKey, ct);
         if (cached != null && cached.Count > 0)

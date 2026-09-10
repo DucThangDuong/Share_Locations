@@ -7,22 +7,34 @@ interface RegionShowcaseCardProps {
   region: RegionDto
 }
 
+const getRegionSlug = (name: string, id?: number): string => {
+  const lower = (name || '').toLowerCase()
+  if (lower.includes('bắc') || lower.includes('bac') || id === 1) return 'mien-bac'
+  if (lower.includes('trung') || id === 2) return 'mien-trung'
+  if (lower.includes('nam') || id === 3) return 'mien-nam'
+  return 'mien-bac'
+}
+
 export const RegionShowcaseCard: React.FC<RegionShowcaseCardProps> = ({ region }) => {
   const navigate = useNavigate()
 
   const heroImage = region.imageUrl && (region.imageUrl.startsWith('http') || region.imageUrl.startsWith('/')) ? region.imageUrl : null
   const provinces = region.provinces || []
   const displayProvinces = provinces.slice(0, 8)
+  const regionSlug = getRegionSlug(region.name, region.id)
 
   return (
     <section className="my-8 rounded-lg bg-slate-50/80 border border-slate-200/80 overflow-hidden">
       <div className="flex flex-col lg:flex-row items-stretch">
-        <div className="lg:w-5/12 relative min-h-[280px] lg:min-h-[420px] bg-slate-900 overflow-hidden flex items-center justify-center">
+        <div
+          onClick={() => navigate(`/mien/${regionSlug}`)}
+          className="lg:w-5/12 relative min-h-[280px] lg:min-h-[420px] bg-slate-900 overflow-hidden flex items-center justify-center cursor-pointer group/img"
+        >
           {heroImage ? (
             <img
               src={heroImage}
               alt={region.name}
-              className="absolute inset-0 w-full h-full object-cover"
+              className="absolute inset-0 w-full h-full object-cover transition-opacity duration-300"
               loading="lazy"
             />
           ) : (
@@ -31,14 +43,7 @@ export const RegionShowcaseCard: React.FC<RegionShowcaseCardProps> = ({ region }
             </div>
           )}
           <div className="absolute inset-0 bg-gradient-to-t lg:bg-gradient-to-r from-slate-950/70 via-slate-950/20 to-transparent"></div>
-          <div className="absolute inset-0 bg-white/0 hover:bg-white/10 transition-colors duration-300 pointer-events-none"></div>
-
-          <div className="absolute top-4 left-4 z-10">
-            <span className="px-3.5 py-1.5 rounded-full bg-white/90 backdrop-blur-md text-slate-900 text-xs font-black tracking-wider uppercase flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5 text-emerald-700" />
-              {region.name}
-            </span>
-          </div>
+          <div className="absolute inset-0 bg-white/0 group-hover/img:bg-white/10 transition-colors duration-300 pointer-events-none"></div>
 
           <div className="absolute bottom-4 left-4 right-4 z-10 text-white lg:hidden">
             <h3 className="text-xl font-extrabold">{region.name}</h3>
@@ -50,7 +55,10 @@ export const RegionShowcaseCard: React.FC<RegionShowcaseCardProps> = ({ region }
 
         <div className="lg:w-7/12 p-6 sm:p-8 lg:p-10 flex flex-col justify-between space-y-6">
           <div className="space-y-3">
-            <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-snug">
+            <h3
+              onClick={() => navigate(`/mien/${regionSlug}`)}
+              className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-snug cursor-pointer hover:text-emerald-800 transition-colors"
+            >
               {region.name} {region.tagline ? `— ${region.tagline}` : ''}
             </h3>
 
@@ -90,7 +98,7 @@ export const RegionShowcaseCard: React.FC<RegionShowcaseCardProps> = ({ region }
           <div className="pt-2">
             <button
               type="button"
-              onClick={() => navigate(`/explore?region=${encodeURIComponent(region.name)}&regionId=${region.id}`)}
+              onClick={() => navigate(`/mien/${regionSlug}`)}
               className="px-6 py-3 bg-[#004f32] hover:bg-[#003d27] text-white rounded-full font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-none active-press"
             >
               <span>Khám phá tất cả tỉnh thành {region.name}</span>

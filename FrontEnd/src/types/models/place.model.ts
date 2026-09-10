@@ -205,34 +205,7 @@ export interface PlaceMapFilterParams {
   maxLat?: number
 }
 
-export interface FoodSuggestedPlaceDto {
-  placeId?: number
-  name: string
-  address: string
-  rating: number
-  price: string
-}
 
-export interface FoodItemDto {
-  id: number
-  name: string
-  priceRange: string
-  minPrice?: number | null
-  maxPrice?: number | null
-  imageUrl?: string | null
-  description?: string | null
-  suggestedPlaces: FoodSuggestedPlaceDto[]
-}
-
-export interface FoodFilterParams {
-  region?: string
-  category?: string
-  keyword?: string
-  minPrice?: number
-  maxPrice?: number
-  page?: number
-  pageSize?: number
-}
 
 export interface ItineraryAuthorDto {
   name: string

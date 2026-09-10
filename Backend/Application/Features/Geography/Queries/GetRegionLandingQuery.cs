@@ -28,7 +28,7 @@ public class GetRegionLandingQueryHandler : IRequestHandler<GetRegionLandingQuer
                 $"Không tìm thấy dữ liệu vùng miền cho '{request.RegionSlug}'. Vui lòng chọn mien-bac (north), mien-trung (central), hoặc mien-nam (south).");
         }
 
-        var cacheKey = $"geography:regions:landing:{normalizedCode}";
+        var cacheKey = $"geography:regions:landing:v3:{normalizedCode}";
 
         var cached = await _cacheService.GetAsync<RegionLandingDto>(cacheKey, ct);
         if (cached != null)
