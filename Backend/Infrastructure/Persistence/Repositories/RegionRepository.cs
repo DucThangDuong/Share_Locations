@@ -144,12 +144,7 @@ public class RegionRepository : IRegionRepository
                 c.Id,
                 c.Title,
                 c.Description AS Subtitle,
-                (SELECT COUNT(1) FROM dbo.CollectionPlaces cp WHERE cp.CollectionId = c.Id) AS PlaceCount,
-                COALESCE(
-                    (SELECT TOP 1 pl.CoverImageUrl FROM dbo.CollectionPlaces cp INNER JOIN dbo.Places pl ON cp.PlaceId = pl.Id WHERE cp.CollectionId = c.Id AND pl.CoverImageUrl IS NOT NULL),
-                    (SELECT TOP 1 pm.Url FROM dbo.CollectionPlaces cp INNER JOIN dbo.PlaceMedia pm ON cp.PlaceId = pm.PlaceId WHERE cp.CollectionId = c.Id),
-                    @DefaultImg
-                ) AS CoverUrl
+                (SELECT COUNT(1) FROM dbo.CollectionPlaces cp WHERE cp.CollectionId = c.Id) AS PlaceCount
             FROM dbo.Collections c
             WHERE c.Status = 1
               AND (
@@ -164,45 +159,85 @@ public class RegionRepository : IRegionRepository
                     WHERE cp.CollectionId = c.Id AND plprov.RegionId = @RegionId
                 )
               )
-            ORDER BY c.Id;";
+            ORDER BY c.DisplayOrder, c.Id;";
 
-        var collectionRows = (await connection.QueryAsync(collectionsSql, new { RegionId = regionId, DefaultImg = regionImg ?? "" })).ToList();
+        var collectionRows = (await connection.QueryAsync(collectionsSql, new { RegionId = regionId })).ToList();
+
+        if (collectionRows.Count == 0)
+        {
+            const string fallbackCollectionsSql = @"
+                SELECT TOP 4
+                    c.Id,
+                    c.Title,
+                    c.Description AS Subtitle,
+                    (SELECT COUNT(1) FROM dbo.CollectionPlaces cp WHERE cp.CollectionId = c.Id) AS PlaceCount
+                FROM dbo.Collections c
+                WHERE c.Status = 1 AND c.IsFeatured = 1
+                ORDER BY c.DisplayOrder, c.Id;";
+            collectionRows = (await connection.QueryAsync(fallbackCollectionsSql)).ToList();
+        }
+
         var collections = new List<RegionCollectionDto>();
 
         if (collectionRows.Count > 0)
         {
             var colIds = collectionRows.Select(c => (int)c.Id).ToList();
-            const string colMediaSql = @"
-                SELECT cp.CollectionId, COALESCE(pl.CoverImageUrl, pm.Url) AS Url
-                FROM dbo.CollectionPlaces cp
-                INNER JOIN dbo.Places pl ON cp.PlaceId = pl.Id
-                LEFT JOIN dbo.PlaceMedia pm ON pl.Id = pm.PlaceId
-                WHERE cp.CollectionId IN @ColIds;";
 
-            var colMediaRows = (await connection.QueryAsync(colMediaSql, new { ColIds = colIds })).ToList();
-            var colMediaLookup = colMediaRows
-                .Where(r => r.Url != null)
-                .ToLookup(r => (int)r.CollectionId, r => (string)r.Url);
+            const string colPlacesSql = @"
+                SELECT cp.CollectionId, p.Id, p.Name, p.AvgRating, p.ReviewCount, cat.Name AS CategoryName, p.CoverImageUrl
+                FROM dbo.CollectionPlaces cp
+                INNER JOIN dbo.Places p ON cp.PlaceId = p.Id
+                LEFT JOIN dbo.Categories cat ON p.CategoryId = cat.Id
+                WHERE cp.CollectionId IN @ColIds AND p.Status = 1
+                ORDER BY cp.CollectionId, cp.DisplayOrder;";
+
+            var colPlaceRows = (await connection.QueryAsync<PlaceInCollectionRaw>(colPlacesSql, new { ColIds = colIds })).ToList();
+
+            const string colPlaceMediaSql = @"
+                SELECT pm.PlaceId, pm.Url
+                FROM dbo.PlaceMedia pm
+                INNER JOIN dbo.CollectionPlaces cp ON pm.PlaceId = cp.PlaceId
+                WHERE cp.CollectionId IN @ColIds
+                ORDER BY pm.PlaceId, pm.DisplayOrder;";
+
+            var colMediaRows = (await connection.QueryAsync<PlaceMediaRaw>(colPlaceMediaSql, new { ColIds = colIds })).ToList();
+            var mediaByPlace = colMediaRows.ToLookup(m => m.PlaceId, m => m.Url);
+
+            var placeCardsByCollection = colPlaceRows.Select(p =>
+            {
+                var mediaList = mediaByPlace[p.Id].Distinct().ToList();
+                if (mediaList.Count == 0 && !string.IsNullOrWhiteSpace(p.CoverImageUrl))
+                {
+                    mediaList.Add(p.CoverImageUrl);
+                }
+
+                return new
+                {
+                    p.CollectionId,
+                    Card = new PlaceCardDto
+                    {
+                        Id = p.Id,
+                        Name = p.Name,
+                        CategoryName = p.CategoryName,
+                        AvgRating = p.AvgRating,
+                        ReviewCount = p.ReviewCount,
+                        MediaUrls = mediaList
+                    }
+                };
+            }).ToLookup(p => p.CollectionId, p => p.Card);
 
             foreach (var c in collectionRows)
             {
                 var id = (int)c.Id;
-                var mediaUrls = colMediaLookup[id].Distinct().Take(4).ToList();
-                if (mediaUrls.Count == 0 && !string.IsNullOrEmpty((string?)c.CoverUrl))
-                {
-                    mediaUrls.Add((string)c.CoverUrl);
-                }
+                var places = placeCardsByCollection[id].ToList();
 
                 collections.Add(new RegionCollectionDto
                 {
                     Id = id,
                     Title = (string)c.Title,
                     Subtitle = (string?)c.Subtitle,
-                    CoverUrl = (string?)c.CoverUrl,
-                    MediaUrls = mediaUrls,
-                    PlaceCount = (int)(c.PlaceCount ?? 0),
-                    Tag = "Bộ sưu tập nổi bật",
-                    RoutePath = $"/explore?q={Uri.EscapeDataString((string)c.Title)}&region={Uri.EscapeDataString(regionName)}"
+                    PlaceCount = (int)(c.PlaceCount ?? places.Count),
+                    Places = places
                 });
             }
         }

@@ -10,6 +10,7 @@ internal sealed class PlaceInCollectionRaw
     public string? CategoryName { get; set; }
     public decimal AvgRating { get; set; }
     public int ReviewCount { get; set; }
+    public string? CoverImageUrl { get; set; }
 }
 
 internal sealed class PlaceInCategoryRaw

@@ -8,12 +8,12 @@ const HomePage = lazy(() => import('@/pages/HomePage').then((m) => ({ default: m
 const ExplorePage = lazy(() => import('@/pages/ExplorePage').then((m) => ({ default: m.ExplorePage })))
 const PlaceDetailPage = lazy(() => import('@/pages/PlaceDetailPage').then((m) => ({ default: m.PlaceDetailPage })))
 const MapPage = lazy(() => import('@/pages/MapPage').then((m) => ({ default: m.MapPage })))
-const FoodPage = lazy(() => import('@/pages/FoodPage').then((m) => ({ default: m.FoodPage })))
 const ItineraryPage = lazy(() => import('@/pages/ItineraryPage').then((m) => ({ default: m.ItineraryPage })))
 const BlogPage = lazy(() => import('@/pages/BlogPage').then((m) => ({ default: m.BlogPage })))
 const LoginPage = lazy(() => import('@/pages/LoginPage').then((m) => ({ default: m.LoginPage })))
 const RegisterPage = lazy(() => import('@/pages/RegisterPage').then((m) => ({ default: m.RegisterPage })))
 const ProfilePage = lazy(() => import('@/pages/ProfilePage').then((m) => ({ default: m.ProfilePage })))
+const RegionPage = lazy(() => import('@/pages/RegionPage').then((m) => ({ default: m.RegionPage })))
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })))
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'dummy-client-id.apps.googleusercontent.com'
@@ -39,12 +39,14 @@ export const App: React.FC = () => {
                 <Route path="dia-diem/:id" element={<PlaceDetailPage />} />
                 <Route path="map" element={<MapPage />} />
                 <Route path="ban-do" element={<MapPage />} />
-                <Route path="food" element={<FoodPage />} />
-                <Route path="am-thuc" element={<FoodPage />} />
                 <Route path="itineraries" element={<ItineraryPage />} />
                 <Route path="hanh-trinh" element={<ItineraryPage />} />
                 <Route path="blog" element={<BlogPage />} />
                 <Route path="cam-nang" element={<BlogPage />} />
+                <Route path="regions" element={<RegionPage />} />
+                <Route path="regions/:regionSlug" element={<RegionPage />} />
+                <Route path="mien" element={<RegionPage />} />
+                <Route path="mien/:regionSlug" element={<RegionPage />} />
                 <Route path="profile" element={<ProfilePage />} />
                 <Route path="*" element={<NotFoundPage />} />
               </Route>

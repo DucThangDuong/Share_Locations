@@ -73,20 +73,11 @@ public class RegionCollectionDto
     [JsonPropertyName("subtitle")]
     public string? Subtitle { get; set; }
 
-    [JsonPropertyName("coverUrl")]
-    public string? CoverUrl { get; set; }
-
-    [JsonPropertyName("mediaUrls")]
-    public List<string> MediaUrls { get; set; } = new();
-
     [JsonPropertyName("placeCount")]
     public int PlaceCount { get; set; }
 
-    [JsonPropertyName("tag")]
-    public string? Tag { get; set; }
-
-    [JsonPropertyName("routePath")]
-    public string? RoutePath { get; set; }
+    [JsonPropertyName("places")]
+    public List<PlaceCardDto> Places { get; set; } = new();
 }
 
 public class RegionLandmarkDto
