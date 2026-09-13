@@ -21,7 +21,7 @@ export const ExploreToolbar: React.FC<ExploreToolbarProps> = ({
     <div className="flex items-center justify-between gap-4 p-3.5 bg-white rounded-lg border border-slate-200/70">
       <div className="flex items-center gap-3">
         <div className="relative">
-          <button
+          <button type="button"
             onClick={() => setSortOpen(!sortOpen)}
             aria-expanded={sortOpen}
             className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200 cursor-pointer min-h-[36px]"
@@ -33,7 +33,7 @@ export const ExploreToolbar: React.FC<ExploreToolbarProps> = ({
           {sortOpen && (
             <div className="absolute right-0 top-full mt-1.5 w-56 bg-white rounded-lg border border-slate-100 py-1.5 z-30 animate-in zoom-in-95">
               {SORT_OPTIONS.map((opt) => (
-                <button
+                <button type="button"
                   key={opt.value}
                   onClick={() => {
                     onSortChange(opt.value)
@@ -53,7 +53,7 @@ export const ExploreToolbar: React.FC<ExploreToolbarProps> = ({
         </div>
 
         <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200">
-          <button
+          <button type="button"
             onClick={() => onViewModeChange('grid')}
             aria-label="Chế độ xem dạng lưới"
             className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors cursor-pointer ${viewMode === 'grid'
@@ -63,7 +63,7 @@ export const ExploreToolbar: React.FC<ExploreToolbarProps> = ({
           >
             <Grid3x3 className="w-4 h-4" />
           </button>
-          <button
+          <button type="button"
             onClick={() => onViewModeChange('list')}
             aria-label="Chế độ xem dạng danh sách"
             className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors cursor-pointer ${viewMode === 'list'

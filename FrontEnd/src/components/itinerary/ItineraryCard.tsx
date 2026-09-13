@@ -60,7 +60,7 @@ export const ItineraryCard = ({
         </div>
 
         <div className="flex items-center gap-2.5 shrink-0 self-end md:self-center">
-          <button
+          <button type="button"
             onClick={() => onSave(itinerary.id)}
             className={`p-2.5 rounded-lg border transition-colors ${
               isSaved
@@ -72,7 +72,7 @@ export const ItineraryCard = ({
             <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-rose-600' : ''}`} />
           </button>
 
-          <button
+          <button type="button"
             onClick={onToggleExpand}
             className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs sm:text-sm rounded-lg shadow-xs transition-colors"
           >

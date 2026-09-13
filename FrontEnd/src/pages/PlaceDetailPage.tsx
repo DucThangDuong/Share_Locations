@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { CheckCircle2, AlertCircle } from 'lucide-react'
 import { placeService } from '@/services/placeService'
+import { userService } from '@/services/userService'
 import { ReportModal } from '@/components/common/ReportModal'
 import { useAuth } from '@/context/AuthContext'
 import { PlaceDetailGallery } from '@/components/place/PlaceDetailGallery'
@@ -38,6 +39,33 @@ export const PlaceDetailPage = () => {
         const placeRes = await placeService.getPlaceById(id)
         if (placeRes.success && placeRes.data) {
           setPlace(placeRes.data)
+          if (isAuthenticated) {
+            userService.recordAccessHistory(id).catch(() => {})
+            userService.getMyFavorites({ targetType: 1, pageSize: 100 }).then((favRes) => {
+              if (favRes.success && favRes.data) {
+                const items = Array.isArray(favRes.data) ? favRes.data : (favRes.data.items || [])
+                const isFav = items.some((f) => f.targetId === Number(id))
+                setIsSaved(isFav)
+              }
+            }).catch(() => {})
+          }
+          try {
+            const stored = JSON.parse(localStorage.getItem('langthang_recent_visited') || '[]')
+            const item = {
+              id: placeRes.data.id,
+              name: placeRes.data.name,
+              province: placeRes.data.provinceName,
+              category: placeRes.data.categoryName,
+              rating: placeRes.data.avgRating,
+              coverUrl: placeRes.data.thumbnailUrl || placeRes.data.mediaUrls?.[0],
+              visitedAt: 'Vừa xong'
+            }
+            const filtered = stored.filter((s: { id: number | string }) => String(s.id) !== String(item.id))
+            const updated = [item, ...filtered].slice(0, 10)
+            localStorage.setItem('langthang_recent_visited', JSON.stringify(updated))
+            window.dispatchEvent(new Event('storage'))
+          } catch {
+          }
         } else {
           setError(placeRes.message || 'Không tìm thấy thông tin địa điểm.')
         }
@@ -56,7 +84,7 @@ export const PlaceDetailPage = () => {
       }
     }
     fetchPlaceData()
-  }, [id])
+  }, [id, isAuthenticated])
 
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href)
@@ -69,12 +97,13 @@ export const PlaceDetailPage = () => {
       alert('Vui lòng đăng nhập để lưu địa điểm yêu thích.')
       return
     }
+    const targetId = Number(id)
     try {
       if (isSaved) {
-        await placeService.unsavePlace(id)
+        await userService.removeFavorite(1, targetId)
         setIsSaved(false)
       } else {
-        await placeService.savePlace(id)
+        await userService.addFavorite(1, targetId)
         setIsSaved(true)
       }
     } catch {

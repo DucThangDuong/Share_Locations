@@ -22,7 +22,6 @@ export const ExplorePage: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState<boolean>(false)
-  const [savedPlaceIds, setSavedPlaceIds] = useState<Set<number>>(new Set())
 
   const pageSize = 12
 
@@ -94,6 +93,8 @@ export const ExplorePage: React.FC = () => {
   useEffect(() => {
     setDraftSearch(appliedFilters.search)
   }, [appliedFilters.search])
+
+
 
   useEffect(() => {
     const fetchFilterOptions = async () => {
@@ -241,23 +242,7 @@ export const ExplorePage: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const toggleSave = async (id: number) => {
-    const isCurrentlySaved = savedPlaceIds.has(id)
-    setSavedPlaceIds((prev) => {
-      const next = new Set(prev)
-      if (isCurrentlySaved) next.delete(id)
-      else next.add(id)
-      return next
-    })
-    try {
-      if (isCurrentlySaved) {
-        await placeService.unsavePlace(id)
-      } else {
-        await placeService.savePlace(id)
-      }
-    } catch {
-    }
-  }
+
 
   const handleRegionCheck = (region: RegionLookupDto) => {
     const isSelected = appliedFilters.regionIds.includes(region.id)
@@ -404,7 +389,7 @@ export const ExplorePage: React.FC = () => {
         />
 
         <div className="flex items-center justify-between gap-4 lg:hidden">
-          <button
+          <button type="button"
             onClick={() => setIsMobileFilterOpen(!isMobileFilterOpen)}
             className="flex items-center gap-2 px-4 py-2.5 bg-white rounded-lg border border-slate-200 text-xs font-bold text-slate-700 cursor-pointer min-h-[44px]"
           >
@@ -482,8 +467,6 @@ export const ExplorePage: React.FC = () => {
                     key={place.id}
                     place={place}
                     viewMode={viewMode}
-                    isSaved={savedPlaceIds.has(place.id)}
-                    onToggleSave={toggleSave}
                   />
                 ))}
               </div>

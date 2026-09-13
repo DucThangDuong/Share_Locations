@@ -168,7 +168,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
               Chỉnh sửa thông tin cá nhân
             </h2>
           </div>
-          <button
+          <button type="button"
             onClick={onClose}
             disabled={loading}
             className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"

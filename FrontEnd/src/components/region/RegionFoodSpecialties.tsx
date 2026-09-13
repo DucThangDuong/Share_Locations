@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, Heart, Tag, Store, ArrowLeft, ArrowRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Tag, Store, ArrowLeft, ArrowRight } from 'lucide-react'
 import type { RegionFood } from '@/types/models/region.model'
 
 interface RegionFoodSpecialtiesProps {
@@ -11,7 +11,6 @@ interface RegionFoodSpecialtiesProps {
 const FoodSpecialtyCard: React.FC<{ food: RegionFood; regionName: string }> = ({ food }) => {
   const navigate = useNavigate()
   const [activeImageIndex, setActiveImageIndex] = useState(0)
-  const [isSaved, setIsSaved] = useState(false)
 
   const mediaList = food.mediaUrls && food.mediaUrls.length > 0
     ? food.mediaUrls
@@ -31,12 +30,6 @@ const FoodSpecialtyCard: React.FC<{ food: RegionFood; regionName: string }> = ({
     setActiveImageIndex((prev) => (prev === mediaList.length - 1 ? 0 : prev + 1))
   }
 
-  const handleToggleSave = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    e.preventDefault()
-    setIsSaved(!isSaved)
-  }
-
   const handlePlaceClick = (place: { id?: number | string; name: string }) => {
     if (place.id) {
       navigate(`/places/${place.id}`)
@@ -46,7 +39,7 @@ const FoodSpecialtyCard: React.FC<{ food: RegionFood; regionName: string }> = ({
   }
 
   return (
-    <div className="group flex flex-col shrink-0 w-[270px] sm:w-[290px] md:w-[310px] select-none bg-white rounded-2xl border border-slate-200/90 p-3 shadow-xs hover:shadow-md transition-all duration-300 justify-between">
+    <div className="group flex flex-col shrink-0 w-full sm:w-[calc((100%-1rem)/2)] md:w-[calc((100%-2*1.25rem)/3)] lg:w-[calc((100%-3*1.25rem)/4)] snap-start select-none bg-white rounded-2xl border border-slate-200/90 p-3 shadow-xs hover:shadow-md transition-all duration-300 justify-between">
       <div>
         <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-slate-100">
           <img
@@ -56,18 +49,6 @@ const FoodSpecialtyCard: React.FC<{ food: RegionFood; regionName: string }> = ({
             loading="lazy"
           />
           <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors duration-300 pointer-events-none" />
-
-          <button
-            type="button"
-            onClick={handleToggleSave}
-            aria-label={isSaved ? 'Bỏ lưu món ăn' : 'Lưu món ăn'}
-            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/95 hover:bg-white text-slate-800 shadow-sm flex items-center justify-center z-10 transition-transform active:scale-95 cursor-pointer"
-          >
-            <Heart
-              className={`w-4 h-4 transition-colors ${isSaved ? 'fill-rose-500 text-rose-500' : 'text-slate-800 stroke-[2]'
-                }`}
-            />
-          </button>
 
           {hasMultipleImages && (
             <>
@@ -155,7 +136,11 @@ const FoodSpecialtyCard: React.FC<{ food: RegionFood; regionName: string }> = ({
 export const RegionFoodSpecialties: React.FC<RegionFoodSpecialtiesProps> = ({ foods, regionName }) => {
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  const scroll = (dir: number) => scrollRef.current?.scrollBy({ left: dir * 320, behavior: 'smooth' })
+  const scroll = (dir: number) => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollBy({ left: dir * scrollRef.current.clientWidth, behavior: 'smooth' })
+    }
+  }
 
   if (!foods || foods.length === 0) return null
 
@@ -192,7 +177,7 @@ export const RegionFoodSpecialties: React.FC<RegionFoodSpecialtiesProps> = ({ fo
 
       <div
         ref={scrollRef}
-        className="flex overflow-x-auto gap-4 sm:gap-5 pb-4 hide-scrollbar snap-x scroll-smooth"
+        className="flex overflow-x-auto gap-4 sm:gap-5 pb-4 hide-scrollbar snap-x snap-mandatory scroll-smooth"
       >
         {foods.map((food) => (
           <FoodSpecialtyCard key={food.id} food={food} regionName={regionName} />

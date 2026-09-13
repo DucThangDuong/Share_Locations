@@ -61,14 +61,14 @@ export const PlaceDetailOverview = ({
         </div>
 
         <div className="flex items-center gap-2.5 shrink-0">
-          <button
+          <button type="button"
             onClick={onShare}
             className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors shadow-2xs"
           >
             <Share2 className="w-4 h-4" />
             <span>Chia sẻ</span>
           </button>
-          <button
+          <button type="button"
             onClick={onToggleSave}
             className={`inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-lg transition-colors shadow-2xs ${isSaved
               ? 'bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100'
@@ -78,7 +78,7 @@ export const PlaceDetailOverview = ({
             <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-rose-600' : ''}`} />
             <span>{isSaved ? 'Đã lưu' : 'Lưu'}</span>
           </button>
-          <button
+          <button type="button"
             onClick={onOpenReport}
             className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-200 rounded-lg hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50/50 transition-colors shadow-2xs"
             title="Báo cáo sai phạm"

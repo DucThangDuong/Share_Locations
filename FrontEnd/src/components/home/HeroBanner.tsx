@@ -61,10 +61,6 @@ export const HeroBanner: React.FC = () => {
             <span className="text-secondary-container">một điều kỳ diệu</span>
           </h1>
 
-          <p className="text-sm sm:text-base md:text-lg text-slate-200/90 font-normal max-w-2xl leading-relaxed">
-            Khám phá trọn vẹn cảnh sắc 63 tỉnh thành, lưu giữ hàng ngàn quán ăn đặc sản bản địa và kết nối cùng cộng đồng du lịch tự túc.
-          </p>
-
           <div className="pt-2 max-w-3xl">
             <form
               onSubmit={handleSearchSubmit}
@@ -145,25 +141,6 @@ export const HeroBanner: React.FC = () => {
                 </button>
               ))}
             </div>
-          </div>
-        </div>
-
-        <div className="relative z-10 grid grid-cols-2 sm:grid-cols-4 gap-4 pt-6 border-t border-white/15 max-w-4xl">
-          <div>
-            <div className="text-2xl sm:text-3xl font-black text-secondary-container tracking-tight">63+</div>
-            <div className="text-xs text-slate-300 font-medium mt-0.5">Tỉnh thành toàn quốc</div>
-          </div>
-          <div>
-            <div className="text-2xl sm:text-3xl font-black text-emerald-400 tracking-tight">1,200+</div>
-            <div className="text-xs text-slate-300 font-medium mt-0.5">Địa điểm & Món ngon</div>
-          </div>
-          <div>
-            <div className="text-2xl sm:text-3xl font-black text-amber-300 tracking-tight">100%</div>
-            <div className="text-xs text-slate-300 font-medium mt-0.5">Kinh nghiệm thực tế</div>
-          </div>
-          <div>
-            <div className="text-2xl sm:text-3xl font-black text-sky-400 tracking-tight">50k+</div>
-            <div className="text-xs text-slate-300 font-medium mt-0.5">Cộng đồng yêu du lịch</div>
           </div>
         </div>
       </div>

@@ -51,12 +51,20 @@ export const ReviewItemCard: React.FC<ReviewItemCardProps> = ({
   }
 
   const handleUpdateReview = async (data: UpdateReviewRequest) => {
-    const res = await placeService.updateReview(data)
-    if (res.success && res.data) {
-      onReviewUpdated?.(res.data)
-      return { success: true, data: res.data }
+    try {
+      const res = await placeService.updateReview(data)
+      if (res.success && res.data) {
+        onReviewUpdated?.(res.data)
+        return { success: true, data: res.data }
+      }
+      return { success: false, message: res.message || 'Không thể cập nhật đánh giá.' }
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { message?: string } } }
+      return {
+        success: false,
+        message: axiosErr?.response?.data?.message || 'Đã có lỗi xảy ra khi cập nhật đánh giá.'
+      }
     }
-    return { success: false, message: res.message || 'Không thể cập nhật đánh giá.' }
   }
 
   const handleDeleteReview = async () => {
@@ -186,7 +194,7 @@ export const ReviewItemCard: React.FC<ReviewItemCardProps> = ({
 
       <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs text-slate-500 font-medium">
         <div className="flex items-center gap-3">
-          <button
+          <button type="button"
             onClick={handleLikeToggle}
             className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer ${
               isLiked
@@ -198,7 +206,7 @@ export const ReviewItemCard: React.FC<ReviewItemCardProps> = ({
             <span>{likesCount > 0 ? likesCount : 'Hữu ích'}</span>
           </button>
 
-          <button
+          <button type="button"
             onClick={() => setIsCommentsOpen(!isCommentsOpen)}
             className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer ${
               isCommentsOpen
@@ -213,7 +221,7 @@ export const ReviewItemCard: React.FC<ReviewItemCardProps> = ({
           </button>
         </div>
 
-        <button
+        <button type="button"
           onClick={handleShare}
           className="inline-flex items-center gap-1 px-2.5 py-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
           title="Chia sẻ đánh giá"

@@ -23,7 +23,7 @@ export const MediaLightboxModal: React.FC<MediaLightboxModalProps> = ({
         onClick={(e) => e.stopPropagation()}
         className="relative max-w-4xl max-h-[90vh] w-full bg-slate-900 rounded-xl overflow-hidden shadow-2xl flex flex-col items-center justify-center"
       >
-        <button
+        <button type="button"
           onClick={onClose}
           className="absolute top-3 right-3 z-10 p-2 bg-slate-800/80 hover:bg-slate-700 text-white rounded-full transition-colors cursor-pointer"
           title="Đóng"

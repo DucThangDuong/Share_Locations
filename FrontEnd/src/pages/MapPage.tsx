@@ -94,7 +94,7 @@ export const MapPage = () => {
 
       const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(`
         <div style="font-family: sans-serif; padding: 4px; max-width: 220px;">
-          ${place.imageUrl ? `<img src="${place.imageUrl}" style="width: 100%; height: 100px; object-fit: cover; border-radius: 6px; margin-bottom: 6px;" />` : ''}
+          ${place.imageUrl ? `<img src="${place.imageUrl}" alt="${place.name}" style="width: 100%; height: 100px; object-fit: cover; border-radius: 6px; margin-bottom: 6px;" />` : ''}
           <h4 style="font-weight: 700; font-size: 14px; margin: 0 0 4px 0; color: #111;">${place.name}</h4>
           <p style="font-size: 12px; color: #666; margin: 0 0 6px 0;">${place.address}</p>
           <div style="display: flex; align-items: center; justify-content: space-between;">
@@ -147,7 +147,7 @@ export const MapPage = () => {
 
         <div className="flex items-center gap-2">
           <div className="md:hidden flex bg-gray-100 p-0.5 rounded-lg border border-gray-200 text-xs font-semibold">
-            <button
+            <button type="button"
               onClick={() => setMobileView('map')}
               className={`px-3 py-1.5 rounded-lg transition-colors ${
                 mobileView === 'map' ? 'bg-white text-emerald-700 shadow-xs' : 'text-gray-600'
@@ -155,7 +155,7 @@ export const MapPage = () => {
             >
               Bản đồ
             </button>
-            <button
+            <button type="button"
               onClick={() => setMobileView('list')}
               className={`px-3 py-1.5 rounded-lg transition-colors ${
                 mobileView === 'list' ? 'bg-white text-emerald-700 shadow-xs' : 'text-gray-600'

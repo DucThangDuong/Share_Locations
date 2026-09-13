@@ -185,7 +185,7 @@ export const ReviewCommentItem: React.FC<ReviewCommentItemProps> = ({
 
           {!isEditingParent && (
             <div className="flex items-center gap-3 mt-1 ml-2 text-[11px] text-slate-500 font-medium">
-              <button
+              <button type="button"
                 onClick={() => handleOpenReply()}
                 className="hover:text-emerald-700 flex items-center gap-1 cursor-pointer transition-colors"
               >
@@ -196,7 +196,7 @@ export const ReviewCommentItem: React.FC<ReviewCommentItemProps> = ({
               {isParentOwner && (
                 <>
                   <span>•</span>
-                  <button
+                  <button type="button"
                     onClick={() => {
                       setIsEditingParent(true)
                       setEditParentText(comment.content)
@@ -207,7 +207,7 @@ export const ReviewCommentItem: React.FC<ReviewCommentItemProps> = ({
                     <span>Sửa</span>
                   </button>
                   <span>•</span>
-                  <button
+                  <button type="button"
                     onClick={handleDeleteParent}
                     className="hover:text-rose-600 flex items-center gap-1 cursor-pointer transition-colors text-slate-400 hover:text-rose-600"
                   >
@@ -343,7 +343,7 @@ export const ReviewCommentItem: React.FC<ReviewCommentItemProps> = ({
 
                   {!isEditingThisReply && (
                     <div className="flex items-center gap-3 mt-1 ml-2 text-[11px] text-slate-500 font-medium">
-                      <button
+                      <button type="button"
                         onClick={() => handleOpenReply(reply.userName)}
                         className="hover:text-emerald-700 flex items-center gap-1 cursor-pointer transition-colors"
                       >
@@ -354,7 +354,7 @@ export const ReviewCommentItem: React.FC<ReviewCommentItemProps> = ({
                       {isReplyOwner && (
                         <>
                           <span>•</span>
-                          <button
+                          <button type="button"
                             onClick={() => handleStartEditReply(reply)}
                             className="hover:text-emerald-700 flex items-center gap-1 cursor-pointer transition-colors"
                           >
@@ -362,7 +362,7 @@ export const ReviewCommentItem: React.FC<ReviewCommentItemProps> = ({
                             <span>Sửa</span>
                           </button>
                           <span>•</span>
-                          <button
+                          <button type="button"
                             onClick={() => handleDeleteReply(reply.id)}
                             className="hover:text-rose-600 flex items-center gap-1 cursor-pointer transition-colors text-slate-400 hover:text-rose-600"
                           >

@@ -29,7 +29,7 @@ public class DeleteReviewCommentEndpoint : Endpoint<DeleteReviewCommentRequest, 
         Summary(s =>
         {
             s.Summary = "Xóa bình luận";
-            s.Description = "Xóa bình luận trong bài đánh giá (chỉ người tạo hoặc quản trị viên).";
+            s.Description = "Xóa bình luận trong bài đánh giá và tự động xóa các phản hồi con bên dưới (chỉ người tạo hoặc quản trị viên).";
         });
     }
 

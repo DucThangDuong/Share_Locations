@@ -29,7 +29,7 @@ public class DeletePlaceReviewEndpoint : Endpoint<DeletePlaceReviewRequest, ApiS
         Summary(s =>
         {
             s.Summary = "Xóa bài đánh giá";
-            s.Description = "Xóa bài đánh giá và tự động tính toán lại điểm sao trung bình và số lượng đánh giá của địa điểm (chỉ người tạo hoặc quản trị viên).";
+            s.Description = "Xóa bài đánh giá, tự động xóa các bình luận bên trong và tính toán lại điểm sao trung bình, số lượng đánh giá của địa điểm (chỉ người tạo hoặc quản trị viên).";
         });
     }
 

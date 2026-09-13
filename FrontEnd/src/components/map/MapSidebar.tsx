@@ -74,7 +74,7 @@ export const MapSidebar = ({
             const Icon = cat.icon
             const active = selectedCategory === cat.id
             return (
-              <button
+              <button type="button"
                 key={cat.id}
                 onClick={() => onCategoryChange(cat.id)}
                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
@@ -94,7 +94,7 @@ export const MapSidebar = ({
           <span className="text-gray-500 font-medium shrink-0">Vùng miền:</span>
           <div className="flex items-center gap-1">
             {REGIONS.map((r) => (
-              <button
+              <button type="button"
                 key={r.id}
                 onClick={() => onRegionChange(r.id)}
                 className={`px-2.5 py-1 rounded-lg border text-xs transition-colors ${

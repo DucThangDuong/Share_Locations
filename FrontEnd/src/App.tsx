@@ -13,6 +13,7 @@ const BlogPage = lazy(() => import('@/pages/BlogPage').then((m) => ({ default: m
 const LoginPage = lazy(() => import('@/pages/LoginPage').then((m) => ({ default: m.LoginPage })))
 const RegisterPage = lazy(() => import('@/pages/RegisterPage').then((m) => ({ default: m.RegisterPage })))
 const ProfilePage = lazy(() => import('@/pages/ProfilePage').then((m) => ({ default: m.ProfilePage })))
+const ProposePlacePage = lazy(() => import('@/pages/ProposePlacePage').then((m) => ({ default: m.ProposePlacePage })))
 const RegionPage = lazy(() => import('@/pages/RegionPage').then((m) => ({ default: m.RegionPage })))
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })))
 
@@ -39,6 +40,7 @@ export const App: React.FC = () => {
                 <Route path="dia-diem/:id" element={<PlaceDetailPage />} />
                 <Route path="map" element={<MapPage />} />
                 <Route path="ban-do" element={<MapPage />} />
+                <Route path="itinerary" element={<ItineraryPage />} />
                 <Route path="itineraries" element={<ItineraryPage />} />
                 <Route path="hanh-trinh" element={<ItineraryPage />} />
                 <Route path="blog" element={<BlogPage />} />
@@ -47,6 +49,9 @@ export const App: React.FC = () => {
                 <Route path="regions/:regionSlug" element={<RegionPage />} />
                 <Route path="mien" element={<RegionPage />} />
                 <Route path="mien/:regionSlug" element={<RegionPage />} />
+                <Route path="propose-place" element={<ProposePlacePage />} />
+                <Route path="de-xuat" element={<ProposePlacePage />} />
+                <Route path="de-xuat-dia-diem" element={<ProposePlacePage />} />
                 <Route path="profile" element={<ProfilePage />} />
                 <Route path="*" element={<NotFoundPage />} />
               </Route>

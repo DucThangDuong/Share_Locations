@@ -75,7 +75,7 @@ export const PlaceDetailGallery = ({ images, placeName }: PlaceDetailGalleryProp
             <span className="text-sm font-medium">
               Ảnh {activeImageIndex + 1} / {images.length}
             </span>
-            <button
+            <button type="button"
               onClick={() => setIsLightboxOpen(false)}
               className="p-2 text-gray-400 hover:text-white rounded-lg transition-colors"
             >
@@ -91,13 +91,13 @@ export const PlaceDetailGallery = ({ images, placeName }: PlaceDetailGalleryProp
             />
             {images.length > 1 && (
               <>
-                <button
+                <button type="button"
                   onClick={() => setActiveImageIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1))}
                   className="absolute left-2 top-1/2 -translate-y-1/2 p-3 bg-black/50 hover:bg-black/80 text-white rounded-full transition-colors"
                 >
                   <ChevronLeft className="w-6 h-6" />
                 </button>
-                <button
+                <button type="button"
                   onClick={() => setActiveImageIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0))}
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-3 bg-black/50 hover:bg-black/80 text-white rounded-full transition-colors"
                 >

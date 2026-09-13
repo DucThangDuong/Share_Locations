@@ -142,7 +142,7 @@ export const RichContentRenderer: React.FC<RichContentRendererProps> = ({ conten
                       key={`a-${opIdx}-${lineIdx}`}
                       href={attrs.link}
                       target="_blank"
-                      rel="noreferrer"
+                      rel="noopener noreferrer"
                       className="text-emerald-700 underline font-semibold hover:text-emerald-800"
                     >
                       {formattedNode}

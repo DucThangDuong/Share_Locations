@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, Heart, Star, MapPin, ArrowLeft, ArrowRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Star, MapPin, ArrowLeft, ArrowRight } from 'lucide-react'
 import type { RegionLandmark } from '@/types/models/region.model'
 
 interface RegionLandmarksProps {
@@ -11,7 +11,6 @@ interface RegionLandmarksProps {
 const LandmarkCard: React.FC<{ landmark: RegionLandmark }> = ({ landmark }) => {
   const navigate = useNavigate()
   const [activeImageIndex, setActiveImageIndex] = useState(0)
-  const [isSaved, setIsSaved] = useState(false)
 
   const mediaList = landmark.mediaUrls && landmark.mediaUrls.length > 0
     ? landmark.mediaUrls
@@ -30,16 +29,10 @@ const LandmarkCard: React.FC<{ landmark: RegionLandmark }> = ({ landmark }) => {
     setActiveImageIndex((prev) => (prev === mediaList.length - 1 ? 0 : prev + 1))
   }
 
-  const handleToggleSave = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    e.preventDefault()
-    setIsSaved(!isSaved)
-  }
-
   return (
     <div
       onClick={() => navigate(`/places/${landmark.id}`)}
-      className="group flex flex-col cursor-pointer shrink-0 w-[240px] sm:w-[260px] md:w-[280px] select-none"
+      className="group flex flex-col cursor-pointer shrink-0 w-full sm:w-[calc((100%-1rem)/2)] md:w-[calc((100%-2*1.25rem)/3)] lg:w-[calc((100%-3*1.25rem)/4)] snap-start select-none"
     >
       <div className="relative aspect-square w-full rounded-lg overflow-hidden bg-slate-100">
         <img
@@ -49,18 +42,6 @@ const LandmarkCard: React.FC<{ landmark: RegionLandmark }> = ({ landmark }) => {
           loading="lazy"
         />
         <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors duration-300 pointer-events-none" />
-
-        <button
-          type="button"
-          onClick={handleToggleSave}
-          aria-label={isSaved ? 'Bỏ lưu địa điểm' : 'Lưu địa điểm'}
-          className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/95 hover:bg-white text-slate-800 shadow-sm flex items-center justify-center z-10 transition-transform active:scale-95 cursor-pointer"
-        >
-          <Heart
-            className={`w-4 h-4 transition-colors ${isSaved ? 'fill-rose-500 text-rose-500' : 'text-slate-800 stroke-[2]'
-              }`}
-          />
-        </button>
 
         {hasMultipleImages && (
           <>
@@ -113,7 +94,11 @@ const LandmarkCard: React.FC<{ landmark: RegionLandmark }> = ({ landmark }) => {
 
 export const RegionLandmarks: React.FC<RegionLandmarksProps> = ({ landmarks, regionName }) => {
   const scrollRef = useRef<HTMLDivElement>(null)
-  const scroll = (dir: number) => scrollRef.current?.scrollBy({ left: dir * 320, behavior: 'smooth' })
+  const scroll = (dir: number) => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollBy({ left: dir * scrollRef.current.clientWidth, behavior: 'smooth' })
+    }
+  }
 
   if (!landmarks || landmarks.length === 0) return null
 
@@ -150,7 +135,7 @@ export const RegionLandmarks: React.FC<RegionLandmarksProps> = ({ landmarks, reg
 
       <div
         ref={scrollRef}
-        className="flex overflow-x-auto gap-4 sm:gap-5 pb-4 hide-scrollbar snap-x scroll-smooth"
+        className="flex overflow-x-auto gap-4 sm:gap-5 pb-4 hide-scrollbar snap-x snap-mandatory scroll-smooth"
       >
         {landmarks.map((landmark) => (
           <LandmarkCard key={landmark.id} landmark={landmark} />

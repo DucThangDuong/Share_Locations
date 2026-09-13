@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, Heart, Star, MapPin } from 'lucide-react'
-import { placeService } from '@/services/placeService'
+import { ChevronLeft, ChevronRight, Star, MapPin } from 'lucide-react'
 import type { PlaceCardDto } from '@/types/models/place.model'
 
 interface PlaceCardInCollectionProps {
@@ -11,7 +10,6 @@ interface PlaceCardInCollectionProps {
 export const PlaceCardInCollection: React.FC<PlaceCardInCollectionProps> = ({ place }) => {
   const navigate = useNavigate()
   const [activeImageIndex, setActiveImageIndex] = useState(0)
-  const [isSaved, setIsSaved] = useState(false)
 
   const mediaList = place.mediaUrls && place.mediaUrls.length > 0 ? place.mediaUrls : []
   const hasMultipleImages = mediaList.length > 1
@@ -28,27 +26,12 @@ export const PlaceCardInCollection: React.FC<PlaceCardInCollectionProps> = ({ pl
     setActiveImageIndex((prev) => (prev === mediaList.length - 1 ? 0 : prev + 1))
   }
 
-  const handleToggleSave = async (e: React.MouseEvent) => {
-    e.stopPropagation()
-    e.preventDefault()
-    const willSave = !isSaved
-    setIsSaved(willSave)
-    try {
-      if (willSave) {
-        await placeService.savePlace(place.id)
-      } else {
-        await placeService.unsavePlace(place.id)
-      }
-    } catch {
-    }
-  }
-
   const ratingScore = Number(place.avgRating || 0)
 
   return (
     <div
       onClick={() => navigate(`/places/${place.id}`)}
-      className="group flex flex-col cursor-pointer shrink-0 w-[240px] sm:w-[260px] md:w-[280px] select-none"
+      className="group flex flex-col cursor-pointer shrink-0 w-full sm:w-[calc((100%-1rem)/2)] md:w-[calc((100%-2*1.25rem)/3)] lg:w-[calc((100%-3*1.25rem)/4)] snap-start select-none"
     >
       <div className="relative aspect-square w-full rounded-lg overflow-hidden bg-slate-100">
         {mediaList.length > 0 ? (
@@ -64,19 +47,6 @@ export const PlaceCardInCollection: React.FC<PlaceCardInCollectionProps> = ({ pl
           </div>
         )}
         <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors duration-300 pointer-events-none"></div>
-
-        <button
-          type="button"
-          onClick={handleToggleSave}
-          aria-label={isSaved ? 'Bỏ lưu địa điểm' : 'Lưu địa điểm'}
-          className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/95 hover:bg-white text-slate-800 shadow-sm flex items-center justify-center z-10 transition-transform active:scale-95 cursor-pointer"
-        >
-          <Heart
-            className={`w-4 h-4 transition-colors ${
-              isSaved ? 'fill-rose-500 text-rose-500' : 'text-slate-800 stroke-[2]'
-            }`}
-          />
-        </button>
 
         {hasMultipleImages && (
           <>

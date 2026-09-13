@@ -2,16 +2,18 @@ import { useState, useEffect } from 'react'
 import { Compass, Search, Loader2 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { itineraryService } from '@/services/itineraryService'
+import { userService } from '@/services/userService'
 import { ItineraryAuthGate } from '@/components/itinerary/ItineraryAuthGate'
 import { ItineraryCard } from '@/components/itinerary/ItineraryCard'
 import type { ItineraryDto } from '@/types/models/place.model'
 
 const DURATIONS = [
   { id: 'all', label: 'Tất cả thời lượng' },
-  { id: '1_day', label: '⚡ 1 Ngày' },
-  { id: '2d1n', label: '🏖️ 2 Ngày 1 Đêm' },
-  { id: '3d2n', label: '🏞️ 3 Ngày 2 Đêm' },
-  { id: '4d3n', label: '✈️ 4 Ngày 3 Đêm' }
+  { id: '1_day', label: 'Trong ngày (1N)' },
+  { id: '2d1n', label: 'Cuối tuần (2N1Đ)' },
+  { id: '3d2n', label: '3 Ngày 2 Đêm' },
+  { id: '4d3n', label: '4 Ngày 3 Đêm' },
+  { id: '5d4n', label: '5 Ngày 4 Đêm trở lên' }
 ]
 
 export const ItineraryPage = () => {
@@ -22,6 +24,23 @@ export const ItineraryPage = () => {
   const [searchKey, setSearchKey] = useState('')
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [savedStatus, setSavedStatus] = useState<Record<number, boolean>>({})
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      userService.getMyFavorites({ targetType: 4, pageSize: 100 }).then((res) => {
+        if (res.success && res.data) {
+          const items = Array.isArray(res.data) ? res.data : (res.data.items || [])
+          const map: Record<number, boolean> = {}
+          items.forEach((item) => {
+            map[item.targetId] = true
+          })
+          setSavedStatus(map)
+        }
+      }).catch(() => {})
+    } else {
+      setSavedStatus({})
+    }
+  }, [isAuthenticated])
 
   useEffect(() => {
     if (!isAuthenticated) return
@@ -51,14 +70,16 @@ export const ItineraryPage = () => {
   }, [isAuthenticated, selectedDuration, searchKey])
 
   const handleSaveItinerary = async (id: number) => {
+    const isCurrentlySaved = !!savedStatus[id]
+    setSavedStatus((prev) => ({ ...prev, [id]: !isCurrentlySaved }))
     try {
-      const res = await itineraryService.saveItinerary(id)
-      if (res.success) {
-        setSavedStatus((prev) => ({ ...prev, [id]: true }))
-        alert('Đã lưu lịch trình vào bộ sưu tập cá nhân!')
+      if (isCurrentlySaved) {
+        await userService.removeFavorite(4, id)
+      } else {
+        await userService.addFavorite(4, id)
       }
     } catch {
-      alert('Không thể lưu lịch trình lúc này.')
+      setSavedStatus((prev) => ({ ...prev, [id]: isCurrentlySaved }))
     }
   }
 
@@ -102,7 +123,7 @@ export const ItineraryPage = () => {
           <div className="bg-white p-4 sm:p-5 rounded-lg border border-gray-200 shadow-sm flex items-center justify-between gap-4 overflow-x-auto scrollbar-none">
             <div className="flex items-center gap-1.5">
               {DURATIONS.map((dur) => (
-                <button
+                <button type="button"
                   key={dur.id}
                   onClick={() => setSelectedDuration(dur.id)}
                   className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors ${

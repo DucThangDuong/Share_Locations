@@ -32,8 +32,6 @@ export interface RegionLandmark {
   price?: string | null
 }
 
-export type FoodTypeCategory = 'all' | 'dine-in' | 'gift'
-
 export interface RegionFoodStore {
   id?: number | string
   name: string

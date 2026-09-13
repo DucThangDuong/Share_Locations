@@ -14,8 +14,10 @@ export const MapPlaceDrawer = ({ place, onClose }: MapPlaceDrawerProps) => {
     <div className="absolute bottom-6 left-6 right-6 md:left-auto md:right-6 md:w-96 z-20 animate-in slide-in-from-bottom-6">
       <div className="bg-white rounded-lg shadow-xl border border-gray-200 p-4 relative flex gap-4">
         <button
+          type="button"
           onClick={onClose}
-          className="absolute -top-3 -right-3 w-7 h-7 bg-white text-gray-700 hover:text-gray-900 rounded-full shadow-md border border-gray-200 flex items-center justify-center transition-colors"
+          aria-label="Đóng thông tin địa điểm"
+          className="absolute -top-3 -right-3 w-7 h-7 bg-white text-gray-700 hover:text-gray-900 rounded-full shadow-md border border-gray-200 flex items-center justify-center transition-colors cursor-pointer"
         >
           <X className="w-4 h-4" />
         </button>
@@ -56,7 +58,7 @@ export const MapPlaceDrawer = ({ place, onClose }: MapPlaceDrawerProps) => {
             <a
               href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name + ' ' + place.address)}`}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               className="inline-flex items-center gap-1 text-2xs text-gray-600 hover:text-emerald-700 font-semibold"
             >
               <span>Chỉ đường</span>

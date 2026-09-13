@@ -47,4 +47,44 @@ public class CommentRepository : ICommentRepository
     {
         _dbContext.Comments.Remove(comment);
     }
+
+    public async Task HideByReviewIdAsync(long reviewId, CancellationToken ct = default)
+    {
+        var comments = await _dbContext.Comments
+            .Where(c => c.ReviewId == reviewId && c.Status == CommentStatus.Active)
+            .ToListAsync(ct);
+
+        foreach (var comment in comments)
+        {
+            comment.Hide();
+        }
+    }
+
+    public async Task HideRepliesAsync(long parentCommentId, CancellationToken ct = default)
+    {
+        var parent = await _dbContext.Comments.FindAsync(new object[] { parentCommentId }, ct);
+        if (parent == null) return;
+
+        var comments = await _dbContext.Comments
+            .Where(c => c.ReviewId == parent.ReviewId && c.Status == CommentStatus.Active)
+            .ToListAsync(ct);
+
+        var lookup = comments.ToLookup(c => c.ParentId);
+        var queue = new Queue<long>();
+        var visited = new HashSet<long> { parentCommentId };
+        queue.Enqueue(parentCommentId);
+
+        while (queue.Count > 0)
+        {
+            var currentId = queue.Dequeue();
+            foreach (var child in lookup[currentId])
+            {
+                if (visited.Add(child.Id))
+                {
+                    child.Hide();
+                    queue.Enqueue(child.Id);
+                }
+            }
+        }
+    }
 }

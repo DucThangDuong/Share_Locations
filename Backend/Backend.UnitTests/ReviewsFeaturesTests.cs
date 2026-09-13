@@ -284,6 +284,30 @@ public class ReviewsFeaturesTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         review.Status.Should().Be(ReviewStatus.Hidden);
+        await _unitOfWork.Comments.Received(1).HideByReviewIdAsync(100, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task DeletePlaceReview_ShouldCascadeHideComments_WhenReviewIsDeleted()
+    {
+        // Arrange
+        var review = new Review(1, 10, 5, "Đánh giá sắp xóa");
+        _unitOfWork.Reviews.GetByIdAsync(200, Arg.Any<CancellationToken>())
+            .Returns(review);
+
+        var place = new Place(1, 1, "Hồ Gươm", "Hà Nội");
+        _unitOfWork.Places.GetByIdAsync(1, Arg.Any<CancellationToken>())
+            .Returns(place);
+
+        var handler = new DeletePlaceReviewCommandHandler(_unitOfWork);
+        var command = new DeletePlaceReviewCommand(200, 10, false);
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        await _unitOfWork.Comments.Received(1).HideByReviewIdAsync(200, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -322,5 +346,25 @@ public class ReviewsFeaturesTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         comment.Status.Should().Be(CommentStatus.Hidden);
+        await _unitOfWork.Comments.Received(1).HideRepliesAsync(50, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task DeleteReviewComment_ShouldCascadeHideChildReplies_WhenCommentIsDeleted()
+    {
+        // Arrange
+        var comment = new Comment(1, 10, "Bình luận cha sắp xóa");
+        _unitOfWork.Comments.GetByIdAsync(77, Arg.Any<CancellationToken>())
+            .Returns(comment);
+
+        var handler = new DeleteReviewCommentCommandHandler(_unitOfWork);
+        var command = new DeleteReviewCommentCommand(77, 10, false);
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        await _unitOfWork.Comments.Received(1).HideRepliesAsync(77, Arg.Any<CancellationToken>());
     }
 }

@@ -37,6 +37,9 @@ public class DeletePlaceReviewCommandHandler : IRequestHandler<DeletePlaceReview
         {
             review.Hide();
             _unitOfWork.Reviews.Update(review);
+
+            await _unitOfWork.Comments.HideByReviewIdAsync(request.ReviewId, ct);
+
             await _unitOfWork.SaveChangesAsync(ct);
 
             if (place != null)
