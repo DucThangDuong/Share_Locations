@@ -10,7 +10,10 @@ interface RegionCollectionsProps {
 
 const RegionCollectionTrack: React.FC<{ collection: RegionCollection }> = ({ collection }) => {
   const scrollRef = useRef<HTMLDivElement>(null)
-  const scroll = (dir: number) => scrollRef.current?.scrollBy({ left: dir * 320, behavior: 'smooth' })
+  const scroll = (dir: number) => {
+    if (!scrollRef.current) return
+    scrollRef.current.scrollBy({ left: dir * scrollRef.current.clientWidth, behavior: 'smooth' })
+  }
 
   const places = collection.places || []
   if (places.length === 0) return null
@@ -53,7 +56,7 @@ const RegionCollectionTrack: React.FC<{ collection: RegionCollection }> = ({ col
 
       <div
         ref={scrollRef}
-        className="flex overflow-x-auto gap-4 sm:gap-5 pb-4 hide-scrollbar snap-x scroll-smooth"
+        className="flex overflow-x-auto gap-4 sm:gap-5 pb-4 hide-scrollbar snap-x snap-mandatory scroll-smooth"
       >
         {places.map((place) => (
           <PlaceCardInCollection key={place.id} place={place} />

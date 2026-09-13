@@ -1,20 +1,16 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import { MapPin, Star, Heart, Clock } from 'lucide-react'
+import { MapPin, Star, Clock } from 'lucide-react'
 import type { PlaceSummaryDto } from '@/types/models/place.model'
 
 interface ExplorePlaceCardProps {
   place: PlaceSummaryDto
   viewMode: 'grid' | 'list'
-  isSaved: boolean
-  onToggleSave: (id: number) => void
 }
 
 export const ExplorePlaceCard: React.FC<ExplorePlaceCardProps> = ({
   place,
-  viewMode,
-  isSaved,
-  onToggleSave
+  viewMode
 }) => {
   const navigate = useNavigate()
 
@@ -46,13 +42,6 @@ export const ExplorePlaceCard: React.FC<ExplorePlaceCardProps> = ({
             </div>
           )}
           <div className="absolute inset-0 bg-white/0 group-hover:bg-white/15 transition-colors duration-300 pointer-events-none"></div>
-          {place.categoryName && (
-            <div className="absolute top-3 left-3">
-              <span className="px-2.5 py-1 rounded-md bg-slate-900/80 backdrop-blur-md text-white text-[10px] font-bold">
-                {place.categoryName}
-              </span>
-            </div>
-          )}
         </div>
 
         <div className="p-4 sm:p-5 flex flex-col flex-1 justify-between space-y-2 overflow-hidden">
@@ -62,24 +51,10 @@ export const ExplorePlaceCard: React.FC<ExplorePlaceCardProps> = ({
                 <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
                 <span className="truncate">{place.provinceName ? `${place.provinceName}, ${place.regionName}` : place.address}</span>
               </div>
-              <div className="flex items-center gap-3 shrink-0">
-                <div className="flex items-center gap-1 font-bold text-slate-900 text-xs">
-                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                  <span>{Number(place.avgRating || 0).toFixed(1)}</span>
-                  <span className="text-slate-400 font-normal">({place.reviewCount || 0})</span>
-                </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onToggleSave(place.id)
-                  }}
-                  aria-label={`Lưu ${place.name} vào danh sách yêu thích`}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer active-press ${
-                    isSaved ? 'bg-rose-500 text-white' : 'bg-slate-100 text-slate-400 hover:text-slate-700'
-                  }`}
-                >
-                  <Heart className={`w-3.5 h-3.5 ${isSaved ? 'fill-white' : ''}`} />
-                </button>
+              <div className="flex items-center gap-1 font-bold text-slate-900 text-xs shrink-0">
+                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                <span>{Number(place.avgRating || 0).toFixed(1)}</span>
+                <span className="text-slate-400 font-normal">({place.reviewCount || 0})</span>
               </div>
             </div>
 
@@ -140,18 +115,6 @@ export const ExplorePlaceCard: React.FC<ExplorePlaceCardProps> = ({
           </div>
         )}
         <div className="absolute inset-0 bg-white/0 group-hover:bg-white/15 transition-colors duration-300 pointer-events-none"></div>
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            onToggleSave(place.id)
-          }}
-          aria-label={`Lưu ${place.name} vào danh sách yêu thích`}
-          className={`w-8 h-8 absolute top-3 right-3 rounded-full flex items-center justify-center backdrop-blur-md transition-all cursor-pointer active-press ${
-            isSaved ? 'bg-rose-500 text-white' : 'bg-white/80 text-slate-600 hover:bg-white'
-          }`}
-        >
-          <Heart className={`w-4 h-4 ${isSaved ? 'fill-white' : ''}`} />
-        </button>
       </div>
 
       <div className="p-4 sm:p-5 flex flex-col flex-1 justify-between space-y-3">
@@ -201,3 +164,4 @@ export const ExplorePlaceCard: React.FC<ExplorePlaceCardProps> = ({
     </div>
   )
 }
+

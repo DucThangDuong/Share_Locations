@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { MapPin, Star, Heart, Clock, ArrowRight } from 'lucide-react'
+import { userService } from '@/services/userService'
+import { useAuth } from '@/context/AuthContext'
 import type { RegionBlogPost } from '@/types/models/region.model'
 
 interface RegionBlogSectionProps {
@@ -9,12 +11,27 @@ interface RegionBlogSectionProps {
 }
 
 const BlogVerticalCard: React.FC<{ post: RegionBlogPost }> = ({ post }) => {
+  const { isAuthenticated } = useAuth()
   const [isSaved, setIsSaved] = useState(false)
 
-  const handleToggleSave = (e: React.MouseEvent) => {
+  const handleToggleSave = async (e: React.MouseEvent) => {
     e.stopPropagation()
     e.preventDefault()
-    setIsSaved(!isSaved)
+    if (!isAuthenticated) {
+      alert('Vui lòng đăng nhập để lưu bài viết yêu thích.')
+      return
+    }
+    const willSave = !isSaved
+    setIsSaved(willSave)
+    try {
+      if (willSave) {
+        await userService.addFavorite(2, post.id)
+      } else {
+        await userService.removeFavorite(2, post.id)
+      }
+    } catch {
+      setIsSaved(!willSave)
+    }
   }
 
   return (
@@ -98,12 +115,27 @@ const BlogVerticalCard: React.FC<{ post: RegionBlogPost }> = ({ post }) => {
 }
 
 const BlogFeaturedCard: React.FC<{ post: RegionBlogPost }> = ({ post }) => {
+  const { isAuthenticated } = useAuth()
   const [isSaved, setIsSaved] = useState(false)
 
-  const handleToggleSave = (e: React.MouseEvent) => {
+  const handleToggleSave = async (e: React.MouseEvent) => {
     e.stopPropagation()
     e.preventDefault()
-    setIsSaved(!isSaved)
+    if (!isAuthenticated) {
+      alert('Vui lòng đăng nhập để lưu bài viết yêu thích.')
+      return
+    }
+    const willSave = !isSaved
+    setIsSaved(willSave)
+    try {
+      if (willSave) {
+        await userService.addFavorite(2, post.id)
+      } else {
+        await userService.removeFavorite(2, post.id)
+      }
+    } catch {
+      setIsSaved(!willSave)
+    }
   }
 
   return (

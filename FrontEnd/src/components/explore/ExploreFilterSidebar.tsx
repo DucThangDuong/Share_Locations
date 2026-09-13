@@ -59,7 +59,7 @@ export const ExploreFilterSidebar: React.FC<ExploreFilterSidebarProps> = ({
             <span>Bộ lọc tìm kiếm</span>
           </div>
           {isOpen && (
-            <button
+            <button type="button"
               onClick={onClose}
               aria-label="Đóng bộ lọc"
               className="lg:hidden w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100 cursor-pointer"

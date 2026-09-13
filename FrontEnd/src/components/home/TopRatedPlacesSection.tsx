@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowRight, Heart, Star, MapPin } from 'lucide-react'
+import { ArrowRight, Star, MapPin } from 'lucide-react'
 import { placeService } from '@/services/placeService'
 import type { PlaceSummaryDto } from '@/types/models/place.model'
 
@@ -8,7 +8,6 @@ export const TopRatedPlacesSection: React.FC = () => {
   const navigate = useNavigate()
   const [places, setPlaces] = useState<PlaceSummaryDto[]>([])
   const [isLoading, setIsLoading] = useState<boolean>(true)
-  const [savedIds, setSavedIds] = useState<Set<number>>(new Set())
 
   useEffect(() => {
     const fetchTopPlaces = async () => {
@@ -29,26 +28,6 @@ export const TopRatedPlacesSection: React.FC = () => {
 
     fetchTopPlaces()
   }, [])
-
-  const toggleSave = async (id: number, e: React.MouseEvent) => {
-    e.stopPropagation()
-    e.preventDefault()
-    const isCurrentlySaved = savedIds.has(id)
-    setSavedIds((prev) => {
-      const next = new Set(prev)
-      if (isCurrentlySaved) next.delete(id)
-      else next.add(id)
-      return next
-    })
-    try {
-      if (isCurrentlySaved) {
-        await placeService.unsavePlace(id)
-      } else {
-        await placeService.savePlace(id)
-      }
-    } catch {
-    }
-  }
 
   if (!isLoading && places.length === 0) {
     return null
@@ -89,7 +68,6 @@ export const TopRatedPlacesSection: React.FC = () => {
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
           {places.map((place) => {
             const ratingScore = Number(place.avgRating || 0)
-            const isSaved = savedIds.has(place.id)
 
             return (
               <div
@@ -111,19 +89,6 @@ export const TopRatedPlacesSection: React.FC = () => {
                     </div>
                   )}
                   <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors duration-300 pointer-events-none"></div>
-
-                  <button
-                    type="button"
-                    onClick={(e) => toggleSave(place.id, e)}
-                    aria-label={isSaved ? 'Bỏ lưu địa điểm' : 'Lưu địa điểm'}
-                    className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/95 hover:bg-white text-slate-800 shadow-sm flex items-center justify-center z-10 transition-transform active:scale-95 cursor-pointer"
-                  >
-                    <Heart
-                      className={`w-4 h-4 transition-colors ${
-                        isSaved ? 'fill-rose-500 text-rose-500' : 'text-slate-800 stroke-[2]'
-                      }`}
-                    />
-                  </button>
                 </div>
 
                 <div className="pt-3 flex flex-col space-y-1.5">
@@ -152,3 +117,4 @@ export const TopRatedPlacesSection: React.FC = () => {
     </section>
   )
 }
+

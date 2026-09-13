@@ -28,7 +28,7 @@ export const ExploreActiveChips: React.FC<ExploreActiveChipsProps> = ({
           className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200"
         >
           <span>{chip.label}</span>
-          <button
+          <button type="button"
             onClick={chip.onRemove}
             aria-label={`Xóa bộ lọc ${chip.label}`}
             className="w-4 h-4 flex items-center justify-center text-emerald-600 hover:text-emerald-900 cursor-pointer rounded-full hover:bg-emerald-100"
@@ -37,7 +37,7 @@ export const ExploreActiveChips: React.FC<ExploreActiveChipsProps> = ({
           </button>
         </span>
       ))}
-      <button
+      <button type="button"
         onClick={onResetAll}
         className="text-xs font-bold text-red-600 hover:underline cursor-pointer ml-auto"
       >

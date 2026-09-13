@@ -1,7 +1,16 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { EditProfileModal } from '@/components/profile/EditProfileModal'
 import { ChangePasswordModal } from '@/components/profile/ChangePasswordModal'
+import { FavoritesSection } from '@/components/profile/FavoritesSection'
+import { VisitedLogSection } from '@/components/profile/VisitedLogSection'
+import { UserReviewsSection } from '@/components/profile/UserReviewsSection'
+import { UserCommentsSection } from '@/components/profile/UserCommentsSection'
+import { UserBlogsSection } from '@/components/profile/UserBlogsSection'
+import { UserProposalsSection } from '@/components/profile/UserProposalsSection'
+import { userService } from '@/services/userService'
+import { blogService, type CreateBlogRequest } from '@/services/blogService'
 import {
   Mail,
   Phone,
@@ -13,12 +22,24 @@ import {
   Bookmark,
   PlusCircle,
   CheckCircle2,
-  FileText,
   Inbox,
-  UserCheck
+  UserCheck,
+  Star,
+  MessageSquare
 } from 'lucide-react'
+import type {
+  FavoriteItem,
+  VisitLogItem,
+  ProposalItem,
+  UserReviewItem,
+  UserCommentItem,
+  UserBlogItem,
+  PagedResultDto,
+  CreateVisitLogRequest,
+  UpdateVisitLogRequest
+} from '@/types/models/userProfile.model'
 
-type TabType = 'posts' | 'itineraries' | 'saved' | 'suggested'
+type TabType = 'favorites' | 'visitLogs' | 'reviews' | 'comments' | 'blogs' | 'proposals'
 
 interface TabConfigItem {
   label: string
@@ -29,54 +50,280 @@ interface TabConfigItem {
   desc: string
 }
 
-const TAB_CONFIG: Record<TabType, TabConfigItem> = {
-  posts: {
-    label: 'Bài viết (0)',
-    tabIcon: BookOpen,
-    emptyIcon: FileText,
-    color: 'bg-emerald-50 text-emerald-700',
-    title: 'Chưa có bài viết nào',
-    desc: 'Bạn chưa đăng bài viết chia sẻ kinh nghiệm du lịch nào. Hãy viết bài đầu tiên để chia sẻ với cộng đồng LangThang!'
-  },
-  itineraries: {
-    label: 'Lịch trình (0)',
-    tabIcon: Compass,
-    emptyIcon: Compass,
-    color: 'bg-amber-50 text-amber-700',
-    title: 'Chưa có lịch trình nào',
-    desc: 'Bạn chưa lên lịch trình khám phá nào. Hãy tạo kế hoạch cho chuyến đi tiếp theo của bạn!'
-  },
-  saved: {
-    label: 'Đã lưu (0)',
-    tabIcon: Bookmark,
-    emptyIcon: Bookmark,
-    color: 'bg-slate-100 text-slate-600',
-    title: 'Chưa lưu địa điểm nào',
-    desc: 'Danh sách các địa điểm yêu thích của bạn đang trống. Hãy dạo quanh trang chủ để lưu lại các địa điểm hấp dẫn!'
-  },
-  suggested: {
-    label: 'Đề xuất (0)',
-    tabIcon: PlusCircle,
-    emptyIcon: Inbox,
-    color: 'bg-blue-50 text-blue-700',
-    title: 'Chưa có đề xuất địa điểm nào',
-    desc: 'Bạn chưa gửi đề xuất địa điểm mới nào cho hệ thống. Đóng góp địa điểm để tích lũy điểm cống hiến nhé!'
-  }
-}
-
 export const ProfilePage: React.FC = () => {
-  const { profile, user, updateProfile, isLoading } = useAuth()
-  const [activeTab, setActiveTab] = useState<TabType>('posts')
+  const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const { profile, user, updateProfile, isLoading: isAuthLoading } = useAuth()
+
+  const validTabs: TabType[] = ['favorites', 'visitLogs', 'reviews', 'comments', 'blogs', 'proposals']
+  const tabFromUrl = searchParams.get('tab') as TabType | null
+  const activeTab: TabType = tabFromUrl && validTabs.includes(tabFromUrl) ? tabFromUrl : 'favorites'
+
+  const handleTabChange = (tabKey: TabType) => {
+    const newParams = new URLSearchParams()
+    newParams.set('tab', tabKey)
+    setSearchParams(newParams, { replace: true })
+  }
+
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
+  const [isTabLoading, setIsTabLoading] = useState(false)
+
+  const [favorites, setFavorites] = useState<FavoriteItem[]>([])
+  const [visitLogs, setVisitLogs] = useState<VisitLogItem[]>([])
+  const [reviews, setReviews] = useState<UserReviewItem[]>([])
+  const [comments, setComments] = useState<UserCommentItem[]>([])
+  const [blogs, setBlogs] = useState<UserBlogItem[]>([])
+  const [proposals, setProposals] = useState<ProposalItem[]>([])
+
+  const [counts, setCounts] = useState<Record<TabType, number>>({
+    favorites: 0,
+    visitLogs: 0,
+    reviews: 0,
+    comments: 0,
+    blogs: 0,
+    proposals: 0
+  })
 
   const showToast = (msg: string) => {
     setToastMessage(msg)
     setTimeout(() => setToastMessage(null), 3000)
   }
 
-  if (isLoading) {
+  const parseResult = <T,>(data: T[] | PagedResultDto<T> | undefined | null): { items: T[]; total: number } => {
+    if (!data) return { items: [], total: 0 }
+    if (Array.isArray(data)) {
+      return { items: data, total: data.length }
+    }
+    if (Array.isArray(data.items)) {
+      return { items: data.items, total: typeof data.totalCount === 'number' ? data.totalCount : data.items.length }
+    }
+    return { items: [], total: 0 }
+  }
+
+  const fetchAllCounts = useCallback(async () => {
+    try {
+      const [favRes, logRes, revRes, comRes, blogRes, propRes] = await Promise.allSettled([
+        userService.getMyFavorites({ pageSize: 50 }),
+        userService.getMyVisitLogs({ pageSize: 50 }),
+        userService.getMyReviews({ pageSize: 50 }),
+        userService.getMyComments({ pageSize: 50 }),
+        userService.getMyBlogs({ pageSize: 50 }),
+        userService.getMyProposals({ pageSize: 50 })
+      ])
+
+      const extractCount = (settled: PromiseSettledResult<{ success?: boolean; data?: unknown }>) => {
+        if (settled.status === 'fulfilled' && settled.value?.success && settled.value.data) {
+          return parseResult(settled.value.data as unknown[]).total
+        }
+        return 0
+      }
+
+      setCounts({
+        favorites: extractCount(favRes),
+        visitLogs: extractCount(logRes),
+        reviews: extractCount(revRes),
+        comments: extractCount(comRes),
+        blogs: extractCount(blogRes),
+        proposals: extractCount(propRes)
+      })
+    } catch {
+    }
+  }, [])
+
+  const fetchTabData = useCallback(async (tab: TabType) => {
+    setIsTabLoading(true)
+    try {
+      if (tab === 'favorites') {
+        const res = await userService.getMyFavorites({ pageSize: 50 })
+        if (res.success && res.data) {
+          const parsed = parseResult<FavoriteItem>(res.data)
+          setFavorites(parsed.items)
+          setCounts((prev) => ({ ...prev, favorites: parsed.total }))
+        }
+      } else if (tab === 'visitLogs') {
+        const res = await userService.getMyVisitLogs({ pageSize: 50 })
+        if (res.success && res.data) {
+          const parsed = parseResult<VisitLogItem>(res.data)
+          setVisitLogs(parsed.items)
+          setCounts((prev) => ({ ...prev, visitLogs: parsed.total }))
+        }
+      } else if (tab === 'reviews') {
+        const res = await userService.getMyReviews({ pageSize: 50 })
+        if (res.success && res.data) {
+          const parsed = parseResult<UserReviewItem>(res.data)
+          setReviews(parsed.items)
+          setCounts((prev) => ({ ...prev, reviews: parsed.total }))
+        }
+      } else if (tab === 'comments') {
+        const res = await userService.getMyComments({ pageSize: 50 })
+        if (res.success && res.data) {
+          const parsed = parseResult<UserCommentItem>(res.data)
+          setComments(parsed.items)
+          setCounts((prev) => ({ ...prev, comments: parsed.total }))
+        }
+      } else if (tab === 'blogs') {
+        const res = await userService.getMyBlogs({ pageSize: 50 })
+        if (res.success && res.data) {
+          const parsed = parseResult<UserBlogItem>(res.data)
+          setBlogs(parsed.items)
+          setCounts((prev) => ({ ...prev, blogs: parsed.total }))
+        }
+      } else if (tab === 'proposals') {
+        const res = await userService.getMyProposals({ pageSize: 50 })
+        if (res.success && res.data) {
+          const parsed = parseResult<ProposalItem>(res.data)
+          setProposals(parsed.items)
+          setCounts((prev) => ({ ...prev, proposals: parsed.total }))
+        }
+      }
+    } catch {
+    } finally {
+      setIsTabLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchAllCounts()
+  }, [fetchAllCounts])
+
+  useEffect(() => {
+    fetchTabData(activeTab)
+  }, [activeTab, fetchTabData])
+
+  const handleRemoveFavorite = async (targetType: number, targetId: number) => {
+    try {
+      const res = await userService.removeFavorite(targetType, targetId)
+      if (res.success) {
+        setFavorites((prev) => prev.filter((item) => !(item.targetType === targetType && item.targetId === targetId)))
+        setCounts((prev) => ({ ...prev, favorites: Math.max(0, prev.favorites - 1) }))
+        showToast('Đã xóa khỏi danh sách đã lưu.')
+      } else {
+        showToast('Không thể bỏ lưu lúc này.')
+      }
+    } catch {
+      showToast('Có lỗi xảy ra khi bỏ lưu.')
+    }
+  }
+
+  const handleAddVisitLog = async (data: CreateVisitLogRequest) => {
+    try {
+      const res = await userService.createVisitLog(data)
+      if (res.success && res.data) {
+        setVisitLogs((prev) => [res.data, ...prev])
+        setCounts((prev) => ({ ...prev, visitLogs: prev.visitLogs + 1 }))
+        showToast('Đã thêm nhật ký hành trình mới.')
+      } else {
+        showToast('Không thể lưu nhật ký.')
+      }
+    } catch {
+      showToast('Có lỗi xảy ra khi lưu nhật ký.')
+    }
+  }
+
+  const handleUpdateVisitLog = async (id: number, data: UpdateVisitLogRequest) => {
+    try {
+      const res = await userService.updateVisitLog(id, data)
+      if (res.success) {
+        setVisitLogs((prev) =>
+          prev.map((item) =>
+            item.id === id
+              ? { ...item, visitedDate: data.visitedDate, privacy: data.privacy as 0 | 1 }
+              : item
+          )
+        )
+        showToast('Đã cập nhật nhật ký chuyến đi.')
+      } else {
+        showToast('Không thể cập nhật nhật ký.')
+      }
+    } catch {
+      showToast('Có lỗi xảy ra khi cập nhật.')
+    }
+  }
+
+  const handleDeleteVisitLog = async (id: number) => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa nhật ký chuyến đi này?')) return
+    try {
+      const res = await userService.deleteVisitLog(id)
+      if (res.success) {
+        setVisitLogs((prev) => prev.filter((item) => item.id !== id))
+        setCounts((prev) => ({ ...prev, visitLogs: Math.max(0, prev.visitLogs - 1) }))
+        showToast('Đã xóa nhật ký chuyến đi.')
+      } else {
+        showToast('Không thể xóa nhật ký.')
+      }
+    } catch {
+      showToast('Có lỗi xảy ra khi xóa.')
+    }
+  }
+
+  const handleToggleVisitLogPrivacy = async (id: number, newPrivacy: number) => {
+    try {
+      const res = await userService.changeVisitLogPrivacy(id, newPrivacy)
+      if (res.success) {
+        setVisitLogs((prev) =>
+          prev.map((item) =>
+            item.id === id ? { ...item, privacy: newPrivacy as 0 | 1 } : item
+          )
+        )
+        showToast('Đã thay đổi quyền riêng tư nhật ký.')
+      } else {
+        showToast('Không thể cập nhật quyền riêng tư.')
+      }
+    } catch {
+      showToast('Có lỗi xảy ra khi đổi quyền riêng tư.')
+    }
+  }
+
+  const handleAddBlog = async (newBlog: CreateBlogRequest) => {
+    try {
+      const res = await blogService.createBlog(newBlog)
+      if (res.success && res.data) {
+        setBlogs((prev) => [res.data, ...prev])
+        setCounts((prev) => ({ ...prev, blogs: prev.blogs + 1 }))
+        showToast(newBlog.status === 0 ? 'Đã lưu bản nháp bài viết.' : 'Đã xuất bản bài viết.')
+      } else {
+        showToast('Không thể tạo bài viết.')
+      }
+    } catch {
+      showToast('Có lỗi xảy ra khi đăng bài viết.')
+    }
+  }
+
+  const handleDeleteBlog = async (id: number) => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa bài viết này?')) return
+    try {
+      const res = await blogService.deleteBlog(id)
+      if (res.success) {
+        setBlogs((prev) => prev.filter((b) => b.id !== id))
+        setCounts((prev) => ({ ...prev, blogs: Math.max(0, prev.blogs - 1) }))
+        showToast('Đã xóa bài viết.')
+      } else {
+        showToast('Không thể xóa bài viết.')
+      }
+    } catch {
+      showToast('Có lỗi xảy ra khi xóa bài viết.')
+    }
+  }
+
+  const handleDeleteProposal = async (id: number) => {
+    if (!window.confirm('Bạn có chắc chắn muốn thu hồi đề xuất địa điểm này?')) return
+    try {
+      const res = await userService.deleteProposal(id)
+      if (res.success) {
+        setProposals((prev) => prev.filter((p) => p.id !== id))
+        setCounts((prev) => ({ ...prev, proposals: Math.max(0, prev.proposals - 1) }))
+        showToast('Đã thu hồi đề xuất địa điểm.')
+      } else {
+        showToast('Không thể thu hồi đề xuất.')
+      }
+    } catch {
+      showToast('Có lỗi xảy ra khi thu hồi đề xuất.')
+    }
+  }
+
+  if (isAuthLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="w-8 h-8 border-3 border-primary-container border-t-transparent rounded-full animate-spin"></div>
@@ -97,13 +344,61 @@ export const ProfilePage: React.FC = () => {
   }
 
   const formattedPhone = currentProfile.phone
-    ? (currentProfile.phone.length > 6
+    ? currentProfile.phone.length > 6
       ? `${currentProfile.phone.slice(0, 4)} *** ${currentProfile.phone.slice(-3)}`
-      : currentProfile.phone)
+      : currentProfile.phone
     : 'Chưa cập nhật'
 
-  const activeConf = TAB_CONFIG[activeTab]
-  const EmptyIcon = activeConf.emptyIcon
+  const TAB_CONFIG: Record<TabType, TabConfigItem> = {
+    favorites: {
+      label: `Đã lưu (${counts.favorites || favorites.length})`,
+      tabIcon: Bookmark,
+      emptyIcon: Bookmark,
+      color: 'bg-emerald-50 text-emerald-700',
+      title: 'Chưa lưu địa điểm nào',
+      desc: 'Danh sách các địa điểm yêu thích của bạn đang trống. Hãy dạo quanh trang chủ để lưu lại các địa điểm hấp dẫn!'
+    },
+    visitLogs: {
+      label: `Nhật ký (${counts.visitLogs || visitLogs.length})`,
+      tabIcon: Compass,
+      emptyIcon: Compass,
+      color: 'bg-teal-50 text-teal-700',
+      title: 'Chưa có nhật ký chuyến đi nào',
+      desc: 'Bạn chưa lưu lại nhật ký địa điểm nào đã đi qua. Hãy ghi lại những kỷ niệm và chia sẻ cùng mọi người!'
+    },
+    reviews: {
+      label: `Đánh giá (${counts.reviews || reviews.length})`,
+      tabIcon: Star,
+      emptyIcon: Star,
+      color: 'bg-amber-50 text-amber-700',
+      title: 'Chưa có đánh giá nào',
+      desc: 'Bạn chưa viết đánh giá địa điểm nào. Hãy chia sẻ cảm nhận thực tế sau các chuyến đi của mình nhé!'
+    },
+    comments: {
+      label: `Bình luận (${counts.comments || comments.length})`,
+      tabIcon: MessageSquare,
+      emptyIcon: MessageSquare,
+      color: 'bg-teal-50 text-teal-700',
+      title: 'Chưa có bình luận nào',
+      desc: 'Lịch sử thảo luận của bạn tại các bài viết cẩm nang và hỏi đáp địa điểm sẽ hiển thị tại đây.'
+    },
+    blogs: {
+      label: `Bài viết (${counts.blogs || blogs.length})`,
+      tabIcon: BookOpen,
+      emptyIcon: BookOpen,
+      color: 'bg-indigo-50 text-indigo-700',
+      title: 'Chưa có bài viết nào',
+      desc: 'Bạn chưa đăng bài viết chia sẻ cẩm nang du lịch nào. Hãy viết bài đầu tiên để chia sẻ với cộng đồng LangThang!'
+    },
+    proposals: {
+      label: `Đề xuất (${counts.proposals || proposals.length})`,
+      tabIcon: PlusCircle,
+      emptyIcon: Inbox,
+      color: 'bg-blue-50 text-blue-700',
+      title: 'Chưa có đề xuất địa điểm nào',
+      desc: 'Bạn chưa gửi đề xuất địa điểm mới nào cho hệ thống. Đóng góp địa điểm để tích lũy điểm cống hiến nhé!'
+    }
+  }
 
   return (
     <div className="min-h-screen bg-slate-50/70 pb-20">
@@ -156,13 +451,14 @@ export const ProfilePage: React.FC = () => {
                     </span>
                   </div>
                   <p className="text-xs sm:text-sm text-slate-600 max-w-2xl font-normal leading-relaxed">
-                    {currentProfile.bio || "Người dùng chưa thêm mô tả bản thân"}
+                    {currentProfile.bio || 'Người dùng chưa thêm mô tả bản thân'}
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-end w-full sm:w-auto sm:pb-1 pt-2">
                 <button
+                  type="button"
                   onClick={() => setIsEditModalOpen(true)}
                   className="flex-1 sm:flex-initial px-4 py-2.5 bg-slate-100 hover:bg-slate-200/70 text-slate-700 font-semibold text-xs rounded-lg transition-all flex items-center justify-center gap-2 active-press cursor-pointer"
                 >
@@ -170,8 +466,9 @@ export const ProfilePage: React.FC = () => {
                   <span>Sửa hồ sơ</span>
                 </button>
                 <button
+                  type="button"
                   onClick={() => setIsPasswordModalOpen(true)}
-                  className="flex-1 sm:flex-initial px-4 py-2.5 bg-primary-container hover:bg-primary-hover text-white font-semibold text-xs rounded-lg active-press transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  className="flex-1 sm:flex-initial px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-lg active-press transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <Key className="w-3.5 h-3.5" />
                   <span>Đổi mật khẩu</span>
@@ -184,7 +481,7 @@ export const ProfilePage: React.FC = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-4 space-y-6">
+          <div className="lg:col-span-3 space-y-6">
             <div className="bg-white rounded-lg p-6 border border-slate-200/80 space-y-4">
               <h2 className="text-base font-bold text-slate-900 border-b border-slate-100 pb-3 flex items-center gap-2">
                 <UserCheck className="w-4 h-4 text-emerald-700" />
@@ -229,7 +526,7 @@ export const ProfilePage: React.FC = () => {
             </div>
           </div>
 
-          <div className="lg:col-span-8 space-y-6">
+          <div className="lg:col-span-9 space-y-6">
             <div className="bg-white rounded-lg p-2 border border-slate-200/80 flex flex-wrap gap-1.5">
               {(Object.keys(TAB_CONFIG) as TabType[]).map((tabKey) => {
                 const conf = TAB_CONFIG[tabKey]
@@ -237,10 +534,11 @@ export const ProfilePage: React.FC = () => {
                 const isActive = activeTab === tabKey
                 return (
                   <button
+                    type="button"
                     key={tabKey}
-                    onClick={() => setActiveTab(tabKey)}
+                    onClick={() => handleTabChange(tabKey)}
                     className={`flex-1 min-w-[120px] py-2.5 px-4 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${isActive
-                      ? 'bg-primary-container text-white'
+                      ? 'bg-primary-container text-white shadow-xs'
                       : 'text-slate-600 hover:bg-slate-100/80'
                       }`}
                   >
@@ -251,19 +549,60 @@ export const ProfilePage: React.FC = () => {
               })}
             </div>
 
-            <div className="space-y-4">
-              <div className="bg-white rounded-lg p-14 border border-slate-200/80 text-center flex flex-col items-center justify-center space-y-3 animate-in fade-in">
-                <div className={`w-16 h-16 rounded-lg ${activeConf.color} flex items-center justify-center`}>
-                  <EmptyIcon className="w-8 h-8" />
-                </div>
-                <h3 className="text-base font-bold text-slate-800">
-                  {activeConf.title}
-                </h3>
-                <p className="text-xs text-slate-500 max-w-sm font-normal">
-                  {activeConf.desc}
-                </p>
+            {isTabLoading ? (
+              <div className="bg-white rounded-2xl p-16 border border-slate-200/80 text-center flex flex-col items-center justify-center space-y-3">
+                <div className="w-8 h-8 border-3 border-emerald-700 border-t-transparent rounded-full animate-spin"></div>
+                <span className="text-xs text-slate-500">Đang tải dữ liệu...</span>
               </div>
-            </div>
+            ) : (
+              <>
+                {activeTab === 'favorites' && (
+                  <FavoritesSection
+                    favorites={favorites}
+                    onRemoveFavorite={handleRemoveFavorite}
+                    onSelectPlaceById={(id) => navigate(`/places/${id}`)}
+                  />
+                )}
+
+                {activeTab === 'visitLogs' && (
+                  <VisitedLogSection
+                    logs={visitLogs}
+                    onAddLog={handleAddVisitLog}
+                    onUpdateLog={handleUpdateVisitLog}
+                    onDeleteLog={handleDeleteVisitLog}
+                    onTogglePrivacy={handleToggleVisitLogPrivacy}
+                    onSelectPlace={(name) => navigate(`/explore?q=${encodeURIComponent(name)}`)}
+                  />
+                )}
+
+                {activeTab === 'reviews' && (
+                  <UserReviewsSection
+                    reviews={reviews}
+                  />
+                )}
+
+                {activeTab === 'comments' && (
+                  <UserCommentsSection
+                    comments={comments}
+                  />
+                )}
+
+                {activeTab === 'blogs' && (
+                  <UserBlogsSection
+                    blogs={blogs}
+                    onAddBlog={handleAddBlog}
+                    onDeleteBlog={handleDeleteBlog}
+                  />
+                )}
+
+                {activeTab === 'proposals' && (
+                  <UserProposalsSection
+                    proposals={proposals}
+                    onDeleteProposal={handleDeleteProposal}
+                  />
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>

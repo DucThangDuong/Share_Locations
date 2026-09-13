@@ -6,9 +6,6 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://localhost:700
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: 15000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
   withCredentials: true,
 })
 
@@ -17,6 +14,10 @@ apiClient.interceptors.request.use(
     const token = localStorage.getItem('access_token')
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`
+    }
+    if (config.data instanceof FormData && config.headers) {
+      delete config.headers['Content-Type']
+      delete config.headers['content-type']
     }
     return config
   },

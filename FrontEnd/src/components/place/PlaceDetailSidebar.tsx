@@ -49,7 +49,7 @@ export const PlaceDetailSidebar = ({ place }: PlaceDetailSidebarProps) => {
                 <a
                   href={place.website}
                   target="_blank"
-                  rel="noreferrer"
+                  rel="noopener noreferrer"
                   className="text-emerald-600 hover:underline text-xs flex items-center gap-1 mt-0.5"
                 >
                   <span className="truncate max-w-[200px]">{place.website.replace('https://', '')}</span>
@@ -81,7 +81,7 @@ export const PlaceDetailSidebar = ({ place }: PlaceDetailSidebarProps) => {
             <a
               href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name + ' ' + place.address)}`}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               className="inline-flex items-center gap-1 text-emerald-600 hover:underline shrink-0 font-medium"
             >
               <span>Chỉ đường</span>

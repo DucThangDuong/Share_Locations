@@ -2,6 +2,7 @@ import React from 'react'
 import { Outlet } from 'react-router-dom'
 import { Header } from '@/components/common/Header'
 import { Footer } from '@/components/common/Footer'
+import { RecentVisitedFloatingDock } from '@/components/common/RecentVisitedFloatingDock'
 
 export const MainLayout: React.FC = () => {
   return (
@@ -11,6 +12,8 @@ export const MainLayout: React.FC = () => {
         <Outlet />
       </div>
       <Footer />
+      <RecentVisitedFloatingDock />
     </div>
   )
 }
+

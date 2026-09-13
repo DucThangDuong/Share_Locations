@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
-import { Star, MessageSquare, Plus } from 'lucide-react'
+import { Star, MessageSquare, Plus, X } from 'lucide-react'
 import { placeService } from '@/services/placeService'
 import { ReviewItemCard } from './ReviewItemCard'
-import { CreateReviewModal } from './CreateReviewModal'
+import { CreateReviewForm } from './CreateReviewForm'
 import type { ReviewItemDto, CreateReviewRequest } from '@/types/models/place.model'
 
 interface PlaceDetailReviewsProps {
@@ -26,25 +26,34 @@ export const PlaceDetailReviews: React.FC<PlaceDetailReviewsProps> = ({
   onReviewUpdated,
   onReviewDeleted
 }) => {
-  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isFormOpen, setIsFormOpen] = useState(false)
 
   const totalReviews = reviews.length
 
-  const handleOpenWriteReview = () => {
+  const handleToggleWriteReview = () => {
     if (!isAuthenticated) {
       alert('Vui lòng đăng nhập để gửi đánh giá.')
       return
     }
-    setIsModalOpen(true)
+    setIsFormOpen((prev) => !prev)
   }
 
   const handleReviewSubmit = async (data: CreateReviewRequest) => {
-    const res = await placeService.submitReview(data)
-    if (res.success && res.data) {
-      onReviewAdded(res.data)
-      return { success: true, data: res.data }
+    try {
+      const res = await placeService.submitReview(data)
+      if (res.success && res.data) {
+        onReviewAdded(res.data)
+        setIsFormOpen(false)
+        return { success: true, data: res.data }
+      }
+      return { success: false, message: res.message || 'Không thể gửi đánh giá.' }
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { message?: string } } }
+      return {
+        success: false,
+        message: axiosErr?.response?.data?.message || 'Đã có lỗi xảy ra khi gửi đánh giá.'
+      }
     }
-    return { success: false, message: res.message || 'Không thể gửi đánh giá.' }
   }
 
   return (
@@ -60,12 +69,25 @@ export const PlaceDetailReviews: React.FC<PlaceDetailReviewsProps> = ({
           </p>
         </div>
 
-        <button
-          onClick={handleOpenWriteReview}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs sm:text-sm rounded-lg shadow-xs transition-colors cursor-pointer"
+        <button type="button"
+          onClick={handleToggleWriteReview}
+          className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 font-semibold text-xs sm:text-sm rounded-lg shadow-xs transition-colors cursor-pointer ${
+            isFormOpen
+              ? 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+              : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+          }`}
         >
-          <Plus className="w-4 h-4" />
-          <span>Viết đánh giá</span>
+          {isFormOpen ? (
+            <>
+              <X className="w-4 h-4" />
+              <span>Đóng biểu mẫu</span>
+            </>
+          ) : (
+            <>
+              <Plus className="w-4 h-4" />
+              <span>Viết đánh giá</span>
+            </>
+          )}
         </button>
       </div>
 
@@ -105,6 +127,14 @@ export const PlaceDetailReviews: React.FC<PlaceDetailReviewsProps> = ({
         </div>
       </div>
 
+      {isFormOpen && (
+        <CreateReviewForm
+          placeId={placeId}
+          onClose={() => setIsFormOpen(false)}
+          onSubmitReview={handleReviewSubmit}
+        />
+      )}
+
       <div className="space-y-4 pt-2">
         {reviews.length === 0 ? (
           <div className="text-center py-12 text-slate-500 text-xs sm:text-sm bg-slate-50/50 rounded-xl border border-dashed border-slate-200 space-y-2">
@@ -123,13 +153,7 @@ export const PlaceDetailReviews: React.FC<PlaceDetailReviewsProps> = ({
           ))
         )}
       </div>
-
-      <CreateReviewModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        placeId={placeId}
-        onSubmitReview={handleReviewSubmit}
-      />
     </div>
   )
 }
+

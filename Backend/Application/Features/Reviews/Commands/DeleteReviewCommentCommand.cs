@@ -31,9 +31,14 @@ public class DeleteReviewCommentCommandHandler : IRequestHandler<DeleteReviewCom
             return Result<bool>.Forbidden("Bạn không có quyền xóa bình luận này.");
         }
 
-        comment.Hide();
-        _unitOfWork.Comments.Update(comment);
-        await _unitOfWork.SaveChangesAsync(ct);
+        await _unitOfWork.ExecuteInTransactionAsync(async () =>
+        {
+            comment.Hide();
+            _unitOfWork.Comments.Update(comment);
+            await _unitOfWork.Comments.HideRepliesAsync(request.CommentId, ct);
+
+            await _unitOfWork.SaveChangesAsync(ct);
+        }, ct);
 
         return Result<bool>.Success(true, "Bình luận đã được xóa thành công.");
     }

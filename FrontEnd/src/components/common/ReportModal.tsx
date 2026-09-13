@@ -68,7 +68,7 @@ export const ReportModal = ({ isOpen, onClose, placeId, placeName }: ReportModal
             <Flag className="w-5 h-5" />
             <h3 className="text-lg text-gray-900 font-bold">Báo cáo sai phạm / Đóng cửa</h3>
           </div>
-          <button
+          <button type="button"
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
           >

@@ -105,7 +105,7 @@ export const BlogPage = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-6 relative z-10">
         <div className="bg-white p-4 sm:p-5 rounded-lg border border-gray-200 shadow-sm flex items-center gap-1.5 overflow-x-auto scrollbar-none">
           {CATEGORIES.map((cat) => (
-            <button
+            <button type="button"
               key={cat}
               onClick={() => setSelectedCategory(cat)}
               className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition-colors ${selectedCategory === cat
