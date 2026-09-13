@@ -48,4 +48,14 @@ public static class EndpointExtensions
 
         return ctx.Response.SendAsync(errorResponse, (int)result.StatusCode, cancellation: ct);
     }
+
+    public static long? GetUserId(this IEndpoint endpoint)
+    {
+        var principal = endpoint.HttpContext.User;
+        var userIdStr = principal.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+            ?? principal.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value
+            ?? principal.FindFirst("sub")?.Value;
+
+        return long.TryParse(userIdStr, out var id) ? id : null;
+    }
 }

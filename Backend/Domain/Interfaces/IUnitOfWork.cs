@@ -10,6 +10,10 @@ public interface IUnitOfWork : IDisposable
     IPlaceReportRepository PlaceReports { get; }
     IReportTypeRepository ReportTypes { get; }
     ICommentRepository Comments { get; }
+    IProposalRepository Proposals { get; }
+    IVisitLogRepository VisitLogs { get; }
+    IAccessHistoryRepository AccessHistories { get; }
+    IBlogWriteRepository Blogs { get; }
 
     Task<int> SaveChangesAsync(CancellationToken ct = default);
     Task ExecuteInTransactionAsync(Func<Task> action, CancellationToken ct = default);

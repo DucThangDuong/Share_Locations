@@ -10,4 +10,18 @@ public class AccessHistory
     // Navigation
     public virtual User User { get; private set; } = null!;
     public virtual Place Place { get; private set; } = null!;
+
+    protected AccessHistory() { }
+
+    public AccessHistory(long userId, long placeId)
+    {
+        UserId = userId;
+        PlaceId = placeId;
+        ViewedAt = DateTime.UtcNow;
+    }
+
+    public void UpdateViewedAt()
+    {
+        ViewedAt = DateTime.UtcNow;
+    }
 }

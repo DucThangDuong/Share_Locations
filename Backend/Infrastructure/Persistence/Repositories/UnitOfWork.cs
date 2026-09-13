@@ -32,6 +32,18 @@ public class UnitOfWork : IUnitOfWork
     private ICommentRepository? _comments;
     public ICommentRepository Comments => _comments ??= new CommentRepository(_dbContext);
 
+    private IProposalRepository? _proposals;
+    public IProposalRepository Proposals => _proposals ??= new ProposalRepository(_dbContext);
+
+    private IVisitLogRepository? _visitLogs;
+    public IVisitLogRepository VisitLogs => _visitLogs ??= new VisitLogRepository(_dbContext);
+
+    private IAccessHistoryRepository? _accessHistories;
+    public IAccessHistoryRepository AccessHistories => _accessHistories ??= new AccessHistoryRepository(_dbContext);
+
+    private IBlogWriteRepository? _blogs;
+    public IBlogWriteRepository Blogs => _blogs ??= new BlogWriteRepository(_dbContext);
+
     public UnitOfWork(TravelReviewDbContext dbContext)
     {
         _dbContext = dbContext;

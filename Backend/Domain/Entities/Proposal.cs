@@ -18,4 +18,30 @@ public class Proposal
     public virtual User User { get; private set; } = null!;
     public virtual Place? TargetPlace { get; private set; }
     public virtual User? ReviewerAdmin { get; private set; }
+
+    protected Proposal() { }
+
+    public Proposal(long userId, string proposedDataJson, long? targetPlaceId = null)
+    {
+        UserId = userId;
+        ProposedDataJSON = string.IsNullOrWhiteSpace(proposedDataJson) ? "{}" : proposedDataJson;
+        TargetPlaceId = targetPlaceId;
+        Status = ProposalStatus.Pending;
+        CreatedAt = DateTime.UtcNow;
+    }
+
+    public void Approve(long reviewerId)
+    {
+        Status = ProposalStatus.Approved;
+        ReviewedBy = reviewerId;
+        ReviewedAt = DateTime.UtcNow;
+    }
+
+    public void Reject(long reviewerId, string reason)
+    {
+        Status = ProposalStatus.Rejected;
+        RejectReason = reason;
+        ReviewedBy = reviewerId;
+        ReviewedAt = DateTime.UtcNow;
+    }
 }
