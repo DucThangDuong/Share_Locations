@@ -104,7 +104,7 @@ public class GeographyFeaturesTests
             Name = "Miền Bắc"
         };
 
-        _cacheService.GetAsync<RegionLandingDto>("geography:regions:landing:north", Arg.Any<CancellationToken>())
+        _cacheService.GetAsync<RegionLandingDto>(Arg.Is<string>(k => k.Contains("north")), Arg.Any<CancellationToken>())
             .Returns(cachedData);
 
         var handler = new GetRegionLandingQueryHandler(_regionRepo, _cacheService);

@@ -54,6 +54,9 @@ public class Result
     public static Result Success(string message = "Thành công", HttpStatusCode statusCode = HttpStatusCode.OK)
         => new(true, message, statusCode);
 
+    public static Result Created(string message = "Đã tạo thành công")
+        => new(true, message, HttpStatusCode.Created);
+
     public static Result Failure(
         string message,
         HttpStatusCode statusCode = HttpStatusCode.BadRequest,
@@ -93,6 +96,9 @@ public class Result<T> : Result
 
     public static Result<T> Success(T data, string message = "Thành công", HttpStatusCode statusCode = HttpStatusCode.OK)
         => new(true, data, message, statusCode);
+
+    public static Result<T> Created(T data, string message = "Đã tạo thành công")
+        => new(true, data, message, HttpStatusCode.Created);
 
     public static new Result<T> Failure(
         string message,

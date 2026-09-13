@@ -23,4 +23,59 @@ public class Blog
 
     private readonly List<BlogReport> _reports = new();
     public virtual IReadOnlyCollection<BlogReport> Reports => _reports.AsReadOnly();
+
+    protected Blog() { }
+
+    public Blog(
+        long authorId,
+        string title,
+        string? excerpt,
+        string contentJson,
+        string? coverImageUrl,
+        int? categoryId = null,
+        int readTimeMinutes = 5,
+        BlogStatus status = BlogStatus.Published)
+    {
+        if (string.IsNullOrWhiteSpace(title))
+            throw new ArgumentException("Tiêu đề bài viết không được để trống.", nameof(title));
+
+        AuthorId = authorId;
+        Title = title.Trim();
+        Excerpt = excerpt?.Trim();
+        ContentJSON = string.IsNullOrWhiteSpace(contentJson) ? "{}" : contentJson;
+        CoverImageUrl = coverImageUrl?.Trim();
+        CategoryId = categoryId;
+        ReadTimeMinutes = readTimeMinutes > 0 ? readTimeMinutes : 5;
+        Status = status;
+        ViewCount = 0;
+        CreatedAt = DateTime.UtcNow;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void Update(
+        string title,
+        string? excerpt,
+        string contentJson,
+        string? coverImageUrl,
+        int? categoryId,
+        int readTimeMinutes,
+        BlogStatus status)
+    {
+        if (string.IsNullOrWhiteSpace(title))
+            throw new ArgumentException("Tiêu đề bài viết không được để trống.", nameof(title));
+
+        Title = title.Trim();
+        Excerpt = excerpt?.Trim();
+        ContentJSON = string.IsNullOrWhiteSpace(contentJson) ? "{}" : contentJson;
+        CoverImageUrl = coverImageUrl?.Trim();
+        CategoryId = categoryId;
+        ReadTimeMinutes = readTimeMinutes > 0 ? readTimeMinutes : 5;
+        Status = status;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void IncrementViewCount()
+    {
+        ViewCount++;
+    }
 }

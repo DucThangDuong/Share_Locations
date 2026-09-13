@@ -14,4 +14,26 @@ public class VisitLog
     // Navigation
     public virtual User User { get; private set; } = null!;
     public virtual Place Place { get; private set; } = null!;
+
+    protected VisitLog() { }
+
+    public VisitLog(long userId, long placeId, DateOnly visitedDate, VisitPrivacy privacy = VisitPrivacy.Public)
+    {
+        UserId = userId;
+        PlaceId = placeId;
+        VisitedDate = visitedDate;
+        Privacy = privacy;
+        CreatedAt = DateTime.UtcNow;
+    }
+
+    public void Update(DateOnly visitedDate, VisitPrivacy privacy)
+    {
+        VisitedDate = visitedDate;
+        Privacy = privacy;
+    }
+
+    public void UpdatePrivacy(VisitPrivacy privacy)
+    {
+        Privacy = privacy;
+    }
 }
