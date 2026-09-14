@@ -209,7 +209,7 @@ export const CreateReviewForm: React.FC<CreateReviewFormProps> = ({
                     onMouseEnter={() => setHoverRating(s)}
                     onMouseLeave={() => setHoverRating(0)}
                     onClick={() => setRating(s)}
-                    className="p-1 hover:scale-110 transition-transform cursor-pointer"
+                    className="p-1 hover:brightness-125 transition-all cursor-pointer"
                   >
                     <Star
                       className={`w-6 h-6 ${

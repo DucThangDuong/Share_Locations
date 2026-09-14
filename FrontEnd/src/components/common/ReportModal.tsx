@@ -91,7 +91,7 @@ export const ReportModal = ({ isOpen, onClose, placeId, placeName }: ReportModal
             <div className="p-3 bg-rose-50 border border-rose-100 rounded-lg text-xs text-rose-800 flex items-start gap-2">
               <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
               <div>
-                Đang báo cáo địa điểm: <span className="font-semibold text-rose-950">{placeName}</span>. Đội ngũ kiểm duyệt sẽ xác minh trong vòng 24h.
+                Báo cáo địa điểm: <span className="font-semibold text-rose-950">{placeName}</span>. Đội ngũ kiểm duyệt sẽ xác minh trong vòng 24h.
               </div>
             </div>
 
@@ -109,11 +109,10 @@ export const ReportModal = ({ isOpen, onClose, placeId, placeName }: ReportModal
                 {REPORT_REASONS.map((reason) => (
                   <label
                     key={reason.id}
-                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all text-sm ${
-                      selectedReason === reason.id
+                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all text-sm ${selectedReason === reason.id
                         ? 'border-emerald-500 bg-emerald-50/40 text-emerald-900 font-medium'
                         : 'border-gray-200 hover:bg-gray-50 text-gray-700'
-                    }`}
+                      }`}
                   >
                     <input
                       type="radio"

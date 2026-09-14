@@ -199,27 +199,6 @@ export const UserBlogsSection: React.FC<UserBlogsSectionProps> = ({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/80 pb-4">
-        <div>
-          <h3 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-indigo-600" />
-            <span>Bài viết Blog của tôi ({blogs.length})</span>
-          </h3>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Quản lý các bài viết chia sẻ cẩm nang, kinh nghiệm du lịch và bản nháp cá nhân.
-          </p>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => setIsWriteModalOpen(true)}
-          className="px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-indigo-700 hover:bg-indigo-800 transition-all flex items-center justify-center gap-1.5 shrink-0 cursor-pointer shadow-xs self-start sm:self-auto"
-        >
-          <Plus size={14} />
-          <span>Viết bài blog mới</span>
-        </button>
-      </div>
-
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 hide-scrollbar">
         <button
           type="button"

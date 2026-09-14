@@ -89,7 +89,7 @@ export const MapPage = () => {
       if (!place.coordinates || place.coordinates.length < 2) return
 
       const el = document.createElement('div')
-      el.className = 'w-8 h-8 rounded-full bg-emerald-600 border-2 border-white shadow-lg flex items-center justify-center text-white cursor-pointer hover:scale-125 transition-transform'
+      el.className = 'w-8 h-8 rounded-full bg-emerald-600 border-2 border-white shadow-lg flex items-center justify-center text-white cursor-pointer hover:brightness-125 hover:ring-4 hover:ring-emerald-400/40 transition-all'
       el.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>`
 
       const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(`

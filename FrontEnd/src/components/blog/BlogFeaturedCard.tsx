@@ -19,13 +19,14 @@ export const BlogFeaturedCard = ({ post, onRead }: BlogFeaturedCardProps) => {
           <img
             src={post.coverUrl}
             alt={post.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            className="w-full h-full object-cover transition-all duration-300"
           />
         ) : (
           <div className="w-full h-full min-h-[220px] flex items-center justify-center bg-slate-100 text-slate-300">
             <BookOpen className="w-12 h-12" />
           </div>
         )}
+        <div className="absolute inset-0 bg-white/0 group-hover:bg-white/15 transition-colors duration-300 pointer-events-none" />
         <div className="absolute top-4 left-4">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-400 text-amber-950 font-bold text-xs rounded-lg shadow-sm">
             <Sparkles className="w-3.5 h-3.5" />

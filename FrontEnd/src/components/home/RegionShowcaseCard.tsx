@@ -71,8 +71,7 @@ export const RegionShowcaseCard: React.FC<RegionShowcaseCardProps> = ({ region }
           {displayProvinces.length > 0 && (
             <div className="space-y-2.5">
               <div className="flex items-center justify-between text-xs text-slate-500 font-semibold">
-                <span>Các tỉnh thành nổi bật:</span>
-                <span>{displayProvinces.length}/{provinces.length} tỉnh thành</span>
+                <span>{provinces.length} tỉnh thành</span>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5">

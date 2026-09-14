@@ -62,20 +62,16 @@ export const PlaceDetailReviews: React.FC<PlaceDetailReviewsProps> = ({
         <div>
           <h2 className="text-lg sm:text-xl font-bold text-slate-900 flex items-center gap-2">
             <MessageSquare className="w-5 h-5 text-emerald-600" />
-            <span>Đánh giá & Phản hồi cộng đồng ({totalReviews})</span>
+            <span>Đánh giá từ cộng đồng</span>
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Trải nghiệm thực tế và cảm nhận từ các du khách đã từng ghé thăm
-          </p>
         </div>
 
         <button type="button"
           onClick={handleToggleWriteReview}
-          className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 font-semibold text-xs sm:text-sm rounded-lg shadow-xs transition-colors cursor-pointer ${
-            isFormOpen
-              ? 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-              : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-          }`}
+          className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 font-semibold text-xs sm:text-sm rounded-lg shadow-xs transition-colors cursor-pointer ${isFormOpen
+            ? 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+            : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+            }`}
         >
           {isFormOpen ? (
             <>
@@ -98,9 +94,8 @@ export const PlaceDetailReviews: React.FC<PlaceDetailReviewsProps> = ({
             {[1, 2, 3, 4, 5].map((s) => (
               <Star
                 key={s}
-                className={`w-4 h-4 ${
-                  s <= Math.round(avgRating || 5) ? 'fill-amber-400 text-amber-400' : 'text-slate-200'
-                }`}
+                className={`w-4 h-4 ${s <= Math.round(avgRating || 5) ? 'fill-amber-400 text-amber-400' : 'text-slate-200'
+                  }`}
               />
             ))}
           </div>

@@ -156,13 +156,14 @@ export const ReviewItemCard: React.FC<ReviewItemCardProps> = ({
                 <div
                   key={idx}
                   onClick={() => setActiveMedia({ url: imgUrl, type: 'image' })}
-                  className="relative group w-20 h-20 sm:w-24 sm:h-24 rounded-lg overflow-hidden border border-slate-200 bg-slate-100 cursor-pointer shadow-2xs hover:opacity-90 transition-opacity"
+                  className="relative group w-20 h-20 sm:w-24 sm:h-24 rounded-lg overflow-hidden border border-slate-200 bg-slate-100 cursor-pointer shadow-2xs hover:opacity-95 transition-opacity"
                 >
                   <img
                     src={imgUrl}
                     alt={`Ảnh đánh giá ${idx + 1}`}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="w-full h-full object-cover transition-all duration-300 group-hover:brightness-105"
                   />
+                  <div className="absolute inset-0 bg-white/0 group-hover:bg-white/15 transition-colors duration-300 pointer-events-none" />
                 </div>
               ))}
             </div>
@@ -181,7 +182,7 @@ export const ReviewItemCard: React.FC<ReviewItemCardProps> = ({
                     className="w-full h-full object-cover opacity-70 group-hover:opacity-90 transition-opacity"
                   />
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-8 h-8 rounded-full bg-emerald-600/90 text-white flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
+                    <div className="w-8 h-8 rounded-full bg-emerald-600/90 group-hover:bg-emerald-500 text-white flex items-center justify-center shadow-md transition-all">
                       <Play className="w-4 h-4 fill-white ml-0.5" />
                     </div>
                   </div>

@@ -72,7 +72,7 @@ export const RegionHeroBento: React.FC<RegionHeroBentoProps> = ({ data }) => {
           type="button"
           onClick={handlePrev}
           aria-label="Ảnh trước"
-          className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 hover:bg-black/85 backdrop-blur-md text-white border border-white/20 flex items-center justify-center transition-all cursor-pointer z-10 active-press hover:scale-105"
+          className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 hover:bg-black/85 backdrop-blur-md text-white border border-white/20 hover:border-white/40 flex items-center justify-center transition-all cursor-pointer z-10 active-press hover:brightness-110"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
@@ -81,7 +81,7 @@ export const RegionHeroBento: React.FC<RegionHeroBentoProps> = ({ data }) => {
           type="button"
           onClick={handleNext}
           aria-label="Ảnh tiếp theo"
-          className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 hover:bg-black/85 backdrop-blur-md text-white border border-white/20 flex items-center justify-center transition-all cursor-pointer z-10 active-press hover:scale-105"
+          className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 hover:bg-black/85 backdrop-blur-md text-white border border-white/20 hover:border-white/40 flex items-center justify-center transition-all cursor-pointer z-10 active-press hover:brightness-110"
         >
           <ChevronRight className="w-5 h-5" />
         </button>

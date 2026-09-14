@@ -251,17 +251,6 @@ export const FavoritesSection: React.FC<FavoritesSectionProps> = ({
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
-        <div>
-          <h2 className="text-lg font-bold text-slate-900 tracking-tight">
-            Địa điểm & Mục đã lưu
-          </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            {favorites.length} mục đã lưu trong tài khoản của bạn
-          </p>
-        </div>
-      </div>
-
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-2">
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 hide-scrollbar">
           {tabs.map((tab) => {
