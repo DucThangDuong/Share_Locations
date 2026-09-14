@@ -233,18 +233,6 @@ export const UserProposalsSection: React.FC<UserProposalsSectionProps> = ({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/80 pb-4">
-        <div>
-          <h3 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
-            <PlusCircle className="w-5 h-5 text-emerald-700" />
-            <span>Địa điểm đề xuất của tôi ({proposals.length})</span>
-          </h3>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Các địa điểm du lịch, quán ăn mới bạn đã đóng góp cho hệ thống để cộng đồng cùng trải nghiệm.
-          </p>
-        </div>
-      </div>
-
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 hide-scrollbar">
         <button
           type="button"

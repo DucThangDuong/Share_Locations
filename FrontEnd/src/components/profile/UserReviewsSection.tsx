@@ -44,18 +44,6 @@ export const UserReviewsSection: React.FC<UserReviewsSectionProps> = ({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/80 pb-4">
-        <div>
-          <h3 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
-            <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
-            <span>Đánh giá của tôi ({reviews.length})</span>
-          </h3>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Các bài nhận xét và đánh giá trải nghiệm thực tế bạn đã chia sẻ tại các địa điểm.
-          </p>
-        </div>
-      </div>
-
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 hide-scrollbar">
         <button
           type="button"

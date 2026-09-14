@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, MapPin, Map, ArrowRight, X } from 'lucide-react'
+import { Search, Map, ArrowRight, X } from 'lucide-react'
 import type { RegionLandingData } from '@/types/models/region.model'
 
 interface RegionSearchBarProps {
@@ -29,10 +29,14 @@ export const RegionSearchBar: React.FC<RegionSearchBarProps> = ({ data }) => {
     navigate(`/map?${params.toString()}`)
   }
 
+  const handleProvinceSelect = (prov: string) => {
+    setSelectedProvince((prev) => (prev === prov ? '' : prov))
+  }
+
   return (
     <div className="w-full relative my-6">
-      <div className="bg-white rounded-2xl shadow-xl border border-stone-200/90 p-3.5 sm:p-4.5 transition-all">
-        <form onSubmit={handleSearch} className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3">
+      <div className="bg-white rounded-2xl shadow-xl border border-stone-200/90 p-3.5 sm:p-5 transition-all space-y-3.5">
+        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3">
           <div className="flex-1 relative flex items-center">
             <Search className="w-5 h-5 text-stone-400 absolute left-3.5 pointer-events-none" />
             <input
@@ -53,27 +57,10 @@ export const RegionSearchBar: React.FC<RegionSearchBarProps> = ({ data }) => {
             )}
           </div>
 
-          <div className="relative min-w-[200px] flex items-center">
-            <MapPin className="w-4 h-4 text-stone-400 absolute left-3.5 pointer-events-none" />
-            <select
-              value={selectedProvince}
-              onChange={(e) => setSelectedProvince(e.target.value)}
-              className="w-full h-12 pl-10 pr-8 rounded-xl bg-stone-50 border border-stone-200 text-xs sm:text-sm font-semibold text-stone-800 focus:outline-hidden focus:bg-white focus:border-[#C0392B] focus:ring-2 focus:ring-[#C0392B]/15 cursor-pointer appearance-none transition-all"
-            >
-              <option value="">Tất cả tỉnh thành {data.name}</option>
-              {data.provinces.map((prov) => (
-                <option key={prov} value={prov}>
-                  {prov}
-                </option>
-              ))}
-            </select>
-            <div className="absolute right-3 pointer-events-none text-stone-400 text-xs">▼</div>
-          </div>
-
-          <div className="flex items-center gap-2 pt-1 lg:pt-0">
+          <div className="flex items-center gap-2">
             <button
               type="submit"
-              className="flex-1 lg:flex-initial h-12 px-6 rounded-xl bg-[#C0392B] hover:bg-[#a93226] text-white text-xs sm:text-sm font-bold shadow-md shadow-red-900/15 flex items-center justify-center gap-2 cursor-pointer transition-all active-press"
+              className="flex-1 sm:flex-initial h-12 px-6 rounded-xl bg-[#C0392B] hover:bg-[#a93226] text-white text-xs sm:text-sm font-bold shadow-md shadow-red-900/15 flex items-center justify-center gap-2 cursor-pointer transition-all active-press"
             >
               <span>Khám phá ngay</span>
               <ArrowRight className="w-4 h-4" />
@@ -90,7 +77,40 @@ export const RegionSearchBar: React.FC<RegionSearchBarProps> = ({ data }) => {
             </button>
           </div>
         </form>
+
+        {data.provinces && data.provinces.length > 0 && (
+          <div className="pt-2 border-t border-stone-100 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setSelectedProvince('')}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer border ${selectedProvince === ''
+                  ? 'bg-[#C0392B] text-white border-[#C0392B] shadow-xs'
+                  : 'bg-stone-100 hover:bg-stone-200 text-stone-600 border-stone-200'
+                }`}
+            >
+              Tất cả
+            </button>
+            {data.provinces.map((prov) => {
+              const isSelected = selectedProvince === prov
+              return (
+                <button
+                  key={prov}
+                  type="button"
+                  onClick={() => handleProvinceSelect(prov)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer border ${isSelected
+                      ? 'bg-[#C0392B] text-white border-[#C0392B] shadow-xs'
+                      : 'bg-stone-50 hover:bg-stone-100 hover:border-stone-300 text-stone-700 border-stone-200'
+                    }`}
+                >
+                  {prov}
+                </button>
+              )
+            })}
+          </div>
+        )}
       </div>
     </div>
   )
 }
+
+export default RegionSearchBar

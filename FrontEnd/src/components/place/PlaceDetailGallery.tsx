@@ -29,9 +29,9 @@ export const PlaceDetailGallery = ({ images, placeName }: PlaceDetailGalleryProp
           <img
             src={images[0]}
             alt={placeName}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            className="w-full h-full object-cover transition-all duration-300"
           />
-          <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors" />
+          <div className="absolute inset-0 bg-white/0 group-hover:bg-white/15 transition-colors duration-300 pointer-events-none" />
 
           {images.length > 1 && (
             <div
@@ -62,9 +62,9 @@ export const PlaceDetailGallery = ({ images, placeName }: PlaceDetailGalleryProp
             <img
               src={img}
               alt={`${placeName} - ảnh ${idx + 2}`}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              className="w-full h-full object-cover transition-all duration-300"
             />
-            <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors" />
+            <div className="absolute inset-0 bg-white/0 group-hover:bg-white/15 transition-colors duration-300 pointer-events-none" />
           </div>
         ))}
       </div>
@@ -114,7 +114,7 @@ export const PlaceDetailGallery = ({ images, placeName }: PlaceDetailGalleryProp
                 src={img}
                 alt=""
                 onClick={() => setActiveImageIndex(idx)}
-                className={`w-16 h-12 object-cover rounded cursor-pointer transition-all ${idx === activeImageIndex ? 'border-2 border-emerald-500 scale-105' : 'opacity-50 hover:opacity-100'
+                className={`w-16 h-12 object-cover rounded cursor-pointer transition-all ${idx === activeImageIndex ? 'border-2 border-emerald-500 ring-2 ring-emerald-500/30' : 'opacity-50 hover:opacity-100 hover:brightness-110'
                   }`}
               />
             ))}

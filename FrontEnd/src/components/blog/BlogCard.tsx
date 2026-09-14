@@ -20,13 +20,14 @@ export const BlogCard = ({ post, onRead }: BlogCardProps) => {
           <img
             src={post.coverUrl}
             alt={post.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            className="w-full h-full object-cover transition-all duration-300"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-slate-100 text-slate-300">
             <BookOpen className="w-10 h-10" />
           </div>
         )}
+        <div className="absolute inset-0 bg-white/0 group-hover:bg-white/15 transition-colors duration-300 pointer-events-none" />
         <div className="absolute top-3 left-3">
           <span className="px-2.5 py-1 text-2xs font-bold bg-white/95 backdrop-blur-xs text-emerald-800 rounded-lg shadow-xs">
             {post.category}

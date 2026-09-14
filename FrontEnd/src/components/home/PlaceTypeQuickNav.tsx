@@ -68,15 +68,16 @@ export const PlaceTypeQuickNav: React.FC = () => {
                     <img
                       src={item.imageUrl!}
                       alt={item.name}
-                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+                      className="absolute inset-0 w-full h-full object-cover transition-all duration-300"
                       loading="lazy"
                     />
                   ) : (
                     <div className="absolute inset-0 bg-gradient-to-br from-emerald-800 via-teal-900 to-slate-950 flex items-center justify-center">
-                      <Compass className="w-10 h-10 text-white/25 group-hover:scale-110 transition-transform duration-300" />
+                      <Compass className="w-10 h-10 text-white/25 group-hover:text-white/40 transition-colors duration-300" />
                     </div>
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/30 to-transparent group-hover:from-slate-950/90 transition-colors duration-300"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/30 to-transparent group-hover:from-slate-950/90 transition-colors duration-300" />
+                  <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors duration-300 pointer-events-none" />
 
                   <div className="absolute bottom-0 inset-x-0 p-3 sm:p-3.5 flex flex-col justify-end text-center">
                     <h3 className="text-xs sm:text-sm md:text-[15px] font-bold text-white tracking-tight drop-shadow-md line-clamp-2 leading-snug">

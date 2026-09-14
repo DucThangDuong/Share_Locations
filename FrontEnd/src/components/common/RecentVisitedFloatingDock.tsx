@@ -97,7 +97,7 @@ export const RecentVisitedFloatingDock: React.FC = () => {
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="group px-4 py-2.5 rounded-full bg-slate-900/90 hover:bg-slate-900 text-white text-xs font-bold shadow-xl backdrop-blur-md border border-slate-700/80 flex items-center gap-2.5 transition-all duration-300 hover:scale-103 cursor-pointer"
+          className="group px-4 py-2.5 rounded-full bg-slate-900/90 hover:bg-slate-900 text-white text-xs font-bold shadow-xl backdrop-blur-md border border-slate-700/80 hover:border-slate-500 flex items-center gap-2.5 transition-all duration-300 hover:brightness-110 cursor-pointer"
         >
           <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
           <Clock size={14} className="text-emerald-400" />
@@ -146,12 +146,13 @@ export const RecentVisitedFloatingDock: React.FC = () => {
                 className="group flex items-center gap-2.5 p-2 rounded-2xl hover:bg-slate-100 transition-colors cursor-pointer justify-between"
               >
                 <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                  <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 shrink-0">
+                  <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 shrink-0 relative">
                     <img
                       src={item.coverUrl || 'https://images.unsplash.com/photo-1527997921830-de1cf1f9b430?w=200&fit=crop'}
                       alt={item.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      className="w-full h-full object-cover transition-all duration-300 group-hover:brightness-105"
                     />
+                    <div className="absolute inset-0 bg-white/0 group-hover:bg-white/15 transition-colors duration-300 pointer-events-none" />
                   </div>
 
                   <div className="min-w-0 flex-1">

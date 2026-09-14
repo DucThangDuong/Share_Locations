@@ -20,8 +20,6 @@ export const ExplorePlaceCard: React.FC<ExplorePlaceCardProps> = ({
       ? `Từ ${place.minPrice.toLocaleString('vi-VN')}đ`
       : 'Miễn phí'
 
-  const tags = [place.categoryName, place.placeTypeName, place.provinceName].filter(Boolean).slice(0, 3)
-
   if (viewMode === 'list') {
     return (
       <div
@@ -68,17 +66,6 @@ export const ExplorePlaceCard: React.FC<ExplorePlaceCardProps> = ({
           </div>
 
           <div>
-            <div className="flex flex-wrap gap-1.5 py-1">
-              {tags.map((tag, idx) => (
-                <span
-                  key={idx}
-                  className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-medium"
-                >
-                  #{tag}
-                </span>
-              ))}
-            </div>
-
             <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs mt-1">
               <div className="flex items-center gap-3 text-slate-500">
                 <div className="flex items-center gap-1">
@@ -138,17 +125,6 @@ export const ExplorePlaceCard: React.FC<ExplorePlaceCardProps> = ({
           <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed mt-1 font-normal">
             {place.description || place.address}
           </p>
-
-          <div className="flex flex-wrap gap-1.5 pt-2">
-            {tags.map((tag, idx) => (
-              <span
-                key={idx}
-                className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-medium"
-              >
-                #{tag}
-              </span>
-            ))}
-          </div>
         </div>
 
         <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs mt-auto">

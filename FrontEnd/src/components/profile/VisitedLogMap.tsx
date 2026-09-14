@@ -77,7 +77,7 @@ export const VisitedLogMap: React.FC<VisitedLogMapProps> = ({ logs, onSelectPlac
           const el = document.createElement('div')
           el.className = 'cursor-pointer group flex flex-col items-center'
           el.innerHTML = `
-            <div class="relative w-8 h-8 rounded-full bg-emerald-600 text-white shadow-lg border-2 border-white flex items-center justify-center transform hover:scale-125 transition-transform duration-200">
+            <div class="relative w-8 h-8 rounded-full bg-emerald-600 text-white shadow-lg border-2 border-white flex items-center justify-center hover:brightness-125 hover:ring-4 hover:ring-emerald-400/40 transition-all duration-200">
               <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
             </div>
             <div class="px-2 py-0.5 mt-1 bg-slate-900/80 backdrop-blur-xs text-white text-[10px] font-bold rounded-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-md">

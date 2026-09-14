@@ -200,9 +200,6 @@ export const VisitedLogSection: React.FC<VisitedLogSectionProps> = ({
   const [editPrivacy, setEditPrivacy] = useState<0 | 1>(0)
   const [editErrorMsg, setEditErrorMsg] = useState('')
 
-  const totalVisited = logs.length
-  const uniqueProvinces = new Set(logs.map((l) => l.province).filter(Boolean)).size
-
   const filteredLogs = logs.filter((log) => {
     return privacyFilter === 'all' || log.privacy === privacyFilter
   })
@@ -295,15 +292,6 @@ export const VisitedLogSection: React.FC<VisitedLogSectionProps> = ({
   return (
     <div className="space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
-        <div>
-          <h2 className="text-lg font-bold text-slate-900 tracking-tight">
-            Nhật ký đã ghé thăm
-          </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            {totalVisited} địa điểm đã ghé qua · {uniqueProvinces} tỉnh thành
-          </p>
-        </div>
-
         <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
           <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200">
             <button

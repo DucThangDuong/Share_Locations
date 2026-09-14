@@ -27,10 +27,8 @@ import { useAuth } from '@/context/AuthContext'
 import { catalogService } from '@/services/catalogService'
 import { geographyService } from '@/services/geographyService'
 import { userService } from '@/services/userService'
-import { placeService } from '@/services/placeService'
 import type { PlaceTypeDto } from '@/types/models/place.model'
 import type { ProvinceDto } from '@/types/models/geography.model'
-import type { PlaceSummaryDto } from '@/types/models/place.model'
 import { provinceOptions, categoryOptions } from '@/types/models/userProfile.model'
 
 export const ProposePlacePage: React.FC = () => {
@@ -55,9 +53,6 @@ export const ProposePlacePage: React.FC = () => {
   const [lat, setLat] = useState('21.028500')
   const [lng, setLng] = useState('105.854200')
   const [isLocating, setIsLocating] = useState(false)
-
-  const [showSuggestions, setShowSuggestions] = useState(false)
-  const [suggestions, setSuggestions] = useState<PlaceSummaryDto[]>([])
 
   const [openTime, setOpenTime] = useState('07:30')
   const [closeTime, setCloseTime] = useState('22:00')
@@ -161,41 +156,6 @@ export const ProposePlacePage: React.FC = () => {
     }
   }
 
-  const handleNameChange = (val: string) => {
-    setName(val)
-    if (!val.trim()) {
-      setSuggestions([])
-      setShowSuggestions(false)
-      return
-    }
-
-    const timer = setTimeout(async () => {
-      try {
-        const res = await placeService.searchPlaces({ keyword: val.trim(), pageSize: 4 })
-        if (res.success && res.data && res.data.length > 0) {
-          setSuggestions(res.data)
-          setShowSuggestions(true)
-        } else {
-          setSuggestions([])
-          setShowSuggestions(false)
-        }
-      } catch {
-        setSuggestions([])
-      }
-    }, 350)
-
-    return () => clearTimeout(timer)
-  }
-
-  const handleSelectSuggestion = (place: PlaceSummaryDto) => {
-    setName(place.name)
-    if (place.categoryId) setCategoryId(place.categoryId)
-    if (place.provinceId) setProvinceId(place.provinceId)
-    if (place.address) setAddress(place.address)
-    const img = place.thumbnailUrl || place.mediaUrls?.[0]
-    if (img) setImages([img])
-    setShowSuggestions(false)
-  }
 
   const handleGetGPSLocation = () => {
     if (!navigator.geolocation) {
@@ -451,33 +411,8 @@ export const ProposePlacePage: React.FC = () => {
                       type="text"
                       placeholder="Ví dụ: Đồi Chè Cầu Đất, Cà phê Mây Lang Thang, Bánh Mì Phượng..."
                       value={name}
-                      onChange={(e) => handleNameChange(e.target.value)}
                       className="w-full px-4 py-3 rounded-2xl bg-slate-50/80 border border-slate-200 text-xs sm:text-sm text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-700 transition-all font-medium"
                     />
-
-                    {showSuggestions && suggestions.length > 0 && (
-                      <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-2xl border border-slate-200 shadow-xl z-30 overflow-hidden max-h-56 overflow-y-auto">
-                        <div className="px-3.5 py-2 bg-slate-50 border-b border-slate-100 text-[11px] font-bold text-slate-500 flex items-center justify-between">
-                          <span>Địa điểm đã có trên hệ thống</span>
-                          <span className="text-emerald-700 font-bold">Bấm để tự động điền</span>
-                        </div>
-                        {suggestions.map((item) => (
-                          <div
-                            key={item.id}
-                            onClick={() => handleSelectSuggestion(item)}
-                            className="px-3.5 py-2.5 hover:bg-emerald-50/80 transition-colors cursor-pointer flex items-center justify-between border-b border-slate-50 last:border-0"
-                          >
-                            <div>
-                              <div className="text-xs font-bold text-slate-800">{item.name}</div>
-                              <div className="text-[10px] text-slate-500">{item.address || item.provinceName}</div>
-                            </div>
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-                              {item.categoryName}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -492,15 +427,15 @@ export const ProposePlacePage: React.FC = () => {
                       >
                         {categories.length > 0
                           ? categories.map((cat) => (
-                              <option key={cat.id} value={cat.id}>
-                                {cat.name}
-                              </option>
-                            ))
+                            <option key={cat.id} value={cat.id}>
+                              {cat.name}
+                            </option>
+                          ))
                           : categoryOptions.map((cat) => (
-                              <option key={cat.id} value={cat.id}>
-                                {cat.name} ({cat.type})
-                              </option>
-                            ))}
+                            <option key={cat.id} value={cat.id}>
+                              {cat.name} ({cat.type})
+                            </option>
+                          ))}
                       </select>
                     </div>
 
@@ -515,15 +450,15 @@ export const ProposePlacePage: React.FC = () => {
                       >
                         {provinces.length > 0
                           ? provinces.map((prov) => (
-                              <option key={prov.id} value={prov.id}>
-                                {prov.name}
-                              </option>
-                            ))
+                            <option key={prov.id} value={prov.id}>
+                              {prov.name}
+                            </option>
+                          ))
                           : provinceOptions.map((prov, pIdx) => (
-                              <option key={pIdx + 1} value={pIdx + 1}>
-                                {prov}
-                              </option>
-                            ))}
+                            <option key={pIdx + 1} value={pIdx + 1}>
+                              {prov}
+                            </option>
+                          ))}
                       </select>
                     </div>
                   </div>
@@ -767,11 +702,10 @@ export const ProposePlacePage: React.FC = () => {
                   }}
                   onDragLeave={() => setIsDragging(false)}
                   onDrop={handleDropFiles}
-                  className={`p-6 border-2 border-dashed rounded-2xl text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2.5 ${
-                    isDragging
-                      ? 'border-emerald-600 bg-emerald-50/80 text-emerald-800 scale-101'
-                      : 'border-slate-300 hover:border-emerald-600 hover:bg-slate-50 text-slate-600'
-                  }`}
+                  className={`p-6 border-2 border-dashed rounded-2xl text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2.5 ${isDragging
+                    ? 'border-emerald-600 bg-emerald-50/80 text-emerald-800 ring-2 ring-emerald-500/30'
+                    : 'border-slate-300 hover:border-emerald-600 hover:bg-slate-50 text-slate-600'
+                    }`}
                 >
                   <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center shadow-xs">
                     <UploadCloud className="w-6 h-6" />

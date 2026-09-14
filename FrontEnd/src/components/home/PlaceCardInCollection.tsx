@@ -87,12 +87,6 @@ export const PlaceCardInCollection: React.FC<PlaceCardInCollectionProps> = ({ pl
             {place.reviewCount ? `${place.reviewCount} đánh giá` : 'Mới'}
           </span>
         </div>
-
-        {place.categoryName && (
-          <div className="text-xs font-medium text-slate-600">
-            {place.categoryName}
-          </div>
-        )}
       </div>
     </div>
   )
