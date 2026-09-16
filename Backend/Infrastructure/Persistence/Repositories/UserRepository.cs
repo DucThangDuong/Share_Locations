@@ -1,3 +1,6 @@
+﻿using Domain.Entities;
+using Domain.Enums;
+using Domain.Interfaces;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -43,6 +46,38 @@ public class UserRepository : IUserRepository
     {
         var normalizedEmail = email.Trim().ToLowerInvariant();
         return !await _dbContext.Users.AnyAsync(u => u.Email == normalizedEmail && !u.IsDeleted, ct);
+    }
+
+    public async Task<List<User>> SearchUsersAsync(string keyword, int limit = 30, CancellationToken ct = default)
+    {
+        var raw = (keyword ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(raw))
+            return new List<User>();
+
+        var query = _dbContext.Users
+            .AsNoTracking()
+            .Include(u => u.Profile)
+            .Include(u => u.Trips)
+            .Where(u => !u.IsDeleted && u.Status == UserStatus.Active);
+
+        if (raw.StartsWith("#") && long.TryParse(raw.TrimStart('#').Trim(), out var parsedId))
+        {
+            query = query.Where(u => u.Id == parsedId);
+        }
+        else if (long.TryParse(raw, out var numericId))
+        {
+            query = query.Where(u => u.Id == numericId 
+                || (u.Profile != null && EF.Functions.Like(u.Profile.FullName, $"%{raw}%")) 
+                || EF.Functions.Like(u.Email, $"%{raw}%"));
+        }
+        else
+        {
+            query = query.Where(u => 
+                (u.Profile != null && EF.Functions.Like(u.Profile.FullName, $"%{raw}%")) 
+                || EF.Functions.Like(u.Email, $"%{raw}%"));
+        }
+
+        return await query.Take(limit).ToListAsync(ct);
     }
 
     public async Task AddAsync(User user, CancellationToken ct = default)

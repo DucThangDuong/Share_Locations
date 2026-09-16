@@ -21,7 +21,4 @@ public class Food
 
     private readonly List<FoodProvince> _foodProvinces = new();
     public virtual IReadOnlyCollection<FoodProvince> FoodProvinces => _foodProvinces.AsReadOnly();
-
-    private readonly List<Message> _messages = new();
-    public virtual IReadOnlyCollection<Message> Messages => _messages.AsReadOnly();
 }

@@ -34,6 +34,7 @@ public class TravelReviewDbContext : DbContext
 
     // 6. Trips
     public virtual DbSet<Trip> Trips => Set<Trip>();
+    public virtual DbSet<TripMember> TripMembers => Set<TripMember>();
     public virtual DbSet<TripDay> TripDays => Set<TripDay>();
     public virtual DbSet<TripPlace> TripPlaces => Set<TripPlace>();
 
