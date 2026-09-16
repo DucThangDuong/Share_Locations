@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.Extensions;
 using Application.DTOs;
 using Application.Features.Catalog.Queries;
@@ -13,7 +13,7 @@ public class GetPlaceTypesEndpoint : EndpointWithoutRequest<ApiSuccessResponse<I
 
     public override void Configure()
     {
-        Get("/api/v1/place-types", "/api/place-types");
+        Get("/api/place-types");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
         Summary(s =>

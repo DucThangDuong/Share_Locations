@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.Extensions;
 using Application.DTOs;
 using Application.Features.Geography.Queries;
@@ -19,7 +19,7 @@ public class GetRegionLandingEndpoint : Endpoint<GetRegionLandingRequest, ApiSuc
 
     public override void Configure()
     {
-        Get("/api/v1/regions/{regionSlug}/landing", "/api/regions/{regionSlug}/landing");
+        Get("/api/regions/{regionSlug}/landing");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
         Summary(s =>

@@ -1,4 +1,4 @@
-using API.Extensions;
+﻿using API.Extensions;
 using Application.Common;
 using Application.Features.Blogs.Commands;
 using FastEndpoints;
@@ -19,7 +19,7 @@ public class DeleteBlogEndpoint : Endpoint<DeleteBlogRequest>
 
     public override void Configure()
     {
-        Delete("/api/v1/blogs/{id}", "/api/blogs/{id}");
+        Delete("/api/blogs/{id}");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

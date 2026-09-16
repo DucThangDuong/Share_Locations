@@ -1,4 +1,4 @@
-using System.IdentityModel.Tokens.Jwt;
+﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using API.DTOs;
 using API.Extensions;
@@ -23,7 +23,7 @@ public class SaveItineraryEndpoint : Endpoint<SaveItineraryRequest, ApiSuccessRe
 
     public override void Configure()
     {
-        Post("/api/v1/itineraries/{id}/save", "/api/itineraries/{id}/save");
+        Post("/api/itineraries/{id}/save");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

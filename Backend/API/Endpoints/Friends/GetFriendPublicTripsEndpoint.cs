@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.Extensions;
 using Application.DTOs;
 using Application.Features.Trips.Queries;
@@ -18,7 +18,7 @@ public class GetFriendPublicTripsEndpoint : Endpoint<GetFriendPublicTripsRequest
 
     public override void Configure()
     {
-        Get("/api/v1/users/{userId}/trips/public");
+        Get("/api/users/{userId}/trips/public");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
         Summary(s =>

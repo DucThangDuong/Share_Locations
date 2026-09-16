@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.Extensions;
 using Application.Common;
 using Application.DTOs;
@@ -20,7 +20,7 @@ public class ToggleBlogLikeEndpoint : Endpoint<ToggleBlogLikeRequest, ApiSuccess
 
     public override void Configure()
     {
-        Post("/api/v1/blogs/{id}/toggle-like");
+        Post("/api/blogs/{id}/toggle-like");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.DTOs.Places;
 using API.Extensions;
 using Application.DTOs;
@@ -14,7 +14,7 @@ public class GetPlaceReviewsEndpoint : Endpoint<GetPlaceReviewsRequest, ApiSucce
 
     public override void Configure()
     {
-        Get("/api/v1/places/{id}/reviews", "/api/places/{id}/reviews");
+        Get("/api/places/{id}/reviews");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
         Summary(s =>

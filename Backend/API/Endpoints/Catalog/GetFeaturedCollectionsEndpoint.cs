@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.Extensions;
 using Application.DTOs;
 using Application.Features.Catalog.Queries;
@@ -13,7 +13,7 @@ public class GetFeaturedCollectionsEndpoint : EndpointWithoutRequest<ApiSuccessR
 
     public override void Configure()
     {
-        Get("/api/v1/collections/featured", "/api/collections/featured");
+        Get("/api/collections/featured");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
         Summary(s =>

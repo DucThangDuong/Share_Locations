@@ -1,4 +1,4 @@
-using API.Extensions;
+﻿using API.Extensions;
 using Application.Features.Auth.Commands;
 using FastEndpoints;
 using MediatR;
@@ -11,7 +11,7 @@ public class RefreshTokenEndpoint : EndpointWithoutRequest
 
     public override void Configure()
     {
-        Post("/api/v1/auth/refresh-token", "/api/auth/refresh-token");
+        Post("/api/auth/refresh-token");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("auth_strict"));
         Summary(s =>

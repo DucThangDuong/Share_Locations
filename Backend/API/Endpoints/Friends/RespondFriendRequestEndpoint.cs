@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.Extensions;
 using Application.Common;
 using Application.Features.Friends.Commands;
@@ -20,7 +20,7 @@ public class RespondFriendRequestEndpoint : Endpoint<RespondFriendRequest, ApiSu
 
     public override void Configure()
     {
-        Put("/api/v1/friends/respond/{targetUserId}");
+        Put("/api/friends/respond/{targetUserId}");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

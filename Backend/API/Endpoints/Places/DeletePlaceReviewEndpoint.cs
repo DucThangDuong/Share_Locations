@@ -1,4 +1,4 @@
-using System.IdentityModel.Tokens.Jwt;
+﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using API.DTOs;
 using API.Extensions;
@@ -22,7 +22,7 @@ public class DeletePlaceReviewEndpoint : Endpoint<DeletePlaceReviewRequest, ApiS
 
     public override void Configure()
     {
-        Delete("/api/v1/reviews/{id}", "/api/reviews/{id}", "/api/v1/places/{placeId}/reviews/{id}");
+        Delete("/api/reviews/{id}", "/api/places/{placeId}/reviews/{id}");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

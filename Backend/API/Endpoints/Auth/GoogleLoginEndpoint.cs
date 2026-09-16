@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.DTOs.Auth;
 using API.Extensions;
 using Application.DTOs;
@@ -14,7 +14,7 @@ public class GoogleLoginEndpoint : Endpoint<GoogleLoginRequest, ApiSuccessRespon
 
     public override void Configure()
     {
-        Post("/api/v1/auth/google", "/api/auth/google");
+        Post("/api/auth/google");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("auth_strict"));
         Summary(s =>

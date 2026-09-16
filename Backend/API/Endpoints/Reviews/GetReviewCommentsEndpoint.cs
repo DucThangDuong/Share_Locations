@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.Extensions;
 using Application.DTOs;
 using Application.Features.Reviews.Queries;
@@ -19,7 +19,7 @@ public class GetReviewCommentsEndpoint : Endpoint<GetReviewCommentsRequest, ApiS
 
     public override void Configure()
     {
-        Get("/api/v1/reviews/{id}/comments", "/api/reviews/{id}/comments");
+        Get("/api/reviews/{id}/comments");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
         Summary(s =>

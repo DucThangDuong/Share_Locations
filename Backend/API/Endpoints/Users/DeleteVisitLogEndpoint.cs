@@ -1,4 +1,4 @@
-using API.Extensions;
+﻿using API.Extensions;
 using Application.Common;
 using Application.Features.Users.Commands;
 using FastEndpoints;
@@ -19,7 +19,7 @@ public class DeleteVisitLogEndpoint : Endpoint<DeleteVisitLogRequest>
 
     public override void Configure()
     {
-        Delete("/api/v1/users/me/visit-logs/{id}", "/api/users/me/visit-logs/{id}");
+        Delete("/api/users/me/visit-logs/{id}");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

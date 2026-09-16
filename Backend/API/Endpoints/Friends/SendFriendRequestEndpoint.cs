@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.Extensions;
 using Application.Common;
 using Application.Features.Friends.Commands;
@@ -19,7 +19,7 @@ public class SendFriendRequestEndpoint : Endpoint<SendFriendRequest, ApiSuccessR
 
     public override void Configure()
     {
-        Post("/api/v1/friends/request/{targetUserId}");
+        Post("/api/friends/request/{targetUserId}");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("auth_strict"));

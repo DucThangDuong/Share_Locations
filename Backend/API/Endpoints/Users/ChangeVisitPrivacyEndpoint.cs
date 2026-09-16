@@ -1,4 +1,4 @@
-using API.Extensions;
+﻿using API.Extensions;
 using Application.Common;
 using Application.DTOs;
 using Application.Features.Users.Commands;
@@ -23,7 +23,7 @@ public class ChangeVisitPrivacyEndpoint : Endpoint<ChangeVisitPrivacyRequest>
 
     public override void Configure()
     {
-        Patch("/api/v1/users/me/visit-logs/{id}/privacy", "/api/users/me/visit-logs/{id}/privacy");
+        Patch("/api/users/me/visit-logs/{id}/privacy");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

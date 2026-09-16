@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.Extensions;
 using Application.Common;
 using Application.DTOs;
@@ -15,7 +15,7 @@ public class CreateProposalEndpoint : Endpoint<CreateProposalRequestDto, ApiSucc
 
     public override void Configure()
     {
-        Post("/api/v1/proposals", "/api/proposals");
+        Post("/api/proposals");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.Extensions;
 using Application.Common;
 using Application.DTOs;
@@ -27,7 +27,7 @@ public class GetUserProposalsEndpoint : Endpoint<GetUserProposalsRequest, ApiSuc
 
     public override void Configure()
     {
-        Get("/api/v1/users/me/proposals", "/api/users/me/proposals");
+        Get("/api/users/me/proposals");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("general_api"));

@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.Extensions;
 using Application.Common;
 using Application.DTOs;
@@ -27,7 +27,7 @@ public class UpdateTripEndpoint : Endpoint<UpdateTripRequest, ApiSuccessResponse
 
     public override void Configure()
     {
-        Put("/api/v1/trips/{id}");
+        Put("/api/trips/{id}");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

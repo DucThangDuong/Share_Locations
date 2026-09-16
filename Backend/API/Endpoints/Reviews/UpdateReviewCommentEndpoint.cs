@@ -1,4 +1,4 @@
-using System.IdentityModel.Tokens.Jwt;
+﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using API.DTOs;
 using API.DTOs.Reviews;
@@ -18,7 +18,7 @@ public class UpdateReviewCommentEndpoint : Endpoint<UpdateReviewCommentRequest, 
 
     public override void Configure()
     {
-        Put("/api/v1/reviews/comments/{id}", "/api/reviews/comments/{id}", "/api/v1/comments/{id}");
+        Put("/api/reviews/comments/{id}", "/api/comments/{id}");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

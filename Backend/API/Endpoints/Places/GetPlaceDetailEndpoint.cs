@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.Extensions;
 using Application.DTOs;
 using Application.Features.Places.Queries;
@@ -19,7 +19,7 @@ public class GetPlaceDetailEndpoint : Endpoint<GetPlaceDetailRequest, ApiSuccess
 
     public override void Configure()
     {
-        Get("/api/v1/places/{id}", "/api/places/{id}");
+        Get("/api/places/{id}");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
         Summary(s =>

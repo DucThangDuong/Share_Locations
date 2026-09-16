@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.Extensions;
 using Application.Common;
 using Application.DTOs;
@@ -21,7 +21,7 @@ public class GetUserAccessHistoriesEndpoint : Endpoint<GetUserAccessHistoriesReq
 
     public override void Configure()
     {
-        Get("/api/v1/users/me/access-histories", "/api/users/me/access-histories");
+        Get("/api/users/me/access-histories");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("general_api"));

@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.Extensions;
 using Application.DTOs;
 using Application.Features.Geography.Queries;
@@ -13,7 +13,7 @@ public class GetProvincesEndpoint : EndpointWithoutRequest<ApiSuccessResponse<IR
 
     public override void Configure()
     {
-        Get("/api/v1/provinces", "/api/provinces");
+        Get("/api/provinces");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
         Summary(s =>

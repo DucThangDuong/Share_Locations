@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.Extensions;
 using Application.Common;
 using Application.DTOs;
@@ -28,9 +28,7 @@ public class AddFavoriteEndpoint : Endpoint<AddFavoriteRequest, ApiSuccessRespon
     public override void Configure()
     {
         Post(
-            "/api/v1/users/me/favorites",
             "/api/users/me/favorites",
-            "/api/v1/users/me/favorites/{targetType}/{targetId}",
             "/api/users/me/favorites/{targetType}/{targetId}");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");

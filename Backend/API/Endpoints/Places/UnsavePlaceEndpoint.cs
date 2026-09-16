@@ -1,4 +1,4 @@
-using System.IdentityModel.Tokens.Jwt;
+﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using API.DTOs;
 using API.Extensions;
@@ -23,7 +23,7 @@ public class UnsavePlaceEndpoint : Endpoint<UnsavePlaceRequest, ApiSuccessRespon
 
     public override void Configure()
     {
-        Delete("/api/v1/places/{id}/save", "/api/places/{id}/save");
+        Delete("/api/places/{id}/save");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

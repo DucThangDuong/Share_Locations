@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.DTOs.Foods;
 using API.Extensions;
 using Application.DTOs;
@@ -14,7 +14,7 @@ public class GetFoodsEndpoint : Endpoint<GetFoodsRequest, ApiSuccessResponse<IRe
 
     public override void Configure()
     {
-        Get("/api/v1/foods", "/api/foods");
+        Get("/api/foods");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
         Summary(s =>

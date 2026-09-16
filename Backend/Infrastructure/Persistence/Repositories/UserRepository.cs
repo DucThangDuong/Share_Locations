@@ -1,4 +1,4 @@
-﻿using Domain.Entities;
+using Domain.Entities;
 using Domain.Enums;
 using Domain.Interfaces;
 using Infrastructure.Persistence;
@@ -77,7 +77,7 @@ public class UserRepository : IUserRepository
                 || EF.Functions.Like(u.Email, $"%{raw}%"));
         }
 
-        return await query.Take(limit).ToListAsync(ct);
+        return await query.OrderByDescending(u => u.Profile != null ? u.Profile.ReputationScore : 0).ThenBy(u => u.Id).Take(limit).ToListAsync(ct);
     }
 
     public async Task AddAsync(User user, CancellationToken ct = default)

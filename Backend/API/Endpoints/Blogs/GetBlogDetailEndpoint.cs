@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.Extensions;
 using Application.DTOs;
 using Application.Features.Blogs.Queries;
@@ -19,7 +19,7 @@ public class GetBlogDetailEndpoint : Endpoint<GetBlogDetailRequest, ApiSuccessRe
 
     public override void Configure()
     {
-        Get("/api/v1/blogs/{idOrSlug}", "/api/blogs/{idOrSlug}");
+        Get("/api/blogs/{idOrSlug}");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
         Summary(s =>

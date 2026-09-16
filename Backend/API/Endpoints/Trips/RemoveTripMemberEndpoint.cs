@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.Extensions;
 using Application.Common;
 using Application.Features.Trips.Commands;
@@ -20,7 +20,7 @@ public class RemoveTripMemberEndpoint : Endpoint<RemoveTripMemberRequest, ApiSuc
 
     public override void Configure()
     {
-        Delete("/api/v1/trips/{id}/members/{userId}");
+        Delete("/api/trips/{id}/members/{userId}");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

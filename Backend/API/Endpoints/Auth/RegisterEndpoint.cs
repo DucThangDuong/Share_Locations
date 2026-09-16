@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.DTOs.Auth;
 using API.Extensions;
 using Application.Features.Auth.Commands;
@@ -13,7 +13,7 @@ public class RegisterEndpoint : Endpoint<RegisterRequest, ApiSuccessResponse<lon
 
     public override void Configure()
     {
-        Post("/api/v1/auth/register", "/api/auth/register");
+        Post("/api/auth/register");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("auth_strict"));
         Summary(s =>

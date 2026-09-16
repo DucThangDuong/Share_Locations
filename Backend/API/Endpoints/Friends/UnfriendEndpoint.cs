@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.Extensions;
 using Application.Common;
 using Application.Features.Friends.Commands;
@@ -19,7 +19,7 @@ public class UnfriendEndpoint : Endpoint<UnfriendRequest, ApiSuccessResponse<obj
 
     public override void Configure()
     {
-        Delete("/api/v1/friends/{targetUserId}");
+        Delete("/api/friends/{targetUserId}");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

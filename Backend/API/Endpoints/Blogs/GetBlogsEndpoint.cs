@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.DTOs.Blogs;
 using API.Extensions;
 using Application.DTOs;
@@ -14,7 +14,7 @@ public class GetBlogsEndpoint : Endpoint<GetBlogsRequest, ApiSuccessResponse<IRe
 
     public override void Configure()
     {
-        Get("/api/v1/blogs", "/api/blogs");
+        Get("/api/blogs");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
         Summary(s =>

@@ -1,4 +1,4 @@
-using System.IdentityModel.Tokens.Jwt;
+﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using API.DTOs;
 using API.Extensions;
@@ -17,7 +17,7 @@ public class GetProfileEndpoint : EndpointWithoutRequest<ApiSuccessResponse<User
 
     public override void Configure()
     {
-        Get("/api/v1/auth/profile", "/api/auth/profile");
+        Get("/api/auth/profile");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Summary(s =>

@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.Extensions;
 using Application.Common;
 using Application.DTOs;
@@ -27,7 +27,7 @@ public class GetUserBlogsEndpoint : Endpoint<GetUserBlogsRequest, ApiSuccessResp
 
     public override void Configure()
     {
-        Get("/api/v1/users/me/blogs", "/api/users/me/blogs");
+        Get("/api/users/me/blogs");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("general_api"));
