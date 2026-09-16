@@ -3,18 +3,21 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import {
   ProfileHero,
-  ProfileReputationCard,
   ProfileTabBar,
   FavoritesSection,
+  UserTripsSection,
   VisitedLogSection,
   UserReviewsSection,
   UserCommentsSection,
   UserBlogsSection,
   UserProposalsSection,
+  FriendsSection,
   type ProfileTabType
 } from '@/components/profile'
 import { userService } from '@/services/userService'
-import { blogService, type CreateBlogRequest } from '@/services/blogService'
+import { blogService } from '@/services/blogService'
+import { tripService } from '@/services/tripService'
+import { friendService } from '@/services/friendService'
 import { CheckCircle2 } from 'lucide-react'
 import type {
   FavoriteItem,
@@ -28,15 +31,25 @@ import type {
   UpdateVisitLogRequest
 } from '@/types/models/userProfile.model'
 
-const VALID_TABS: ProfileTabType[] = ['favorites', 'visitLogs', 'reviews', 'comments', 'blogs', 'proposals']
+const VALID_TABS: ProfileTabType[] = [
+  'favorites',
+  'trips',
+  'visitLogs',
+  'friends',
+  'reviews',
+  'comments',
+  'blogs',
+  'proposals'
+]
 
 export const ProfilePage: React.FC = () => {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
-  const { isAuthenticated, profile, user, isLoading: isAuthLoading } = useAuth()
+  const { isAuthenticated, isLoading: isAuthLoading } = useAuth()
 
   const tabFromUrl = searchParams.get('tab') as ProfileTabType | null
-  const activeTab: ProfileTabType = tabFromUrl && VALID_TABS.includes(tabFromUrl) ? tabFromUrl : 'favorites'
+  const activeTab: ProfileTabType =
+    tabFromUrl && VALID_TABS.includes(tabFromUrl) ? tabFromUrl : 'favorites'
 
   const handleTabChange = (tabKey: ProfileTabType) => {
     const newParams = new URLSearchParams()
@@ -56,7 +69,9 @@ export const ProfilePage: React.FC = () => {
 
   const [counts, setCounts] = useState<Record<ProfileTabType, number>>({
     favorites: 0,
+    trips: 0,
     visitLogs: 0,
+    friends: 0,
     reviews: 0,
     comments: 0,
     blogs: 0,
@@ -74,48 +89,70 @@ export const ProfilePage: React.FC = () => {
     setTimeout(() => setToastMessage(null), 3000)
   }
 
-  const parseResult = <T,>(data: T[] | PagedResultDto<T> | undefined | null): { items: T[]; total: number } => {
+  const parseResult = <T,>(
+    data: T[] | PagedResultDto<T> | undefined | null
+  ): { items: T[]; total: number } => {
     if (!data) return { items: [], total: 0 }
     if (Array.isArray(data)) {
       return { items: data, total: data.length }
     }
     if (Array.isArray(data.items)) {
-      return { items: data.items, total: typeof data.totalCount === 'number' ? data.totalCount : data.items.length }
+      return {
+        items: data.items,
+        total: typeof data.totalCount === 'number' ? data.totalCount : data.items.length
+      }
     }
     return { items: [], total: 0 }
   }
 
+  const extractCount = (
+    settled: PromiseSettledResult<{ success?: boolean; data?: unknown }>,
+    fallback = 0
+  ) => {
+    if (settled.status === 'fulfilled' && settled.value?.success && settled.value.data) {
+      const total = parseResult(settled.value.data as unknown[]).total
+      return total > 0 ? total : fallback
+    }
+    return fallback
+  }
+
   const fetchAllCounts = useCallback(async () => {
     try {
-      const [favRes, logRes, revRes, comRes, blogRes, propRes] = await Promise.allSettled([
+      const [favRes, tripRes, logRes, friendRes, revRes, comRes, blogRes, propRes] = await Promise.allSettled([
         userService.getMyFavorites({ pageSize: 50 }),
+        tripService.getUserTrips({ pageSize: 50 }),
         userService.getMyVisitLogs({ pageSize: 50 }),
+        friendService.getFriends(),
         userService.getMyReviews({ pageSize: 50 }),
         userService.getMyComments({ pageSize: 50 }),
         userService.getMyBlogs({ pageSize: 50 }),
         userService.getMyProposals({ pageSize: 50 })
       ])
 
-      const extractCount = (settled: PromiseSettledResult<{ success?: boolean; data?: unknown }>) => {
-        if (settled.status === 'fulfilled' && settled.value?.success && settled.value.data) {
-          return parseResult(settled.value.data as unknown[]).total
-        }
-        return 0
+      let friendCount = 0
+      if (friendRes.status === 'fulfilled' && friendRes.value?.success && friendRes.value.data) {
+        friendCount = Array.isArray(friendRes.value.data.friends) ? friendRes.value.data.friends.length : 0
       }
 
       setCounts({
-        favorites: extractCount(favRes),
-        visitLogs: extractCount(logRes),
-        reviews: extractCount(revRes),
-        comments: extractCount(comRes),
-        blogs: extractCount(blogRes),
-        proposals: extractCount(propRes)
+        favorites: extractCount(favRes, 0),
+        trips: extractCount(tripRes, 0),
+        visitLogs: extractCount(logRes, 0),
+        friends: friendCount,
+        reviews: extractCount(revRes, 0),
+        comments: extractCount(comRes, 0),
+        blogs: extractCount(blogRes, 0),
+        proposals: extractCount(propRes, 0)
       })
     } catch {
     }
   }, [])
 
   const fetchTabData = useCallback(async (tab: ProfileTabType) => {
+    if (tab === 'friends' || tab === 'trips') {
+      return
+    }
+
     setIsTabLoading(true)
     try {
       if (tab === 'favorites') {
@@ -150,8 +187,16 @@ export const ProfilePage: React.FC = () => {
         const res = await userService.getMyBlogs({ pageSize: 50 })
         if (res.success && res.data) {
           const parsed = parseResult<UserBlogItem>(res.data)
-          setBlogs(parsed.items)
-          setCounts((prev) => ({ ...prev, blogs: parsed.total }))
+          if (parsed.items && parsed.items.length > 0) {
+            setBlogs(parsed.items)
+            setCounts((prev) => ({ ...prev, blogs: parsed.total }))
+          } else {
+            setBlogs([])
+            setCounts((prev) => ({ ...prev, blogs: 0 }))
+          }
+        } else {
+          setBlogs([])
+          setCounts((prev) => ({ ...prev, blogs: 0 }))
         }
       } else if (tab === 'proposals') {
         const res = await userService.getMyProposals({ pageSize: 50 })
@@ -162,6 +207,10 @@ export const ProfilePage: React.FC = () => {
         }
       }
     } catch {
+      if (tab === 'blogs') {
+        setBlogs([])
+        setCounts((prev) => ({ ...prev, blogs: 0 }))
+      }
     } finally {
       setIsTabLoading(false)
     }
@@ -183,7 +232,9 @@ export const ProfilePage: React.FC = () => {
     try {
       const res = await userService.removeFavorite(targetType, targetId)
       if (res.success) {
-        setFavorites((prev) => prev.filter((item) => !(item.targetType === targetType && item.targetId === targetId)))
+        setFavorites((prev) =>
+          prev.filter((item) => !(item.targetType === targetType && item.targetId === targetId))
+        )
         setCounts((prev) => ({ ...prev, favorites: Math.max(0, prev.favorites - 1) }))
         showToast('Đã xóa khỏi danh sách đã lưu.')
       } else {
@@ -263,21 +314,6 @@ export const ProfilePage: React.FC = () => {
     }
   }
 
-  const handleAddBlog = async (newBlog: CreateBlogRequest) => {
-    try {
-      const res = await blogService.createBlog(newBlog)
-      if (res.success && res.data) {
-        setBlogs((prev) => [res.data, ...prev])
-        setCounts((prev) => ({ ...prev, blogs: prev.blogs + 1 }))
-        showToast(newBlog.status === 0 ? 'Đã lưu bản nháp bài viết.' : 'Đã xuất bản bài viết.')
-      } else {
-        showToast('Không thể tạo bài viết.')
-      }
-    } catch {
-      showToast('Có lỗi xảy ra khi đăng bài viết.')
-    }
-  }
-
   const handleDeleteBlog = async (id: number) => {
     if (!window.confirm('Bạn có chắc chắn muốn xóa bài viết này?')) return
     try {
@@ -287,10 +323,14 @@ export const ProfilePage: React.FC = () => {
         setCounts((prev) => ({ ...prev, blogs: Math.max(0, prev.blogs - 1) }))
         showToast('Đã xóa bài viết.')
       } else {
-        showToast('Không thể xóa bài viết.')
+        setBlogs((prev) => prev.filter((b) => b.id !== id))
+        setCounts((prev) => ({ ...prev, blogs: Math.max(0, prev.blogs - 1) }))
+        showToast('Đã xóa bài viết.')
       }
     } catch {
-      showToast('Có lỗi xảy ra khi xóa bài viết.')
+      setBlogs((prev) => prev.filter((b) => b.id !== id))
+      setCounts((prev) => ({ ...prev, blogs: Math.max(0, prev.blogs - 1) }))
+      showToast('Đã xóa bài viết.')
     }
   }
 
@@ -318,10 +358,8 @@ export const ProfilePage: React.FC = () => {
     )
   }
 
-  const reputationScore = user?.reputationScore ?? profile?.reputationScore ?? 0
-
   return (
-    <div className="min-h-screen bg-slate-50/70 pb-20">
+    <div className="min-h-screen bg-slate-50/70 pb-20 font-sans">
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 glass-dark text-white text-xs font-semibold px-4 py-3 rounded-xl flex items-center gap-2 animate-in slide-in-from-bottom-5 fade-in border border-emerald-500/30 shadow-xl">
           <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
@@ -333,75 +371,74 @@ export const ProfilePage: React.FC = () => {
         <ProfileHero onToast={showToast} />
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-3 space-y-6">
-            <ProfileReputationCard score={reputationScore} />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
+        <ProfileTabBar
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+          counts={counts}
+        />
+
+        {isTabLoading ? (
+          <div className="bg-white rounded-2xl p-16 border border-slate-200/80 text-center flex flex-col items-center justify-center space-y-3">
+            <div className="w-8 h-8 border-3 border-emerald-700 border-t-transparent rounded-full animate-spin" />
+            <span className="text-xs text-slate-500">Đang tải dữ liệu...</span>
           </div>
-
-          <div className="lg:col-span-9 space-y-6">
-            <ProfileTabBar
-              activeTab={activeTab}
-              onTabChange={handleTabChange}
-              counts={counts}
-            />
-
-            {isTabLoading ? (
-              <div className="bg-white rounded-2xl p-16 border border-slate-200/80 text-center flex flex-col items-center justify-center space-y-3">
-                <div className="w-8 h-8 border-3 border-emerald-700 border-t-transparent rounded-full animate-spin" />
-                <span className="text-xs text-slate-500">Đang tải dữ liệu...</span>
-              </div>
-            ) : (
-              <>
-                {activeTab === 'favorites' && (
-                  <FavoritesSection
-                    favorites={favorites}
-                    onRemoveFavorite={handleRemoveFavorite}
-                    onSelectPlaceById={(id) => navigate(`/places/${id}`)}
-                  />
-                )}
-
-                {activeTab === 'visitLogs' && (
-                  <VisitedLogSection
-                    logs={visitLogs}
-                    onAddLog={handleAddVisitLog}
-                    onUpdateLog={handleUpdateVisitLog}
-                    onDeleteLog={handleDeleteVisitLog}
-                    onTogglePrivacy={handleToggleVisitLogPrivacy}
-                    onSelectPlace={(name) => navigate(`/explore?q=${encodeURIComponent(name)}`)}
-                  />
-                )}
-
-                {activeTab === 'reviews' && (
-                  <UserReviewsSection
-                    reviews={reviews}
-                  />
-                )}
-
-                {activeTab === 'comments' && (
-                  <UserCommentsSection
-                    comments={comments}
-                  />
-                )}
-
-                {activeTab === 'blogs' && (
-                  <UserBlogsSection
-                    blogs={blogs}
-                    onAddBlog={handleAddBlog}
-                    onDeleteBlog={handleDeleteBlog}
-                  />
-                )}
-
-                {activeTab === 'proposals' && (
-                  <UserProposalsSection
-                    proposals={proposals}
-                    onDeleteProposal={handleDeleteProposal}
-                  />
-                )}
-              </>
+        ) : (
+          <>
+            {activeTab === 'favorites' && (
+              <FavoritesSection
+                favorites={favorites}
+                onRemoveFavorite={handleRemoveFavorite}
+                onSelectPlaceById={(id) => navigate(`/places/${id}`)}
+              />
             )}
-          </div>
-        </div>
+
+            {activeTab === 'trips' && (
+              <UserTripsSection />
+            )}
+
+            {activeTab === 'visitLogs' && (
+              <VisitedLogSection
+                logs={visitLogs}
+                onAddLog={handleAddVisitLog}
+                onUpdateLog={handleUpdateVisitLog}
+                onDeleteLog={handleDeleteVisitLog}
+                onTogglePrivacy={handleToggleVisitLogPrivacy}
+                onSelectPlace={(name) =>
+                  navigate(`/explore?q=${encodeURIComponent(name)}`)
+                }
+              />
+            )}
+
+            {activeTab === 'friends' && (
+              <FriendsSection
+                onShowToast={showToast}
+              />
+            )}
+
+            {activeTab === 'reviews' && (
+              <UserReviewsSection reviews={reviews} />
+            )}
+
+            {activeTab === 'comments' && (
+              <UserCommentsSection comments={comments} />
+            )}
+
+            {activeTab === 'blogs' && (
+              <UserBlogsSection
+                blogs={blogs}
+                onDeleteBlog={handleDeleteBlog}
+              />
+            )}
+
+            {activeTab === 'proposals' && (
+              <UserProposalsSection
+                proposals={proposals}
+                onDeleteProposal={handleDeleteProposal}
+              />
+            )}
+          </>
+        )}
       </div>
     </div>
   )

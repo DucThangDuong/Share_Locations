@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import {
@@ -19,9 +20,10 @@ import {
 export const Header: React.FC = () => {
   const { isAuthenticated, profile, user, logout } = useAuth()
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isNavDrawerOpen, setIsNavDrawerOpen] = useState(false)
   const [headerSearch, setHeaderSearch] = useState('')
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const drawerRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -33,15 +35,41 @@ export const Header: React.FC = () => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsDropdownOpen(false)
       }
+      if (drawerRef.current && !drawerRef.current.contains(event.target as Node)) {
+        setIsNavDrawerOpen(false)
+      }
     }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsDropdownOpen(false)
+        setIsNavDrawerOpen(false)
+      }
+    }
+
     document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
   }, [])
+
+  useEffect(() => {
+    if (isNavDrawerOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [isNavDrawerOpen])
 
   const handleLogout = async () => {
     await logout()
     setIsDropdownOpen(false)
-    setIsMobileMenuOpen(false)
+    setIsNavDrawerOpen(false)
     navigate('/login')
   }
 
@@ -50,7 +78,7 @@ export const Header: React.FC = () => {
     if (headerSearch.trim()) {
       navigate(`/explore?q=${encodeURIComponent(headerSearch.trim())}`)
       setHeaderSearch('')
-      setIsMobileMenuOpen(false)
+      setIsNavDrawerOpen(false)
     }
   }
 
@@ -63,57 +91,47 @@ export const Header: React.FC = () => {
   ]
 
   return (
-    <header className="sticky top-0 z-40 w-full glass-card border-b border-slate-200/80 transition-all duration-300 bg-white/90 backdrop-blur-md">
+    <header className="sticky top-0 z-40 w-full border-b border-slate-200/80 bg-white/95 backdrop-blur-md shadow-2xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex justify-between items-center gap-4">
-        <Link
-          to="/"
-          className="flex items-center gap-2 group shrink-0"
-        >
-          <span className="text-2xl font-extrabold tracking-tight text-slate-900 group-hover:text-primary transition-colors">
-            LangThang<span className="text-secondary-container">.</span>
-          </span>
-        </Link>
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <button
+            type="button"
+            onClick={() => setIsNavDrawerOpen(true)}
+            className="p-2 -ml-2 rounded-xl text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center shrink-0"
+            aria-label="Mở danh mục điều hướng"
+            title="Danh mục điều hướng"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
 
-        <form onSubmit={handleHeaderSearch} className="hidden md:flex flex-1 max-w-xs lg:max-w-sm relative">
-          <input
-            value={headerSearch}
-            onChange={(e) => setHeaderSearch(e.target.value)}
-            className="w-full h-10 px-4 pl-10 text-xs sm:text-sm border border-slate-200 rounded-full bg-slate-50/80 placeholder:text-slate-400 text-slate-800 focus:outline-hidden focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-            placeholder="Tìm kiếm địa danh, ẩm thực..."
-            type="text"
-          />
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-        </form>
+          <Link
+            to="/"
+            className="flex items-center gap-2 group shrink-0"
+          >
+            <span className="text-2xl font-extrabold tracking-tight text-slate-900 group-hover:text-emerald-800 transition-colors">
+              LangThang<span className="text-emerald-600">.</span>
+            </span>
+          </Link>
 
-        <nav className="hidden lg:flex items-center space-x-1 font-medium text-xs text-slate-600">
-          {navLinks.map((item) => {
-            const isActive = item.exact
-              ? location.pathname === item.href
-              : location.pathname.startsWith(item.href)
+          <form onSubmit={handleHeaderSearch} className="flex flex-1 max-w-xs sm:max-w-sm md:max-w-md relative min-w-0 ml-1">
+            <input
+              value={headerSearch}
+              onChange={(e) => setHeaderSearch(e.target.value)}
+              className="w-full h-10 px-4 pl-10 text-xs sm:text-sm border border-slate-200 rounded-full bg-slate-50/90 placeholder:text-slate-400 text-slate-800 focus:outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all"
+              placeholder="Tìm kiếm địa danh, ẩm thực..."
+              type="text"
+            />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+          </form>
+        </div>
 
-            return (
-              <Link
-                key={item.label}
-                to={item.href}
-                className={`px-3.5 py-2 rounded-full transition-all flex items-center gap-1.5 ${isActive
-                    ? 'text-primary font-bold bg-emerald-50'
-                    : 'hover:text-primary hover:bg-slate-100/70'
-                  }`}
-              >
-                <item.icon className="w-3.5 h-3.5" />
-                <span>{item.label}</span>
-              </Link>
-            )
-          })}
-        </nav>
-
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 shrink-0">
           <Link
             to="/propose-place"
-            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition-all cursor-pointer border border-emerald-200/60"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition-colors cursor-pointer border border-emerald-200/60"
           >
             <Plus className="w-3.5 h-3.5 text-emerald-700" />
-            <span>Đề xuất địa điểm</span>
+            <span className="hidden sm:inline">Đề xuất địa điểm</span>
           </Link>
 
           {isAuthenticated ? (
@@ -121,7 +139,7 @@ export const Header: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center gap-1.5 p-1 pr-1.5 rounded-full border border-slate-200/90 bg-white hover:bg-slate-50 hover:border-slate-300 active-press transition-all cursor-pointer shadow-2xs"
+                className="flex items-center gap-1.5 p-1 pr-1.5 rounded-full border border-slate-200/90 bg-white hover:bg-slate-50 hover:border-slate-300 transition-colors cursor-pointer shadow-2xs"
                 aria-expanded={isDropdownOpen}
               >
                 <div className="relative">
@@ -157,6 +175,7 @@ export const Header: React.FC = () => {
                     )}
                     <div className="overflow-hidden">
                       <p className="text-xs font-bold text-slate-900 truncate">{displayName}</p>
+                      <p className="text-[10px] text-slate-400 truncate">{user?.email || profile?.email}</p>
                     </div>
                   </div>
 
@@ -184,7 +203,7 @@ export const Header: React.FC = () => {
                     <button
                       type="button"
                       onClick={handleLogout}
-                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer text-left"
                     >
                       <LogOut className="w-4 h-4" />
                       <span>Đăng xuất</span>
@@ -194,150 +213,88 @@ export const Header: React.FC = () => {
               )}
             </div>
           ) : (
-            <div className="hidden sm:flex items-center gap-2">
+            <div className="flex items-center gap-2">
               <Link
                 to="/login"
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100/80 transition-colors"
+                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100/80 transition-colors"
               >
                 Đăng nhập
               </Link>
               <Link
                 to="/register"
-                className="px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-xs font-semibold text-white active-press transition-all"
+                className="px-3.5 py-1.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-xs font-semibold text-white transition-colors shadow-2xs"
               >
                 Đăng ký
               </Link>
             </div>
           )}
-
-          <button
-            type="button"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="lg:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100 transition-colors"
-            aria-label="Toggle menu"
-          >
-            {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
         </div>
       </div>
 
-      {isMobileMenuOpen && (
-        <div className="lg:hidden border-t border-slate-100 bg-white/95 backdrop-blur-xl px-4 py-4 space-y-3 animate-in slide-in-from-top-2 duration-200">
-          <form onSubmit={handleHeaderSearch} className="relative mb-3">
-            <input
-              value={headerSearch}
-              onChange={(e) => setHeaderSearch(e.target.value)}
-              className="w-full h-10 px-4 pl-10 text-xs border border-slate-200 rounded-xl bg-slate-50 text-slate-800 placeholder:text-slate-400"
-              placeholder="Tìm kiếm địa điểm..."
-              type="text"
+      {isNavDrawerOpen &&
+        createPortal(
+          <div className="fixed inset-0 z-[9999] flex">
+            <div
+              className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs transition-opacity duration-200 animate-in fade-in"
+              onClick={() => setIsNavDrawerOpen(false)}
             />
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-          </form>
 
-          {isAuthenticated && (
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                {avatarUrl ? (
-                  <img
-                    alt={displayName}
-                    className="w-9 h-9 rounded-full object-cover border border-emerald-500/30"
-                    src={avatarUrl}
-                  />
-                ) : (
-                  <div className="w-9 h-9 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center text-xs font-bold">
-                    {displayName.charAt(0).toUpperCase()}
-                  </div>
-                )}
-                <div>
-                  <p className="text-xs font-bold text-slate-900 truncate">{displayName}</p>
-                  <p className="text-[10px] text-slate-400 truncate">{user?.email || profile?.email}</p>
-                </div>
-              </div>
-              <Link
-                to="/settings"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="p-2 text-slate-600 hover:text-emerald-700 rounded-lg hover:bg-slate-200/60 transition-colors"
-                title="Cài đặt"
-              >
-                <Sliders className="w-4 h-4" />
-              </Link>
-            </div>
-          )}
-
-          <Link
-            to="/propose-place"
-            onClick={() => setIsMobileMenuOpen(false)}
-            className="w-full flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 transition-colors border border-emerald-200"
-          >
-            <Plus className="w-4 h-4 text-emerald-700" />
-            <span>Đề xuất địa điểm mới</span>
-          </Link>
-
-          <div className="space-y-1">
-            {navLinks.map((item) => (
-              <Link
-                key={item.label}
-                to={item.href}
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-100 hover:text-primary transition-colors"
-              >
-                <item.icon className="w-4 h-4 text-emerald-700" />
-                <span>{item.label}</span>
-              </Link>
-            ))}
-
-            {isAuthenticated && (
-              <>
+            <aside
+              ref={drawerRef}
+              className="relative w-80 max-w-[85vw] bg-white h-screen shadow-2xl flex flex-col z-10 animate-in slide-in-from-left duration-200 border-r border-slate-200 overflow-y-auto"
+            >
+              <div className="p-4 border-b border-slate-100 flex items-center justify-between">
                 <Link
-                  to="/profile"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-100 hover:text-primary transition-colors"
+                  to="/"
+                  onClick={() => setIsNavDrawerOpen(false)}
+                  className="flex items-center gap-2 group"
                 >
-                  <User className="w-4 h-4 text-emerald-700" />
-                  <span>Trang cá nhân</span>
+                  <span className="text-2xl font-extrabold tracking-tight text-slate-900">
+                    LangThang<span className="text-emerald-600">.</span>
+                  </span>
                 </Link>
-
-                <Link
-                  to="/settings"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-100 hover:text-primary transition-colors"
-                >
-                  <Sliders className="w-4 h-4 text-emerald-700" />
-                  <span>Cài đặt tài khoản</span>
-                </Link>
-
                 <button
                   type="button"
-                  onClick={handleLogout}
-                  className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors text-left cursor-pointer"
+                  onClick={() => setIsNavDrawerOpen(false)}
+                  className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                  aria-label="Đóng menu"
                 >
-                  <LogOut className="w-4 h-4" />
-                  <span>Đăng xuất</span>
+                  <X className="w-5 h-5" />
                 </button>
-              </>
-            )}
-          </div>
+              </div>
 
-          {!isAuthenticated && (
-            <div className="pt-3 border-t border-slate-100 flex gap-2">
-              <Link
-                to="/login"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="flex-1 py-2.5 text-center text-xs font-semibold text-slate-700 border border-slate-200 rounded-xl hover:bg-slate-50"
-              >
-                Đăng nhập
-              </Link>
-              <Link
-                to="/register"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="flex-1 py-2.5 text-center text-xs font-semibold text-white bg-primary rounded-xl"
-              >
-                Đăng ký
-              </Link>
-            </div>
-          )}
-        </div>
-      )}
+              <div className="p-4 space-y-1 flex-1">
+                <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">
+                  Khám phá hệ thống
+                </div>
+
+                {navLinks.map((item) => {
+                  const isActive = item.exact
+                    ? location.pathname === item.href
+                    : location.pathname.startsWith(item.href)
+
+                  return (
+                    <Link
+                      key={item.label}
+                      to={item.href}
+                      onClick={() => setIsNavDrawerOpen(false)}
+                      className={`flex items-center gap-3 px-3.5 py-3 rounded-2xl text-xs font-bold transition-colors ${isActive
+                        ? 'bg-emerald-50 text-emerald-900 border border-emerald-200/80'
+                        : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+                        }`}
+                    >
+                      <item.icon className={`w-4 h-4 ${isActive ? 'text-emerald-800' : 'text-slate-500'}`} />
+                      <span className="flex-1">{item.label}</span>
+                    </Link>
+                  )
+                })}
+              </div>
+            </aside>
+          </div>,
+          document.body
+        )}
     </header>
   )
 }
+
+export default Header

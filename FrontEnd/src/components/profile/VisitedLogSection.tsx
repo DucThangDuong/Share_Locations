@@ -71,7 +71,7 @@ const VisitedLogCard: React.FC<VisitedLogCardProps> = ({
                 e.stopPropagation()
                 onTogglePrivacy(log.id, log.privacy === 1 ? 0 : 1)
               }}
-              className={`p-1.5 rounded-full backdrop-blur-xs shadow-xs transition-transform active:scale-95 cursor-pointer ${log.privacy === 1
+              className={`p-1.5 rounded-full backdrop-blur-xs shadow-xs transition-colors cursor-pointer ${log.privacy === 1
                 ? 'bg-slate-900/80 hover:bg-slate-900 text-slate-300'
                 : 'bg-emerald-600 hover:bg-emerald-700 text-white'
                 }`}

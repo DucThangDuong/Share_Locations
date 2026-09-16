@@ -83,7 +83,7 @@ const FavoriteCard: React.FC<FavoriteCardProps> = ({ item, onRemove, onSelect })
           type="button"
           onClick={handleRemoveClick}
           aria-label="Bỏ lưu khỏi danh sách yêu thích"
-          className="absolute top-3 right-3 p-2 rounded-full bg-slate-900/60 hover:bg-slate-900 text-rose-400 hover:text-rose-500 backdrop-blur-xs transition-transform active:scale-95 z-10 cursor-pointer shadow-xs"
+          className="absolute top-3 right-3 p-2 rounded-full bg-slate-900/60 hover:bg-slate-900 text-rose-400 hover:text-rose-500 backdrop-blur-xs transition-colors z-10 cursor-pointer shadow-xs"
         >
           <Heart size={14} className="fill-current text-rose-500" />
         </button>

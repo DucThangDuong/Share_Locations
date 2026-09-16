@@ -52,7 +52,7 @@ const BlogVerticalCard: React.FC<{ post: RegionBlogPost }> = ({ post }) => {
           type="button"
           onClick={handleToggleSave}
           aria-label={isSaved ? 'Bỏ lưu bài viết' : 'Lưu bài viết'}
-          className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/95 hover:bg-white text-slate-800 shadow-sm flex items-center justify-center z-10 transition-transform active:scale-95 cursor-pointer"
+          className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/95 hover:bg-white text-slate-800 shadow-sm flex items-center justify-center z-10 transition-colors cursor-pointer"
         >
           <Heart
             className={`w-4 h-4 transition-colors ${

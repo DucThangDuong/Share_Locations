@@ -23,6 +23,11 @@ export interface UpdateBlogRequest {
   status?: number
 }
 
+export interface ToggleBlogLikeResponse {
+  isLiked: boolean
+  likesCount: number
+}
+
 async function getWithFallback<T>(url1: string, url2: string, config?: Record<string, unknown>): Promise<ApiSuccessResponse<T>> {
   try {
     const response = await apiClient.get<ApiSuccessResponse<T>>(url1, config)
@@ -88,28 +93,35 @@ export const blogService = {
     cleanParams.page = params?.page || 1
     cleanParams.pageSize = params?.pageSize || 12
 
-    return getWithFallback<BlogListItemDto[]>('/api/blogs', '/api/v1/blogs', {
+    return getWithFallback<BlogListItemDto[]>('/api/v1/blogs', '/api/blogs', {
       params: cleanParams
     })
   },
 
   async getFeaturedBlog(): Promise<ApiSuccessResponse<BlogListItemDto>> {
-    return getWithFallback<BlogListItemDto>('/api/blogs/featured', '/api/v1/blogs/featured')
+    return getWithFallback<BlogListItemDto>('/api/v1/blogs/featured', '/api/blogs/featured')
   },
 
   async getBlogDetail(idOrSlug: string | number): Promise<ApiSuccessResponse<BlogDetailDto>> {
-    return getWithFallback<BlogDetailDto>(`/api/blogs/${idOrSlug}`, `/api/v1/blogs/${idOrSlug}`)
+    return getWithFallback<BlogDetailDto>(`/api/v1/blogs/${idOrSlug}`, `/api/blogs/${idOrSlug}`)
+  },
+
+  async toggleLike(id: number | string): Promise<ApiSuccessResponse<ToggleBlogLikeResponse>> {
+    return postWithFallback<ToggleBlogLikeResponse>(
+      `/api/v1/blogs/${id}/toggle-like`,
+      `/api/blogs/${id}/toggle-like`
+    )
   },
 
   async createBlog(data: CreateBlogRequest): Promise<ApiSuccessResponse<UserBlogItem>> {
-    return postWithFallback<UserBlogItem>('/api/blogs', '/api/v1/blogs', data)
+    return postWithFallback<UserBlogItem>('/api/v1/blogs', '/api/blogs', data)
   },
 
   async updateBlog(id: number | string, data: UpdateBlogRequest): Promise<ApiSuccessResponse<boolean>> {
-    return putWithFallback<boolean>(`/api/blogs/${id}`, `/api/v1/blogs/${id}`, data)
+    return putWithFallback<boolean>(`/api/v1/blogs/${id}`, `/api/blogs/${id}`, data)
   },
 
   async deleteBlog(id: number | string): Promise<ApiSuccessResponse<boolean>> {
-    return deleteWithFallback<boolean>(`/api/blogs/${id}`, `/api/v1/blogs/${id}`)
+    return deleteWithFallback<boolean>(`/api/v1/blogs/${id}`, `/api/blogs/${id}`)
   }
 }
