@@ -22,7 +22,7 @@ export interface BlogArticleItem {
   title: string
   subtitle: string
   excerpt: string
-  category: 'Ẩm thực' | 'Kinh nghiệm' | 'Khám phá' | 'Lịch trình' | 'Văn hóa'
+  category: string
   coverImg: string
   authorName: string
   authorRole: string
@@ -37,6 +37,7 @@ export interface BlogArticleItem {
   htmlContent?: string
   sections: BlogArticleSection[]
   mentionedPlaces?: MentionedPlace[]
+  tags?: string[]
 }
 
 export interface BlogReportType {

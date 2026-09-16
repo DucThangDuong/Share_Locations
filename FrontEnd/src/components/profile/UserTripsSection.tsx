@@ -8,7 +8,6 @@ import {
   Trash2,
   Lock,
   Globe,
-  MapPin,
   Clock,
   X
 } from 'lucide-react'
@@ -46,9 +45,9 @@ export const UserTripsSection: React.FC = () => {
         const rawItems: UserTripSummaryDto[] = Array.isArray(res.data)
           ? res.data
           : Array.isArray(res.data.items)
-          ? res.data.items
-          : []
-        
+            ? res.data.items
+            : []
+
         const mapped: DisplayTripItem[] = rawItems.map((t) => ({
           id: Number(t.id),
           title: t.title,
@@ -148,33 +147,30 @@ export const UserTripsSection: React.FC = () => {
           <button
             type="button"
             onClick={() => setStatusFilter('all')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
-              statusFilter === 'all'
-                ? 'bg-emerald-800 text-white'
-                : 'bg-white border border-slate-200 text-slate-600 hover:text-slate-900'
-            }`}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${statusFilter === 'all'
+              ? 'bg-emerald-800 text-white'
+              : 'bg-white border border-slate-200 text-slate-600 hover:text-slate-900'
+              }`}
           >
             Tất cả ({trips.length})
           </button>
           <button
             type="button"
             onClick={() => setStatusFilter('published')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
-              statusFilter === 'published'
-                ? 'bg-emerald-800 text-white'
-                : 'bg-white border border-slate-200 text-slate-600 hover:text-slate-900'
-            }`}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${statusFilter === 'published'
+              ? 'bg-emerald-800 text-white'
+              : 'bg-white border border-slate-200 text-slate-600 hover:text-slate-900'
+              }`}
           >
             Đã công khai ({trips.filter((t) => t.privacy === 0).length})
           </button>
           <button
             type="button"
             onClick={() => setStatusFilter('private')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
-              statusFilter === 'private'
-                ? 'bg-emerald-800 text-white'
-                : 'bg-white border border-slate-200 text-slate-600 hover:text-slate-900'
-            }`}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${statusFilter === 'private'
+              ? 'bg-emerald-800 text-white'
+              : 'bg-white border border-slate-200 text-slate-600 hover:text-slate-900'
+              }`}
           >
             Riêng tư ({trips.filter((t) => t.privacy !== 0).length})
           </button>
@@ -253,18 +249,13 @@ export const UserTripsSection: React.FC = () => {
             >
               <div className="space-y-3">
                 <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-800">
-                    <MapPin size={14} className="text-emerald-700 shrink-0" />
-                    <span>{trip.province}, {trip.region}</span>
-                  </div>
 
                   <div className="flex items-center gap-1.5">
                     <span
-                      className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase flex items-center gap-1 border ${
-                        trip.privacy === 0
-                          ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                          : 'bg-slate-100 text-slate-700 border-slate-200'
-                      }`}
+                      className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase flex items-center gap-1 border ${trip.privacy === 0
+                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                        : 'bg-slate-100 text-slate-700 border-slate-200'
+                        }`}
                     >
                       {trip.privacy === 0 ? (
                         <>

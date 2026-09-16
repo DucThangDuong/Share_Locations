@@ -28,62 +28,6 @@ export interface ToggleBlogLikeResponse {
   likesCount: number
 }
 
-async function getWithFallback<T>(url1: string, url2: string, config?: Record<string, unknown>): Promise<ApiSuccessResponse<T>> {
-  try {
-    const response = await apiClient.get<ApiSuccessResponse<T>>(url1, config)
-    return response.data
-  } catch (err: unknown) {
-    const axiosErr = err as { response?: { status?: number } }
-    if (axiosErr?.response?.status === 404) {
-      const response = await apiClient.get<ApiSuccessResponse<T>>(url2, config)
-      return response.data
-    }
-    throw err
-  }
-}
-
-async function postWithFallback<T>(url1: string, url2: string, data?: unknown, config?: Record<string, unknown>): Promise<ApiSuccessResponse<T>> {
-  try {
-    const response = await apiClient.post<ApiSuccessResponse<T>>(url1, data, config)
-    return response.data
-  } catch (err: unknown) {
-    const axiosErr = err as { response?: { status?: number } }
-    if (axiosErr?.response?.status === 404) {
-      const response = await apiClient.post<ApiSuccessResponse<T>>(url2, data, config)
-      return response.data
-    }
-    throw err
-  }
-}
-
-async function putWithFallback<T>(url1: string, url2: string, data?: unknown, config?: Record<string, unknown>): Promise<ApiSuccessResponse<T>> {
-  try {
-    const response = await apiClient.put<ApiSuccessResponse<T>>(url1, data, config)
-    return response.data
-  } catch (err: unknown) {
-    const axiosErr = err as { response?: { status?: number } }
-    if (axiosErr?.response?.status === 404) {
-      const response = await apiClient.put<ApiSuccessResponse<T>>(url2, data, config)
-      return response.data
-    }
-    throw err
-  }
-}
-
-async function deleteWithFallback<T>(url1: string, url2: string, config?: Record<string, unknown>): Promise<ApiSuccessResponse<T>> {
-  try {
-    const response = await apiClient.delete<ApiSuccessResponse<T>>(url1, config)
-    return response.data
-  } catch (err: unknown) {
-    const axiosErr = err as { response?: { status?: number } }
-    if (axiosErr?.response?.status === 404) {
-      const response = await apiClient.delete<ApiSuccessResponse<T>>(url2, config)
-      return response.data
-    }
-    throw err
-  }
-}
-
 export const blogService = {
   async getBlogs(params?: BlogFilterParams): Promise<ApiSuccessResponse<BlogListItemDto[]>> {
     const cleanParams: Record<string, unknown> = {}
@@ -93,35 +37,39 @@ export const blogService = {
     cleanParams.page = params?.page || 1
     cleanParams.pageSize = params?.pageSize || 12
 
-    return getWithFallback<BlogListItemDto[]>('/api/v1/blogs', '/api/blogs', {
+    const response = await apiClient.get<ApiSuccessResponse<BlogListItemDto[]>>('/api/blogs', {
       params: cleanParams
     })
+    return response.data
   },
 
   async getFeaturedBlog(): Promise<ApiSuccessResponse<BlogListItemDto>> {
-    return getWithFallback<BlogListItemDto>('/api/v1/blogs/featured', '/api/blogs/featured')
+    const response = await apiClient.get<ApiSuccessResponse<BlogListItemDto>>('/api/blogs/featured')
+    return response.data
   },
 
   async getBlogDetail(idOrSlug: string | number): Promise<ApiSuccessResponse<BlogDetailDto>> {
-    return getWithFallback<BlogDetailDto>(`/api/v1/blogs/${idOrSlug}`, `/api/blogs/${idOrSlug}`)
+    const response = await apiClient.get<ApiSuccessResponse<BlogDetailDto>>(`/api/blogs/${idOrSlug}`)
+    return response.data
   },
 
   async toggleLike(id: number | string): Promise<ApiSuccessResponse<ToggleBlogLikeResponse>> {
-    return postWithFallback<ToggleBlogLikeResponse>(
-      `/api/v1/blogs/${id}/toggle-like`,
-      `/api/blogs/${id}/toggle-like`
-    )
+    const response = await apiClient.post<ApiSuccessResponse<ToggleBlogLikeResponse>>(`/api/blogs/${id}/toggle-like`)
+    return response.data
   },
 
   async createBlog(data: CreateBlogRequest): Promise<ApiSuccessResponse<UserBlogItem>> {
-    return postWithFallback<UserBlogItem>('/api/v1/blogs', '/api/blogs', data)
+    const response = await apiClient.post<ApiSuccessResponse<UserBlogItem>>('/api/blogs', data)
+    return response.data
   },
 
   async updateBlog(id: number | string, data: UpdateBlogRequest): Promise<ApiSuccessResponse<boolean>> {
-    return putWithFallback<boolean>(`/api/v1/blogs/${id}`, `/api/blogs/${id}`, data)
+    const response = await apiClient.put<ApiSuccessResponse<boolean>>(`/api/blogs/${id}`, data)
+    return response.data
   },
 
   async deleteBlog(id: number | string): Promise<ApiSuccessResponse<boolean>> {
-    return deleteWithFallback<boolean>(`/api/v1/blogs/${id}`, `/api/blogs/${id}`)
+    const response = await apiClient.delete<ApiSuccessResponse<boolean>>(`/api/blogs/${id}`)
+    return response.data
   }
 }

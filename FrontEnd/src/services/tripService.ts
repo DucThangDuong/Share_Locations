@@ -13,103 +13,36 @@ import type {
   InviteTripMemberRequestDto
 } from '@/types/models/trip.model'
 
-async function getWithFallback<T>(url1: string, url2: string, config?: Record<string, unknown>): Promise<ApiSuccessResponse<T>> {
-  try {
-    const response = await apiClient.get<ApiSuccessResponse<T>>(url1, config)
-    return response.data
-  } catch (err: unknown) {
-    const axiosErr = err as { response?: { status?: number } }
-    if (axiosErr?.response?.status === 404) {
-      const response = await apiClient.get<ApiSuccessResponse<T>>(url2, config)
-      return response.data
-    }
-    throw err
-  }
-}
-
-async function postWithFallback<T>(url1: string, url2: string, data?: unknown, config?: Record<string, unknown>): Promise<ApiSuccessResponse<T>> {
-  try {
-    const response = await apiClient.post<ApiSuccessResponse<T>>(url1, data, config)
-    return response.data
-  } catch (err: unknown) {
-    const axiosErr = err as { response?: { status?: number } }
-    if (axiosErr?.response?.status === 404) {
-      const response = await apiClient.post<ApiSuccessResponse<T>>(url2, data, config)
-      return response.data
-    }
-    throw err
-  }
-}
-
-async function putWithFallback<T>(url1: string, url2: string, data?: unknown, config?: Record<string, unknown>): Promise<ApiSuccessResponse<T>> {
-  try {
-    const response = await apiClient.put<ApiSuccessResponse<T>>(url1, data, config)
-    return response.data
-  } catch (err: unknown) {
-    const axiosErr = err as { response?: { status?: number } }
-    if (axiosErr?.response?.status === 404) {
-      const response = await apiClient.put<ApiSuccessResponse<T>>(url2, data, config)
-      return response.data
-    }
-    throw err
-  }
-}
-
-async function deleteWithFallback<T>(url1: string, url2: string, config?: Record<string, unknown>): Promise<ApiSuccessResponse<T>> {
-  try {
-    const response = await apiClient.delete<ApiSuccessResponse<T>>(url1, config)
-    return response.data
-  } catch (err: unknown) {
-    const axiosErr = err as { response?: { status?: number } }
-    if (axiosErr?.response?.status === 404) {
-      const response = await apiClient.delete<ApiSuccessResponse<T>>(url2, config)
-      return response.data
-    }
-    throw err
-  }
-}
-
 export const tripService = {
   async getUserTrips(params?: {
     status?: string
     page?: number
     pageSize?: number
   }): Promise<ApiSuccessResponse<PagedResultDto<UserTripSummaryDto>>> {
-    return getWithFallback<PagedResultDto<UserTripSummaryDto>>(
-      '/api/v1/users/me/trips',
-      '/api/users/me/trips',
-      { params }
-    )
+    const response = await apiClient.get<ApiSuccessResponse<PagedResultDto<UserTripSummaryDto>>>('/api/users/me/trips', {
+      params
+    })
+    return response.data
   },
 
   async createTrip(data: CreateTripRequestDto): Promise<ApiSuccessResponse<CreateTripResponseDto>> {
-    return postWithFallback<CreateTripResponseDto>(
-      '/api/v1/trips',
-      '/api/trips',
-      data
-    )
+    const response = await apiClient.post<ApiSuccessResponse<CreateTripResponseDto>>('/api/trips', data)
+    return response.data
   },
 
   async getTripDetail(id: number | string): Promise<ApiSuccessResponse<TripDetailDto>> {
-    return getWithFallback<TripDetailDto>(
-      `/api/v1/trips/${id}`,
-      `/api/trips/${id}`
-    )
+    const response = await apiClient.get<ApiSuccessResponse<TripDetailDto>>(`/api/trips/${id}`)
+    return response.data
   },
 
   async updateTrip(id: number | string, data: UpdateTripRequestDto): Promise<ApiSuccessResponse<unknown>> {
-    return putWithFallback<unknown>(
-      `/api/v1/trips/${id}`,
-      `/api/trips/${id}`,
-      data
-    )
+    const response = await apiClient.put<ApiSuccessResponse<unknown>>(`/api/trips/${id}`, data)
+    return response.data
   },
 
   async deleteTrip(id: number | string): Promise<ApiSuccessResponse<unknown>> {
-    return deleteWithFallback<unknown>(
-      `/api/v1/trips/${id}`,
-      `/api/trips/${id}`
-    )
+    const response = await apiClient.delete<ApiSuccessResponse<unknown>>(`/api/trips/${id}`)
+    return response.data
   },
 
   async addTripPlace(
@@ -117,49 +50,39 @@ export const tripService = {
     dayNumber: number,
     data: AddTripPlaceRequestDto
   ): Promise<ApiSuccessResponse<TripPlaceDetailDto>> {
-    return postWithFallback<TripPlaceDetailDto>(
-      `/api/v1/trips/${tripId}/days/${dayNumber}/places`,
+    const response = await apiClient.post<ApiSuccessResponse<TripPlaceDetailDto>>(
       `/api/trips/${tripId}/days/${dayNumber}/places`,
       data
     )
+    return response.data
   },
 
   async updateTripPlace(
     tripPlaceId: number | string,
     data: UpdateTripPlaceRequestDto
   ): Promise<ApiSuccessResponse<unknown>> {
-    return putWithFallback<unknown>(
-      `/api/v1/trips/places/${tripPlaceId}`,
-      `/api/trips/places/${tripPlaceId}`,
-      data
-    )
+    const response = await apiClient.put<ApiSuccessResponse<unknown>>(`/api/trips/places/${tripPlaceId}`, data)
+    return response.data
   },
 
   async deleteTripPlace(tripPlaceId: number | string): Promise<ApiSuccessResponse<unknown>> {
-    return deleteWithFallback<unknown>(
-      `/api/v1/trips/places/${tripPlaceId}`,
-      `/api/trips/places/${tripPlaceId}`
-    )
+    const response = await apiClient.delete<ApiSuccessResponse<unknown>>(`/api/trips/places/${tripPlaceId}`)
+    return response.data
   },
 
   async inviteMember(
     tripId: number | string,
     data: InviteTripMemberRequestDto
   ): Promise<ApiSuccessResponse<unknown>> {
-    return postWithFallback<unknown>(
-      `/api/v1/trips/${tripId}/members`,
-      `/api/trips/${tripId}/members`,
-      data
-    )
+    const response = await apiClient.post<ApiSuccessResponse<unknown>>(`/api/trips/${tripId}/members`, data)
+    return response.data
   },
 
   async removeMember(
     tripId: number | string,
     userId: number | string
   ): Promise<ApiSuccessResponse<unknown>> {
-    return deleteWithFallback<unknown>(
-      `/api/v1/trips/${tripId}/members/${userId}`,
-      `/api/trips/${tripId}/members/${userId}`
-    )
+    const response = await apiClient.delete<ApiSuccessResponse<unknown>>(`/api/trips/${tripId}/members/${userId}`)
+    return response.data
   }
 }

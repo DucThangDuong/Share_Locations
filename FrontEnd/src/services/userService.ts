@@ -14,76 +14,6 @@ import type {
   CreateProposalRequest
 } from '@/types/models/userProfile.model'
 
-async function getWithFallback<T>(url1: string, url2: string, config?: Record<string, unknown>): Promise<ApiSuccessResponse<T>> {
-  try {
-    const response = await apiClient.get<ApiSuccessResponse<T>>(url1, config)
-    return response.data
-  } catch (err: unknown) {
-    const axiosErr = err as { response?: { status?: number } }
-    if (axiosErr?.response?.status === 404) {
-      const response = await apiClient.get<ApiSuccessResponse<T>>(url2, config)
-      return response.data
-    }
-    throw err
-  }
-}
-
-async function postWithFallback<T>(url1: string, url2: string, data?: unknown, config?: Record<string, unknown>): Promise<ApiSuccessResponse<T>> {
-  try {
-    const response = await apiClient.post<ApiSuccessResponse<T>>(url1, data, config)
-    return response.data
-  } catch (err: unknown) {
-    const axiosErr = err as { response?: { status?: number } }
-    if (axiosErr?.response?.status === 404) {
-      const response = await apiClient.post<ApiSuccessResponse<T>>(url2, data, config)
-      return response.data
-    }
-    throw err
-  }
-}
-
-async function putWithFallback<T>(url1: string, url2: string, data?: unknown, config?: Record<string, unknown>): Promise<ApiSuccessResponse<T>> {
-  try {
-    const response = await apiClient.put<ApiSuccessResponse<T>>(url1, data, config)
-    return response.data
-  } catch (err: unknown) {
-    const axiosErr = err as { response?: { status?: number } }
-    if (axiosErr?.response?.status === 404) {
-      const response = await apiClient.put<ApiSuccessResponse<T>>(url2, data, config)
-      return response.data
-    }
-    throw err
-  }
-}
-
-async function patchWithFallback<T>(url1: string, url2: string, data?: unknown, config?: Record<string, unknown>): Promise<ApiSuccessResponse<T>> {
-  try {
-    const response = await apiClient.patch<ApiSuccessResponse<T>>(url1, data, config)
-    return response.data
-  } catch (err: unknown) {
-    const axiosErr = err as { response?: { status?: number } }
-    if (axiosErr?.response?.status === 404) {
-      const response = await apiClient.patch<ApiSuccessResponse<T>>(url2, data, config)
-      return response.data
-    }
-    throw err
-  }
-}
-
-async function deleteWithFallback<T>(url1: string, url2: string, config?: Record<string, unknown>): Promise<ApiSuccessResponse<T>> {
-  try {
-    const response = await apiClient.delete<ApiSuccessResponse<T>>(url1, config)
-    return response.data
-  } catch (err: unknown) {
-    const axiosErr = err as { response?: { status?: number } }
-    if (axiosErr?.response?.status === 404) {
-      const response = await apiClient.delete<ApiSuccessResponse<T>>(url2, config)
-      return response.data
-    }
-    throw err
-  }
-}
-
 export const userService = {
   async getMyFavorites(params?: {
     targetType?: number
@@ -92,26 +22,26 @@ export const userService = {
     page?: number
     pageSize?: number
   }): Promise<ApiSuccessResponse<FavoriteItem[] | PagedResultDto<FavoriteItem>>> {
-    return getWithFallback<FavoriteItem[] | PagedResultDto<FavoriteItem>>(
+    const response = await apiClient.get<ApiSuccessResponse<FavoriteItem[] | PagedResultDto<FavoriteItem>>>(
       '/api/users/me/favorites',
-      '/api/v1/users/me/favorites',
       { params }
     )
+    return response.data
   },
 
   async addFavorite(targetType: number, targetId: number | string): Promise<ApiSuccessResponse<{ isSaved: boolean; targetType: number; targetId: number }>> {
-    return postWithFallback<{ isSaved: boolean; targetType: number; targetId: number }>(
+    const response = await apiClient.post<ApiSuccessResponse<{ isSaved: boolean; targetType: number; targetId: number }>>(
       '/api/users/me/favorites',
-      '/api/v1/users/me/favorites',
       { targetType, targetId: Number(targetId) }
     )
+    return response.data
   },
 
   async removeFavorite(targetType: number, targetId: number | string): Promise<ApiSuccessResponse<boolean>> {
-    return deleteWithFallback<boolean>(
-      `/api/users/me/favorites/${targetType}/${Number(targetId)}`,
-      `/api/v1/users/me/favorites/${targetType}/${Number(targetId)}`
+    const response = await apiClient.delete<ApiSuccessResponse<boolean>>(
+      `/api/users/me/favorites/${targetType}/${Number(targetId)}`
     )
+    return response.data
   },
 
   async getMyVisitLogs(params?: {
@@ -121,64 +51,64 @@ export const userService = {
     page?: number
     pageSize?: number
   }): Promise<ApiSuccessResponse<VisitLogItem[] | PagedResultDto<VisitLogItem>>> {
-    return getWithFallback<VisitLogItem[] | PagedResultDto<VisitLogItem>>(
+    const response = await apiClient.get<ApiSuccessResponse<VisitLogItem[] | PagedResultDto<VisitLogItem>>>(
       '/api/users/me/visit-logs',
-      '/api/v1/users/me/visit-logs',
       { params }
     )
+    return response.data
   },
 
   async createVisitLog(data: CreateVisitLogRequest): Promise<ApiSuccessResponse<VisitLogItem>> {
-    return postWithFallback<VisitLogItem>(
+    const response = await apiClient.post<ApiSuccessResponse<VisitLogItem>>(
       '/api/users/me/visit-logs',
-      '/api/v1/users/me/visit-logs',
       data
     )
+    return response.data
   },
 
   async updateVisitLog(id: number, data: UpdateVisitLogRequest): Promise<ApiSuccessResponse<boolean>> {
-    return putWithFallback<boolean>(
+    const response = await apiClient.put<ApiSuccessResponse<boolean>>(
       `/api/users/me/visit-logs/${id}`,
-      `/api/v1/users/me/visit-logs/${id}`,
       data
     )
+    return response.data
   },
 
   async changeVisitLogPrivacy(id: number, privacy: number): Promise<ApiSuccessResponse<boolean>> {
-    return patchWithFallback<boolean>(
+    const response = await apiClient.patch<ApiSuccessResponse<boolean>>(
       `/api/users/me/visit-logs/${id}/privacy`,
-      `/api/v1/users/me/visit-logs/${id}/privacy`,
       { privacy }
     )
+    return response.data
   },
 
   async deleteVisitLog(id: number): Promise<ApiSuccessResponse<boolean>> {
-    return deleteWithFallback<boolean>(
-      `/api/users/me/visit-logs/${id}`,
-      `/api/v1/users/me/visit-logs/${id}`
+    const response = await apiClient.delete<ApiSuccessResponse<boolean>>(
+      `/api/users/me/visit-logs/${id}`
     )
+    return response.data
   },
 
   async getMyReviews(params?: {
     page?: number
     pageSize?: number
   }): Promise<ApiSuccessResponse<UserReviewItem[] | PagedResultDto<UserReviewItem>>> {
-    return getWithFallback<UserReviewItem[] | PagedResultDto<UserReviewItem>>(
+    const response = await apiClient.get<ApiSuccessResponse<UserReviewItem[] | PagedResultDto<UserReviewItem>>>(
       '/api/users/me/reviews',
-      '/api/v1/users/me/reviews',
       { params }
     )
+    return response.data
   },
 
   async getMyComments(params?: {
     page?: number
     pageSize?: number
   }): Promise<ApiSuccessResponse<UserCommentItem[] | PagedResultDto<UserCommentItem>>> {
-    return getWithFallback<UserCommentItem[] | PagedResultDto<UserCommentItem>>(
+    const response = await apiClient.get<ApiSuccessResponse<UserCommentItem[] | PagedResultDto<UserCommentItem>>>(
       '/api/users/me/comments',
-      '/api/v1/users/me/comments',
       { params }
     )
+    return response.data
   },
 
   async getMyBlogs(params?: {
@@ -186,11 +116,11 @@ export const userService = {
     page?: number
     pageSize?: number
   }): Promise<ApiSuccessResponse<UserBlogItem[] | PagedResultDto<UserBlogItem>>> {
-    return getWithFallback<UserBlogItem[] | PagedResultDto<UserBlogItem>>(
+    const response = await apiClient.get<ApiSuccessResponse<UserBlogItem[] | PagedResultDto<UserBlogItem>>>(
       '/api/users/me/blogs',
-      '/api/v1/users/me/blogs',
       { params }
     )
+    return response.data
   },
 
   async getMyProposals(params?: {
@@ -198,40 +128,40 @@ export const userService = {
     page?: number
     pageSize?: number
   }): Promise<ApiSuccessResponse<ProposalItem[] | PagedResultDto<ProposalItem>>> {
-    return getWithFallback<ProposalItem[] | PagedResultDto<ProposalItem>>(
+    const response = await apiClient.get<ApiSuccessResponse<ProposalItem[] | PagedResultDto<ProposalItem>>>(
       '/api/users/me/proposals',
-      '/api/v1/users/me/proposals',
       { params }
     )
+    return response.data
   },
 
   async createProposal(data: CreateProposalRequest): Promise<ApiSuccessResponse<ProposalItem>> {
-    return postWithFallback<ProposalItem>(
+    const response = await apiClient.post<ApiSuccessResponse<ProposalItem>>(
       '/api/proposals',
-      '/api/v1/proposals',
       data
     )
+    return response.data
   },
 
   async deleteProposal(id: number): Promise<ApiSuccessResponse<boolean>> {
-    return deleteWithFallback<boolean>(
-      `/api/proposals/${id}`,
-      `/api/v1/proposals/${id}`
+    const response = await apiClient.delete<ApiSuccessResponse<boolean>>(
+      `/api/proposals/${id}`
     )
+    return response.data
   },
 
   async getAccessHistories(limit: number = 10): Promise<ApiSuccessResponse<UserAccessHistoryItem[]>> {
-    return getWithFallback<UserAccessHistoryItem[]>(
+    const response = await apiClient.get<ApiSuccessResponse<UserAccessHistoryItem[]>>(
       '/api/users/me/access-histories',
-      '/api/v1/users/me/access-histories',
       { params: { limit } }
     )
+    return response.data
   },
 
   async recordAccessHistory(placeId: number | string): Promise<ApiSuccessResponse<boolean>> {
-    return postWithFallback<boolean>(
-      `/api/places/${placeId}/access-history`,
-      `/api/v1/places/${placeId}/access-history`
+    const response = await apiClient.post<ApiSuccessResponse<boolean>>(
+      `/api/places/${placeId}/access-history`
     )
+    return response.data
   }
 }

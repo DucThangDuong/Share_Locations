@@ -12,14 +12,14 @@ export const itineraryService = {
     cleanParams.page = params?.page || 1
     cleanParams.pageSize = params?.pageSize || 10
 
-    const response = await apiClient.get<ApiSuccessResponse<ItineraryDto[]>>('/api/v1/itineraries', {
+    const response = await apiClient.get<ApiSuccessResponse<ItineraryDto[]>>('/api/itineraries', {
       params: cleanParams
     })
     return response.data
   },
 
   async saveItinerary(id: number | string): Promise<ApiSuccessResponse<SaveItineraryResponseDto>> {
-    const response = await apiClient.post<ApiSuccessResponse<SaveItineraryResponseDto>>(`/api/v1/itineraries/${id}/save`)
+    const response = await apiClient.post<ApiSuccessResponse<SaveItineraryResponseDto>>(`/api/itineraries/${id}/save`)
     return response.data
   }
 }

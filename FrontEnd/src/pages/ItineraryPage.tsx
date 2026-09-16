@@ -30,8 +30,10 @@ export const ItineraryPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<'catalog' | 'planner'>('catalog')
 
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedRegion, setSelectedRegion] = useState('all')
+  const [selectedRegion, setSelectedRegion] = useState<string | null>(null)
+  const [selectedProvince, setSelectedProvince] = useState<string | null>(null)
   const [selectedDuration, setSelectedDuration] = useState('all')
+  const [selectedBudget, setSelectedBudget] = useState('all')
   const [appliedItineraryIds, setAppliedItineraryIds] = useState<Set<number>>(new Set())
 
   const [expandedDayIndices, setExpandedDayIndices] = useState<Set<number>>(new Set([0, 1, 2]))
@@ -190,7 +192,7 @@ export const ItineraryPage: React.FC = () => {
   const fetchCatalog = useCallback(async () => {
     try {
       const res = await itineraryService.getItineraries({
-        region: selectedRegion === 'all' ? undefined : selectedRegion,
+        region: selectedRegion || undefined,
         duration: selectedDuration === 'all' ? undefined : selectedDuration,
         keyword: searchQuery || undefined,
         page: 1,
@@ -235,7 +237,7 @@ export const ItineraryPage: React.FC = () => {
               setHasUnsavedChanges(false)
             }
           })
-          .catch(() => {})
+          .catch(() => { })
         return
       }
     }
@@ -1092,12 +1094,21 @@ export const ItineraryPage: React.FC = () => {
           itineraries={catalogItineraries}
           searchQuery={searchQuery}
           selectedRegion={selectedRegion}
+          selectedProvince={selectedProvince}
           selectedDuration={selectedDuration}
+          selectedBudget={selectedBudget}
           appliedItineraryIds={appliedItineraryIds}
-          onSearchChange={setSearchQuery}
-          onClearSearch={() => setSearchQuery('')}
           onSelectRegion={setSelectedRegion}
+          onSelectProvince={setSelectedProvince}
           onSelectDuration={setSelectedDuration}
+          onSelectBudget={setSelectedBudget}
+          onResetFilters={() => {
+            setSearchQuery('')
+            setSelectedRegion(null)
+            setSelectedProvince(null)
+            setSelectedDuration('all')
+            setSelectedBudget('all')
+          }}
           onApplyItinerary={handleApplyItinerary}
         />
       )}
