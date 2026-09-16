@@ -26,3 +26,9 @@ public class BlogListItemDto
 public class BlogDetailDto : BlogListItemDto
 {
 }
+
+public class BlogLikeResponseDto
+{
+    public bool IsLiked { get; set; }
+    public int LikesCount { get; set; }
+}

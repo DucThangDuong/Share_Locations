@@ -56,6 +56,13 @@ public class MessageConfiguration : IEntityTypeConfiguration<Message>
 
         builder.HasIndex(e => new { e.ChatRoomId, e.CreatedAt }, "IX_Messages_ChatRoomId_CreatedAt");
 
+        builder.Property(e => e.MessageType)
+            .HasConversion<byte>()
+            .HasDefaultValue(ChatMessageType.TextLink);
+
+        builder.Property(e => e.MediaUrl)
+            .HasMaxLength(500);
+
         builder.Property(e => e.CreatedAt)
             .HasDefaultValueSql("SYSUTCDATETIME()");
 
@@ -67,21 +74,6 @@ public class MessageConfiguration : IEntityTypeConfiguration<Message>
         builder.HasOne(e => e.Sender)
             .WithMany(u => u.Messages)
             .HasForeignKey(e => e.SenderId)
-            .OnDelete(DeleteBehavior.ClientSetNull);
-
-        builder.HasOne(e => e.AttachedPlace)
-            .WithMany(p => p.Messages)
-            .HasForeignKey(e => e.AttachedPlaceId)
-            .OnDelete(DeleteBehavior.ClientSetNull);
-
-        builder.HasOne(e => e.AttachedFood)
-            .WithMany(f => f.Messages)
-            .HasForeignKey(e => e.AttachedFoodId)
-            .OnDelete(DeleteBehavior.ClientSetNull);
-
-        builder.HasOne(e => e.AttachedTrip)
-            .WithMany(t => t.Messages)
-            .HasForeignKey(e => e.AttachedTripId)
             .OnDelete(DeleteBehavior.ClientSetNull);
     }
 }

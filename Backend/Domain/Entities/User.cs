@@ -28,6 +28,9 @@ public class User
     private readonly List<Trip> _trips = new();
     public virtual IReadOnlyCollection<Trip> Trips => _trips.AsReadOnly();
 
+    private readonly List<TripMember> _tripMembers = new();
+    public virtual IReadOnlyCollection<TripMember> TripMembers => _tripMembers.AsReadOnly();
+
     private readonly List<Review> _reviews = new();
     public virtual IReadOnlyCollection<Review> Reviews => _reviews.AsReadOnly();
 

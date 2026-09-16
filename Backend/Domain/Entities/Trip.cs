@@ -22,8 +22,8 @@ public class Trip
     private readonly List<TripDay> _days = new();
     public virtual IReadOnlyCollection<TripDay> Days => _days.AsReadOnly();
 
-    private readonly List<Message> _messages = new();
-    public virtual IReadOnlyCollection<Message> Messages => _messages.AsReadOnly();
+    private readonly List<TripMember> _members = new();
+    public virtual IReadOnlyCollection<TripMember> Members => _members.AsReadOnly();
 
     protected Trip() { }
 

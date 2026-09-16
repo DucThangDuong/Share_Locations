@@ -26,6 +26,12 @@ public class FavoriteRepository : IFavoriteRepository
             .AnyAsync(f => f.UserId == userId && f.TargetId == targetId && f.TargetType == targetType, ct);
     }
 
+    public async Task<int> CountAsync(long targetId, FavoriteTargetType targetType, CancellationToken ct = default)
+    {
+        return await _dbContext.Favorites
+            .CountAsync(f => f.TargetId == targetId && f.TargetType == targetType, ct);
+    }
+
     public async Task AddAsync(Favorite favorite, CancellationToken ct = default)
     {
         await _dbContext.Favorites.AddAsync(favorite, ct);

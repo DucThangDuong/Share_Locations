@@ -1,4 +1,4 @@
-namespace Application.DTOs;
+﻿namespace Application.DTOs;
 
 public class ItineraryAuthorDto
 {
@@ -11,6 +11,8 @@ public class ItineraryStopDto
     public string Time { get; set; } = string.Empty;
     public string Activity { get; set; } = string.Empty;
     public string Location { get; set; } = string.Empty;
+    public string? PlaceName { get; set; }
+    public string? Note { get; set; }
     public string? Description { get; set; }
     public string? CostEstimate { get; set; }
     public string? Tips { get; set; }
@@ -36,6 +38,7 @@ public class ItineraryDto
     public string? CoverUrl { get; set; }
     public ItineraryAuthorDto Author { get; set; } = new();
     public string? Overview { get; set; }
+    public bool IsSaved { get; set; }
     public IReadOnlyList<ItineraryDayDto> Days { get; set; } = [];
 }
 

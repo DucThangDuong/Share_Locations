@@ -14,6 +14,8 @@ public interface IUnitOfWork : IDisposable
     IVisitLogRepository VisitLogs { get; }
     IAccessHistoryRepository AccessHistories { get; }
     IBlogWriteRepository Blogs { get; }
+    ITripWriteRepository Trips { get; }
+    IFriendshipRepository Friendships { get; }
 
     Task<int> SaveChangesAsync(CancellationToken ct = default);
     Task ExecuteInTransactionAsync(Func<Task> action, CancellationToken ct = default);

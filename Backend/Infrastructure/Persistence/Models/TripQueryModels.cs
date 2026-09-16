@@ -27,7 +27,10 @@ internal sealed class RawTripStop
 {
     public long TripDayId { get; set; }
     public int VisitOrder { get; set; }
-    public TimeSpan? PlannedTime { get; set; }
+    public TimeSpan? StartTime { get; set; }
+    public TimeSpan? EndTime { get; set; }
+    public decimal? EstimatedCost { get; set; }
+    public string? TransportMode { get; set; }
     public string? Note { get; set; }
     public string PlaceName { get; set; } = string.Empty;
     public string? PlaceAddress { get; set; }

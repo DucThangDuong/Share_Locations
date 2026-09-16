@@ -11,7 +11,8 @@ public class ReviewConfiguration : IEntityTypeConfiguration<Review>
 
         builder.HasIndex(e => e.PlaceId, "IX_Reviews_PlaceId");
 
-        builder.Ignore(e => e.VisitDate);
+        builder.Property(e => e.VisitDate)
+            .HasColumnType("date");
 
         builder.Property(e => e.Status)
             .HasConversion<byte>();
