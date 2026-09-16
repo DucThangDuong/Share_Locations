@@ -1,4 +1,4 @@
-using System.IdentityModel.Tokens.Jwt;
+﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using API.DTOs;
 using API.DTOs.Places;
@@ -15,7 +15,7 @@ public class CreatePlaceReportEndpoint : Endpoint<CreatePlaceReportRequest, ApiS
 
     public override void Configure()
     {
-        Post("/api/v1/places/{id}/reports", "/api/places/{id}/reports");
+        Post("/api/places/{id}/reports");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("write_api"));
         Summary(s =>

@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.Extensions;
 using Application.Common;
 using Application.DTOs;
@@ -33,7 +33,7 @@ public class GetUserFavoritesEndpoint : Endpoint<GetUserFavoritesRequest, ApiSuc
 
     public override void Configure()
     {
-        Get("/api/v1/users/me/favorites", "/api/users/me/favorites");
+        Get("/api/users/me/favorites");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("general_api"));

@@ -1,4 +1,4 @@
-using System.IdentityModel.Tokens.Jwt;
+﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using API.DTOs;
 using API.DTOs.Itineraries;
@@ -18,7 +18,7 @@ public class GetItinerariesEndpoint : Endpoint<GetItinerariesRequest, ApiSuccess
 
     public override void Configure()
     {
-        Get("/api/v1/itineraries", "/api/itineraries");
+        Get("/api/itineraries");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
         Summary(s =>

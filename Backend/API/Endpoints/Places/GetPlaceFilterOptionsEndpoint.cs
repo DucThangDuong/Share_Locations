@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.Extensions;
 using Application.DTOs;
 using Application.Features.Places.Queries;
@@ -13,7 +13,7 @@ public class GetPlaceFilterOptionsEndpoint : EndpointWithoutRequest<ApiSuccessRe
 
     public override void Configure()
     {
-        Get("/api/v1/places/filter-options", "/api/places/filter-options");
+        Get("/api/places/filter-options");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
         Summary(s =>

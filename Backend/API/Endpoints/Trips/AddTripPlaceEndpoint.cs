@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.Extensions;
 using Application.Common;
 using Application.DTOs;
@@ -28,7 +28,7 @@ public class AddTripPlaceEndpoint : Endpoint<AddTripPlaceRequest, ApiSuccessResp
 
     public override void Configure()
     {
-        Post("/api/v1/trips/{id}/days/{dayNumber}/places");
+        Post("/api/trips/{id}/days/{dayNumber}/places");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

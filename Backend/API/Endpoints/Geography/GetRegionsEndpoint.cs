@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.Extensions;
 using Application.DTOs;
 using Application.Features.Geography.Queries;
@@ -13,7 +13,7 @@ public class GetRegionsEndpoint : EndpointWithoutRequest<ApiSuccessResponse<IRea
 
     public override void Configure()
     {
-        Get("/api/v1/regions", "/api/regions");
+        Get("/api/regions");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
         Summary(s =>

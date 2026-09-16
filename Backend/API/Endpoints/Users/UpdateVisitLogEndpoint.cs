@@ -1,4 +1,4 @@
-using API.Extensions;
+﻿using API.Extensions;
 using Application.Common;
 using Application.DTOs;
 using Application.Features.Users.Commands;
@@ -23,7 +23,7 @@ public class UpdateVisitLogEndpoint : Endpoint<UpdateVisitLogRequest>
 
     public override void Configure()
     {
-        Put("/api/v1/users/me/visit-logs/{id}", "/api/users/me/visit-logs/{id}");
+        Put("/api/users/me/visit-logs/{id}");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

@@ -1,4 +1,4 @@
-using API.Extensions;
+﻿using API.Extensions;
 using Application.Common;
 using Application.Features.Proposals.Commands;
 using FastEndpoints;
@@ -19,7 +19,7 @@ public class DeleteProposalEndpoint : Endpoint<DeleteProposalRequest>
 
     public override void Configure()
     {
-        Delete("/api/v1/proposals/{id}", "/api/proposals/{id}");
+        Delete("/api/proposals/{id}");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

@@ -1,4 +1,4 @@
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using API.DTOs;
 using API.DTOs.Auth;
 using API.Extensions;
@@ -17,7 +17,7 @@ public class UpdateProfileEndpoint : Endpoint<UpdateProfileRequest, ApiSuccessRe
 
     public override void Configure()
     {
-        Put("/api/v1/auth/profile", "/api/auth/profile");
+        Put("/api/auth/profile");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         AllowFileUploads();

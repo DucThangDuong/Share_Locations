@@ -1,4 +1,4 @@
-using System.IdentityModel.Tokens.Jwt;
+﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using API.DTOs;
 using API.DTOs.Places;
@@ -18,7 +18,7 @@ public class CreatePlaceReviewEndpoint : Endpoint<CreatePlaceReviewRequest, ApiS
 
     public override void Configure()
     {
-        Post("/api/v1/places/{id}/reviews", "/api/places/{id}/reviews");
+        Post("/api/places/{id}/reviews");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         AllowFileUploads();

@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.DTOs.Auth;
 using API.Extensions;
 using Application.DTOs;
@@ -14,7 +14,7 @@ public class LoginEndpoint : Endpoint<LoginRequest, ApiSuccessResponse<AuthToken
 
     public override void Configure()
     {
-        Post("/api/v1/auth/login", "/api/auth/login");
+        Post("/api/auth/login");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("auth_strict"));
         Summary(s =>

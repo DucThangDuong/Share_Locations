@@ -1,4 +1,4 @@
-using API.Extensions;
+﻿using API.Extensions;
 using Application.Features.Auth.Commands;
 using FastEndpoints;
 using MediatR;
@@ -12,7 +12,7 @@ public class LogoutEndpoint : EndpointWithoutRequest
 
     public override void Configure()
     {
-        Post("/api/v1/auth/logout", "/api/auth/logout");
+        Post("/api/auth/logout");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Options(x => x.RequireRateLimiting("auth_strict"));
         Summary(s =>

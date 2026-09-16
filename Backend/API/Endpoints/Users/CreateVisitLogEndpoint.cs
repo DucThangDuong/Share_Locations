@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.Extensions;
 using Application.Common;
 using Application.DTOs;
@@ -15,7 +15,7 @@ public class CreateVisitLogEndpoint : Endpoint<CreateVisitLogRequestDto, ApiSucc
 
     public override void Configure()
     {
-        Post("/api/v1/users/me/visit-logs", "/api/users/me/visit-logs");
+        Post("/api/users/me/visit-logs");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

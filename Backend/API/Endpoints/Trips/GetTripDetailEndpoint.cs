@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.Extensions;
 using Application.DTOs;
 using Application.Features.Trips.Queries;
@@ -18,7 +18,7 @@ public class GetTripDetailEndpoint : Endpoint<GetTripDetailRequest, ApiSuccessRe
 
     public override void Configure()
     {
-        Get("/api/v1/trips/{id}");
+        Get("/api/trips/{id}");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
         Summary(s =>

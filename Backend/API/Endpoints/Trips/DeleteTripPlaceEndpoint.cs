@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.Extensions;
 using Application.Common;
 using Application.Features.Trips.Commands;
@@ -19,7 +19,7 @@ public class DeleteTripPlaceEndpoint : Endpoint<DeleteTripPlaceRequest, ApiSucce
 
     public override void Configure()
     {
-        Delete("/api/v1/trips/places/{tripPlaceId}");
+        Delete("/api/trips/places/{tripPlaceId}");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

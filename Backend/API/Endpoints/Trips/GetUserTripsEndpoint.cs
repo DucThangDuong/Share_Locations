@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.Extensions;
 using Application.Common;
 using Application.DTOs;
@@ -22,7 +22,7 @@ public class GetUserTripsEndpoint : Endpoint<GetUserTripsRequest, ApiSuccessResp
 
     public override void Configure()
     {
-        Get("/api/v1/users/me/trips");
+        Get("/api/users/me/trips");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("general_api"));

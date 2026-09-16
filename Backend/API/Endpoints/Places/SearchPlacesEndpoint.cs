@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.DTOs.Places;
 using API.Extensions;
 using Application.DTOs;
@@ -14,7 +14,7 @@ public class SearchPlacesEndpoint : Endpoint<SearchPlacesRequest, ApiSuccessResp
 
     public override void Configure()
     {
-        Get("/api/v1/places", "/api/places");
+        Get("/api/places");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
         Summary(s =>

@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.Extensions;
 using Application.DTOs;
 using Application.Features.Blogs.Queries;
@@ -13,7 +13,7 @@ public class GetFeaturedBlogEndpoint : EndpointWithoutRequest<ApiSuccessResponse
 
     public override void Configure()
     {
-        Get("/api/v1/blogs/featured", "/api/blogs/featured");
+        Get("/api/blogs/featured");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
         Summary(s =>

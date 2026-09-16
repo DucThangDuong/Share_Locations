@@ -1,4 +1,4 @@
-using API.Extensions;
+﻿using API.Extensions;
 using Application.Common;
 using Application.Features.Users.Commands;
 using FastEndpoints;
@@ -22,7 +22,7 @@ public class RemoveFavoriteEndpoint : Endpoint<RemoveFavoriteRequest>
 
     public override void Configure()
     {
-        Delete("/api/v1/users/me/favorites/{targetType}/{targetId}", "/api/users/me/favorites/{targetType}/{targetId}");
+        Delete("/api/users/me/favorites/{targetType}/{targetId}");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

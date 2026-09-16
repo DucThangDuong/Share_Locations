@@ -1,4 +1,4 @@
-using API.Extensions;
+﻿using API.Extensions;
 using Application.Common;
 using Application.Features.Places.Commands;
 using FastEndpoints;
@@ -19,7 +19,7 @@ public class RecordAccessHistoryEndpoint : Endpoint<RecordAccessHistoryRequest>
 
     public override void Configure()
     {
-        Post("/api/v1/places/{id}/access-history", "/api/places/{id}/access-history");
+        Post("/api/places/{id}/access-history");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

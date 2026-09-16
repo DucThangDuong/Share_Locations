@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.Extensions;
 using Application.Common;
 using Application.DTOs;
@@ -15,7 +15,7 @@ public class GetFriendsEndpoint : Endpoint<EmptyRequest, ApiSuccessResponse<Frie
 
     public override void Configure()
     {
-        Get("/api/v1/users/me/friends");
+        Get("/api/users/me/friends");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("general_api"));

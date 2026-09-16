@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.Extensions;
 using Application.Common;
 using Application.DTOs;
@@ -24,7 +24,7 @@ public class GetUserReviewsEndpoint : Endpoint<GetUserReviewsRequest, ApiSuccess
 
     public override void Configure()
     {
-        Get("/api/v1/users/me/reviews", "/api/users/me/reviews");
+        Get("/api/users/me/reviews");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("general_api"));

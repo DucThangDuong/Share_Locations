@@ -1,4 +1,4 @@
-using API.Extensions;
+﻿using API.Extensions;
 using Application.Common;
 using Application.DTOs;
 using Application.Features.Blogs.Commands;
@@ -23,7 +23,7 @@ public class UpdateBlogEndpoint : Endpoint<UpdateBlogRequest>
 
     public override void Configure()
     {
-        Put("/api/v1/blogs/{id}", "/api/blogs/{id}");
+        Put("/api/blogs/{id}");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));
