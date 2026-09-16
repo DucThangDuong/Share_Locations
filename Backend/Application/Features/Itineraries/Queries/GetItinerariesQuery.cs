@@ -10,7 +10,8 @@ public record GetItinerariesQuery(
     string? Region = null,
     string? Keyword = null,
     int Page = 1,
-    int PageSize = 10) : IRequest<Result<IReadOnlyList<ItineraryDto>>>;
+    int PageSize = 10,
+    long? UserId = null) : IRequest<Result<IReadOnlyList<ItineraryDto>>>;
 
 public class GetItinerariesQueryHandler : IRequestHandler<GetItinerariesQuery, Result<IReadOnlyList<ItineraryDto>>>
 {
@@ -30,6 +31,14 @@ public class GetItinerariesQueryHandler : IRequestHandler<GetItinerariesQuery, R
             request.Page,
             request.PageSize,
             ct);
+
+        if (request.UserId.HasValue && itineraries.Count > 0)
+        {
+            foreach (var item in itineraries)
+            {
+                item.IsSaved = await _tripRepository.IsItinerarySavedAsync(request.UserId.Value, item.Id, ct);
+            }
+        }
 
         return Result<IReadOnlyList<ItineraryDto>>.Success(itineraries);
     }

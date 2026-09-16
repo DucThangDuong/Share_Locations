@@ -49,9 +49,6 @@ public class Place
     private readonly List<Proposal> _proposals = new();
     public virtual IReadOnlyCollection<Proposal> Proposals => _proposals.AsReadOnly();
 
-    private readonly List<Message> _messages = new();
-    public virtual IReadOnlyCollection<Message> Messages => _messages.AsReadOnly();
-
     private readonly List<VisitLog> _visitLogs = new();
     public virtual IReadOnlyCollection<VisitLog> VisitLogs => _visitLogs.AsReadOnly();
 

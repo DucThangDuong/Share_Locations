@@ -76,6 +76,8 @@ public class Result
     public static Result Forbidden(string message = "Bạn không có quyền thực hiện thao tác này")
         => new(false, message, HttpStatusCode.Forbidden, "FORBIDDEN");
 
+    public static Result Conflict(string message = "Xung đột dữ liệu")
+        => new(false, message, HttpStatusCode.Conflict, "CONFLICT");
 }
 
 public class Result<T> : Result
@@ -118,4 +120,7 @@ public class Result<T> : Result
 
     public static new Result<T> Forbidden(string message = "Bạn không có quyền thực hiện thao tác này")
         => new(false, default, message, HttpStatusCode.Forbidden, "FORBIDDEN");
+
+    public static new Result<T> Conflict(string message = "Xung đột dữ liệu")
+        => new(false, default, message, HttpStatusCode.Conflict, "CONFLICT");
 }

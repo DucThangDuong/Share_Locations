@@ -44,6 +44,12 @@ public class UnitOfWork : IUnitOfWork
     private IBlogWriteRepository? _blogs;
     public IBlogWriteRepository Blogs => _blogs ??= new BlogWriteRepository(_dbContext);
 
+    private ITripWriteRepository? _trips;
+    public ITripWriteRepository Trips => _trips ??= new TripWriteRepository(_dbContext);
+
+    private IFriendshipRepository? _friendships;
+    public IFriendshipRepository Friendships => _friendships ??= new FriendshipRepository(_dbContext);
+
     public UnitOfWork(TravelReviewDbContext dbContext)
     {
         _dbContext = dbContext;

@@ -19,13 +19,12 @@ public class GetItinerariesEndpoint : Endpoint<GetItinerariesRequest, ApiSuccess
     public override void Configure()
     {
         Get("/api/v1/itineraries", "/api/itineraries");
-        AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
-        Roles("User", "CategoryAdmin", "SystemAdmin");
+        AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
         Summary(s =>
         {
-            s.Summary = "Lấy danh sách lịch trình du lịch";
-            s.Description = "Lấy danh sách các lịch trình du lịch gợi ý kèm thời lượng, vùng miền, chi phí dự kiến và các điểm đến trong chuyến đi.";
+            s.Summary = "Lấy danh sách lịch trình du lịch công khai";
+            s.Description = "Lấy danh sách các lịch trình du lịch gợi ý công khai kèm thời lượng, vùng miền, chi phí dự kiến và các điểm đến trong chuyến đi.";
         });
     }
 
@@ -35,13 +34,7 @@ public class GetItinerariesEndpoint : Endpoint<GetItinerariesRequest, ApiSuccess
             ?? User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
             ?? User.FindFirst("sub")?.Value;
 
-        if (string.IsNullOrEmpty(userIdStr))
-        {
-            await this.SendApiResponseAsync(
-                Result<IReadOnlyList<ItineraryDto>>.Unauthorized("Bạn cần đăng nhập để xem lịch trình chi tiết."),
-                ct);
-            return;
-        }
+        long? currentUserId = long.TryParse(userIdStr, out var parsedId) ? parsedId : null;
 
         var result = await Mediator.Send(
             new GetItinerariesQuery(
@@ -49,7 +42,8 @@ public class GetItinerariesEndpoint : Endpoint<GetItinerariesRequest, ApiSuccess
                 req.Region,
                 req.Keyword,
                 req.Page,
-                req.PageSize),
+                req.PageSize,
+                currentUserId),
             ct);
 
         await this.SendApiResponseAsync(result, ct);
