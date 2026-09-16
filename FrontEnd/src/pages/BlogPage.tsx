@@ -1,54 +1,19 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { CheckCircle2 } from 'lucide-react'
 import type { BlogArticleItem } from '@/types/models/blogArticle.model'
 import { BlogFeedView, BlogReaderView, ArticleEditorView, type EditorOutputData } from '@/components/blog'
 import { useAuth } from '@/context/AuthContext'
 import { blogService } from '@/services/blogService'
-import type { BlogListItemDto } from '@/types/models/place.model'
-
-type CategoryOption = 'Ẩm thực' | 'Kinh nghiệm' | 'Khám phá' | 'Lịch trình' | 'Văn hóa'
-
-const normalizeCategory = (cat?: string | number): CategoryOption => {
-  if (!cat) return 'Khám phá'
-  if (typeof cat === 'number') {
-    const idMap: Record<number, CategoryOption> = {
-      1: 'Khám phá',
-      2: 'Ẩm thực',
-      3: 'Ẩm thực',
-      4: 'Kinh nghiệm'
-    }
-    return idMap[cat] || 'Khám phá'
-  }
-  const str = String(cat).toLowerCase()
-  if (str.includes('ẩm thực') || str.includes('ăn')) return 'Ẩm thực'
-  if (str.includes('kinh nghiệm') || str.includes('mẹo') || str.includes('phượt')) return 'Kinh nghiệm'
-  if (str.includes('lịch trình') || str.includes('tour')) return 'Lịch trình'
-  if (str.includes('văn hóa') || str.includes('lịch sử')) return 'Văn hóa'
-  return 'Khám phá'
-}
-
-const categoryToId = (cat?: string): number => {
-  switch (cat) {
-    case 'Ẩm thực':
-      return 2
-    case 'Kinh nghiệm':
-      return 4
-    case 'Lịch trình':
-      return 1
-    case 'Văn hóa':
-      return 1
-    case 'Khám phá':
-    default:
-      return 1
-  }
-}
+import { placeService } from '@/services/placeService'
+import type { BlogListItemDto, LookupItemDto, RegionLookupDto } from '@/types/models/place.model'
 
 interface EditingArticleState {
   id?: number
   title: string
   summary: string
-  category: CategoryOption
+  category: string
+  categoryId?: number
   coverImg: string
   content: string
 }
@@ -60,10 +25,15 @@ export const BlogPage: React.FC = () => {
   const { user } = useAuth()
 
   const [articles, setArticles] = useState<BlogArticleItem[]>([])
+  const [categories, setCategories] = useState<LookupItemDto[]>([])
+  const [regions, setRegions] = useState<RegionLookupDto[]>([])
   const [selectedArticleId, setSelectedArticleId] = useState<number | null>(null)
   const [viewMode, setViewMode] = useState<'feed' | 'reader' | 'editor'>('feed')
   const [editingArticleData, setEditingArticleData] = useState<EditingArticleState | null>(null)
   const [searchQuery, setSearchQuery] = useState<string>('')
+  const [selectedRegion, setSelectedRegion] = useState<string | null>(null)
+  const [selectedProvince, setSelectedProvince] = useState<string | null>(null)
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [likedArticles, setLikedArticles] = useState<Set<number>>(new Set())
   const [savedArticles, setSavedArticles] = useState<Set<number>>(new Set([1]))
   const [toastMsg, setToastMsg] = useState('')
@@ -73,6 +43,21 @@ export const BlogPage: React.FC = () => {
     setTimeout(() => setToastMsg(''), 2800)
   }
 
+  useEffect(() => {
+    let isMounted = true
+    placeService.getFilterOptions()
+      .then((res) => {
+        if (isMounted && res.success && res.data) {
+          if (res.data.categories) setCategories(res.data.categories)
+          if (res.data.regions) setRegions(res.data.regions)
+        }
+      })
+      .catch(() => {})
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
   const mapBlogDtoToArticle = (dto: BlogListItemDto): BlogArticleItem => ({
     id: dto.id,
     slug: dto.slug,
@@ -80,7 +65,7 @@ export const BlogPage: React.FC = () => {
     title: dto.title,
     subtitle: dto.excerpt || dto.title,
     excerpt: dto.excerpt || dto.title,
-    category: (dto.category as BlogArticleItem['category']) || 'Ẩm thực',
+    category: dto.category || 'Di tích lịch sử - Văn hóa',
     coverImg: dto.coverUrl || 'https://images.unsplash.com/photo-1528127269322-539801943592?w=800&h=600&fit=crop',
     authorName: dto.author?.name || 'Tác giả',
     authorRole: dto.author?.role || 'Blogger',
@@ -93,6 +78,7 @@ export const BlogPage: React.FC = () => {
     isFeatured: dto.featured,
     contentJSON: dto.content,
     htmlContent: dto.content,
+    tags: dto.tags || [],
     sections: [
       {
         id: `sec-${dto.id}-1`,
@@ -107,7 +93,7 @@ export const BlogPage: React.FC = () => {
       const res = await blogService.getBlogs({
         keyword: searchQuery || undefined,
         page: 1,
-        pageSize: 30
+        pageSize: 50
       })
       if (res.success && Array.isArray(res.data)) {
         const mapped = res.data.map(mapBlogDtoToArticle)
@@ -133,7 +119,8 @@ export const BlogPage: React.FC = () => {
       setEditingArticleData({
         title: '',
         summary: '',
-        category: 'Khám phá',
+        category: categories[0]?.name || 'Di tích lịch sử - Văn hóa',
+        categoryId: categories[0]?.id || 1,
         coverImg: 'https://images.unsplash.com/photo-1528127269322-539801943592?w=1000&h=600&fit=crop&auto=format',
         content: ''
       })
@@ -146,11 +133,14 @@ export const BlogPage: React.FC = () => {
       const idNum = Number(editId)
       const passedBlog = (location.state as any)?.editBlog
       if (passedBlog && (passedBlog.id === idNum || !idNum)) {
+        const catName = passedBlog.categoryName || passedBlog.category || 'Di tích lịch sử - Văn hóa'
+        const matched = categories.find((c) => c.name === catName || c.id === passedBlog.categoryId)
         setEditingArticleData({
           id: passedBlog.id,
           title: passedBlog.title || '',
           summary: passedBlog.excerpt || passedBlog.subtitle || '',
-          category: normalizeCategory(passedBlog.categoryName || passedBlog.category || passedBlog.categoryId),
+          category: matched?.name || catName,
+          categoryId: matched?.id || passedBlog.categoryId || 1,
           coverImg: passedBlog.coverImageUrl || passedBlog.coverImg || '',
           content: passedBlog.contentJSON || passedBlog.content || passedBlog.htmlContent || passedBlog.excerpt || ''
         })
@@ -161,11 +151,13 @@ export const BlogPage: React.FC = () => {
 
       const found = articles.find((a) => a.id === idNum)
       if (found) {
+        const matched = categories.find((c) => c.name === found.category || c.id === found.categoryId)
         setEditingArticleData({
           id: found.id,
           title: found.title || '',
           summary: found.excerpt || found.subtitle || '',
-          category: normalizeCategory(found.category),
+          category: matched?.name || found.category,
+          categoryId: matched?.id || found.categoryId || 1,
           coverImg: found.coverImg || '',
           content: found.contentJSON || found.htmlContent || found.excerpt || ''
         })
@@ -177,11 +169,13 @@ export const BlogPage: React.FC = () => {
       blogService.getBlogDetail(editId).then((res) => {
         if (res.success && res.data) {
           const d = res.data
+          const matched = categories.find((c) => c.name === d.category)
           setEditingArticleData({
             id: d.id,
             title: d.title || '',
             summary: d.excerpt || '',
-            category: normalizeCategory(d.category),
+            category: matched?.name || d.category || 'Di tích lịch sử - Văn hóa',
+            categoryId: matched?.id || 1,
             coverImg: d.coverUrl || '',
             content: d.content || d.excerpt || ''
           })
@@ -205,7 +199,7 @@ export const BlogPage: React.FC = () => {
         setViewMode('feed')
       }
     }
-  }, [searchParams, location.state, articles])
+  }, [searchParams, location.state, articles, categories])
 
   const selectedArticle =
     articles.find((a) => a.id === selectedArticleId) || articles[0]
@@ -287,7 +281,8 @@ export const BlogPage: React.FC = () => {
   }
 
   const handlePublishArticle = async (data: EditorOutputData) => {
-    const catId = categoryToId(data.category)
+    const matchedCat = categories.find((c) => c.name === data.category || c.id === data.categoryId)
+    const catId = matchedCat?.id || data.categoryId || 1
     const contentStr = typeof data.content === 'string' ? data.content : JSON.stringify(data.content)
     const readTimeEst = Math.max(1, Math.ceil((data.summary?.length || 500) / 200))
 
@@ -327,7 +322,8 @@ export const BlogPage: React.FC = () => {
   }
 
   const handleSaveDraftArticle = async (data: EditorOutputData) => {
-    const catId = categoryToId(data.category)
+    const matchedCat = categories.find((c) => c.name === data.category || c.id === data.categoryId)
+    const catId = matchedCat?.id || data.categoryId || 1
     const contentStr = typeof data.content === 'string' ? data.content : JSON.stringify(data.content)
     const readTimeEst = Math.max(1, Math.ceil((data.summary?.length || 500) / 200))
 
@@ -364,15 +360,47 @@ export const BlogPage: React.FC = () => {
     navigate('/profile?tab=blogs')
   }
 
-  const filteredArticles = articles.filter((a) => {
-    const q = searchQuery.toLowerCase().trim()
-    return (
-      !q ||
-      a.title.toLowerCase().includes(q) ||
-      a.subtitle.toLowerCase().includes(q) ||
-      a.authorName.toLowerCase().includes(q)
-    )
-  })
+  const filteredArticles = useMemo(() => {
+    return articles.filter((a) => {
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim()
+        const matchTitle = a.title.toLowerCase().includes(q)
+        const matchSubtitle = a.subtitle?.toLowerCase().includes(q)
+        const matchExcerpt = a.excerpt?.toLowerCase().includes(q)
+        const matchAuthor = a.authorName?.toLowerCase().includes(q)
+        const matchCategory = a.category?.toLowerCase().includes(q)
+        const matchTags = a.tags?.some((t) => t.toLowerCase().includes(q))
+        if (!matchTitle && !matchSubtitle && !matchExcerpt && !matchAuthor && !matchCategory && !matchTags) {
+          return false
+        }
+      }
+
+      if (selectedCategory) {
+        const catTarget = selectedCategory.toLowerCase().trim()
+        const matchCat = a.category?.toLowerCase().trim() === catTarget || a.category?.toLowerCase().includes(catTarget)
+        const matchTags = a.tags?.some((t) => t.toLowerCase().includes(catTarget) || catTarget.includes(t.toLowerCase()))
+        if (!matchCat && !matchTags) return false
+      }
+
+      if (selectedRegion) {
+        const regTarget = selectedRegion.toLowerCase().trim()
+        const regionObj = regions.find((r) => r.name.toLowerCase() === regTarget)
+        const provNames = regionObj ? regionObj.provinces.map((p) => p.name.toLowerCase()) : []
+        const textToSearch = `${a.title} ${a.subtitle} ${a.excerpt} ${a.category} ${(a.tags || []).join(' ')}`.toLowerCase()
+        const matchRegionName = textToSearch.includes(regTarget)
+        const matchProvinceName = provNames.some((pName) => textToSearch.includes(pName))
+        if (!matchRegionName && !matchProvinceName) return false
+      }
+
+      if (selectedProvince) {
+        const provTarget = selectedProvince.toLowerCase().trim()
+        const textToSearch = `${a.title} ${a.subtitle} ${a.excerpt} ${a.category} ${(a.tags || []).join(' ')}`.toLowerCase()
+        if (!textToSearch.includes(provTarget)) return false
+      }
+
+      return true
+    })
+  }, [articles, searchQuery, selectedCategory, selectedRegion, selectedProvince, regions])
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 antialiased pb-24 font-sans">
@@ -386,9 +414,26 @@ export const BlogPage: React.FC = () => {
       {viewMode === 'feed' ? (
         <BlogFeedView
           articles={filteredArticles}
+          categories={categories}
+          regions={regions}
           searchQuery={searchQuery}
+          selectedRegion={selectedRegion}
+          selectedProvince={selectedProvince}
+          selectedCategory={selectedCategory}
           onSearchChange={setSearchQuery}
           onClearSearch={() => setSearchQuery('')}
+          onSelectRegion={(reg) => {
+            setSelectedRegion(reg)
+            setSelectedProvince(null)
+          }}
+          onSelectProvince={setSelectedProvince}
+          onSelectCategory={setSelectedCategory}
+          onResetFilters={() => {
+            setSearchQuery('')
+            setSelectedRegion(null)
+            setSelectedProvince(null)
+            setSelectedCategory(null)
+          }}
           onOpenArticle={handleOpenArticle}
           onCreateArticle={() => {
             navigate('/blog?mode=create')
@@ -398,7 +443,9 @@ export const BlogPage: React.FC = () => {
         <ArticleEditorView
           initialTitle={editingArticleData?.title || ''}
           initialSummary={editingArticleData?.summary || ''}
-          initialCategory={editingArticleData?.category || 'Khám phá'}
+          initialCategory={editingArticleData?.category || (categories[0]?.name || 'Di tích lịch sử - Văn hóa')}
+          initialCategoryId={editingArticleData?.categoryId || (categories[0]?.id || 1)}
+          categories={categories}
           initialCoverImg={editingArticleData?.coverImg || undefined}
           initialContent={editingArticleData?.content || ''}
           draftId={editingArticleData?.id ? String(editingArticleData.id) : undefined}

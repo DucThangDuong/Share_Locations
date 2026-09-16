@@ -18,6 +18,8 @@ import TaskItem from '@tiptap/extension-task-item'
 import Highlight from '@tiptap/extension-highlight'
 import { TextStyle } from '@tiptap/extension-text-style'
 import Color from '@tiptap/extension-color'
+import type { LookupItemDto } from '@/types/models/place.model'
+import { placeService } from '@/services/placeService'
 import {
   Bold,
   Italic,
@@ -56,7 +58,8 @@ import {
 export interface EditorOutputData {
   title: string
   summary?: string
-  category: 'Ẩm thực' | 'Kinh nghiệm' | 'Khám phá' | 'Lịch trình' | 'Văn hóa'
+  category: string
+  categoryId?: number
   coverImg?: string
   authorName: string
   content: JSONContent | string
@@ -73,7 +76,9 @@ export interface ArticleEditorViewProps {
   initialContent?: JSONContent | string
   initialTitle?: string
   initialSummary?: string
-  initialCategory?: 'Ẩm thực' | 'Kinh nghiệm' | 'Khám phá' | 'Lịch trình' | 'Văn hóa'
+  initialCategory?: string
+  initialCategoryId?: number
+  categories?: LookupItemDto[]
   initialCoverImg?: string
   authorName?: string
   authorAvatar?: string
@@ -242,13 +247,7 @@ export interface ArticleEditorRef {
   handlePublish: () => Promise<void>
 }
 
-const CATEGORY_OPTIONS: Array<'Ẩm thực' | 'Kinh nghiệm' | 'Khám phá' | 'Lịch trình' | 'Văn hóa'> = [
-  'Ẩm thực',
-  'Kinh nghiệm',
-  'Khám phá',
-  'Lịch trình',
-  'Văn hóa'
-]
+
 
 const COVER_PRESETS = [
   { label: 'Huế cố đô', url: 'https://images.unsplash.com/photo-1569271532956-3fb81a207115?w=1000&h=600&fit=crop&auto=format' },
@@ -278,7 +277,9 @@ export const ArticleEditorView = forwardRef<ArticleEditorRef, ArticleEditorViewP
   initialContent,
   initialTitle = '',
   initialSummary = '',
-  initialCategory = 'Ẩm thực',
+  initialCategory,
+  initialCategoryId,
+  categories,
   initialCoverImg = 'https://images.unsplash.com/photo-1528127269322-539801943592?w=1000&h=600&fit=crop&auto=format',
   authorName: propAuthor = '',
   draftId: initialDraftId,
@@ -286,9 +287,11 @@ export const ArticleEditorView = forwardRef<ArticleEditorRef, ArticleEditorViewP
   hideTitleAndSummary = false,
   onToast
 }, ref) => {
+  const [categoriesList, setCategoriesList] = useState<LookupItemDto[]>(categories || [])
   const [title, setTitle] = useState(initialTitle)
   const [summary, setSummary] = useState(initialSummary)
-  const [category, setCategory] = useState<'Ẩm thực' | 'Kinh nghiệm' | 'Khám phá' | 'Lịch trình' | 'Văn hóa'>(initialCategory)
+  const [category, setCategory] = useState<string>(initialCategory || 'Di tích lịch sử - Văn hóa')
+  const [categoryId, setCategoryId] = useState<number | undefined>(initialCategoryId)
   const [coverImg, setCoverImg] = useState(initialCoverImg)
   const [showCoverModal, setShowCoverModal] = useState(false)
   const [showTocSidebar, setShowTocSidebar] = useState(true)
@@ -387,6 +390,24 @@ export const ArticleEditorView = forwardRef<ArticleEditorRef, ArticleEditorViewP
   }, [editor, updateToc, updateActiveHeading])
 
   useEffect(() => {
+    if (categories && categories.length > 0) {
+      setCategoriesList(categories)
+      return
+    }
+    let isMounted = true
+    placeService.getFilterOptions()
+      .then((res) => {
+        if (isMounted && res.success && res.data?.categories) {
+          setCategoriesList(res.data.categories)
+        }
+      })
+      .catch(() => {})
+    return () => {
+      isMounted = false
+    }
+  }, [categories])
+
+  useEffect(() => {
     if (initialTitle !== undefined) setTitle(initialTitle)
   }, [initialTitle])
 
@@ -397,6 +418,10 @@ export const ArticleEditorView = forwardRef<ArticleEditorRef, ArticleEditorViewP
   useEffect(() => {
     if (initialCategory) setCategory(initialCategory)
   }, [initialCategory])
+
+  useEffect(() => {
+    if (initialCategoryId !== undefined) setCategoryId(initialCategoryId)
+  }, [initialCategoryId])
 
   useEffect(() => {
     if (initialCoverImg) setCoverImg(initialCoverImg)
@@ -440,10 +465,15 @@ export const ArticleEditorView = forwardRef<ArticleEditorRef, ArticleEditorViewP
 
     setIsPublishing(true)
     try {
+      const matchedCat = categoriesList.find((c) => c.name === category || c.id === categoryId)
+      const resolvedCatId = matchedCat?.id || categoryId || 1
+      const resolvedCatName = matchedCat?.name || category || 'Di tích lịch sử - Văn hóa'
+
       const data: EditorOutputData = {
         title: title.trim(),
         summary: summary.trim() || title.trim(),
-        category,
+        category: resolvedCatName,
+        categoryId: resolvedCatId,
         coverImg: coverImg.trim() || initialCoverImg,
         authorName: propAuthor,
         content: editor?.getJSON() || {},
@@ -530,13 +560,17 @@ export const ArticleEditorView = forwardRef<ArticleEditorRef, ArticleEditorViewP
 
     setIsSaving(true)
     try {
+      const matchedCat = categoriesList.find((c) => c.name === category || c.id === categoryId)
+      const resolvedCatId = matchedCat?.id || categoryId || 1
+      const resolvedCatName = matchedCat?.name || category || 'Di tích lịch sử - Văn hóa'
       const newDraftId = `draft-${Date.now()}`
       setDraftId(newDraftId)
       if (onSaveDraft) {
         onSaveDraft({
           title: title.trim(),
           summary: summary.trim() || title.trim(),
-          category,
+          category: resolvedCatName,
+          categoryId: resolvedCatId,
           coverImg: coverImg.trim() || initialCoverImg,
           authorName: propAuthor,
           content: editor?.getJSON() || {},
@@ -611,12 +645,17 @@ export const ArticleEditorView = forwardRef<ArticleEditorRef, ArticleEditorViewP
               <Tag size={14} className="text-emerald-800 shrink-0" />
               <select
                 value={category}
-                onChange={(e) => setCategory(e.target.value as any)}
+                onChange={(e) => {
+                  const selectedName = e.target.value
+                  const matched = categoriesList.find((c) => c.name === selectedName)
+                  setCategory(selectedName)
+                  if (matched) setCategoryId(matched.id)
+                }}
                 className="font-bold px-2.5 py-1.5 bg-slate-50 text-emerald-950 border border-slate-200 rounded-xl text-xs outline-none cursor-pointer shadow-2xs hover:border-emerald-300"
               >
-                {CATEGORY_OPTIONS.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
+                {categoriesList.map((cat) => (
+                  <option key={cat.id} value={cat.name}>
+                    {cat.name}
                   </option>
                 ))}
               </select>

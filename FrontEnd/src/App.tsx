@@ -16,6 +16,7 @@ const ProfilePage = lazy(() => import('@/pages/ProfilePage').then((m) => ({ defa
 const SettingsPage = lazy(() => import('@/pages/SettingsPage').then((m) => ({ default: m.SettingsPage })))
 const ProposePlacePage = lazy(() => import('@/pages/ProposePlacePage').then((m) => ({ default: m.ProposePlacePage })))
 const RegionPage = lazy(() => import('@/pages/RegionPage').then((m) => ({ default: m.RegionPage })))
+const ProvincePage = lazy(() => import('@/pages/ProvincePage').then((m) => ({ default: m.ProvincePage })))
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })))
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
@@ -53,6 +54,13 @@ export const App: React.FC = () => {
                 <Route path="regions/:regionSlug" element={<RegionPage />} />
                 <Route path="mien" element={<RegionPage />} />
                 <Route path="mien/:regionSlug" element={<RegionPage />} />
+                <Route path="provinces" element={<ProvincePage />} />
+                <Route path="provinces/:provinceId" element={<ProvincePage />} />
+                <Route path="province" element={<ProvincePage />} />
+                <Route path="province/:provinceId" element={<ProvincePage />} />
+                <Route path="tinh-thanh" element={<ProvincePage />} />
+                <Route path="tinh-thanh/:provinceId" element={<ProvincePage />} />
+                <Route path="tinh/:provinceId" element={<ProvincePage />} />
                 <Route path="propose-place" element={<ProposePlacePage />} />
                 <Route path="de-xuat" element={<ProposePlacePage />} />
                 <Route path="de-xuat-dia-diem" element={<ProposePlacePage />} />

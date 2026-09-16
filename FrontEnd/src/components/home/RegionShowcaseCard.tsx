@@ -79,7 +79,7 @@ export const RegionShowcaseCard: React.FC<RegionShowcaseCardProps> = ({ region }
                   <button
                     key={prov.id}
                     type="button"
-                    onClick={() => navigate(`/explore?province=${encodeURIComponent(prov.name)}&provinceId=${prov.id}&regionId=${region.id}`)}
+                    onClick={() => navigate(`/provinces/${prov.id}`)}
                     className="p-2.5 rounded-lg bg-white hover:bg-emerald-50 border border-slate-200/80 hover:border-emerald-300 transition-all text-left group flex flex-col justify-between cursor-pointer active-press"
                   >
                     <span className="text-xs font-bold text-slate-800 group-hover:text-emerald-800 line-clamp-1 transition-colors">

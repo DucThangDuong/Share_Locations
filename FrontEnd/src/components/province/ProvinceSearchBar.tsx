@@ -1,36 +1,31 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, Map, ArrowRight, X } from 'lucide-react'
-import type { RegionLandingData } from '@/types/models/region.model'
+import type { ProvinceDto } from '@/types/models/geography.model'
 
-interface RegionSearchBarProps {
-  data: RegionLandingData
+interface ProvinceSearchBarProps {
+  currentProvince: ProvinceDto
 }
 
-export const RegionSearchBar: React.FC<RegionSearchBarProps> = ({ data }) => {
+export const ProvinceSearchBar: React.FC<ProvinceSearchBarProps> = ({
+  currentProvince
+}) => {
   const navigate = useNavigate()
   const [searchTerm, setSearchTerm] = useState('')
-  const [selectedProvince, setSelectedProvince] = useState<string>('')
 
   const handleSearch = (e?: React.FormEvent) => {
     if (e) e.preventDefault()
     const params = new URLSearchParams()
     if (searchTerm.trim()) params.set('q', searchTerm.trim())
-    if (selectedProvince) params.set('province', selectedProvince)
-    params.set('region', data.name)
+    params.set('province', currentProvince.name)
     navigate(`/explore?${params.toString()}`)
   }
 
   const handleOpenMap = () => {
     const params = new URLSearchParams()
-    params.set('region', data.name)
-    if (selectedProvince) params.set('province', selectedProvince)
+    params.set('province', currentProvince.name)
     if (searchTerm.trim()) params.set('q', searchTerm.trim())
     navigate(`/map?${params.toString()}`)
-  }
-
-  const handleProvinceSelect = (prov: string) => {
-    navigate(`/provinces?province=${encodeURIComponent(prov)}`)
   }
 
   return (
@@ -43,7 +38,7 @@ export const RegionSearchBar: React.FC<RegionSearchBarProps> = ({ data }) => {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder={`Tìm địa điểm, quán ăn, hoặc tọa độ check-in tại ${data.name}...`}
+              placeholder={`Tìm địa điểm, quán ăn, tọa độ check-in tại ${currentProvince.name}...`}
               className="w-full h-12 pl-11 pr-10 rounded-xl bg-stone-50 border border-stone-200 text-xs sm:text-sm text-stone-900 placeholder:text-stone-400 focus:outline-hidden focus:bg-white focus:border-[#C0392B] focus:ring-2 focus:ring-[#C0392B]/15 transition-all"
             />
             {searchTerm && (
@@ -70,47 +65,14 @@ export const RegionSearchBar: React.FC<RegionSearchBarProps> = ({ data }) => {
               type="button"
               onClick={handleOpenMap}
               className="h-12 px-4 sm:px-5 rounded-xl bg-stone-100 hover:bg-[#2D6A4F] text-stone-700 hover:text-white border border-stone-200 hover:border-[#2D6A4F] text-xs sm:text-sm font-bold flex items-center justify-center gap-2 cursor-pointer transition-all active-press"
-              title="Mở bản đồ vùng tương tác"
+              title="Mở bản đồ tương tác tỉnh thành"
             >
               <Map className="w-4 h-4" />
-              <span className="hidden sm:inline">Mở bản đồ vùng</span>
+              <span className="hidden sm:inline">Mở bản đồ tỉnh</span>
             </button>
           </div>
         </form>
-
-        {data.provinces && data.provinces.length > 0 && (
-          <div className="pt-2 border-t border-stone-100 flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setSelectedProvince('')}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer border ${selectedProvince === ''
-                  ? 'bg-[#C0392B] text-white border-[#C0392B] shadow-xs'
-                  : 'bg-stone-100 hover:bg-stone-200 text-stone-600 border-stone-200'
-                }`}
-            >
-              Tất cả
-            </button>
-            {data.provinces.map((prov) => {
-              const isSelected = selectedProvince === prov
-              return (
-                <button
-                  key={prov}
-                  type="button"
-                  onClick={() => handleProvinceSelect(prov)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer border ${isSelected
-                      ? 'bg-[#C0392B] text-white border-[#C0392B] shadow-xs'
-                      : 'bg-stone-50 hover:bg-stone-100 hover:border-stone-300 text-stone-700 border-stone-200'
-                    }`}
-                >
-                  {prov}
-                </button>
-              )
-            })}
-          </div>
-        )}
       </div>
     </div>
   )
 }
-
-export default RegionSearchBar
