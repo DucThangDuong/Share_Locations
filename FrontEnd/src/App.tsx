@@ -18,7 +18,7 @@ const ProposePlacePage = lazy(() => import('@/pages/ProposePlacePage').then((m) 
 const RegionPage = lazy(() => import('@/pages/RegionPage').then((m) => ({ default: m.RegionPage })))
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })))
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'dummy-client-id.apps.googleusercontent.com'
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
 
 const PageLoadingFallback = () => (
   <div className="min-h-[60vh] flex items-center justify-center">
@@ -40,8 +40,11 @@ export const App: React.FC = () => {
                 <Route path="places/:id" element={<PlaceDetailPage />} />
                 <Route path="dia-diem/:id" element={<PlaceDetailPage />} />
                 <Route path="map" element={<MapPage />} />
-                <Route path="ban-do" element={<MapPage />} />
                 <Route path="itinerary" element={<ItineraryPage />} />
+                <Route path="itinerary/my-trips" element={<ItineraryPage />} />
+                <Route path="itinerary/:id" element={<ItineraryPage />} />
+                <Route path="my-trips" element={<ItineraryPage />} />
+                <Route path="chuyen-di-cua-toi" element={<ItineraryPage />} />
                 <Route path="itineraries" element={<ItineraryPage />} />
                 <Route path="hanh-trinh" element={<ItineraryPage />} />
                 <Route path="blog" element={<BlogPage />} />

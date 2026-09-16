@@ -1,61 +1,57 @@
 import React from 'react'
-import {
-  Bookmark,
-  Compass,
-  Star,
-  MessageSquare,
-  BookOpen,
-  PlusCircle
-} from 'lucide-react'
 
-export type ProfileTabType = 'favorites' | 'visitLogs' | 'reviews' | 'comments' | 'blogs' | 'proposals'
+export type ProfileTabType =
+  | 'favorites'
+  | 'trips'
+  | 'visitLogs'
+  | 'friends'
+  | 'reviews'
+  | 'comments'
+  | 'blogs'
+  | 'proposals'
 
 interface ProfileTabBarProps {
   activeTab: ProfileTabType
   onTabChange: (tab: ProfileTabType) => void
-  counts: Record<ProfileTabType, number>
+  counts?: Record<ProfileTabType, number>
 }
 
 interface TabDef {
   key: ProfileTabType
   label: string
-  icon: React.ElementType
 }
 
 const TABS: TabDef[] = [
-  { key: 'favorites', label: 'Đã lưu', icon: Bookmark },
-  { key: 'visitLogs', label: 'Nhật ký', icon: Compass },
-  { key: 'reviews', label: 'Đánh giá', icon: Star },
-  { key: 'comments', label: 'Bình luận', icon: MessageSquare },
-  { key: 'blogs', label: 'Bài viết', icon: BookOpen },
-  { key: 'proposals', label: 'Đề xuất', icon: PlusCircle }
+  { key: 'favorites', label: 'Đã lưu' },
+  { key: 'trips', label: 'Chuyến đi' },
+  { key: 'visitLogs', label: 'Nhật ký' },
+  { key: 'friends', label: 'Bạn bè' },
+  { key: 'reviews', label: 'Đánh giá' },
+  { key: 'comments', label: 'Bình luận' },
+  { key: 'blogs', label: 'Bài viết' },
+  { key: 'proposals', label: 'Đề xuất' }
 ]
 
 export const ProfileTabBar: React.FC<ProfileTabBarProps> = ({
   activeTab,
-  onTabChange,
-  counts
+  onTabChange
 }) => {
   return (
-    <div className="bg-white rounded-2xl p-2 border border-slate-200/80 flex flex-wrap gap-1.5 shadow-2xs">
-      {TABS.map(({ key, label, icon: Icon }) => {
+    <div className="bg-white rounded-2xl p-1.5 border border-slate-200/80 flex items-center overflow-x-auto no-scrollbar gap-1.5 shadow-2xs font-sans">
+      {TABS.map(({ key, label }) => {
         const isActive = activeTab === key
-        const count = counts[key] ?? 0
         return (
           <button
             type="button"
             key={key}
             onClick={() => onTabChange(key)}
-            className={`flex-1 min-w-[120px] py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            className={`py-2 px-4 rounded-xl text-xs font-bold transition-colors cursor-pointer whitespace-nowrap flex-1 text-center ${
               isActive
-                ? 'bg-emerald-600 text-white shadow-xs'
-                : 'text-slate-600 hover:bg-slate-100/80'
+                ? 'bg-emerald-800 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
             }`}
           >
-            <Icon className="w-3.5 h-3.5" />
-            <span>
-              {label} ({count})
-            </span>
+            <span>{label}</span>
           </button>
         )
       })}

@@ -29,7 +29,6 @@ import { geographyService } from '@/services/geographyService'
 import { userService } from '@/services/userService'
 import type { PlaceTypeDto } from '@/types/models/place.model'
 import type { ProvinceDto } from '@/types/models/geography.model'
-import { provinceOptions, categoryOptions } from '@/types/models/userProfile.model'
 
 export const ProposePlacePage: React.FC = () => {
   const navigate = useNavigate()
@@ -380,8 +379,8 @@ export const ProposePlacePage: React.FC = () => {
     )
   }
 
-  const currentCategoryName = categories.find((c) => c.id === categoryId)?.name || categoryOptions[0].name
-  const currentProvinceName = provinces.find((p) => p.id === provinceId)?.name || provinceOptions[0]
+  const currentCategoryName = categories.find((c) => c.id === categoryId)?.name || 'Danh mục'
+  const currentProvinceName = provinces.find((p) => p.id === provinceId)?.name || 'Tỉnh thành'
 
   return (
     <div className="min-h-screen bg-slate-50/70 pb-20 pt-6 font-sans">
@@ -411,6 +410,7 @@ export const ProposePlacePage: React.FC = () => {
                       type="text"
                       placeholder="Ví dụ: Đồi Chè Cầu Đất, Cà phê Mây Lang Thang, Bánh Mì Phượng..."
                       value={name}
+                      onChange={(e) => setName(e.target.value)}
                       className="w-full px-4 py-3 rounded-2xl bg-slate-50/80 border border-slate-200 text-xs sm:text-sm text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-700 transition-all font-medium"
                     />
                   </div>
@@ -425,17 +425,11 @@ export const ProposePlacePage: React.FC = () => {
                         onChange={(e) => setCategoryId(Number(e.target.value))}
                         className="w-full px-3.5 py-3 rounded-2xl bg-slate-50/80 border border-slate-200 text-xs font-medium text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-700 cursor-pointer"
                       >
-                        {categories.length > 0
-                          ? categories.map((cat) => (
-                            <option key={cat.id} value={cat.id}>
-                              {cat.name}
-                            </option>
-                          ))
-                          : categoryOptions.map((cat) => (
-                            <option key={cat.id} value={cat.id}>
-                              {cat.name} ({cat.type})
-                            </option>
-                          ))}
+                        {categories.map((cat) => (
+                          <option key={cat.id} value={cat.id}>
+                            {cat.name}
+                          </option>
+                        ))}
                       </select>
                     </div>
 
@@ -448,17 +442,11 @@ export const ProposePlacePage: React.FC = () => {
                         onChange={(e) => setProvinceId(Number(e.target.value))}
                         className="w-full px-3.5 py-3 rounded-2xl bg-slate-50/80 border border-slate-200 text-xs font-medium text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-700 cursor-pointer"
                       >
-                        {provinces.length > 0
-                          ? provinces.map((prov) => (
-                            <option key={prov.id} value={prov.id}>
-                              {prov.name}
-                            </option>
-                          ))
-                          : provinceOptions.map((prov, pIdx) => (
-                            <option key={pIdx + 1} value={pIdx + 1}>
-                              {prov}
-                            </option>
-                          ))}
+                        {provinces.map((prov) => (
+                          <option key={prov.id} value={prov.id}>
+                            {prov.name}
+                          </option>
+                        ))}
                       </select>
                     </div>
                   </div>

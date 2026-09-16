@@ -216,9 +216,12 @@ export interface ItineraryStopDto {
   time: string
   activity: string
   location: string
+  placeName?: string
+  name?: string
   description?: string | null
   costEstimate?: string | null
   tips?: string | null
+  note?: string | null
 }
 
 export interface ItineraryDayDto {

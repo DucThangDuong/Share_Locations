@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, Star, MapPin, ArrowLeft, ArrowRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Star, ArrowLeft, ArrowRight } from 'lucide-react'
 import type { RegionLandmark } from '@/types/models/region.model'
 
 interface RegionLandmarksProps {

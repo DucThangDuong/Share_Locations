@@ -149,33 +149,3 @@ export interface PagedResultDto<T> {
 }
 
 export type { UserProfileData } from '@/types/auth'
-
-export const provinceOptions: string[] = [
-  'Hà Nội',
-  'TP. Hồ Chí Minh',
-  'Đà Nẵng',
-  'Quảng Nam',
-  'Thừa Thiên Huế',
-  'Lâm Đồng (Đà Lạt)',
-  'Lào Cai (Sa Pa)',
-  'Quảng Ninh (Hạ Long)',
-  'Ninh Bình',
-  'Hà Giang',
-  'Khánh Hòa (Nha Trang)',
-  'Kiên Giang (Phú Quốc)',
-  'Bà Rịa - Vũng Tàu',
-  'Cần Thơ',
-  'An Giang',
-  'Đắk Nông'
-]
-
-export const categoryOptions = [
-  { id: 1, name: 'Nhà hàng & Đặc sản', type: 'Ăn uống' },
-  { id: 2, name: 'Quán cà phê & Trà', type: 'Ăn uống' },
-  { id: 3, name: 'Ẩm thực đường phố', type: 'Ăn uống' },
-  { id: 4, name: 'Điểm tham quan & Di tích', type: 'Du lịch' },
-  { id: 5, name: 'Bãi biển & Đảo', type: 'Du lịch' },
-  { id: 6, name: 'Núi rừng & Thác nước', type: 'Du lịch' },
-  { id: 7, name: 'Khách sạn & Homestay', type: 'Lưu trú' },
-  { id: 8, name: 'Trải nghiệm văn hóa', type: 'Văn hóa' }
-]
