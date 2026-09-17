@@ -91,7 +91,6 @@ export const ItineraryCatalogView: React.FC<ItineraryCatalogViewProps> = ({
     })
     return list.length > 0 ? list : ['Miền Bắc', 'Miền Trung', 'Miền Nam']
   }, [provinces])
-
   const mapDtoToDetailed = (itinerary: ItineraryDto): DetailedItineraryItem => {
     const totalCostNumber = parseInt(itinerary.estimatedCost?.replace(/[^0-9]/g, '') || '0', 10)
     return {

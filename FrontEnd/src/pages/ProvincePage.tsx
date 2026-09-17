@@ -191,7 +191,6 @@ export const ProvincePage: React.FC = () => {
             regionName={landingData.province.name}
           />
         )}
-
         <ProvinceItinerarySection
           provinceName={landingData.province.name}
           initialItineraries={landingData.itineraries}

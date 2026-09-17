@@ -408,7 +408,6 @@ public class ProvinceRepository : IProvinceRepository
                 {
                     mediaUrls.Add((string)f.ImageUrl);
                 }
-
                 decimal? minPrice = f.MinPrice != null ? (decimal)f.MinPrice : null;
                 decimal? maxPrice = f.MaxPrice != null ? (decimal)f.MaxPrice : null;
                 string priceRange = "Đang cập nhật";
@@ -424,7 +423,6 @@ public class ProvinceRepository : IProvinceRepository
                 {
                     priceRange = $"Đến {maxPrice.Value.ToString("N0", ViCulture)}đ";
                 }
-
                 foods.Add(new RegionFoodDto
                 {
                     Id = fid,

@@ -161,7 +161,7 @@ export const userService = {
     return response.data
   },
 
-  async recordAccessHistory(placeId: number): Promise<ApiSuccessResponse<boolean>> {
+  async recordAccessHistory(placeId: number): Promise<ApiSuccessResponse<boolean>> 
     const response = await apiClient.post<ApiSuccessResponse<boolean>>(
       `/api/places/${placeId}/access-history`
     )
