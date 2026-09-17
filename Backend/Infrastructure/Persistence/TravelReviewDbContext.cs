@@ -41,6 +41,7 @@ public class TravelReviewDbContext : DbContext
     // 7. Reviews
     public virtual DbSet<Review> Reviews => Set<Review>();
     public virtual DbSet<ReviewMedia> ReviewMedia => Set<ReviewMedia>();
+    public virtual DbSet<ReviewLike> ReviewLikes => Set<ReviewLike>();
     public virtual DbSet<Comment> Comments => Set<Comment>();
 
     // 8. Community
@@ -51,6 +52,8 @@ public class TravelReviewDbContext : DbContext
     public virtual DbSet<ChatRoom> ChatRooms => Set<ChatRoom>();
     public virtual DbSet<ChatRoomMember> ChatRoomMembers => Set<ChatRoomMember>();
     public virtual DbSet<Message> Messages => Set<Message>();
+    public virtual DbSet<MessageAttachment> MessageAttachments => Set<MessageAttachment>();
+    public virtual DbSet<MessageReaction> MessageReactions => Set<MessageReaction>();
 
     // 10. Personalization
     public virtual DbSet<Favorite> Favorites => Set<Favorite>();

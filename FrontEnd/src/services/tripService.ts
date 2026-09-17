@@ -6,8 +6,11 @@ import type {
   CreateTripRequestDto,
   CreateTripResponseDto,
   TripDetailDto,
+  TripDayDetailDto,
   TripPlaceDetailDto,
   UpdateTripRequestDto,
+  UpdateTripDayRequestDto,
+  AddTripDayRequestDto,
   AddTripPlaceRequestDto,
   UpdateTripPlaceRequestDto,
   InviteTripMemberRequestDto
@@ -42,6 +45,39 @@ export const tripService = {
 
   async deleteTrip(id: number | string): Promise<ApiSuccessResponse<unknown>> {
     const response = await apiClient.delete<ApiSuccessResponse<unknown>>(`/api/trips/${id}`)
+    return response.data
+  },
+
+  async addTripDay(
+    tripId: number | string,
+    data?: AddTripDayRequestDto
+  ): Promise<ApiSuccessResponse<TripDayDetailDto>> {
+    const response = await apiClient.post<ApiSuccessResponse<TripDayDetailDto>>(
+      `/api/trips/${tripId}/days`,
+      data || {}
+    )
+    return response.data
+  },
+
+  async updateTripDay(
+    tripId: number | string,
+    dayNumber: number,
+    data: UpdateTripDayRequestDto
+  ): Promise<ApiSuccessResponse<TripDayDetailDto>> {
+    const response = await apiClient.put<ApiSuccessResponse<TripDayDetailDto>>(
+      `/api/trips/${tripId}/days/${dayNumber}`,
+      data
+    )
+    return response.data
+  },
+
+  async deleteTripDay(
+    tripId: number | string,
+    dayNumber: number
+  ): Promise<ApiSuccessResponse<unknown>> {
+    const response = await apiClient.delete<ApiSuccessResponse<unknown>>(
+      `/api/trips/${tripId}/days/${dayNumber}`
+    )
     return response.data
   },
 

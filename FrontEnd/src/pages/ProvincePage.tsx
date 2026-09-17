@@ -192,12 +192,10 @@ export const ProvincePage: React.FC = () => {
           />
         )}
 
-        {landingData.itineraries && landingData.itineraries.length > 0 && (
-          <ProvinceItinerarySection
-            itineraries={landingData.itineraries}
-            provinceName={landingData.province.name}
-          />
-        )}
+        <ProvinceItinerarySection
+          provinceName={landingData.province.name}
+          initialItineraries={landingData.itineraries}
+        />
 
         {landingData.blogPosts && landingData.blogPosts.length > 0 && (
           <RegionBlogSection

@@ -1,6 +1,6 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Star, MapPin, Award, Navigation, ThumbsUp, CheckCircle2 } from 'lucide-react'
+import { Star, MapPin, Navigation, ThumbsUp, CheckCircle2 } from 'lucide-react'
 import type { RegionSpotlight, RegionReview } from '@/types/models/region.model'
 
 interface RegionSpotlightReviewsProps {
@@ -22,11 +22,11 @@ export const RegionSpotlightReviews: React.FC<RegionSpotlightReviewsProps> = ({
     }
   }
 
-  const handleOpenReviewMap = (review: RegionReview) => {
-    if (review.coordinates && review.coordinates.length >= 2) {
-      navigate(`/map?lat=${review.coordinates[0]}&lng=${review.coordinates[1]}&zoom=15&highlight=${encodeURIComponent(review.placeName)}`)
+  const handleOpenPlace = (review: RegionReview) => {
+    if (review.placeId) {
+      navigate(`/places/${review.placeId}`)
     } else {
-      navigate(`/map?q=${encodeURIComponent(review.placeName)}`)
+      navigate(`/explore?q=${encodeURIComponent(review.placeName)}`)
     }
   }
 
@@ -46,11 +46,6 @@ export const RegionSpotlightReviews: React.FC<RegionSpotlightReviewsProps> = ({
           </div>
 
           <div className="relative z-10 p-6 sm:p-10 lg:p-12 max-w-3xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-bold uppercase tracking-wider mb-4">
-              <Award className="w-4 h-4 text-amber-400" />
-              <span>Tiêu Điểm Điểm Đến Nổi Bật</span>
-            </div>
-
             <h2 className="text-2xl sm:text-4xl font-black tracking-tight leading-tight mb-3">
               {spotlight.title}
             </h2>
@@ -154,7 +149,10 @@ export const RegionSpotlightReviews: React.FC<RegionSpotlightReviewsProps> = ({
                     </div>
                   </div>
 
-                  <div className="mb-2.5 p-2 rounded-lg bg-stone-50 border border-stone-100 flex items-center gap-1.5 text-xs font-bold text-[#C0392B]">
+                  <div
+                    onClick={() => handleOpenPlace(rev)}
+                    className="mb-2.5 p-2 rounded-lg bg-stone-50 hover:bg-stone-100 border border-stone-100 flex items-center gap-1.5 text-xs font-bold text-[#C0392B] cursor-pointer transition-colors"
+                  >
                     <MapPin className="w-3.5 h-3.5 shrink-0" />
                     <span className="truncate">{rev.placeName}</span>
                   </div>
@@ -188,11 +186,11 @@ export const RegionSpotlightReviews: React.FC<RegionSpotlightReviewsProps> = ({
 
                   <button
                     type="button"
-                    onClick={() => handleOpenReviewMap(rev)}
-                    className="px-3 py-1.5 rounded-lg bg-stone-100 hover:bg-[#2D6A4F] text-stone-700 hover:text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer active-press"
+                    onClick={() => handleOpenPlace(rev)}
+                    className="px-3 py-1.5 rounded-lg bg-stone-100 hover:bg-[#2D6A4F] text-stone-700 hover:text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer active-press group/btn"
                   >
-                    <Navigation className="w-3 h-3 text-[#2D6A4F] hover:text-white" />
-                    <span>Đến ghim địa điểm này trên Map</span>
+                    <MapPin className="w-3.5 h-3.5 text-[#2D6A4F] group-hover/btn:text-white transition-colors" />
+                    <span>Xem địa điểm này</span>
                   </button>
                 </div>
               </div>

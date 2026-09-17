@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Clock, Phone, Globe, ExternalLink, MapPin, Compass } from 'lucide-react'
+import { Clock, Phone, Globe, ExternalLink, MapPin, Coins } from 'lucide-react'
 import { PlaceDetailMap } from './PlaceDetailMap'
 import type { PlaceDetailDto } from '@/types/models/place.model'
 
@@ -8,6 +8,33 @@ interface PlaceDetailSidebarProps {
 }
 
 export const PlaceDetailSidebar = ({ place }: PlaceDetailSidebarProps) => {
+  const formatPrice = (min?: number | null, max?: number | null) => {
+    const hasMin = min !== undefined && min !== null
+    const hasMax = max !== undefined && max !== null
+
+    if (!hasMin && !hasMax) return null
+
+    if (hasMin && hasMax) {
+      if (min === 0 && max === 0) return 'Miễn phí'
+      if (min === max) return `${min.toLocaleString('vi-VN')} đ`
+      return `${min.toLocaleString('vi-VN')} đ – ${max.toLocaleString('vi-VN')} đ`
+    }
+
+    if (hasMin) {
+      if (min === 0) return 'Miễn phí'
+      return `Từ ${min.toLocaleString('vi-VN')} đ`
+    }
+
+    if (hasMax) {
+      if (max === 0) return 'Miễn phí'
+      return `Đến ${max.toLocaleString('vi-VN')} đ`
+    }
+
+    return null
+  }
+
+  const priceDisplay = formatPrice(place.minPrice, place.maxPrice)
+
   return (
     <div className="space-y-6">
       <div className="bg-white p-6 rounded-lg border border-gray-200/80 shadow-2xs space-y-5 sticky top-20">
@@ -22,6 +49,16 @@ export const PlaceDetailSidebar = ({ place }: PlaceDetailSidebarProps) => {
               <div>
                 <div className="font-semibold text-gray-900">Giờ hoạt động</div>
                 <div className="text-gray-600 mt-0.5">{place.openingHours}</div>
+              </div>
+            </div>
+          )}
+
+          {priceDisplay && (
+            <div className="flex items-start gap-3">
+              <Coins className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+              <div>
+                <div className="font-semibold text-gray-900">Khoảng giá</div>
+                <div className="text-gray-600 mt-0.5 font-medium">{priceDisplay}</div>
               </div>
             </div>
           )}
@@ -88,16 +125,6 @@ export const PlaceDetailSidebar = ({ place }: PlaceDetailSidebarProps) => {
               <ExternalLink className="w-3 h-3" />
             </a>
           </div>
-        </div>
-
-        <div className="pt-2">
-          <Link
-            to="/itineraries"
-            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-lg shadow-xs transition-colors text-center"
-          >
-            <Compass className="w-4 h-4" />
-            <span>Xem lịch trình gợi ý đến đây</span>
-          </Link>
         </div>
       </div>
     </div>

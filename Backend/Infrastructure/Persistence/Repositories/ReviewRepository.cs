@@ -48,6 +48,28 @@ public class ReviewRepository : IReviewRepository
         _dbContext.Reviews.Remove(review);
     }
 
+    public async Task<ReviewLike?> GetLikeAsync(long reviewId, long userId, CancellationToken ct = default)
+    {
+        return await _dbContext.ReviewLikes
+            .FirstOrDefaultAsync(l => l.ReviewId == reviewId && l.UserId == userId, ct);
+    }
+
+    public async Task AddLikeAsync(ReviewLike like, CancellationToken ct = default)
+    {
+        await _dbContext.ReviewLikes.AddAsync(like, ct);
+    }
+
+    public void RemoveLike(ReviewLike like)
+    {
+        _dbContext.ReviewLikes.Remove(like);
+    }
+
+    public async Task<bool> IsLikedAsync(long reviewId, long userId, CancellationToken ct = default)
+    {
+        return await _dbContext.ReviewLikes
+            .AnyAsync(l => l.ReviewId == reviewId && l.UserId == userId, ct);
+    }
+
     public async Task<(decimal AvgRating, int ReviewCount)> GetPlaceStatsAsync(long placeId, CancellationToken ct = default)
     {
         var ratings = await _dbContext.Reviews

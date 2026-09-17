@@ -20,6 +20,7 @@ import { TextStyle } from '@tiptap/extension-text-style'
 import Color from '@tiptap/extension-color'
 import type { LookupItemDto } from '@/types/models/place.model'
 import { placeService } from '@/services/placeService'
+import { convertRawContentToHtml } from '@/utils/contentConverter'
 import {
   Bold,
   Italic,
@@ -64,15 +65,22 @@ export interface EditorOutputData {
   authorName: string
   content: JSONContent | string
   htmlContent?: string
+  contentJSON?: string
+  readTimeMinutes?: number
+  status?: number
 }
 
 export interface ArticleEditorViewProps {
   locationId?: string
   heritageId?: string
   heritageTitle?: string
-  onBack: () => void | Promise<void>
-  onPublish: (data: EditorOutputData) => void
+  onBack?: () => void | Promise<void>
+  onPublish?: (data: EditorOutputData) => void
   onSaveDraft?: (data: EditorOutputData) => void
+  onSave?: (data: EditorOutputData) => void
+  onCancel?: () => void
+  articleId?: number
+  availableCategories?: LookupItemDto[]
   initialContent?: JSONContent | string
   initialTitle?: string
   initialSummary?: string
@@ -258,12 +266,21 @@ const COVER_PRESETS = [
   { label: 'Chợ đêm ẩm thực', url: 'https://images.unsplash.com/photo-1509072619873-adb3dc289b50?w=1000&h=600&fit=crop&auto=format' }
 ]
 
-const parseInitialContent = (content?: any) => {
+const parseInitialContent = (content?: unknown) => {
   if (!content) return ''
-  if (typeof content === 'object') return content
+  if (typeof content === 'object') {
+    if ('ops' in (content as Record<string, unknown>)) return convertRawContentToHtml(content as object)
+    return content
+  }
   if (typeof content === 'string') {
+    const trimmed = content.trim()
+    if (trimmed.startsWith('{"ops"') || trimmed.startsWith('{"ops":') || trimmed.startsWith('{"ops" :')) {
+      return convertRawContentToHtml(trimmed)
+    }
     try {
-      return JSON.parse(content)
+      const parsed = JSON.parse(trimmed)
+      if (parsed && parsed.ops) return convertRawContentToHtml(parsed)
+      return parsed
     } catch {
       return content
     }
@@ -274,20 +291,24 @@ const parseInitialContent = (content?: any) => {
 export const ArticleEditorView = forwardRef<ArticleEditorRef, ArticleEditorViewProps>(({
   onPublish,
   onSaveDraft,
+  onSave,
+  onCancel: _onCancel,
   initialContent,
   initialTitle = '',
   initialSummary = '',
   initialCategory,
   initialCategoryId,
   categories,
-  initialCoverImg = 'https://images.unsplash.com/photo-1528127269322-539801943592?w=1000&h=600&fit=crop&auto=format',
+  availableCategories,
+  initialCoverImg = '',
   authorName: propAuthor = '',
   draftId: initialDraftId,
+  articleId: _propArticleId,
   isManagerMode = false,
   hideTitleAndSummary = false,
   onToast
 }, ref) => {
-  const [categoriesList, setCategoriesList] = useState<LookupItemDto[]>(categories || [])
+  const [categoriesList, setCategoriesList] = useState<LookupItemDto[]>(categories || availableCategories || [])
   const [title, setTitle] = useState(initialTitle)
   const [summary, setSummary] = useState(initialSummary)
   const [category, setCategory] = useState<string>(initialCategory || 'Di tích lịch sử - Văn hóa')
@@ -469,6 +490,7 @@ export const ArticleEditorView = forwardRef<ArticleEditorRef, ArticleEditorViewP
       const resolvedCatId = matchedCat?.id || categoryId || 1
       const resolvedCatName = matchedCat?.name || category || 'Di tích lịch sử - Văn hóa'
 
+      const wordCount = editor?.getText().trim().split(/\s+/).filter(Boolean).length || 0
       const data: EditorOutputData = {
         title: title.trim(),
         summary: summary.trim() || title.trim(),
@@ -477,10 +499,14 @@ export const ArticleEditorView = forwardRef<ArticleEditorRef, ArticleEditorViewP
         coverImg: coverImg.trim() || initialCoverImg,
         authorName: propAuthor,
         content: editor?.getJSON() || {},
-        htmlContent: editor?.getHTML() || ''
+        htmlContent: editor?.getHTML() || '',
+        contentJSON: JSON.stringify(editor?.getJSON() || {}),
+        readTimeMinutes: Math.max(1, Math.round(wordCount / 200)),
+        status: 1
       }
 
-      onPublish(data)
+      if (onPublish) onPublish(data)
+      if (onSave) onSave(data)
       showNotification('Xuất bản cẩm nang thành công!', 'success')
     } catch {
       showNotification('Có lỗi xảy ra khi xuất bản bài viết.', 'error')
@@ -565,6 +591,7 @@ export const ArticleEditorView = forwardRef<ArticleEditorRef, ArticleEditorViewP
       const resolvedCatName = matchedCat?.name || category || 'Di tích lịch sử - Văn hóa'
       const newDraftId = `draft-${Date.now()}`
       setDraftId(newDraftId)
+      const wordCount = editor?.getText().trim().split(/\s+/).filter(Boolean).length || 0
       if (onSaveDraft) {
         onSaveDraft({
           title: title.trim(),
@@ -574,7 +601,10 @@ export const ArticleEditorView = forwardRef<ArticleEditorRef, ArticleEditorViewP
           coverImg: coverImg.trim() || initialCoverImg,
           authorName: propAuthor,
           content: editor?.getJSON() || {},
-          htmlContent: editor?.getHTML() || ''
+          htmlContent: editor?.getHTML() || '',
+          contentJSON: JSON.stringify(editor?.getJSON() || {}),
+          readTimeMinutes: Math.max(1, Math.round(wordCount / 200)),
+          status: 0
         })
       }
       showNotification('Đã lưu bản nháp cẩm nang!')

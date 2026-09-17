@@ -4,7 +4,6 @@ import {
   Star,
   MapPin,
   Calendar,
-  ThumbsUp,
   MessageSquare,
   Sparkles,
   ExternalLink,
@@ -97,8 +96,8 @@ export const UserReviewsSection: React.FC<UserReviewsSectionProps> = ({
       ) : (
         <div className="space-y-4">
           {filteredReviews.map((rev) => {
-            const thumbImg = rev.coverImg || rev.placeThumb
-            const photoList = rev.images && rev.images.length > 0 ? rev.images : rev.photos || []
+            const thumbImg = rev.coverImg
+            const photoList = rev.images || []
 
             return (
               <div
@@ -184,15 +183,6 @@ export const UserReviewsSection: React.FC<UserReviewsSectionProps> = ({
                         <img src={photo} alt="Review" className="w-full h-full object-cover" />
                       </button>
                     ))}
-                  </div>
-                )}
-
-                {Boolean(rev.helpfulCount) && (
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-[11px] text-slate-500">
-                    <div className="flex items-center gap-1.5 text-emerald-700 font-medium">
-                      <ThumbsUp className="w-3.5 h-3.5" />
-                      <span>{rev.helpfulCount} người thấy đánh giá này hữu ích</span>
-                    </div>
                   </div>
                 )}
               </div>

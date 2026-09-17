@@ -1,4 +1,4 @@
-namespace Domain.Entities;
+﻿namespace Domain.Entities;
 
 public class TripDay
 {
@@ -8,7 +8,6 @@ public class TripDay
     public string? DayTitle { get; private set; }
     public DateOnly? Date { get; private set; }
 
-    // Navigation
     public virtual Trip Trip { get; private set; } = null!;
 
     private readonly List<TripPlace> _places = new();
@@ -34,6 +33,19 @@ public class TripDay
 
     public void UpdateDate(DateOnly? date)
     {
+        Date = date;
+    }
+
+    public void UpdateDayNumber(int dayNumber)
+    {
+        if (dayNumber < 1)
+            throw new ArgumentOutOfRangeException(nameof(dayNumber), "Số thứ tự ngày phải lớn hơn hoặc bằng 1.");
+        DayNumber = dayNumber;
+    }
+
+    public void UpdateInfo(string? dayTitle, DateOnly? date)
+    {
+        DayTitle = dayTitle?.Trim();
         Date = date;
     }
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Star, ThumbsUp, MessageSquare, Share2, Play, Pencil, Trash2 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { placeService } from '@/services/placeService'
@@ -23,7 +23,8 @@ export const ReviewItemCard: React.FC<ReviewItemCardProps> = ({
   const { user } = useAuth()
   const [isCommentsOpen, setIsCommentsOpen] = useState(false)
   const [likesCount, setLikesCount] = useState(review.likesCount || 0)
-  const [isLiked, setIsLiked] = useState(false)
+  const [isLiked, setIsLiked] = useState(Boolean(review.isLiked))
+  const [isLiking, setIsLiking] = useState(false)
   const [commentsCount, setCommentsCount] = useState(review.commentsCount || 0)
   const [activeMedia, setActiveMedia] = useState<{ url: string; type: 'image' | 'video' } | null>(null)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
@@ -31,17 +32,65 @@ export const ReviewItemCard: React.FC<ReviewItemCardProps> = ({
 
   const isOwner = Boolean(isAuthenticated && user && String(user.id) === String(review.userId))
 
-  const handleLikeToggle = () => {
+  useEffect(() => {
+    setIsLiked(Boolean(review.isLiked))
+    setLikesCount(review.likesCount || 0)
+  }, [review.id, review.isLiked, review.likesCount])
+
+  useEffect(() => {
+    setCommentsCount(review.commentsCount || 0)
+  }, [review.id, review.commentsCount])
+
+  const handleLikeToggle = async () => {
     if (!isAuthenticated) {
       alert('Vui lòng đăng nhập để thích đánh giá.')
       return
     }
-    if (isLiked) {
-      setIsLiked(false)
-      setLikesCount((prev) => Math.max(0, prev - 1))
-    } else {
-      setIsLiked(true)
-      setLikesCount((prev) => prev + 1)
+    if (isLiking) return
+
+    const prevLiked = isLiked
+    const prevCount = likesCount
+    const nextLiked = !prevLiked
+    const nextCount = nextLiked ? prevCount + 1 : Math.max(0, prevCount - 1)
+
+    setIsLiked(nextLiked)
+    setLikesCount(nextCount)
+    setIsLiking(true)
+
+    try {
+      const res = await placeService.toggleReviewLike(review.id)
+      const resAny = res as unknown as {
+        data?: { isLiked?: boolean; IsLiked?: boolean; likesCount?: number; LikesCount?: number }
+        isLiked?: boolean
+        IsLiked?: boolean
+        likesCount?: number
+        LikesCount?: number
+        success?: boolean
+      }
+      const payload = resAny?.data || resAny
+      const isLikedVal = typeof payload?.isLiked === 'boolean'
+        ? payload.isLiked
+        : typeof payload?.IsLiked === 'boolean'
+          ? payload.IsLiked
+          : nextLiked
+      const likesCountVal = typeof payload?.likesCount === 'number'
+        ? payload.likesCount
+        : typeof payload?.LikesCount === 'number'
+          ? payload.LikesCount
+          : nextCount
+
+      setIsLiked(isLikedVal)
+      setLikesCount(likesCountVal)
+      onReviewUpdated?.({
+        ...review,
+        isLiked: isLikedVal,
+        likesCount: likesCountVal
+      })
+    } catch {
+      setIsLiked(prevLiked)
+      setLikesCount(prevCount)
+    } finally {
+      setIsLiking(false)
     }
   }
 
@@ -195,9 +244,11 @@ export const ReviewItemCard: React.FC<ReviewItemCardProps> = ({
 
       <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs text-slate-500 font-medium">
         <div className="flex items-center gap-3">
-          <button type="button"
+          <button
+            type="button"
+            disabled={isLiking}
             onClick={handleLikeToggle}
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer ${
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer disabled:opacity-60 ${
               isLiked
                 ? 'text-emerald-700 bg-emerald-50 font-bold'
                 : 'hover:bg-slate-100 text-slate-600'

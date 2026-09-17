@@ -11,7 +11,9 @@ import {
   MoreVertical,
   ArrowRightLeft,
   ArrowDownToLine,
-  Check
+  Check,
+  Pencil,
+  X
 } from 'lucide-react'
 import type {
   ItineraryDayData,
@@ -34,6 +36,7 @@ interface ItineraryDayTimelineSectionProps {
   onToggleSelectBatchStop?: (stopId: string) => void
   onOpenPlacePicker: (dayIdx: number) => void
   onDeleteDay: (dayIdx: number) => void
+  onUpdateDay?: (dayIndex: number, title: string, date?: string) => void
   onDeleteStop: (stopId: string, name: string) => void
   onMoveStopToDay: (fromDayIdx: number, toDayIdx: number, stop: ItineraryStop) => void
   onMoveStopToWishlist: (fromDayIdx: number, stop: ItineraryStop) => void
@@ -57,6 +60,7 @@ export const ItineraryDayTimelineSection: React.FC<ItineraryDayTimelineSectionPr
   onToggleSelectBatchStop,
   onOpenPlacePicker,
   onDeleteDay,
+  onUpdateDay,
   onDeleteStop,
   onMoveStopToDay,
   onMoveStopToWishlist,
@@ -66,12 +70,29 @@ export const ItineraryDayTimelineSection: React.FC<ItineraryDayTimelineSectionPr
   onDropOnDay
 }) => {
   const [activeMenuStopId, setActiveMenuStopId] = useState<string | null>(null)
+  const [isEditingInfo, setIsEditingInfo] = useState(false)
+  const [tempTitle, setTempTitle] = useState(day.title || `Ngày ${day.dayNumber}`)
+  const [tempDate, setTempDate] = useState(day.date || '')
 
   const canEdit = currentUserRole !== 'Viewer'
   const isOwner = currentUserRole === 'Owner'
   const dayCost = day.stops.reduce((sum, s) => sum + (s.costEstimate || 0), 0)
   const isDropTarget = dragOverDayIdx === dayIndex
   const dayTheme = getDayTheme(dayIndex)
+
+  const handleSaveDayInfo = (e?: React.MouseEvent | React.KeyboardEvent) => {
+    if (e) e.stopPropagation()
+    const trimmed = tempTitle.trim() || `Ngày ${day.dayNumber}`
+    onUpdateDay?.(dayIndex, trimmed, tempDate || undefined)
+    setIsEditingInfo(false)
+  }
+
+  const handleCancelDayInfo = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation()
+    setTempTitle(day.title || `Ngày ${day.dayNumber}`)
+    setTempDate(day.date || '')
+    setIsEditingInfo(false)
+  }
 
   return (
     <div
@@ -90,32 +111,91 @@ export const ItineraryDayTimelineSection: React.FC<ItineraryDayTimelineSectionPr
           isExpanded ? 'bg-slate-50/90 hover:bg-slate-100/90' : 'bg-white hover:bg-slate-50/80'
         }`}
       >
-        <div className="flex items-center gap-3 min-w-0">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
           <div
             className={`w-9 h-9 rounded-xl ${dayTheme.badgeBg} text-white flex items-center justify-center font-extrabold text-xs shadow-xs shrink-0`}
           >
             N{day.dayNumber}
           </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm sm:text-base font-extrabold text-slate-900 truncate">
-                {day.title || `Ngày ${day.dayNumber}`}
-              </h3>
-              {day.date && (
-                <span className="hidden sm:inline-block text-xs text-slate-600 font-semibold">
-                  • {day.date}
-                </span>
-              )}
+          {isEditingInfo ? (
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="flex flex-col sm:flex-row items-start sm:items-center gap-2 flex-1 min-w-0"
+            >
+              <input
+                type="text"
+                value={tempTitle}
+                onChange={(e) => setTempTitle(e.target.value)}
+                placeholder={`Ngày ${day.dayNumber}: Tiêu đề`}
+                className="w-full sm:w-auto flex-1 px-2.5 py-1 text-xs sm:text-sm font-bold text-slate-900 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSaveDayInfo(e)
+                  if (e.key === 'Escape') handleCancelDayInfo()
+                }}
+              />
+              <div className="flex items-center gap-1.5 shrink-0">
+                <input
+                  type="date"
+                  value={tempDate}
+                  onChange={(e) => setTempDate(e.target.value)}
+                  className="px-2 py-1 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+                <button
+                  type="button"
+                  onClick={handleSaveDayInfo}
+                  className="p-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg transition-colors cursor-pointer"
+                  title="Lưu thay đổi"
+                >
+                  <Check size={13} />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancelDayInfo}
+                  className="p-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg transition-colors cursor-pointer"
+                  title="Hủy"
+                >
+                  <X size={13} />
+                </button>
+              </div>
             </div>
-            <p className="text-xs text-slate-600 mt-0.5 font-medium flex items-center gap-1.5 flex-wrap">
-              <span>{day.stops.length} điểm dừng</span>
-              <span className="text-slate-300">•</span>
-              <span>Dự tính:</span>
-              <span className="font-extrabold text-emerald-800">
-                {dayCost.toLocaleString('vi-VN')} đ
-              </span>
-            </p>
-          </div>
+          ) : (
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm sm:text-base font-extrabold text-slate-900 truncate">
+                  {day.title || `Ngày ${day.dayNumber}`}
+                </h3>
+                {day.date && (
+                  <span className="hidden sm:inline-block text-xs text-slate-600 font-semibold">
+                    • {day.date}
+                  </span>
+                )}
+                {canEdit && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setTempTitle(day.title || `Ngày ${day.dayNumber}`)
+                      setTempDate(day.date || '')
+                      setIsEditingInfo(true)
+                    }}
+                    className="p-1 text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+                    title="Đổi tên & ngày"
+                  >
+                    <Pencil size={13} />
+                  </button>
+                )}
+              </div>
+              <p className="text-xs text-slate-600 mt-0.5 font-medium flex items-center gap-1.5 flex-wrap">
+                <span>{day.stops.length} điểm dừng</span>
+                <span className="text-slate-300">•</span>
+                <span>Dự tính:</span>
+                <span className="font-extrabold text-emerald-800">
+                  {dayCost.toLocaleString('vi-VN')} đ
+                </span>
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-2 shrink-0">

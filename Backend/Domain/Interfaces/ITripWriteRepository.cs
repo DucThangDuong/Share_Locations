@@ -1,4 +1,4 @@
-using Domain.Entities;
+﻿using Domain.Entities;
 
 namespace Domain.Interfaces;
 
@@ -11,7 +11,9 @@ public interface ITripWriteRepository
 
     Task<TripDay?> GetDayByIdAsync(long dayId, CancellationToken ct = default);
     Task<TripDay?> GetDayByTripAndNumberAsync(long tripId, int dayNumber, CancellationToken ct = default);
+    Task<List<TripDay>> GetDaysByTripIdAsync(long tripId, CancellationToken ct = default);
     Task AddDayAsync(TripDay day, CancellationToken ct = default);
+    void RemoveDay(TripDay day);
 
     Task<TripPlace?> GetPlaceByIdAsync(long tripPlaceId, CancellationToken ct = default);
     Task<TripPlace?> GetPlaceWithDayAndTripByIdAsync(long tripPlaceId, CancellationToken ct = default);

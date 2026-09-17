@@ -254,7 +254,7 @@ export const VisitedLogSection: React.FC<VisitedLogSectionProps> = ({
   const openEditModal = (item: VisitLogItem) => {
     setEditingLog(item)
     setEditVisitedDate(item.visitedDate || '')
-    setEditPrivacy(item.privacy ?? 0)
+    setEditPrivacy(item.privacy === 1 ? 1 : 0)
     setEditErrorMsg('')
   }
 

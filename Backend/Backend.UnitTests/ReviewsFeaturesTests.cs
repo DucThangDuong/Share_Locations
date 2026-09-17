@@ -367,4 +367,53 @@ public class ReviewsFeaturesTests
         result.IsSuccess.Should().BeTrue();
         await _unitOfWork.Comments.Received(1).HideRepliesAsync(77, Arg.Any<CancellationToken>());
     }
+
+    [Fact]
+    public async Task ToggleReviewLike_ShouldLike_WhenNotAlreadyLiked()
+    {
+        // Arrange
+        var review = new Review(1, 10, 5, "Bài review hay");
+        _unitOfWork.Reviews.GetByIdAsync(100, Arg.Any<CancellationToken>()).Returns(review);
+        _unitOfWork.Reviews.GetLikeAsync(100, 20, Arg.Any<CancellationToken>()).Returns((ReviewLike?)null);
+
+        var handler = new ToggleReviewLikeCommandHandler(_unitOfWork);
+        var command = new ToggleReviewLikeCommand(100, 20);
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Data.Should().NotBeNull();
+        result.Data!.IsLiked.Should().BeTrue();
+        result.Data.LikesCount.Should().Be(1);
+        await _unitOfWork.Reviews.Received(1).AddLikeAsync(Arg.Any<ReviewLike>(), Arg.Any<CancellationToken>());
+        await _unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ToggleReviewLike_ShouldUnlike_WhenAlreadyLiked()
+    {
+        // Arrange
+        var review = new Review(1, 10, 5, "Bài review hay");
+        review.IncrementLikes();
+        var existingLike = new ReviewLike(100, 20);
+
+        _unitOfWork.Reviews.GetByIdAsync(100, Arg.Any<CancellationToken>()).Returns(review);
+        _unitOfWork.Reviews.GetLikeAsync(100, 20, Arg.Any<CancellationToken>()).Returns(existingLike);
+
+        var handler = new ToggleReviewLikeCommandHandler(_unitOfWork);
+        var command = new ToggleReviewLikeCommand(100, 20);
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Data.Should().NotBeNull();
+        result.Data!.IsLiked.Should().BeFalse();
+        result.Data.LikesCount.Should().Be(0);
+        _unitOfWork.Reviews.Received(1).RemoveLike(existingLike);
+        await _unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
 }

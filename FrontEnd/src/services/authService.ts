@@ -26,12 +26,12 @@ export const authService = {
   },
 
   async refreshToken(): Promise<ApiSuccessResponse<AuthTokenResponse>> {
-    const response = await apiClient.post<ApiSuccessResponse<AuthTokenResponse>>('/api/auth/refresh-token')
+    const response = await apiClient.post<ApiSuccessResponse<AuthTokenResponse>>('/api/auth/refresh-token', {})
     return response.data
   },
 
   async logout(): Promise<ApiSuccessResponse<boolean>> {
-    const response = await apiClient.post<ApiSuccessResponse<boolean>>('/api/auth/logout')
+    const response = await apiClient.post<ApiSuccessResponse<boolean>>('/api/auth/logout', {})
     return response.data
   },
 

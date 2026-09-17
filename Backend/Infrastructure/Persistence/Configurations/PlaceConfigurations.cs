@@ -76,7 +76,7 @@ public class PlaceConfiguration : IEntityTypeConfiguration<Place>
         builder.HasOne(e => e.Creator)
             .WithMany(u => u.CreatedPlaces)
             .HasForeignKey(e => e.CreatedBy)
-            .OnDelete(DeleteBehavior.ClientSetNull);
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }
 

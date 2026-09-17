@@ -18,6 +18,12 @@ public class FoodConfiguration : IEntityTypeConfiguration<Food>
         builder.Property(e => e.CoverImageUrl)
             .HasMaxLength(500);
 
+        builder.Property(e => e.MinPrice)
+            .HasColumnType("decimal(12, 0)");
+
+        builder.Property(e => e.MaxPrice)
+            .HasColumnType("decimal(12, 0)");
+
         builder.Property(e => e.Status)
             .HasConversion<byte>();
 

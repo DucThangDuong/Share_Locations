@@ -1,4 +1,4 @@
-namespace Application.DTOs;
+﻿namespace Application.DTOs;
 
 public class UserTripSummaryDto
 {
@@ -37,6 +37,7 @@ public class CreateTripDayDto
 {
     public int DayNumber { get; set; }
     public string? DayTitle { get; set; }
+    public DateOnly? Date { get; set; }
     public List<CreateTripStopDto>? Stops { get; set; }
 }
 
@@ -99,6 +100,18 @@ public class TripDayDetailDto
     public string? DayTitle { get; set; }
     public string? Date { get; set; }
     public List<TripPlaceDetailDto> Stops { get; set; } = new();
+}
+
+public class UpdateTripDayRequestDto
+{
+    public string? DayTitle { get; set; }
+    public DateOnly? Date { get; set; }
+}
+
+public class AddTripDayRequestDto
+{
+    public string? DayTitle { get; set; }
+    public DateOnly? Date { get; set; }
 }
 
 public class TripPlaceDetailDto

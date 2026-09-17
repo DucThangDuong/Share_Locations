@@ -14,6 +14,9 @@ public class ReviewConfiguration : IEntityTypeConfiguration<Review>
         builder.Property(e => e.VisitDate)
             .HasColumnType("date");
 
+        builder.Property(e => e.LikesCount)
+            .HasDefaultValue(0);
+
         builder.Property(e => e.Status)
             .HasConversion<byte>();
 
@@ -96,3 +99,27 @@ public class CommentConfiguration : IEntityTypeConfiguration<Comment>
             .OnDelete(DeleteBehavior.ClientSetNull);
     }
 }
+
+public class ReviewLikeConfiguration : IEntityTypeConfiguration<ReviewLike>
+{
+    public void Configure(EntityTypeBuilder<ReviewLike> builder)
+    {
+        builder.ToTable("ReviewLikes", "dbo");
+
+        builder.HasKey(e => new { e.ReviewId, e.UserId });
+
+        builder.Property(e => e.CreatedAt)
+            .HasDefaultValueSql("SYSUTCDATETIME()");
+
+        builder.HasOne(e => e.Review)
+            .WithMany(r => r.Likes)
+            .HasForeignKey(e => e.ReviewId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasOne(e => e.User)
+            .WithMany(u => u.ReviewLikes)
+            .HasForeignKey(e => e.UserId)
+            .OnDelete(DeleteBehavior.ClientSetNull);
+    }
+}
+

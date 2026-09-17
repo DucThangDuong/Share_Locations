@@ -11,7 +11,7 @@ import {
 import type { DetailedItineraryItem } from '@/types/models/itinerary.model'
 
 interface ItineraryQuickPreviewModalProps {
-  isOpen: boolean
+  isOpen?: boolean
   itinerary: DetailedItineraryItem | null
   isApplied?: boolean
   onClose: () => void
@@ -19,7 +19,7 @@ interface ItineraryQuickPreviewModalProps {
 }
 
 export const ItineraryQuickPreviewModal: React.FC<ItineraryQuickPreviewModalProps> = ({
-  isOpen,
+  isOpen = true,
   itinerary,
   isApplied = false,
   onClose,

@@ -30,7 +30,7 @@ public class ProposalConfiguration : IEntityTypeConfiguration<Proposal>
         builder.HasOne(e => e.TargetPlace)
             .WithMany(p => p.Proposals)
             .HasForeignKey(e => e.TargetPlaceId)
-            .OnDelete(DeleteBehavior.ClientSetNull);
+            .OnDelete(DeleteBehavior.SetNull);
 
         builder.HasOne(e => e.ReviewerAdmin)
             .WithMany()

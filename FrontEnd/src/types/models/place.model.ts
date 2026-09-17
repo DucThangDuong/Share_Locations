@@ -84,6 +84,38 @@ export interface PlaceAmenityDto {
   icon: string
 }
 
+export interface PlaceDetailDto {
+  id: number
+  name: string
+  description?: string | null
+  detailedDescription?: string | null
+  address: string
+  provinceId: number
+  provinceName: string
+  regionId: number
+  regionName: string
+  categoryId: number
+  categoryName: string
+  placeTypeId: number
+  placeTypeName: string
+  minPrice?: number | null
+  maxPrice?: number | null
+  openingHours?: string | null
+  avgRating: number
+  reviewCount: number
+  thumbnailUrl?: string | null
+  mediaUrls: string[]
+  latitude?: number | null
+  longitude?: number | null
+  phoneNumber?: string | null
+  website?: string | null
+  email?: string | null
+  highlights: string[]
+  amenities: PlaceAmenityDto[]
+  status: number
+  createdAt: string
+}
+
 export interface ReviewItemDto {
   id: number
   userId: string
@@ -94,8 +126,14 @@ export interface ReviewItemDto {
   images: string[]
   videos?: string[]
   likesCount: number
-  commentsCount?: number
+  isLiked?: boolean
+  commentsCount: number
   createdAt: string
+}
+
+export interface ReviewLikeResponseDto {
+  isLiked: boolean
+  likesCount: number
 }
 
 export interface CommentDto {
@@ -126,19 +164,6 @@ export interface PlaceReviewSummaryDto {
   totalReviews: number
   ratingBreakdown: Record<string, number>
   items: ReviewItemDto[]
-}
-
-export interface PlaceDetailDto extends PlaceSummaryDto {
-  detailedDescription?: string | null
-  highlights: string[]
-  amenities: PlaceAmenityDto[]
-  latitude?: number | null
-  longitude?: number | null
-  phoneNumber?: string | null
-  website?: string | null
-  email?: string | null
-  reviews?: ReviewItemDto[]
-  ratingBreakdown?: Record<string, number>
 }
 
 export interface CreateReviewRequest {
@@ -205,87 +230,18 @@ export interface PlaceMapFilterParams {
   maxLat?: number
 }
 
+export type {
+  ItineraryAuthorDto,
+  ItineraryStopDto,
+  ItineraryDayDto,
+  ItineraryDto,
+  ItineraryFilterParams,
+  SaveItineraryResponseDto
+} from './itinerary.model'
 
-
-export interface ItineraryAuthorDto {
-  name: string
-  avatar?: string | null
-}
-
-export interface ItineraryStopDto {
-  time: string
-  activity: string
-  location: string
-  placeName?: string
-  name?: string
-  description?: string | null
-  costEstimate?: string | null
-  tips?: string | null
-  note?: string | null
-}
-
-export interface ItineraryDayDto {
-  dayNumber: number
-  title: string
-  stops: ItineraryStopDto[]
-}
-
-export interface ItineraryDto {
-  id: number
-  title: string
-  destination: string
-  region: string
-  duration: string
-  daysCount: number
-  style: string
-  estimatedCost: string
-  coverUrl?: string | null
-  author: ItineraryAuthorDto
-  overview?: string | null
-  days: ItineraryDayDto[]
-}
-
-export interface ItineraryFilterParams {
-  duration?: string
-  region?: string
-  keyword?: string
-  page?: number
-  pageSize?: number
-}
-
-export interface SaveItineraryResponseDto {
-  saved: boolean
-  itineraryId: number
-}
-
-export interface BlogAuthorDto {
-  name: string
-  avatar?: string | null
-  role: string
-}
-
-export interface BlogListItemDto {
-  id: number
-  slug: string
-  title: string
-  excerpt?: string | null
-  content: string
-  category: string
-  readTime: string
-  coverUrl?: string | null
-  author: BlogAuthorDto
-  publishedAt: string
-  tags: string[]
-  featured: boolean
-}
-
-export interface BlogDetailDto extends BlogListItemDto {
-  relatedPosts: BlogListItemDto[]
-}
-
-export interface BlogFilterParams {
-  category?: string
-  keyword?: string
-  page?: number
-  pageSize?: number
-}
+export type {
+  BlogAuthorDto,
+  BlogListItemDto,
+  BlogDetailDto,
+  BlogFilterParams
+} from './blogArticle.model'

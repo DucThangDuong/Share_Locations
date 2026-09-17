@@ -41,8 +41,8 @@ export const FriendsSection: React.FC<FriendsSectionProps> = ({
           id: Number(f.id),
           fullName: f.name,
           email: f.email || '',
-          avatarUrl: f.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop',
-          coverUrl: f.coverUrl || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&h=200&fit=crop',
+          avatarUrl: f.avatar || '',
+          coverUrl: f.coverUrl || '',
           city: '',
           bio: f.bio || '',
           rankLevel: f.rankLevel,
@@ -56,8 +56,8 @@ export const FriendsSection: React.FC<FriendsSectionProps> = ({
           id: Number(f.id),
           fullName: f.name,
           email: f.email || '',
-          avatarUrl: f.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop',
-          coverUrl: f.coverUrl || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&h=200&fit=crop',
+          avatarUrl: f.avatar || '',
+          coverUrl: f.coverUrl || '',
           city: '',
           bio: f.bio || '',
           rankLevel: f.rankLevel,
@@ -71,8 +71,8 @@ export const FriendsSection: React.FC<FriendsSectionProps> = ({
           id: Number(f.id),
           fullName: f.name,
           email: f.email || '',
-          avatarUrl: f.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop',
-          coverUrl: f.coverUrl || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&h=200&fit=crop',
+          avatarUrl: f.avatar || '',
+          coverUrl: f.coverUrl || '',
           city: '',
           bio: f.bio || '',
           rankLevel: f.rankLevel,
@@ -123,8 +123,8 @@ export const FriendsSection: React.FC<FriendsSectionProps> = ({
             id: Number(u.id),
             fullName: u.name,
             email: u.email || '',
-            avatarUrl: u.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop',
-            coverUrl: u.coverUrl || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&h=200&fit=crop',
+            avatarUrl: u.avatar || '',
+            coverUrl: u.coverUrl || '',
             city: '',
             bio: u.bio || '',
             rankLevel: u.rankLevel,
@@ -356,28 +356,27 @@ export const FriendsSection: React.FC<FriendsSectionProps> = ({
                         className="bg-white border border-slate-200 rounded-2xl overflow-hidden flex flex-col hover:shadow-md transition-shadow"
                       >
                         <div className="relative">
-                          <img
-                            src={
-                              friend.coverUrl ||
-                              'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&h=200&fit=crop'
-                            }
-                            alt=""
-                            className="w-full h-28 object-cover bg-slate-100"
-                            onError={(e) => {
-                              e.currentTarget.src =
-                                'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&h=200&fit=crop'
-                            }}
-                          />
-                          <div className="absolute -bottom-10 left-1/2 -translate-x-1/2">
+                          {friend.coverUrl ? (
                             <img
-                              src={friend.avatarUrl}
-                              alt={friend.fullName}
-                              className="w-20 h-20 rounded-full object-cover border-4 border-white shadow-sm bg-white"
-                              onError={(e) => {
-                                e.currentTarget.src =
-                                  'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop'
-                              }}
+                              src={friend.coverUrl}
+                              alt=""
+                              className="w-full h-28 object-cover bg-slate-100"
                             />
+                          ) : (
+                            <div className="w-full h-28 bg-gradient-to-r from-emerald-700 to-teal-800" />
+                          )}
+                          <div className="absolute -bottom-10 left-1/2 -translate-x-1/2">
+                            {friend.avatarUrl ? (
+                              <img
+                                src={friend.avatarUrl}
+                                alt={friend.fullName}
+                                className="w-20 h-20 rounded-full object-cover border-4 border-white shadow-sm bg-white"
+                              />
+                            ) : (
+                              <div className="w-20 h-20 rounded-full border-4 border-white shadow-sm bg-emerald-800 text-white flex items-center justify-center font-bold text-xl">
+                                {(friend.fullName || 'U').charAt(0).toUpperCase()}
+                              </div>
+                            )}
                           </div>
                         </div>
 
@@ -467,28 +466,27 @@ export const FriendsSection: React.FC<FriendsSectionProps> = ({
                             className="bg-white border border-slate-200 rounded-2xl overflow-hidden flex flex-col hover:shadow-md transition-shadow"
                           >
                             <div className="relative">
-                              <img
-                                src={
-                                  user.coverUrl ||
-                                  'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&h=200&fit=crop'
-                                }
-                                alt=""
-                                className="w-full h-28 object-cover bg-slate-100"
-                                onError={(e) => {
-                                  e.currentTarget.src =
-                                    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&h=200&fit=crop'
-                                }}
-                              />
-                              <div className="absolute -bottom-10 left-1/2 -translate-x-1/2">
+                              {user.coverUrl ? (
                                 <img
-                                  src={user.avatarUrl}
-                                  alt={user.fullName}
-                                  className="w-20 h-20 rounded-full object-cover border-4 border-white shadow-sm bg-white"
-                                  onError={(e) => {
-                                    e.currentTarget.src =
-                                      'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop'
-                                  }}
+                                  src={user.coverUrl}
+                                  alt=""
+                                  className="w-full h-28 object-cover bg-slate-100"
                                 />
+                              ) : (
+                                <div className="w-full h-28 bg-gradient-to-r from-emerald-700 to-teal-800" />
+                              )}
+                              <div className="absolute -bottom-10 left-1/2 -translate-x-1/2">
+                                {user.avatarUrl ? (
+                                  <img
+                                    src={user.avatarUrl}
+                                    alt={user.fullName}
+                                    className="w-20 h-20 rounded-full object-cover border-4 border-white shadow-sm bg-white"
+                                  />
+                                ) : (
+                                  <div className="w-20 h-20 rounded-full border-4 border-white shadow-sm bg-emerald-800 text-white flex items-center justify-center font-bold text-xl">
+                                    {(user.fullName || 'U').charAt(0).toUpperCase()}
+                                  </div>
+                                )}
                               </div>
                             </div>
 
@@ -574,28 +572,27 @@ export const FriendsSection: React.FC<FriendsSectionProps> = ({
                         className="bg-white border border-slate-200 rounded-2xl overflow-hidden flex flex-col hover:shadow-md transition-shadow"
                       >
                         <div className="relative">
-                          <img
-                            src={
-                              user.coverUrl ||
-                              'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&h=200&fit=crop'
-                            }
-                            alt=""
-                            className="w-full h-28 object-cover bg-slate-100"
-                            onError={(e) => {
-                              e.currentTarget.src =
-                                'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&h=200&fit=crop'
-                            }}
-                          />
-                          <div className="absolute -bottom-10 left-1/2 -translate-x-1/2">
+                          {user.coverUrl ? (
                             <img
-                              src={user.avatarUrl}
-                              alt={user.fullName}
-                              className="w-20 h-20 rounded-full object-cover border-4 border-white shadow-sm bg-white"
-                              onError={(e) => {
-                                e.currentTarget.src =
-                                  'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop'
-                              }}
+                              src={user.coverUrl}
+                              alt=""
+                              className="w-full h-28 object-cover bg-slate-100"
                             />
+                          ) : (
+                            <div className="w-full h-28 bg-gradient-to-r from-emerald-700 to-teal-800" />
+                          )}
+                          <div className="absolute -bottom-10 left-1/2 -translate-x-1/2">
+                            {user.avatarUrl ? (
+                              <img
+                                src={user.avatarUrl}
+                                alt={user.fullName}
+                                className="w-20 h-20 rounded-full object-cover border-4 border-white shadow-sm bg-white"
+                              />
+                            ) : (
+                              <div className="w-20 h-20 rounded-full border-4 border-white shadow-sm bg-emerald-800 text-white flex items-center justify-center font-bold text-xl">
+                                {(user.fullName || 'U').charAt(0).toUpperCase()}
+                              </div>
+                            )}
                           </div>
                         </div>
 
@@ -651,28 +648,27 @@ export const FriendsSection: React.FC<FriendsSectionProps> = ({
                         className="bg-white border border-slate-200 rounded-2xl overflow-hidden flex flex-col hover:shadow-md transition-shadow"
                       >
                         <div className="relative">
-                          <img
-                            src={
-                              user.coverUrl ||
-                              'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&h=200&fit=crop'
-                            }
-                            alt=""
-                            className="w-full h-28 object-cover bg-slate-100"
-                            onError={(e) => {
-                              e.currentTarget.src =
-                                'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&h=200&fit=crop'
-                            }}
-                          />
-                          <div className="absolute -bottom-10 left-1/2 -translate-x-1/2">
+                          {user.coverUrl ? (
                             <img
-                              src={user.avatarUrl}
-                              alt={user.fullName}
-                              className="w-20 h-20 rounded-full object-cover border-4 border-white shadow-sm bg-white"
-                              onError={(e) => {
-                                e.currentTarget.src =
-                                  'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop'
-                              }}
+                              src={user.coverUrl}
+                              alt=""
+                              className="w-full h-28 object-cover bg-slate-100"
                             />
+                          ) : (
+                            <div className="w-full h-28 bg-gradient-to-r from-emerald-700 to-teal-800" />
+                          )}
+                          <div className="absolute -bottom-10 left-1/2 -translate-x-1/2">
+                            {user.avatarUrl ? (
+                              <img
+                                src={user.avatarUrl}
+                                alt={user.fullName}
+                                className="w-20 h-20 rounded-full object-cover border-4 border-white shadow-sm bg-white"
+                              />
+                            ) : (
+                              <div className="w-20 h-20 rounded-full border-4 border-white shadow-sm bg-emerald-800 text-white flex items-center justify-center font-bold text-xl">
+                                {(user.fullName || 'U').charAt(0).toUpperCase()}
+                              </div>
+                            )}
                           </div>
                         </div>
 
@@ -716,15 +712,17 @@ export const FriendsSection: React.FC<FriendsSectionProps> = ({
                         className="flex items-center justify-between p-4 rounded-2xl border border-slate-200 bg-white"
                       >
                         <div className="flex items-center gap-3">
-                          <img
-                            src={user.avatarUrl}
-                            alt=""
-                            className="w-12 h-12 rounded-full object-cover grayscale opacity-60"
-                            onError={(e) => {
-                              e.currentTarget.src =
-                                'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop'
-                            }}
-                          />
+                          {user.avatarUrl ? (
+                            <img
+                              src={user.avatarUrl}
+                              alt=""
+                              className="w-12 h-12 rounded-full object-cover grayscale opacity-60"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-sm">
+                              {(user.fullName || 'U').charAt(0).toUpperCase()}
+                            </div>
+                          )}
                           <span className="font-bold text-xs sm:text-sm text-slate-600 line-through">
                             {user.fullName}
                           </span>

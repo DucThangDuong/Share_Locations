@@ -142,14 +142,23 @@ export const ItineraryPlannerToolbar: React.FC<ItineraryPlannerToolbarProps> = (
               title="Xem danh sách thành viên trong chuyến đi & Mời bạn bè"
             >
               <div className="flex items-center -space-x-2 overflow-hidden">
-                {members.slice(0, 3).map((m) => (
-                  <img
-                    key={m.id}
-                    src={m.avatar}
-                    alt={m.name}
-                    className="w-6 h-6 rounded-full object-cover border-2 border-white ring-1 ring-slate-200 shrink-0"
-                  />
-                ))}
+                {members.slice(0, 3).map((m) =>
+                  m.avatar ? (
+                    <img
+                      key={m.id}
+                      src={m.avatar}
+                      alt={m.name}
+                      className="w-6 h-6 rounded-full object-cover border-2 border-white ring-1 ring-slate-200 shrink-0"
+                    />
+                  ) : (
+                    <div
+                      key={m.id}
+                      className="w-6 h-6 rounded-full bg-emerald-800 text-white font-bold text-[9px] flex items-center justify-center border-2 border-white ring-1 ring-slate-200 shrink-0"
+                    >
+                      {(m.name || 'U').charAt(0).toUpperCase()}
+                    </div>
+                  )
+                )}
               </div>
 
               <div className="flex items-center gap-1 text-xs font-bold text-slate-700">

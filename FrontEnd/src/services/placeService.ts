@@ -16,7 +16,8 @@ import type {
   CommentDto,
   CreateReviewCommentRequest,
   UpdateReviewCommentRequest,
-  ReviewCommentsDto
+  ReviewCommentsDto,
+  ReviewLikeResponseDto
 } from '@/types/models/place.model'
 
 export const placeService = {
@@ -140,6 +141,11 @@ export const placeService = {
     return response.data
   },
 
+  async toggleReviewLike(reviewId: number | string): Promise<ApiSuccessResponse<ReviewLikeResponseDto>> {
+    const response = await apiClient.post<ApiSuccessResponse<ReviewLikeResponseDto>>(`/api/reviews/${reviewId}/toggle-like`, {})
+    return response.data
+  },
+
   async reportPlace(data: ReportPlaceRequest): Promise<ApiSuccessResponse<boolean>> {
     const response = await apiClient.post<ApiSuccessResponse<boolean>>(`/api/places/${data.placeId}/reports`, {
       reason: data.reason,
@@ -181,7 +187,7 @@ export const placeService = {
   },
 
   async recordAccessHistory(placeId: number | string): Promise<ApiSuccessResponse<boolean>> {
-    const response = await apiClient.post<ApiSuccessResponse<boolean>>(`/api/places/${placeId}/access-history`)
+    const response = await apiClient.post<ApiSuccessResponse<boolean>>(`/api/places/${placeId}/access-history`, {})
     return response.data
   }
 }

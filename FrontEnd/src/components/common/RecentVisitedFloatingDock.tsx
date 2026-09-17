@@ -32,13 +32,13 @@ export const RecentVisitedFloatingDock: React.FC = () => {
   const loadRecentItems = async () => {
     if (isAuthenticated) {
       try {
-        const res = await userService.getAccessHistories(10)
-        if (res.success && res.data && res.data.length > 0) {
+        const res = await userService.getMyAccessHistories({ pageSize: 10 })
+        if (res.success && Array.isArray(res.data) && res.data.length > 0) {
           const mapped: RecentVisitedItem[] = res.data.map((item) => ({
             id: item.placeId,
             name: item.placeName,
-            province: item.province,
-            coverUrl: item.coverImg,
+            province: item.province || undefined,
+            coverUrl: item.coverImg || undefined,
             rating: item.avgRating,
             visitedAt: item.viewedAt ? new Date(item.viewedAt).toLocaleDateString('vi-VN') : 'Gần đây'
           }))
@@ -146,12 +146,16 @@ export const RecentVisitedFloatingDock: React.FC = () => {
                 className="group flex items-center gap-2.5 p-2 rounded-2xl hover:bg-slate-100 transition-colors cursor-pointer justify-between"
               >
                 <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                  <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 shrink-0 relative">
-                    <img
-                      src={item.coverUrl || 'https://images.unsplash.com/photo-1527997921830-de1cf1f9b430?w=200&fit=crop'}
-                      alt={item.name}
-                      className="w-full h-full object-cover transition-all duration-300 group-hover:brightness-105"
-                    />
+                  <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 shrink-0 relative flex items-center justify-center">
+                    {item.coverUrl ? (
+                      <img
+                        src={item.coverUrl}
+                        alt={item.name}
+                        className="w-full h-full object-cover transition-all duration-300 group-hover:brightness-105"
+                      />
+                    ) : (
+                      <MapPin size={18} className="text-slate-400" />
+                    )}
                     <div className="absolute inset-0 bg-white/0 group-hover:bg-white/15 transition-colors duration-300 pointer-events-none" />
                   </div>
 

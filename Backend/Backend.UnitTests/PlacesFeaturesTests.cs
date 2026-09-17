@@ -75,7 +75,7 @@ public class PlacesFeaturesTests
                 new() { Id = 2, Rating = 4, Content = "Rất đẹp nhưng đông" }
             }
         };
-        _placeRepo.GetPlaceReviewsAsync(1, 1, 10, null, Arg.Any<CancellationToken>())
+        _placeRepo.GetPlaceReviewsAsync(1, 1, 10, null, null, Arg.Any<CancellationToken>())
             .Returns(summary);
 
         var handler = new GetPlaceReviewsQueryHandler(_placeRepo);

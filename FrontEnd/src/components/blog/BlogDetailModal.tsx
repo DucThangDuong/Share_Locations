@@ -1,17 +1,15 @@
-import { X, Share2, Tag, ChevronRight } from 'lucide-react'
+import { X, Share2 } from 'lucide-react'
 import { RichContentRenderer } from '@/components/common/RichContentRenderer'
-import type { BlogDetailDto, BlogListItemDto } from '@/types/models/place.model'
+import type { BlogDetailDto } from '@/types/models/blogArticle.model'
 
 interface BlogDetailModalProps {
   article: BlogDetailDto | null
   onClose: () => void
-  onSelectRelated: (post: BlogListItemDto) => void
 }
 
 export const BlogDetailModal = ({
   article,
-  onClose,
-  onSelectRelated
+  onClose
 }: BlogDetailModalProps) => {
   if (!article) return null
 
@@ -25,17 +23,19 @@ export const BlogDetailModal = ({
       <div className="relative w-full max-w-3xl bg-white rounded-lg shadow-2xl border border-gray-100 overflow-hidden my-auto max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between p-4 sm:p-5 border-b border-gray-100 bg-gray-50/80 sticky top-0 z-10">
           <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-lg">
-            {article.category}
+            {article.category || 'Cẩm nang'}
           </span>
           <div className="flex items-center gap-2">
-            <button type="button"
+            <button
+              type="button"
               onClick={handleShare}
               className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
               title="Chia sẻ bài viết"
             >
               <Share2 className="w-4 h-4" />
             </button>
-            <button type="button"
+            <button
+              type="button"
               onClick={onClose}
               className="p-2 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
             >
@@ -63,7 +63,7 @@ export const BlogDetailModal = ({
               )}
               <div>
                 <span className="font-bold text-gray-900 block">{article.author?.name || 'Tác giả'}</span>
-                <span>{article.publishedAt} • {article.readTime || '5 phút đọc'}</span>
+                <span>{article.publishedAt ? new Date(article.publishedAt).toLocaleDateString('vi-VN') : ''}</span>
               </div>
             </div>
           </div>
@@ -79,35 +79,6 @@ export const BlogDetailModal = ({
           )}
 
           <RichContentRenderer content={article.content || article.excerpt} />
-
-          {article.tags && article.tags.length > 0 && (
-            <div className="pt-4 border-t border-gray-100 flex flex-wrap items-center gap-2">
-              <Tag className="w-4 h-4 text-gray-400" />
-              {article.tags.map((tag, idx) => (
-                <span key={idx} className="px-2.5 py-1 bg-gray-100 text-gray-600 text-xs rounded-md font-medium">
-                  #{tag}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {article.relatedPosts && article.relatedPosts.length > 0 && (
-            <div className="pt-6 border-t border-gray-100 space-y-3">
-              <h3 className="font-bold text-gray-900 text-sm uppercase tracking-wider">Bài viết liên quan</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {article.relatedPosts.map((rel) => (
-                  <div
-                    key={rel.id}
-                    onClick={() => onSelectRelated(rel)}
-                    className="p-3 bg-gray-50 hover:bg-emerald-50/50 rounded-lg border border-gray-200/60 cursor-pointer transition-colors flex items-center justify-between gap-2"
-                  >
-                    <div className="text-xs font-semibold text-gray-800 line-clamp-1">{rel.title}</div>
-                    <ChevronRight className="w-4 h-4 text-emerald-600 shrink-0" />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>

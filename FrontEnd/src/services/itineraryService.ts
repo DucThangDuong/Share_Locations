@@ -1,6 +1,6 @@
 import apiClient from './apiClient'
 import type { ApiSuccessResponse } from '@/types/responses/common.response'
-import type { ItineraryDto, ItineraryFilterParams, SaveItineraryResponseDto } from '@/types/models/place.model'
+import type { ItineraryDto, ItineraryFilterParams, SaveItineraryResponseDto } from '@/types/models/itinerary.model'
 
 export const itineraryService = {
   async getItineraries(params?: ItineraryFilterParams): Promise<ApiSuccessResponse<ItineraryDto[]>> {
@@ -19,7 +19,7 @@ export const itineraryService = {
   },
 
   async saveItinerary(id: number | string): Promise<ApiSuccessResponse<SaveItineraryResponseDto>> {
-    const response = await apiClient.post<ApiSuccessResponse<SaveItineraryResponseDto>>(`/api/itineraries/${id}/save`)
+    const response = await apiClient.post<ApiSuccessResponse<SaveItineraryResponseDto>>(`/api/itineraries/${id}/save`, {})
     return response.data
   }
 }

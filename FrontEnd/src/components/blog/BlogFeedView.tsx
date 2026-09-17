@@ -7,13 +7,14 @@ import {
   Eye,
   MapPin,
   Tag,
-  RotateCcw
+  RotateCcw,
+  BookOpen
 } from 'lucide-react'
-import type { BlogArticleItem } from '@/types/models/blogArticle.model'
+import type { BlogListItemDto } from '@/types/models/blogArticle.model'
 import type { LookupItemDto, RegionLookupDto } from '@/types/models/place.model'
 
 interface BlogFeedViewProps {
-  articles: BlogArticleItem[]
+  articles: BlogListItemDto[]
   categories?: LookupItemDto[]
   regions?: RegionLookupDto[]
   searchQuery: string
@@ -26,7 +27,7 @@ interface BlogFeedViewProps {
   onSelectProvince: (prov: string | null) => void
   onSelectCategory: (cat: string | null) => void
   onResetFilters: () => void
-  onOpenArticle: (article: BlogArticleItem) => void
+  onOpenArticle: (article: BlogListItemDto) => void
   onCreateArticle?: () => void
 }
 
@@ -299,12 +300,18 @@ export const BlogFeedView: React.FC<BlogFeedViewProps> = ({
                 className="group flex flex-col space-y-3.5 cursor-pointer bg-white rounded-2xl p-4 border border-slate-200/90 hover:border-emerald-600/70 hover:shadow-md transition-all shadow-2xs"
               >
                 <div className="relative aspect-16/10 w-full overflow-hidden rounded-xl bg-slate-100 border border-slate-200/60">
-                  <img
-                    src={art.coverImg}
-                    alt={art.title}
-                    className="w-full h-full object-cover group-hover:scale-102 transition-all duration-300"
-                    loading="lazy"
-                  />
+                  {art.coverUrl ? (
+                    <img
+                      src={art.coverUrl}
+                      alt={art.title}
+                      className="w-full h-full object-cover group-hover:scale-102 transition-all duration-300"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-emerald-900/10 to-teal-900/20 text-emerald-800">
+                      <BookOpen size={32} />
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2.5 flex-1 flex flex-col justify-between">
@@ -319,31 +326,33 @@ export const BlogFeedView: React.FC<BlogFeedViewProps> = ({
                       />
                     </div>
 
-                    <p className="text-slate-600 text-xs leading-relaxed line-clamp-2 font-normal">
-                      {art.excerpt || art.subtitle}
-                    </p>
+                    {art.excerpt && (
+                      <p className="text-slate-600 text-xs leading-relaxed line-clamp-2 font-normal">
+                        {art.excerpt}
+                      </p>
+                    )}
                   </div>
 
                   <div className="flex items-center justify-between pt-3 border-t border-slate-100">
                     <div className="flex items-center gap-2 min-w-0">
-                      {art.authorAvatar ? (
+                      {art.author?.avatar ? (
                         <img
-                          src={art.authorAvatar}
-                          alt={art.authorName}
+                          src={art.author.avatar}
+                          alt={art.author?.name || 'Tác giả'}
                           className="w-6 h-6 rounded-full object-cover border border-slate-200 shrink-0"
                         />
                       ) : (
                         <div className="w-6 h-6 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px] font-bold shrink-0">
-                          {art.authorName.charAt(0).toUpperCase()}
+                          {(art.author?.name || 'T').charAt(0).toUpperCase()}
                         </div>
                       )}
                       <span className="font-semibold text-xs text-slate-800 truncate">
-                        {art.authorName}
+                        {art.author?.name || 'Tác giả'}
                       </span>
                     </div>
 
                     <span className="text-[11px] text-slate-400 font-medium">
-                      {art.readTime || `${art.readTimeMinutes} phút đọc`}
+                      {art.readTime || '5 phút đọc'}
                     </span>
                   </div>
                 </div>
@@ -369,4 +378,3 @@ export const BlogFeedView: React.FC<BlogFeedViewProps> = ({
 }
 
 export default BlogFeedView
-

@@ -10,6 +10,7 @@ public class Review
     public byte Rating { get; private set; }
     public string? Content { get; private set; }
     public DateOnly? VisitDate { get; private set; }
+    public int LikesCount { get; private set; } = 0;
     public ReviewStatus Status { get; private set; } = ReviewStatus.Active;
     public DateTime CreatedAt { get; private set; }
     public DateTime UpdatedAt { get; private set; }
@@ -20,6 +21,9 @@ public class Review
 
     private readonly List<ReviewMedia> _media = new();
     public virtual IReadOnlyCollection<ReviewMedia> Media => _media.AsReadOnly();
+
+    private readonly List<ReviewLike> _likes = new();
+    public virtual IReadOnlyCollection<ReviewLike> Likes => _likes.AsReadOnly();
 
     private readonly List<Comment> _comments = new();
     public virtual IReadOnlyCollection<Comment> Comments => _comments.AsReadOnly();
@@ -78,5 +82,20 @@ public class Review
     public void ClearMedia()
     {
         _media.Clear();
+    }
+
+    public void IncrementLikes()
+    {
+        LikesCount++;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void DecrementLikes()
+    {
+        if (LikesCount > 0)
+        {
+            LikesCount--;
+            UpdatedAt = DateTime.UtcNow;
+        }
     }
 }

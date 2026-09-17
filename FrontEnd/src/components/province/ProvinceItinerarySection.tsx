@@ -1,20 +1,144 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowRight, DollarSign } from 'lucide-react'
+import {
+  ArrowRight,
+  CheckCircle2,
+  Sparkles
+} from 'lucide-react'
 import type { ProvinceItinerary } from '@/types/models/province.model'
+import type { ItineraryDto, DetailedItineraryItem, ItineraryDayData } from '@/types/models/itinerary.model'
+import { ItineraryQuickPreviewModal } from '@/components/itinerary/ItineraryQuickPreviewModal'
+import { itineraryService } from '@/services/itineraryService'
 
 interface ProvinceItinerarySectionProps {
-  itineraries: ProvinceItinerary[]
   provinceName: string
+  itineraries?: ProvinceItinerary[]
+  initialItineraries?: ProvinceItinerary[]
 }
 
+type ItineraryItemType = ItineraryDto | ProvinceItinerary
+
 export const ProvinceItinerarySection: React.FC<ProvinceItinerarySectionProps> = ({
+  provinceName,
   itineraries,
-  provinceName
+  initialItineraries
 }) => {
   const navigate = useNavigate()
+  const [itineraryList, setItineraryList] = useState<ItineraryItemType[]>(itineraries || initialItineraries || [])
+  const [loading, setLoading] = useState(false)
+  const [previewItem, setPreviewItem] = useState<DetailedItineraryItem | null>(null)
+  const [appliedItineraryIds, setAppliedItineraryIds] = useState<Set<number>>(new Set())
 
-  if (!itineraries || itineraries.length === 0) return null
+  useEffect(() => {
+    let isMounted = true
+
+    const fetchItinerariesForProvince = async () => {
+      setLoading(true)
+      try {
+        const res = await itineraryService.getItineraries({
+          keyword: provinceName,
+          page: 1,
+          pageSize: 20
+        })
+
+        if (!isMounted) return
+
+        if (res.success && res.data && res.data.length > 0) {
+          const normName = provinceName.toLowerCase()
+          const matched = res.data.filter((item) => {
+            const dest = (item.destination || '').toLowerCase()
+            const tit = (item.title || '').toLowerCase()
+            return dest.includes(normName) || tit.includes(normName) || normName.includes(dest)
+          })
+
+          if (matched.length > 0) {
+            setItineraryList(matched)
+          } else {
+            setItineraryList(res.data)
+          }
+        } else if (itineraries || initialItineraries) {
+          setItineraryList(itineraries || initialItineraries || [])
+        }
+      } catch {
+        if (isMounted) {
+          setItineraryList(itineraries || initialItineraries || [])
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false)
+        }
+      }
+    }
+
+    fetchItinerariesForProvince()
+
+    return () => {
+      isMounted = false
+    }
+  }, [provinceName, itineraries, initialItineraries])
+
+  const mapToDetailedItem = (item: ItineraryItemType): DetailedItineraryItem => {
+    const totalCostNumber = parseInt(item.estimatedCost?.replace(/[^0-9]/g, '') || '0', 10)
+    const rawDays = (item as unknown as { days?: Array<{ dayNumber?: number; title?: string; description?: string; stops?: Array<{ placeName?: string; name?: string; activity?: string; location?: string; time?: string; note?: string; description?: string; tips?: string; costEstimate?: string | number }> }> }).days || []
+
+    const days: ItineraryDayData[] = rawDays.map((d, dIdx) => ({
+      dayNumber: d.dayNumber || dIdx + 1,
+      title: d.title || `Ngày ${dIdx + 1}`,
+      description: d.description || 'Lộ trình tham quan',
+      stops: (d.stops || []).map((s, sIdx) => {
+        const placeName = s.placeName || s.name || s.activity || s.location || `Điểm dừng ${sIdx + 1}`
+        return {
+          id: `stop-${item.id}-${dIdx}-${sIdx}`,
+          time: s.time || '08:00',
+          startTime: s.time || '08:00',
+          endTime: '09:30',
+          name: placeName,
+          category: 'Điểm tham quan',
+          address: s.location || placeName,
+          note: s.note || s.description || s.tips || '',
+          costEstimate: parseInt(String(s.costEstimate || '').replace(/[^0-9]/g, '') || '0', 10),
+          duration: '1.5 giờ',
+          transportMode: 'Xe máy' as const,
+          visitOrder: sIdx + 1
+        }
+      })
+    }))
+
+    return {
+      id: item.id,
+      title: item.title,
+      slug: `itinerary-${item.id}`,
+      province: item.destination || provinceName,
+      region: item.region,
+      durationDays: item.daysCount || 1,
+      nightsCount: Math.max(0, (item.daysCount || 1) - 1),
+      estimatedBudget: totalCostNumber,
+      privacy: 0,
+      coverImg: item.coverUrl || undefined,
+      authorName: item.author?.name || 'Cộng đồng',
+      authorAvatar: item.author?.avatar || undefined,
+      description: item.overview || 'Lịch trình du lịch đề xuất tối ưu thời gian và chi phí.',
+      days,
+      createdAt: new Date().toISOString()
+    }
+  }
+
+  const handleOpenPreview = (itinerary: ItineraryItemType, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation()
+    const detailed = mapToDetailedItem(itinerary)
+    setPreviewItem(detailed)
+  }
+
+  const handleApply = async (itinerary: ItineraryItemType, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation()
+    try {
+      await itineraryService.saveItinerary(itinerary.id)
+    } catch { }
+    setAppliedItineraryIds((prev) => new Set(prev).add(itinerary.id))
+    navigate(`/itinerary/${itinerary.id}`)
+  }
+
+  if (!loading && itineraryList.length === 0) return null
 
   return (
     <section className="my-12 space-y-6">
@@ -34,51 +158,143 @@ export const ProvinceItinerarySection: React.FC<ProvinceItinerarySectionProps> =
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {itineraries.map((itinerary) => (
-          <div
-            key={itinerary.id}
-            onClick={() => navigate(`/itinerary/${itinerary.id}`)}
-            className="group flex flex-col bg-white rounded-2xl border border-stone-200/90 overflow-hidden shadow-xs hover:shadow-xl transition-all duration-300 cursor-pointer"
-          >
-            <div className="relative aspect-16/10 w-full overflow-hidden bg-stone-100">
-              <img
-                src={itinerary.coverUrl}
-                alt={itinerary.title}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                loading="lazy"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-            </div>
-
-            <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between space-y-3">
-              <div className="space-y-2">
-                <h3 className="font-bold text-base sm:text-lg text-stone-900 group-hover:text-emerald-800 transition-colors line-clamp-2 leading-snug tracking-tight">
-                  {itinerary.title}
-                </h3>
-
-                {itinerary.overview && (
-                  <p className="text-xs text-stone-600 line-clamp-2 leading-relaxed">
-                    {itinerary.overview}
-                  </p>
-                )}
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="bg-white rounded-2xl p-5 border border-slate-200/90 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-full bg-slate-200" />
+                <div className="space-y-2 flex-1">
+                  <div className="h-4 bg-slate-200 rounded w-24" />
+                  <div className="h-3 bg-slate-200 rounded w-16" />
+                </div>
               </div>
+              <div className="h-5 bg-slate-200 rounded w-3/4" />
+              <div className="h-16 bg-slate-100 rounded-xl" />
+              <div className="grid grid-cols-2 gap-2.5 pt-2">
+                <div className="h-9 bg-slate-100 rounded-xl" />
+                <div className="h-9 bg-slate-200 rounded-xl" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {itineraryList.map((itinerary) => {
+            const totalCostNumber = parseInt(itinerary.estimatedCost?.replace(/[^0-9]/g, '') || '0', 10)
+            const totalStops = (itinerary as unknown as { days?: Array<{ stops?: unknown[] }> }).days
+              ? (itinerary as unknown as { days: Array<{ stops: unknown[] }> }).days.reduce((sum, d) => sum + (d.stops?.length || 0), 0)
+              : 0
 
-              <div className="pt-3 border-t border-stone-100 flex items-center justify-between text-xs">
-                <div className="flex items-center gap-1 text-stone-600 font-semibold">
-                  <DollarSign className="w-3.5 h-3.5 text-emerald-700" />
-                  <span>{itinerary.estimatedCost || 'Chi phí linh hoạt'}</span>
+            return (
+              <div
+                key={itinerary.id}
+                onClick={() => handleOpenPreview(itinerary)}
+                className="bg-white rounded-2xl p-5 border border-slate-200/90 hover:border-emerald-600/70 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group shadow-2xs"
+              >
+                <div className="space-y-3.5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      {itinerary.author?.avatar ? (
+                        <img
+                          src={itinerary.author.avatar}
+                          alt={itinerary.author.name}
+                          className="w-11 h-11 rounded-full object-cover border border-slate-200 shrink-0"
+                        />
+                      ) : (
+                        <div className="w-11 h-11 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-xs shrink-0">
+                          {(itinerary.author?.name || 'C').charAt(0).toUpperCase()}
+                        </div>
+                      )}
+
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-sm font-bold text-slate-900 truncate">
+                            {itinerary.author?.name || 'Cộng đồng'}
+                          </span>
+                          <CheckCircle2
+                            size={15}
+                            className="text-emerald-500 fill-emerald-100 shrink-0"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 group-hover:text-emerald-800 transition-colors line-clamp-2 leading-snug">
+                      {itinerary.title}
+                    </h3>
+                    {itinerary.overview && (
+                      <p className="text-xs text-slate-500 line-clamp-2 mt-1 leading-relaxed font-normal">
+                        {itinerary.overview}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="bg-slate-50/80 rounded-xl p-3 sm:p-3.5 border border-slate-200/80 grid grid-cols-2 divide-x divide-slate-200">
+                    <div className="pr-3 min-w-0">
+                      <span className="text-sm sm:text-base font-extrabold text-slate-900 block truncate">
+                        {itinerary.destination || provinceName}
+                      </span>
+                      <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block truncate mt-0.5">
+                        {itinerary.daysCount || 1} NGÀY • {totalStops} ĐIỂM
+                      </span>
+                    </div>
+
+                    <div className="pl-3 sm:pl-4 min-w-0">
+                      <span className="text-sm sm:text-base font-extrabold text-emerald-800 block truncate">
+                        {totalCostNumber > 0 ? `${totalCostNumber.toLocaleString('vi-VN')} đ` : itinerary.estimatedCost || 'Linh hoạt'}
+                      </span>
+                      <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block truncate mt-0.5">
+                        CHI PHÍ DỰ TÍNH
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
-                <span className="font-bold text-emerald-800 group-hover:underline flex items-center gap-1">
-                  <span>Chi tiết</span>
-                  <ArrowRight className="w-3 h-3" />
-                </span>
+                <div className="pt-3.5 mt-3.5 border-t border-slate-100">
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <button
+                      type="button"
+                      onClick={(e) => handleOpenPreview(itinerary, e)}
+                      className="w-full py-2.5 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all text-center cursor-pointer"
+                    >
+                      Xem chi tiết
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={(e) => handleApply(itinerary, e)}
+                      className={`w-full py-2.5 px-3 rounded-xl text-xs font-bold transition-all shadow-xs text-center flex items-center justify-center gap-1 cursor-pointer ${appliedItineraryIds.has(itinerary.id)
+                        ? 'bg-emerald-900 text-white'
+                        : 'bg-emerald-800 hover:bg-emerald-900 text-white'
+                        }`}
+                    >
+                      <Sparkles size={13} />
+                      <span>Áp dụng</span>
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        ))}
-      </div>
+            )
+          })}
+        </div>
+      )}
+
+      {previewItem && (
+        <ItineraryQuickPreviewModal
+          itinerary={previewItem}
+          onClose={() => setPreviewItem(null)}
+          onApply={(item) => {
+            const origin = itineraryList.find((i) => i.id === item.id)
+            if (origin) handleApply(origin)
+            setPreviewItem(null)
+          }}
+        />
+      )}
     </section>
   )
 }
+
+export default ProvinceItinerarySection

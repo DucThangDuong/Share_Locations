@@ -1,48 +1,54 @@
-export interface MentionedPlace {
+export interface BlogAuthorDto {
   name: string
-  category: string
-  province: string
-  rating: number
-  price: string
+  avatar?: string | null
+  role: string
 }
 
-export interface BlogArticleSection {
-  id: string
-  heading: string
-  content: string
-  highlightTip?: string
-  image?: string
-  imageCaption?: string
-}
-
-export interface BlogArticleItem {
+export interface BlogListItemDto {
   id: number
   slug: string
-  categoryId: number
   title: string
-  subtitle: string
-  excerpt: string
+  excerpt?: string | null
+  content: string
   category: string
-  coverImg: string
-  authorName: string
-  authorRole: string
-  authorAvatar: string
-  publishDate: string
   readTime: string
-  readTimeMinutes: number
-  viewsCount: number
-  likesCount: number
-  isFeatured?: boolean
-  contentJSON?: string
-  htmlContent?: string
-  sections: BlogArticleSection[]
-  mentionedPlaces?: MentionedPlace[]
-  tags?: string[]
+  coverUrl?: string | null
+  author: BlogAuthorDto
+  publishedAt: string
+  tags: string[]
+  featured: boolean
 }
 
-export interface BlogReportType {
-  id: number
-  code: string
-  label: string
-  desc: string
+export interface BlogDetailDto extends BlogListItemDto {}
+
+export interface BlogLikeResponseDto {
+  isLiked: boolean
+  likesCount: number
+}
+
+export interface BlogFilterParams {
+  category?: string
+  keyword?: string
+  page?: number
+  pageSize?: number
+}
+
+export interface CreateBlogRequest {
+  title: string
+  categoryId?: number
+  coverImageUrl?: string
+  excerpt?: string
+  contentJSON?: string
+  readTimeMinutes?: number
+  status?: number
+}
+
+export interface UpdateBlogRequest {
+  title: string
+  categoryId?: number
+  coverImageUrl?: string
+  excerpt?: string
+  contentJSON?: string
+  readTimeMinutes?: number
+  status?: number
 }

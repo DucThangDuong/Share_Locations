@@ -1,23 +1,21 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import {
-  Star,
   CheckCircle2,
-  Eye,
-  Check,
   Compass,
-  Plus,
   MapPin,
   Clock,
   DollarSign,
-  RotateCcw
+  RotateCcw,
+  Sparkles
 } from 'lucide-react'
-import type { DetailedItineraryItem } from '@/types/models/itinerary.model'
+import type { ItineraryDto } from '@/types/models/itinerary.model'
 import type { ProvinceDto } from '@/types/models/geography.model'
 import { geographyService } from '@/services/geographyService'
 import { ItineraryQuickPreviewModal } from './ItineraryQuickPreviewModal'
+import type { DetailedItineraryItem } from '@/types/models/itinerary.model'
 
 interface ItineraryCatalogViewProps {
-  itineraries: DetailedItineraryItem[]
+  itineraries: ItineraryDto[]
   searchQuery: string
   selectedRegion: string | null
   selectedProvince: string | null
@@ -29,8 +27,8 @@ interface ItineraryCatalogViewProps {
   onSelectDuration: (dur: string) => void
   onSelectBudget: (budget: string) => void
   onResetFilters: () => void
-  onApplyItinerary?: (itinerary: DetailedItineraryItem) => void
-  onQuickPreview?: (itinerary: DetailedItineraryItem) => void
+  onApplyItinerary?: (itinerary: ItineraryDto) => void
+  onQuickPreview?: (itinerary: ItineraryDto) => void
 }
 
 const DURATIONS = [
@@ -94,19 +92,51 @@ export const ItineraryCatalogView: React.FC<ItineraryCatalogViewProps> = ({
     return list.length > 0 ? list : ['Miền Bắc', 'Miền Trung', 'Miền Nam']
   }, [provinces])
 
-  const handleOpenPreview = (itinerary: DetailedItineraryItem, e?: React.MouseEvent) => {
+  const mapDtoToDetailed = (itinerary: ItineraryDto): DetailedItineraryItem => {
+    const totalCostNumber = parseInt(itinerary.estimatedCost?.replace(/[^0-9]/g, '') || '0', 10)
+    return {
+      id: itinerary.id,
+      title: itinerary.title,
+      slug: `itinerary-${itinerary.id}`,
+      province: itinerary.destination,
+      region: itinerary.region,
+      durationDays: itinerary.daysCount || 1,
+      nightsCount: Math.max(0, (itinerary.daysCount || 1) - 1),
+      estimatedBudget: totalCostNumber,
+      privacy: 0,
+      coverImg: itinerary.coverUrl || '',
+      authorName: itinerary.author?.name || 'Cộng đồng',
+      authorAvatar: itinerary.author?.avatar,
+      description: itinerary.overview || 'Lịch trình du lịch đề xuất tối ưu thời gian và chi phí.',
+      days: (itinerary.days || []).map((d, dIdx) => ({
+        dayNumber: d.dayNumber || dIdx + 1,
+        title: d.title || `Ngày ${dIdx + 1}`,
+        description: 'Lộ trình tham quan',
+        stops: (d.stops || []).map((s, sIdx) => ({
+          id: `stop-${itinerary.id}-${dIdx}-${sIdx}`,
+          time: s.time || '08:00',
+          startTime: s.time || '08:00',
+          endTime: '09:30',
+          name: s.placeName || s.activity || `Điểm dừng ${sIdx + 1}`,
+          category: 'Điểm tham quan',
+          address: s.location || '',
+          note: s.note || s.description || s.tips || '',
+          costEstimate: parseInt(s.costEstimate?.replace(/[^0-9]/g, '') || '0', 10),
+          duration: '1.5 giờ',
+          transportMode: 'Xe máy',
+          visitOrder: sIdx + 1
+        }))
+      })),
+      createdAt: new Date().toISOString()
+    }
+  }
+
+  const handleOpenPreview = (itinerary: ItineraryDto, e?: React.MouseEvent) => {
     e?.stopPropagation()
     if (onQuickPreview) {
       onQuickPreview(itinerary)
     } else {
-      setPreviewItem(itinerary)
-    }
-  }
-
-  const handleApply = (itinerary: DetailedItineraryItem, e?: React.MouseEvent) => {
-    e?.stopPropagation()
-    if (onApplyItinerary) {
-      onApplyItinerary(itinerary)
+      setPreviewItem(mapDtoToDetailed(itinerary))
     }
   }
 
@@ -142,63 +172,43 @@ export const ItineraryCatalogView: React.FC<ItineraryCatalogViewProps> = ({
   )
 
   const filteredItineraries = useMemo(() => {
-    return itineraries.filter((it) => {
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase().trim()
-        const matchTitle = it.title.toLowerCase().includes(q)
-        const matchDesc = it.description?.toLowerCase().includes(q)
-        const matchProv = it.province?.toLowerCase().includes(q)
-        const matchAuthor = it.authorName?.toLowerCase().includes(q)
-        if (!matchTitle && !matchDesc && !matchProv && !matchAuthor) return false
+    return itineraries.filter((item) => {
+      if (selectedRegion && item.region !== selectedRegion) {
+        return false
       }
-
-      if (selectedRegion) {
-        const itRegion = it.region?.toLowerCase() || ''
-        const itProv = it.province?.toLowerCase() || ''
-        const targetRegion = selectedRegion.toLowerCase()
-        const regionProvs = provinces.filter((p) => p.regionName === selectedRegion)
-        const matchRegionName = itRegion.includes(targetRegion) || targetRegion.includes(itRegion)
-        const matchProvInRegion = regionProvs.some((p) => itProv.includes(p.name.toLowerCase()) || p.name.toLowerCase().includes(itProv))
-        if (!matchRegionName && !matchProvInRegion) return false
+      if (selectedProvince && !item.destination.toLowerCase().includes(selectedProvince.toLowerCase())) {
+        return false
       }
-
-      if (selectedProvince) {
-        const itProv = it.province?.toLowerCase() || ''
-        const itTitle = it.title?.toLowerCase() || ''
-        const itDesc = it.description?.toLowerCase() || ''
-        const targetProv = selectedProvince.toLowerCase()
-        if (!itProv.includes(targetProv) && !itTitle.includes(targetProv) && !itDesc.includes(targetProv)) {
-          return false
-        }
-      }
-
-      if (selectedDuration && selectedDuration !== 'all') {
-        const d = it.durationDays || 1
+      if (selectedDuration !== 'all') {
+        const d = item.daysCount || 1
         if (selectedDuration === '1' && d !== 1) return false
         if (selectedDuration === '2' && d !== 2) return false
         if (selectedDuration === '3' && d !== 3) return false
         if (selectedDuration === '4' && d !== 4) return false
         if (selectedDuration === '5' && d < 5) return false
       }
-
-      if (selectedBudget && selectedBudget !== 'all') {
-        const cost = it.estimatedBudget || 0
-        if (selectedBudget === 'under1m' && (cost <= 0 || cost > 1000000)) return false
-        if (selectedBudget === '1m-3m' && (cost < 1000000 || cost > 3000000)) return false
-        if (selectedBudget === '3m-5m' && (cost < 3000000 || cost > 5000000)) return false
-        if (selectedBudget === 'above5m' && cost < 5000000) return false
+      if (selectedBudget !== 'all') {
+        const costNum = parseInt(item.estimatedCost?.replace(/[^0-9]/g, '') || '0', 10)
+        if (selectedBudget === 'under1m' && costNum >= 1000000) return false
+        if (selectedBudget === '1m-3m' && (costNum < 1000000 || costNum > 3000000)) return false
+        if (selectedBudget === '3m-5m' && (costNum < 3000000 || costNum > 5000000)) return false
+        if (selectedBudget === 'above5m' && costNum <= 5000000) return false
       }
-
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase()
+        const text = `${item.title} ${item.destination} ${item.overview || ''} ${item.style}`.toLowerCase()
+        if (!text.includes(q)) return false
+      }
       return true
     })
-  }, [itineraries, provinces, searchQuery, selectedRegion, selectedProvince, selectedDuration, selectedBudget])
+  }, [itineraries, selectedRegion, selectedProvince, selectedDuration, selectedBudget, searchQuery])
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 font-sans">
       <div className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-2xs space-y-4">
         <div className="space-y-2">
           <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
-            <MapPin size={14} className="text-[#004f32]" />
+            <MapPin size={14} className="text-emerald-700" />
             <span>Vùng miền:</span>
           </div>
 
@@ -211,7 +221,7 @@ export const ItineraryCatalogView: React.FC<ItineraryCatalogViewProps> = ({
                   key={reg}
                   onClick={() => handleToggleRegion(reg)}
                   className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer border ${isSelected
-                    ? 'bg-[#004f32] text-white border-[#004f32] shadow-xs'
+                    ? 'bg-emerald-900 text-white border-emerald-900 shadow-xs'
                     : 'bg-stone-50 hover:bg-stone-100 hover:border-stone-300 text-stone-700 border-stone-200'
                     }`}
                 >
@@ -352,9 +362,8 @@ export const ItineraryCatalogView: React.FC<ItineraryCatalogViewProps> = ({
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredItineraries.map((itinerary) => {
-              const isApplied = appliedItineraryIds.has(itinerary.id)
-              const totalStops = itinerary.days.reduce(
-                (sum, d) => sum + d.stops.length,
+              const totalStops = (itinerary.days || []).reduce(
+                (sum, d) => sum + (d.stops?.length || 0),
                 0
               )
 
@@ -367,22 +376,22 @@ export const ItineraryCatalogView: React.FC<ItineraryCatalogViewProps> = ({
                   <div className="space-y-3.5">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-3 min-w-0">
-                        {itinerary.authorAvatar ? (
+                        {itinerary.author?.avatar ? (
                           <img
-                            src={itinerary.authorAvatar}
-                            alt={itinerary.authorName}
+                            src={itinerary.author.avatar}
+                            alt={itinerary.author.name}
                             className="w-11 h-11 rounded-full object-cover border border-slate-200 shrink-0"
                           />
                         ) : (
                           <div className="w-11 h-11 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-xs shrink-0">
-                            {itinerary.authorName.charAt(0).toUpperCase()}
+                            {(itinerary.author?.name || 'C').charAt(0).toUpperCase()}
                           </div>
                         )}
 
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5">
                             <span className="text-sm font-bold text-slate-900 truncate">
-                              {itinerary.authorName}
+                              {itinerary.author?.name || 'Cộng đồng'}
                             </span>
                             <CheckCircle2
                               size={15}
@@ -390,22 +399,9 @@ export const ItineraryCatalogView: React.FC<ItineraryCatalogViewProps> = ({
                             />
                           </div>
 
-                          <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-0.5">
-                            {itinerary.rating > 0 ? (
-                              <div className="flex items-center gap-1 font-semibold text-slate-700">
-                                <Star
-                                  size={12}
-                                  className="fill-amber-400 text-amber-500 shrink-0"
-                                />
-                                <span>{itinerary.rating.toFixed(1)}</span>
-                                <span className="text-slate-400 font-normal">
-                                  ({itinerary.reviewCount} Reviews)
-                                </span>
-                              </div>
-                            ) : (
-                              <span className="text-slate-400">Mới đề xuất</span>
-                            )}
-                          </div>
+                          <span className="text-[11px] text-slate-400 font-medium block truncate">
+                            {itinerary.style || 'Khám phá'}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -414,27 +410,29 @@ export const ItineraryCatalogView: React.FC<ItineraryCatalogViewProps> = ({
                       <h3 className="text-base font-bold text-slate-900 group-hover:text-emerald-800 transition-colors line-clamp-2 leading-snug">
                         {itinerary.title}
                       </h3>
-                      <p className="text-xs text-slate-500 line-clamp-2 mt-1 leading-relaxed font-normal">
-                        {itinerary.description}
-                      </p>
+                      {itinerary.overview && (
+                        <p className="text-xs text-slate-500 line-clamp-2 mt-1 leading-relaxed font-normal">
+                          {itinerary.overview}
+                        </p>
+                      )}
                     </div>
 
                     <div className="bg-slate-50/80 rounded-xl p-3 sm:p-3.5 border border-slate-200/80 grid grid-cols-2 divide-x divide-slate-200">
                       <div className="pr-3 min-w-0">
                         <span className="text-sm sm:text-base font-extrabold text-slate-900 block truncate">
-                          {itinerary.province}
+                          {itinerary.destination}
                         </span>
                         <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block truncate mt-0.5">
-                          {itinerary.durationDays} NGÀY {itinerary.nightsCount} ĐÊM • {totalStops} ĐIỂM
+                          {itinerary.duration || `${itinerary.daysCount} ngày`} • {totalStops} ĐIỂM
                         </span>
                       </div>
 
                       <div className="pl-3 sm:pl-4 min-w-0">
                         <span className="text-sm sm:text-base font-extrabold text-emerald-800 block truncate">
-                          {itinerary.estimatedBudget.toLocaleString('vi-VN')} đ
+                          {itinerary.estimatedCost || 'Linh hoạt'}
                         </span>
                         <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block truncate mt-0.5">
-                          CHI PHÍ ƯỚC TÍNH
+                          CHI PHÍ DỰ TÍNH
                         </span>
                       </div>
                     </div>
@@ -445,31 +443,24 @@ export const ItineraryCatalogView: React.FC<ItineraryCatalogViewProps> = ({
                       <button
                         type="button"
                         onClick={(e) => handleOpenPreview(itinerary, e)}
-                        className="px-3 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 text-slate-700 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+                        className="w-full py-2.5 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all text-center cursor-pointer"
                       >
-                        <Eye size={13} className="text-slate-500" />
-                        <span>Xem</span>
+                        Xem chi tiết
                       </button>
 
                       <button
                         type="button"
-                        onClick={(e) => handleApply(itinerary, e)}
-                        className={`px-3 py-2.5 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs ${isApplied
-                          ? 'bg-emerald-900 text-white hover:bg-emerald-950'
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          if (onApplyItinerary) onApplyItinerary(itinerary)
+                        }}
+                        className={`w-full py-2.5 px-3 rounded-xl text-xs font-bold transition-all shadow-xs text-center flex items-center justify-center gap-1 cursor-pointer ${appliedItineraryIds.has(itinerary.id)
+                          ? 'bg-emerald-900 text-white'
                           : 'bg-emerald-800 hover:bg-emerald-900 text-white'
                           }`}
                       >
-                        {isApplied ? (
-                          <>
-                            <Check size={13} strokeWidth={3} className="text-emerald-300" />
-                            <span>Đã áp dụng</span>
-                          </>
-                        ) : (
-                          <>
-                            <Plus size={13} strokeWidth={2.5} />
-                            <span>Áp dụng chuyến đi</span>
-                          </>
-                        )}
+                        <Sparkles size={13} />
+                        <span>Áp dụng</span>
                       </button>
                     </div>
                   </div>
@@ -480,15 +471,17 @@ export const ItineraryCatalogView: React.FC<ItineraryCatalogViewProps> = ({
         )}
       </div>
 
-      <ItineraryQuickPreviewModal
-        isOpen={Boolean(previewItem)}
-        itinerary={previewItem}
-        isApplied={previewItem ? appliedItineraryIds.has(previewItem.id) : false}
-        onClose={() => setPreviewItem(null)}
-        onApply={(it) => {
-          if (onApplyItinerary) onApplyItinerary(it)
-        }}
-      />
+      {previewItem && (
+        <ItineraryQuickPreviewModal
+          itinerary={previewItem}
+          onClose={() => setPreviewItem(null)}
+          onApply={(item) => {
+            const originDto = itineraries.find((i) => i.id === item.id)
+            if (originDto && onApplyItinerary) onApplyItinerary(originDto)
+            setPreviewItem(null)
+          }}
+        />
+      )}
     </div>
   )
 }

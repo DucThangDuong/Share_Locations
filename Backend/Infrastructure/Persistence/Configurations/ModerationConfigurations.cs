@@ -27,12 +27,16 @@ public class ReportTypeConfiguration : IEntityTypeConfiguration<ReportType>
             .HasDefaultValue(0);
 
         builder.HasData(
-            new { Id = 1, Code = "CLOSED", Name = "Địa điểm đã đóng cửa / Dừng hoạt động", IsActive = true, DisplayOrder = 1 },
-            new { Id = 2, Code = "WRONG_INFO", Name = "Sai thông tin, sai địa chỉ hoặc vị trí", IsActive = true, DisplayOrder = 2 },
-            new { Id = 3, Code = "WRONG_TIME_PRICE", Name = "Sai giờ mở cửa hoặc mức giá", IsActive = true, DisplayOrder = 3 },
-            new { Id = 4, Code = "DUPLICATE", Name = "Nội dung / Địa điểm bị trùng lặp", IsActive = true, DisplayOrder = 4 },
-            new { Id = 5, Code = "INAPPROPRIATE", Name = "Nội dung hoặc ảnh vi phạm / không chuẩn", IsActive = true, DisplayOrder = 5 },
-            new { Id = 6, Code = "OTHER", Name = "Đề xuất cập nhật khác / Lý do khác", IsActive = true, DisplayOrder = 6 }
+            new { Id = 1, Code = "PLACE_CLOSED", Name = "Địa điểm đã đóng cửa vĩnh viễn / Tạm dừng hoạt động", IsActive = true, DisplayOrder = 1 },
+            new { Id = 2, Code = "PLACE_WRONG_INFO", Name = "Sai địa chỉ, vị trí trên bản đồ hoặc số điện thoại", IsActive = true, DisplayOrder = 2 },
+            new { Id = 3, Code = "PLACE_WRONG_PRICE", Name = "Sai khung giờ mở cửa hoặc mức giá ước tính", IsActive = true, DisplayOrder = 3 },
+            new { Id = 4, Code = "PLACE_DUPLICATE", Name = "Địa điểm bị tạo trùng lặp", IsActive = true, DisplayOrder = 4 },
+            new { Id = 5, Code = "CONTENT_SPAM", Name = "Spam quảng cáo, chèo kéo hoặc nội dung vô nghĩa", IsActive = true, DisplayOrder = 5 },
+            new { Id = 6, Code = "CONTENT_OFFENSIVE", Name = "Ngôn từ thô tục, xúc phạm, đả kích hoặc thù ghét", IsActive = true, DisplayOrder = 6 },
+            new { Id = 7, Code = "CONTENT_FAKE", Name = "Đánh giá gian lận, dìm hàng đối thủ hoặc đánh giá ảo", IsActive = true, DisplayOrder = 7 },
+            new { Id = 8, Code = "CONTENT_NSFW_MEDIA", Name = "Hình ảnh nhạy cảm, bạo lực hoặc vi phạm thuần phong mỹ tục", IsActive = true, DisplayOrder = 8 },
+            new { Id = 9, Code = "CONTENT_COPYRIGHT", Name = "Vi phạm bản quyền hình ảnh hoặc đạo nhái bài viết", IsActive = true, DisplayOrder = 9 },
+            new { Id = 10, Code = "OTHER", Name = "Lý do khác / Đề xuất cập nhật khác", IsActive = true, DisplayOrder = 10 }
         );
     }
 }

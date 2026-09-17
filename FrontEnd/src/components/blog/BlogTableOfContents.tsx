@@ -1,7 +1,5 @@
 import React from 'react'
 import { ListTree } from 'lucide-react'
-import type { BlogArticleSection } from '@/types/models/blogArticle.model'
-
 export interface TocHeadingItem {
   id: string
   level: number
@@ -9,7 +7,7 @@ export interface TocHeadingItem {
 }
 
 interface BlogTableOfContentsProps {
-  sections?: BlogArticleSection[]
+  sections?: { id: string; heading: string }[]
   headings?: TocHeadingItem[]
   onScrollToSection: (id: string) => void
 }

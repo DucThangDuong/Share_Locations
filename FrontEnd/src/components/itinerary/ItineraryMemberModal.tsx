@@ -172,11 +172,17 @@ export const ItineraryMemberModal: React.FC<ItineraryMemberModalProps> = ({
                     className="flex items-center justify-between gap-3 p-3 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 transition-colors"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <img
-                        src={m.avatar}
-                        alt={m.name}
-                        className="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0"
-                      />
+                      {m.avatar ? (
+                        <img
+                          src={m.avatar}
+                          alt={m.name}
+                          className="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-emerald-800 text-white font-bold text-xs flex items-center justify-center shrink-0">
+                          {(m.name || 'U').charAt(0).toUpperCase()}
+                        </div>
+                      )}
                       <div className="min-w-0">
                         <p className="text-xs sm:text-sm font-bold text-slate-900 truncate">
                           {m.name}

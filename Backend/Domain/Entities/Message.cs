@@ -1,5 +1,3 @@
-using Domain.Enums;
-
 namespace Domain.Entities;
 
 public class Message
@@ -8,13 +6,19 @@ public class Message
     public long ChatRoomId { get; private set; }
     public long SenderId { get; private set; }
     public string? Content { get; private set; }
-    public ChatMessageType MessageType { get; private set; } = ChatMessageType.TextLink;
-    public string? MediaUrl { get; private set; }
+    public long? ReplyToMessageId { get; private set; }
     public DateTime CreatedAt { get; private set; }
 
     // Navigation
     public virtual ChatRoom ChatRoom { get; private set; } = null!;
     public virtual User Sender { get; private set; } = null!;
+    public virtual Message? ReplyToMessage { get; private set; }
+
+    private readonly List<MessageAttachment> _attachments = new();
+    public virtual IReadOnlyCollection<MessageAttachment> Attachments => _attachments.AsReadOnly();
+
+    private readonly List<MessageReaction> _reactions = new();
+    public virtual IReadOnlyCollection<MessageReaction> Reactions => _reactions.AsReadOnly();
 
     protected Message() { }
 
@@ -22,14 +26,17 @@ public class Message
         long chatRoomId,
         long senderId,
         string? content,
-        ChatMessageType messageType = ChatMessageType.TextLink,
-        string? mediaUrl = null)
+        long? replyToMessageId = null)
     {
         ChatRoomId = chatRoomId;
         SenderId = senderId;
         Content = content;
-        MessageType = messageType;
-        MediaUrl = mediaUrl?.Trim();
+        ReplyToMessageId = replyToMessageId;
         CreatedAt = DateTime.UtcNow;
+    }
+
+    public void AddAttachment(MessageAttachment attachment)
+    {
+        _attachments.Add(attachment);
     }
 }
