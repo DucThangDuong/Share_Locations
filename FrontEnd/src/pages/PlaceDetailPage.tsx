@@ -40,7 +40,7 @@ export const PlaceDetailPage = () => {
         if (placeRes.success && placeRes.data) {
           setPlace(placeRes.data)
           if (isAuthenticated) {
-            userService.recordAccessHistory(id).catch(() => {})
+            userService.recordAccessHistory(Number(id)).catch(() => {})
             userService.getMyFavorites({ targetType: 1, pageSize: 100 }).then((favRes) => {
               if (favRes.success && favRes.data) {
                 const items = Array.isArray(favRes.data) ? favRes.data : (favRes.data.items || [])
@@ -124,7 +124,7 @@ export const PlaceDetailPage = () => {
 
   const handleReviewUpdated = (updatedReview: ReviewItemDto) => {
     setReviewsList((prev) =>
-      prev.map((r) => (r.id === updatedReview.id ? updatedReview : r))
+      prev.map((r) => (String(r.id) === String(updatedReview.id) ? { ...r, ...updatedReview } : r))
     )
   }
 

@@ -22,14 +22,14 @@ interface TabDef {
 }
 
 const TABS: TabDef[] = [
-  { key: 'favorites', label: 'Đã lưu' },
+  { key: 'favorites', label: 'Yêu thích' },
   { key: 'trips', label: 'Chuyến đi' },
   { key: 'visitLogs', label: 'Nhật ký' },
   { key: 'friends', label: 'Bạn bè' },
-  { key: 'reviews', label: 'Đánh giá' },
+  { key: 'reviews', label: 'Bài đánh giá' },
   { key: 'comments', label: 'Bình luận' },
   { key: 'blogs', label: 'Bài viết' },
-  { key: 'proposals', label: 'Đề xuất' }
+  { key: 'proposals', label: 'Đóng góp' }
 ]
 
 export const ProfileTabBar: React.FC<ProfileTabBarProps> = ({
@@ -45,11 +45,10 @@ export const ProfileTabBar: React.FC<ProfileTabBarProps> = ({
             type="button"
             key={key}
             onClick={() => onTabChange(key)}
-            className={`py-2 px-4 rounded-xl text-xs font-bold transition-colors cursor-pointer whitespace-nowrap flex-1 text-center ${
-              isActive
-                ? 'bg-emerald-800 text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
-            }`}
+            className={`py-2 px-4 rounded-xl text-xs font-bold transition-colors cursor-pointer whitespace-nowrap flex-1 text-center ${isActive
+              ? 'bg-emerald-800 text-white shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
+              }`}
           >
             <span>{label}</span>
           </button>

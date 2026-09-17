@@ -57,9 +57,9 @@ export const UserTripsSection: React.FC = () => {
           nightsCount: t.nightsCount || 0,
           estimatedBudget: Number(t.estimatedBudget || 0),
           privacy: t.privacy,
-          description: t.description || 'Lịch trình du lịch tự túc.',
+          description: t.description || '',
           totalStops: t.totalStopsCount || 0,
-          tags: ['Tự thiết kế', 'Khám phá']
+          tags: []
         }))
         setTrips(mapped)
       } else {
@@ -112,17 +112,12 @@ export const UserTripsSection: React.FC = () => {
     try {
       const res = await tripService.createTrip({
         title: 'Chuyến đi mới của tôi',
-        description: 'Lịch trình du lịch tự túc. Hãy thêm các điểm đến để bắt đầu kế hoạch của bạn.',
+        description: 'Lịch trình du lịch tự túc.',
         privacy: 1,
         days: [
           {
             dayNumber: 1,
             dayTitle: 'Ngày 1: Khởi hành & Check-in',
-            stops: []
-          },
-          {
-            dayNumber: 2,
-            dayTitle: 'Ngày 2: Trải nghiệm & Ẩm thực',
             stops: []
           }
         ]
@@ -130,13 +125,8 @@ export const UserTripsSection: React.FC = () => {
 
       if (res.success && res.data?.id) {
         navigate(`/itinerary/${res.data.id}`)
-      } else {
-        const fallbackId = Date.now()
-        navigate(`/itinerary/${fallbackId}`)
       }
     } catch {
-      const fallbackId = Date.now()
-      navigate(`/itinerary/${fallbackId}`)
     }
   }
 
@@ -288,16 +278,18 @@ export const UserTripsSection: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="flex flex-wrap gap-1.5">
-                  {trip.tags?.map((tag, tIdx) => (
-                    <span
-                      key={tIdx}
-                      className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md font-medium border border-slate-200/60"
-                    >
-                      #{tag}
-                    </span>
-                  ))}
-                </div>
+                {trip.tags && trip.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {trip.tags.map((tag, tIdx) => (
+                      <span
+                        key={tIdx}
+                        className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md font-medium border border-slate-200/60"
+                      >
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between gap-3 text-xs">

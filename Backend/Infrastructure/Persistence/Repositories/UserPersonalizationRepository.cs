@@ -77,7 +77,12 @@ public class UserPersonalizationRepository : IUserPersonalizationRepository
                     N'ẨM THỰC' AS CategoryTag,
                     5.0 AS Rating,
                     (SELECT COUNT(1) FROM dbo.FoodPlaces fp2 WHERE fp2.FoodId = fd.Id) AS ReviewCount,
-                    NULL AS Price
+                    CASE
+                        WHEN fd.MinPrice IS NOT NULL AND fd.MaxPrice IS NOT NULL THEN CONCAT(FORMAT(fd.MinPrice, 'N0'), N'đ - ', FORMAT(fd.MaxPrice, 'N0'), N'đ')
+                        WHEN fd.MinPrice IS NOT NULL THEN CONCAT(N'Từ ', FORMAT(fd.MinPrice, 'N0'), N'đ')
+                        WHEN fd.MaxPrice IS NOT NULL THEN CONCAT(N'Đến ', FORMAT(fd.MaxPrice, 'N0'), N'đ')
+                        ELSE NULL
+                    END AS Price
                 FROM dbo.Favorites f
                 INNER JOIN dbo.Foods fd ON f.TargetId = fd.Id AND f.TargetType = 2
                 WHERE f.UserId = @UserId

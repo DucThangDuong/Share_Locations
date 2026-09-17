@@ -13,9 +13,6 @@ public class PlaceTypeConfiguration : IEntityTypeConfiguration<PlaceType>
             .HasMaxLength(50)
             .IsRequired();
 
-        builder.Property(e => e.IconClass)
-            .HasMaxLength(100);
-
         builder.Property(e => e.ImageUrl)
             .HasMaxLength(500);
 
@@ -36,9 +33,6 @@ public class CategoryConfiguration : IEntityTypeConfiguration<Category>
         builder.Property(e => e.Name)
             .HasMaxLength(100)
             .IsRequired();
-
-        builder.Property(e => e.IconClass)
-            .HasMaxLength(100);
 
         builder.Property(e => e.ImageUrl)
             .HasMaxLength(500);

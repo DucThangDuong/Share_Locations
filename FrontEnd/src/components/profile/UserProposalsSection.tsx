@@ -3,8 +3,6 @@ import { useSearchParams } from 'react-router-dom'
 import {
   PlusCircle,
   Calendar,
-  Eye,
-  Heart,
   Trash2,
   CheckCircle2,
   Clock,
@@ -25,7 +23,7 @@ interface ProposalCardProps {
   item: ProposalItem
   onSelect: (item: ProposalItem) => void
   onDelete?: (id: number) => void
-  renderStatusBadge: (status: 0 | 1 | 2) => React.ReactNode
+  renderStatusBadge: (status: number) => React.ReactNode
 }
 
 const ProposalCard: React.FC<ProposalCardProps> = ({
@@ -142,19 +140,6 @@ const ProposalCard: React.FC<ProposalCardProps> = ({
             <Calendar className="w-3 h-3 text-slate-400" />
             <span>{new Date(item.createdAt).toLocaleDateString('vi-VN')}</span>
           </div>
-
-          {item.status === 1 && (
-            <div className="flex items-center gap-2 text-[11px] font-medium text-slate-600">
-              <span className="flex items-center gap-0.5">
-                <Eye className="w-3 h-3 text-slate-400" />
-                <span>{item.viewsCount || 0}</span>
-              </span>
-              <span className="flex items-center gap-0.5">
-                <Heart className="w-3 h-3 text-rose-500 fill-rose-500" />
-                <span>{item.favoritesCount || 0}</span>
-              </span>
-            </div>
-          )}
         </div>
 
         {item.status === 2 && item.rejectReason && (
@@ -205,7 +190,7 @@ export const UserProposalsSection: React.FC<UserProposalsSectionProps> = ({
     return p.status === statusFilter
   })
 
-  const renderStatusBadge = (status: 0 | 1 | 2) => {
+  const renderStatusBadge = (status: number) => {
     switch (status) {
       case 1:
         return (
@@ -325,16 +310,16 @@ export const UserProposalsSection: React.FC<UserProposalsSectionProps> = ({
               </button>
             </div>
 
-            <div className="aspect-square sm:aspect-16/9 rounded-2xl overflow-hidden bg-slate-100">
-              <img
-                src={
-                  selectedProposal.coverImg ||
-                  selectedProposal.mediaUrls?.[0] ||
-                  'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&h=500&fit=crop'
-                }
-                alt={selectedProposal.name}
-                className="w-full h-full object-cover"
-              />
+            <div className="aspect-square sm:aspect-16/9 rounded-2xl overflow-hidden bg-slate-100 flex items-center justify-center">
+              {selectedProposal.coverImg || selectedProposal.mediaUrls?.[0] ? (
+                <img
+                  src={selectedProposal.coverImg || selectedProposal.mediaUrls?.[0]}
+                  alt={selectedProposal.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <MapPin className="w-12 h-12 text-slate-300" />
+              )}
             </div>
 
             <div className="space-y-2">

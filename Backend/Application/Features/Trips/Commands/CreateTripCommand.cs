@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using Application.Common;
@@ -34,7 +34,6 @@ public class CreateTripCommandHandler : IRequestHandler<CreateTripCommand, Resul
             return Result<CreateTripResponseDto>.Failure("Ngày bắt đầu không được sau ngày kết thúc.");
         }
 
-        // Kiểm tra sourceTripId nếu có clone
         Trip? sourceTrip = null;
         if (dto.SourceTripId.HasValue)
         {
@@ -44,7 +43,6 @@ public class CreateTripCommandHandler : IRequestHandler<CreateTripCommand, Resul
                 return Result<CreateTripResponseDto>.NotFound("Lịch trình mẫu không tồn tại.");
             }
 
-            // BOLA check: Phải là Public hoặc người dùng là Owner/Member của trip gốc
             if (sourceTrip.Privacy == TripPrivacy.Private && sourceTrip.UserId != request.UserId)
             {
                 var isMember = sourceTrip.Members.Any(m => m.UserId == request.UserId);
@@ -83,11 +81,9 @@ public class CreateTripCommandHandler : IRequestHandler<CreateTripCommand, Resul
             await _unitOfWork.SaveChangesAsync(ct);
             newTripId = trip.Id;
 
-            // Thêm Owner vào bảng TripMembers
             var ownerMember = new TripMember(trip.Id, request.UserId, TripMemberRole.Owner);
             await _unitOfWork.Trips.AddMemberAsync(ownerMember, ct);
 
-            // Clone từ template
             if (sourceTrip != null)
             {
                 foreach (var day in sourceTrip.Days.OrderBy(d => d.DayNumber))
@@ -119,7 +115,7 @@ public class CreateTripCommandHandler : IRequestHandler<CreateTripCommand, Resul
             {
                 foreach (var day in dto.Days.OrderBy(d => d.DayNumber))
                 {
-                    var newDay = new TripDay(trip.Id, day.DayNumber, day.DayTitle);
+                    var newDay = new TripDay(trip.Id, day.DayNumber, day.DayTitle, day.Date);
                     await _unitOfWork.Trips.AddDayAsync(newDay, ct);
                     await _unitOfWork.SaveChangesAsync(ct);
 

@@ -1,4 +1,4 @@
-using Application.DTOs;
+﻿using Application.DTOs;
 using Application.Features.Blogs.Commands;
 using Application.Features.Friends.Commands;
 using Application.Features.Trips.Commands;
@@ -163,5 +163,94 @@ public class TripsAndFriendsFeaturesTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.StatusCode.Should().Be(System.Net.HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task UpdateTripDay_ShouldSucceed_WhenOwnerUpdatesTitleAndDate()
+    {
+        var trip = new Trip(10, "Chuyến đi Nha Trang");
+        var day = new TripDay(1, 1, "Ngày 1 cũ", DateOnly.Parse("2026-09-01"));
+        _unitOfWork.Trips.GetByIdAsync(1, Arg.Any<CancellationToken>()).Returns(trip);
+        _unitOfWork.Trips.GetDayByTripAndNumberAsync(1, 1, Arg.Any<CancellationToken>()).Returns(day);
+        _unitOfWork.Trips.GetPlacesByDayIdAsync(day.Id, Arg.Any<CancellationToken>()).Returns(new List<TripPlace>());
+
+        var handler = new UpdateTripDayCommandHandler(_unitOfWork);
+        var command = new UpdateTripDayCommand(1, 1, 10, new UpdateTripDayRequestDto
+        {
+            DayTitle = "Ngày 1: Check-in bãi biển",
+            Date = DateOnly.Parse("2026-09-02")
+        });
+
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Data!.DayTitle.Should().Be("Ngày 1: Check-in bãi biển");
+        result.Data.Date.Should().Be("2026-09-02");
+        day.DayTitle.Should().Be("Ngày 1: Check-in bãi biển");
+        day.Date.Should().Be(DateOnly.Parse("2026-09-02"));
+    }
+
+    [Fact]
+    public async Task DeleteTripDay_ShouldRenumberRemainingDays_WhenDay2IsDeleted()
+    {
+        var trip = new Trip(10, "Chuyến đi miền Tây");
+        var day1 = new TripDay(1, 1, "Ngày 1: Tiền Giang", DateOnly.Parse("2026-09-10"));
+        var day2 = new TripDay(1, 2, "Ngày 2: Bến Tre", DateOnly.Parse("2026-09-11"));
+        var day3 = new TripDay(1, 3, "Ngày 3: Cần Thơ", DateOnly.Parse("2026-09-12"));
+        var days = new List<TripDay> { day1, day2, day3 };
+
+        _unitOfWork.Trips.GetByIdAsync(1, Arg.Any<CancellationToken>()).Returns(trip);
+        _unitOfWork.Trips.GetDaysByTripIdAsync(1, Arg.Any<CancellationToken>()).Returns(days);
+
+        var handler = new DeleteTripDayCommandHandler(_unitOfWork);
+        var command = new DeleteTripDayCommand(1, 2, 10);
+
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        _unitOfWork.Trips.Received(1).RemoveDay(day2);
+        day3.DayNumber.Should().Be(2);
+        day3.DayTitle.Should().Be("Ngày 2: Cần Thơ");
+        day3.Date.Should().Be(DateOnly.Parse("2026-09-11"));
+    }
+
+    [Fact]
+    public async Task DeleteTripDay_ShouldFail_WhenOnlyOneDayExists()
+    {
+        var trip = new Trip(10, "Chuyến đi 1 ngày");
+        var day1 = new TripDay(1, 1, "Ngày 1", DateOnly.Parse("2026-09-10"));
+        var days = new List<TripDay> { day1 };
+
+        _unitOfWork.Trips.GetByIdAsync(1, Arg.Any<CancellationToken>()).Returns(trip);
+        _unitOfWork.Trips.GetDaysByTripIdAsync(1, Arg.Any<CancellationToken>()).Returns(days);
+
+        var handler = new DeleteTripDayCommandHandler(_unitOfWork);
+        var command = new DeleteTripDayCommand(1, 1, 10);
+
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Message.Should().Contain("tối thiểu 1 ngày");
+    }
+
+    [Fact]
+    public async Task AddTripDay_ShouldCalculateNextDayNumberAndDate()
+    {
+        var trip = new Trip(10, "Chuyến đi Đà Nẵng", startDate: DateOnly.Parse("2026-10-01"));
+        var day1 = new TripDay(1, 1, "Ngày 1", DateOnly.Parse("2026-10-01"));
+        var days = new List<TripDay> { day1 };
+
+        _unitOfWork.Trips.GetByIdAsync(1, Arg.Any<CancellationToken>()).Returns(trip);
+        _unitOfWork.Trips.GetDaysByTripIdAsync(1, Arg.Any<CancellationToken>()).Returns(days);
+
+        var handler = new AddTripDayCommandHandler(_unitOfWork);
+        var command = new AddTripDayCommand(1, 10, new AddTripDayRequestDto { DayTitle = "Ngày 2: Hội An" });
+
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Data!.DayNumber.Should().Be(2);
+        result.Data.DayTitle.Should().Be("Ngày 2: Hội An");
+        result.Data.Date.Should().Be("2026-10-02");
     }
 }

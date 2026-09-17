@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.RegularExpressions;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
@@ -10,6 +11,7 @@ namespace Infrastructure.Persistence.Repositories;
 
 public class RegionRepository : IRegionRepository
 {
+    private static readonly CultureInfo ViCulture = CultureInfo.GetCultureInfo("vi-VN");
     private readonly TravelReviewDbContext _dbContext;
 
     public RegionRepository(TravelReviewDbContext dbContext)
@@ -292,7 +294,7 @@ public class RegionRepository : IRegionRepository
                 }
 
                 string priceText = p.MinPrice != null
-                    ? $"Từ {Convert.ToDecimal(p.MinPrice):N0}đ"
+                    ? $"Từ {Convert.ToDecimal(p.MinPrice).ToString("N0", ViCulture)}đ"
                     : "Miễn phí";
 
                 var mediaUrls = placeMediaLookup[pid].Distinct().Take(4).ToList();
@@ -332,6 +334,8 @@ public class RegionRepository : IRegionRepository
                 ) AS Province,
                 f.Description,
                 f.CoverImageUrl AS ImageUrl,
+                f.MinPrice,
+                f.MaxPrice,
                 (SELECT COUNT(1) FROM dbo.FoodPlaces fp2 WHERE fp2.FoodId = f.Id) AS SuggestedPlacesCount
             FROM dbo.Foods f
             WHERE f.Status = 1
@@ -415,6 +419,22 @@ public class RegionRepository : IRegionRepository
                     mediaUrls.Add((string)f.ImageUrl);
                 }
 
+                decimal? minPrice = f.MinPrice != null ? (decimal)f.MinPrice : null;
+                decimal? maxPrice = f.MaxPrice != null ? (decimal)f.MaxPrice : null;
+                string priceRange = "Đang cập nhật";
+                if (minPrice.HasValue && maxPrice.HasValue && minPrice.Value > 0 && maxPrice.Value > 0)
+                {
+                    priceRange = $"{minPrice.Value.ToString("N0", ViCulture)}đ - {maxPrice.Value.ToString("N0", ViCulture)}đ";
+                }
+                else if (minPrice.HasValue && minPrice.Value > 0)
+                {
+                    priceRange = $"Từ {minPrice.Value.ToString("N0", ViCulture)}đ";
+                }
+                else if (maxPrice.HasValue && maxPrice.Value > 0)
+                {
+                    priceRange = $"Đến {maxPrice.Value.ToString("N0", ViCulture)}đ";
+                }
+
                 foods.Add(new RegionFoodDto
                 {
                     Id = fid,
@@ -424,7 +444,7 @@ public class RegionRepository : IRegionRepository
                     ImageUrl = (string?)f.ImageUrl,
                     MediaUrls = mediaUrls,
                     Type = "dine-in",
-                    PriceRange = "40.000đ - 100.000đ",
+                    PriceRange = priceRange,
                     SuggestedPlacesCount = (int)(f.SuggestedPlacesCount ?? spList.Count),
                     Coordinates = coords,
                     SuggestedPlaces = spList

@@ -4,44 +4,39 @@ export interface UserDto {
   id: number
   email: string
   fullName: string
-  avatarUrl?: string
-  coverUrl?: string
-  bio?: string
-  phone?: string
-  reputationScore: number
+  avatarUrl?: string | null
+  coverUrl?: string | null
+  bio?: string | null
+  phone?: string | null
+  role: string | number
+  status: number
   rankLevel: string
-  role: string
-  isActive?: boolean
-  createdAt?: string
+  reputationScore: number
 }
 
 export interface UserProfileData {
   id?: number
   email?: string
   fullName: string
-  avatarUrl?: string
-  coverUrl?: string
-  bio?: string
-  phone?: string
-  reputationScore?: number
+  avatarUrl?: string | null
+  coverUrl?: string | null
+  bio?: string | null
+  phone?: string | null
+  role?: string | number
+  status?: number
   rankLevel?: string
-  role?: string
+  reputationScore?: number
 }
 
 export interface LoginRequest {
-  email?: string
-  userName?: string
-  password?: string
-  rememberMe?: boolean
+  email: string
+  password: string
 }
 
 export interface RegisterRequest {
-  userName?: string
-  email: string
-  password?: string
-  confirmPassword?: string
   fullName: string
-  phone?: string
+  email: string
+  password: string
 }
 
 export interface GoogleLoginRequest {
@@ -58,7 +53,7 @@ export interface UpdateProfileRequest {
 
 export interface AuthTokenResponse {
   accessToken: string
-  refreshToken?: string
-  expiresIn?: number
+  refreshToken: string
+  refreshTokenExpiryTime: string
   user: UserDto
 }

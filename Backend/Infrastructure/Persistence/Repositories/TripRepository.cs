@@ -1,4 +1,4 @@
-﻿using Application.Common;
+using Application.Common;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
 using Dapper;
@@ -53,17 +53,17 @@ public class TripRepository : ITripRepository
         if (!string.IsNullOrWhiteSpace(region))
         {
             var reg = region.Trim().ToLowerInvariant();
-            if (reg.Contains("north") || reg.Contains("báº¯c") || reg.Contains("bac"))
+            if (reg.Contains("north") || reg.Contains("bắc") || reg.Contains("bac"))
             {
-                conditions.Add("(t.Title LIKE N'%Báº¯c%' OR t.Description LIKE N'%Báº¯c%')");
+                conditions.Add("(t.Title LIKE N'%Bắc%' OR t.Description LIKE N'%Bắc%')");
             }
             else if (reg.Contains("central") || reg.Contains("trung"))
             {
-                conditions.Add("(t.Title LIKE N'%Trung%' OR t.Title LIKE N'%ÄÃ  Náºµng%' OR t.Title LIKE N'%Huáº¿%' OR t.Title LIKE N'%Há»™i An%' OR t.Description LIKE N'%Trung%')");
+                conditions.Add("(t.Title LIKE N'%Trung%' OR t.Title LIKE N'%Đà Nẵng%' OR t.Title LIKE N'%Huế%' OR t.Title LIKE N'%Hội An%' OR t.Description LIKE N'%Trung%')");
             }
             else if (reg.Contains("south") || reg.Contains("nam"))
             {
-                conditions.Add("(t.Title LIKE N'%Nam%' OR t.Title LIKE N'%SÃ i GÃ²n%' OR t.Title LIKE N'%PhÃº Quá»‘c%' OR t.Description LIKE N'%Nam%')");
+                conditions.Add("(t.Title LIKE N'%Nam%' OR t.Title LIKE N'%Sài Gòn%' OR t.Title LIKE N'%Phú Quốc%' OR t.Description LIKE N'%Nam%')");
             }
         }
 
@@ -141,7 +141,7 @@ public class TripRepository : ITripRepository
         {
             int calculatedDays = trip.DayCount > 0 ? trip.DayCount : 1;
             int calculatedNights = Math.Max(0, calculatedDays - 1);
-            string durationText = calculatedDays == 1 ? "1 NgÃ y (Äi vá» trong ngÃ y)" : $"{calculatedDays} NgÃ y {calculatedNights} ÄÃªm";
+            string durationText = calculatedDays == 1 ? "1 Ngày (Đi về trong ngày)" : $"{calculatedDays} Ngày {calculatedNights} Đêm";
 
             var dayDtos = new List<ItineraryDayDto>();
             foreach (var day in daysByTrip[trip.Id])
@@ -154,22 +154,22 @@ public class TripRepository : ITripRepository
                     Note = s.Note,
                     Location = s.PlaceAddress ?? s.PlaceName,
                     Description = s.PlaceDescription,
-                    CostEstimate = s.EstimatedCost.HasValue ? s.EstimatedCost.Value.ToString("N0") + " VNÄ" : "Tá»± tÃºc",
-                    Tips = string.IsNullOrWhiteSpace(s.TransportMode) ? "NÃªn mang trang phá»¥c phÃ¹ há»£p vÃ  mÃ¡y áº£nh." : $"Di chuyá»ƒn báº±ng: {s.TransportMode}. NÃªn mang trang phá»¥c phÃ¹ há»£p vÃ  mÃ¡y áº£nh."
+                    CostEstimate = s.EstimatedCost.HasValue ? s.EstimatedCost.Value.ToString("N0") + " VNĐ" : "Tự túc",
+                    Tips = string.IsNullOrWhiteSpace(s.TransportMode) ? "Nên mang trang phục phù hợp và máy ảnh." : $"Di chuyển bằng: {s.TransportMode}. Nên mang trang phục phù hợp và máy ảnh."
                 }).ToList();
 
                 dayDtos.Add(new ItineraryDayDto
                 {
                     DayNumber = day.DayNumber,
-                    Title = day.DayTitle ?? $"NgÃ y {day.DayNumber}: KhÃ¡m phÃ¡ Ä‘á»‹a Ä‘iá»ƒm ná»•i tiáº¿ng",
+                    Title = day.DayTitle ?? $"Ngày {day.DayNumber}: Khám phá địa điểm nổi tiếng",
                     Stops = stopDtos
                 });
             }
 
             string detectedRegion = "central";
-            if (trip.Title.Contains("HÃ  Ná»™i") || trip.Title.Contains("Báº¯c") || trip.Title.Contains("Sa Pa") || trip.Title.Contains("Háº¡ Long"))
+            if (trip.Title.Contains("Hà Nội") || trip.Title.Contains("Bắc") || trip.Title.Contains("Sa Pa") || trip.Title.Contains("Hạ Long") || trip.Title.Contains("Sơn La") || trip.Title.Contains("Hà Giang") || trip.Title.Contains("Mộc Châu") || trip.Title.Contains("Ninh Bình"))
                 detectedRegion = "north";
-            else if (trip.Title.Contains("SÃ i GÃ²n") || trip.Title.Contains("Nam") || trip.Title.Contains("Cáº§n ThÆ¡") || trip.Title.Contains("PhÃº Quá»‘c"))
+            else if (trip.Title.Contains("Sài Gòn") || trip.Title.Contains("Nam") || trip.Title.Contains("Cần Thơ") || trip.Title.Contains("Phú Quốc") || trip.Title.Contains("Miền Tây") || trip.Title.Contains("Vũng Tàu"))
                 detectedRegion = "south";
 
             result.Add(new ItineraryDto
@@ -180,12 +180,12 @@ public class TripRepository : ITripRepository
                 Region = detectedRegion,
                 Duration = durationText,
                 DaysCount = calculatedDays,
-                Style = "VÄƒn hÃ³a & Tráº£i nghiá»‡m",
-                EstimatedCost = $"{calculatedDays * 1200000:N0}Ä‘ / ngÆ°á»i",
+                Style = "Văn hóa & Trải nghiệm",
+                EstimatedCost = $"{calculatedDays * 1200000:N0}đ / người",
                 CoverUrl = trip.CoverImageUrl,
                 Author = new ItineraryAuthorDto
                 {
-                    Name = trip.AuthorName ?? "Cá»™ng tÃ¡c viÃªn Lang Thang",
+                    Name = trip.AuthorName ?? "Cộng tác viên Lang Thang",
                     Avatar = trip.AuthorAvatar
                 },
                 Overview = trip.Description,

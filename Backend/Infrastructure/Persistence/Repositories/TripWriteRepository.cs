@@ -1,4 +1,4 @@
-using Domain.Entities;
+﻿using Domain.Entities;
 using Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -50,9 +50,22 @@ public class TripWriteRepository : ITripWriteRepository
             .FirstOrDefaultAsync(d => d.TripId == tripId && d.DayNumber == dayNumber, ct);
     }
 
+    public async Task<List<TripDay>> GetDaysByTripIdAsync(long tripId, CancellationToken ct = default)
+    {
+        return await _dbContext.TripDays
+            .Where(d => d.TripId == tripId)
+            .OrderBy(d => d.DayNumber)
+            .ToListAsync(ct);
+    }
+
     public async Task AddDayAsync(TripDay day, CancellationToken ct = default)
     {
         await _dbContext.TripDays.AddAsync(day, ct);
+    }
+
+    public void RemoveDay(TripDay day)
+    {
+        _dbContext.TripDays.Remove(day);
     }
 
     public async Task<TripPlace?> GetPlaceByIdAsync(long tripPlaceId, CancellationToken ct = default)

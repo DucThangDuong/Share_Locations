@@ -19,6 +19,10 @@ apiClient.interceptors.request.use(
       delete config.headers['Content-Type']
       delete config.headers['content-type']
     }
+    const method = config.method?.toLowerCase()
+    if ((method === 'post' || method === 'put' || method === 'patch') && config.data === undefined) {
+      config.data = {}
+    }
     return config
   },
   (error) => Promise.reject(error)

@@ -31,6 +31,7 @@ export interface CreateTripStopDto {
 export interface CreateTripDayDto {
   dayNumber: number
   dayTitle?: string
+  date?: string
   stops?: CreateTripStopDto[]
 }
 
@@ -86,6 +87,16 @@ export interface TripDayDetailDto {
   dayTitle?: string
   date?: string
   stops: TripPlaceDetailDto[]
+}
+
+export interface UpdateTripDayRequestDto {
+  dayTitle?: string
+  date?: string
+}
+
+export interface AddTripDayRequestDto {
+  dayTitle?: string
+  date?: string
 }
 
 export interface TripDetailDto {

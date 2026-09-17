@@ -1,27 +1,61 @@
+export interface ItineraryAuthorDto {
+  name: string
+  avatar?: string | null
+}
+
+export interface ItineraryStopDto {
+  time: string
+  activity: string
+  location: string
+  placeName?: string | null
+  note?: string | null
+  description?: string | null
+  costEstimate?: string | null
+  tips?: string | null
+}
+
+export interface ItineraryDayDto {
+  dayNumber: number
+  title: string
+  stops: ItineraryStopDto[]
+}
+
+export interface ItineraryDto {
+  id: number
+  title: string
+  destination: string
+  region: string
+  duration: string
+  daysCount: number
+  style: string
+  estimatedCost: string
+  coverUrl?: string | null
+  author: ItineraryAuthorDto
+  overview?: string | null
+  isSaved: boolean
+  days: ItineraryDayDto[]
+}
+
+export interface SaveItineraryResponseDto {
+  saved: boolean
+  itineraryId: number
+}
+
+export interface ItineraryFilterParams {
+  duration?: string
+  region?: string
+  keyword?: string
+  page?: number
+  pageSize?: number
+}
+
 export type TripRole = 'Owner' | 'Editor' | 'Viewer'
 export type TripPrivacy = 0 | 1 | 2
 export type TransportType = 'Xe máy' | 'Ô tô' | 'Đi bộ' | 'Taxi' | 'Xe buýt' | 'Tàu hỏa' | 'Máy bay'
-export type StopStatus = 'To Do' | 'In Progress' | 'Done'
-
-export interface StopSubtask {
-  id: string
-  title: string
-  completed: boolean
-}
-
-export interface TripMember {
-  id: number
-  name: string
-  avatar: string
-  email: string
-  role: TripRole
-  joinedDate?: string
-}
 
 export interface ItineraryStop {
   id: string
   placeId?: number
-  code?: string
   time: string
   startTime: string
   endTime: string
@@ -34,15 +68,10 @@ export interface ItineraryStop {
   duration: string
   transportMode: TransportType
   visitOrder: number
-  img: string
+  img?: string
   lat?: number
   lng?: number
   rating?: number
-  status?: StopStatus
-  assigneeId?: number
-  assigneeName?: string
-  assigneeAvatar?: string
-  subtasks?: StopSubtask[]
 }
 
 export interface ItineraryDayData {
@@ -53,13 +82,20 @@ export interface ItineraryDayData {
   stops: ItineraryStop[]
 }
 
+export interface TripMember {
+  id: number
+  name: string
+  avatar?: string | null
+  email?: string
+  role: TripRole
+}
+
 export interface DetailedItineraryItem {
   id: number
   title: string
   slug: string
-  projectKey?: string
   province: string
-  region: 'Miền Bắc' | 'Miền Trung' | 'Miền Nam' | 'Tây Nguyên' | 'Tự túc' | 'Khác'
+  region: string
   durationDays: number
   nightsCount: number
   estimatedBudget: number
@@ -67,18 +103,16 @@ export interface DetailedItineraryItem {
   startDate?: string
   endDate?: string
   privacy: TripPrivacy
-  coverImg: string
+  coverImg?: string
   authorName: string
-  authorAvatar: string
-  authorRank: string
-  rating: number
-  reviewCount: number
-  tags: string[]
+  authorAvatar?: string | null
+  authorRank?: string
+  tags?: string[]
   description: string
   days: ItineraryDayData[]
   backlogStops?: ItineraryStop[]
-  members: TripMember[]
+  members?: TripMember[]
   createdAt: string
-  isCustom?: boolean
-  isDraft?: boolean
+  isSaved?: boolean
 }
+

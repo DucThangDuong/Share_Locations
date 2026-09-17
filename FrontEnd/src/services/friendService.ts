@@ -16,7 +16,7 @@ export const friendService = {
   },
 
   async sendFriendRequest(targetUserId: number | string): Promise<ApiSuccessResponse<unknown>> {
-    const response = await apiClient.post<ApiSuccessResponse<unknown>>(`/api/friends/request/${targetUserId}`)
+    const response = await apiClient.post<ApiSuccessResponse<unknown>>(`/api/friends/request/${targetUserId}`, {})
     return response.data
   },
 

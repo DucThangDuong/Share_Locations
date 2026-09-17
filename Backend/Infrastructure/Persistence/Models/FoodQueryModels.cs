@@ -1,4 +1,4 @@
-﻿namespace Infrastructure.Persistence.Models;
+namespace Infrastructure.Persistence.Models;
 
 internal sealed class RawFoodRow
 {
@@ -6,6 +6,8 @@ internal sealed class RawFoodRow
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
     public string? ImageUrl { get; set; }
+    public decimal? MinPrice { get; set; }
+    public decimal? MaxPrice { get; set; }
 }
 
 internal sealed class RawSuggestedPlace

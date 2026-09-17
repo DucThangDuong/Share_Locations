@@ -1,6 +1,13 @@
 import React from 'react'
 import { MapPin, ChevronRight } from 'lucide-react'
-import type { MentionedPlace } from '@/types/models/blogArticle.model'
+export interface MentionedPlace {
+  id?: number
+  name: string
+  province?: string
+  category?: string
+  address?: string
+  rating?: number
+}
 
 interface BlogMentionedPlacesWidgetProps {
   places: MentionedPlace[]
@@ -44,10 +51,10 @@ export const BlogMentionedPlacesWidget: React.FC<BlogMentionedPlacesWidgetProps>
             </div>
 
             <div className="flex items-center justify-between pt-1 text-[11px]">
-              <span className="font-bold text-amber-600">★ {pl.rating}</span>
+              {pl.rating ? <span className="font-bold text-amber-600">★ {pl.rating}</span> : <span />}
               <button
                 type="button"
-                onClick={() => onSelectPlaceByName?.(pl.name, pl.province)}
+                onClick={() => onSelectPlaceByName?.(pl.name, pl.province || '')}
                 className="font-bold text-emerald-800 hover:underline cursor-pointer flex items-center gap-0.5"
               >
                 <span>Xem chi tiết</span>

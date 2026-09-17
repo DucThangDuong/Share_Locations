@@ -6,18 +6,16 @@ import type {
   ItineraryStop,
   TripRole,
   TransportType,
-  ItineraryDayData
+  ItineraryDayData,
+  ItineraryDto
 } from '@/types/models/itinerary.model'
 import {
   ItineraryCatalogView,
   ItineraryPlannerView,
-  ItineraryPlacePickerDrawer,
   ItineraryMemberModal
 } from '@/components/itinerary'
 import { itineraryService } from '@/services/itineraryService'
 import { tripService } from '@/services/tripService'
-import { placeService } from '@/services/placeService'
-import type { ItineraryDto } from '@/types/models/place.model'
 import type { TripDetailDto } from '@/types/models/trip.model'
 
 export const ItineraryPage: React.FC = () => {
@@ -25,7 +23,7 @@ export const ItineraryPage: React.FC = () => {
   const location = useLocation()
   const params = useParams<{ id?: string }>()
 
-  const [catalogItineraries, setCatalogItineraries] = useState<DetailedItineraryItem[]>([])
+  const [catalogItineraries, setCatalogItineraries] = useState<ItineraryDto[]>([])
   const [plannerTrip, setPlannerTrip] = useState<DetailedItineraryItem | null>(null)
   const [viewMode, setViewMode] = useState<'catalog' | 'planner'>('catalog')
 
@@ -47,19 +45,6 @@ export const ItineraryPage: React.FC = () => {
     isWishlist?: boolean
   } | null>(null)
 
-  const [isPlacePickerOpen, setIsPlacePickerOpen] = useState(false)
-  const [pickerDayIndex, setPickerDayIndex] = useState(0)
-  const [placesForPicker, setPlacesForPicker] = useState<{
-    id: number
-    name: string
-    location: string
-    category: string
-    rating?: number
-    price?: string
-    priceMax?: number
-    image?: string
-    desc?: string
-  }[]>([])
   const [isMemberModalOpen, setIsMemberModalOpen] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
 
@@ -77,7 +62,7 @@ export const ItineraryPage: React.FC = () => {
         title: cleanDayTitle,
         description: 'Lộ trình tham quan',
         stops: (d.stops || []).map((s, sIdx) => {
-          const placeName = s.placeName || s.name || s.activity || s.location || `Điểm dừng chân ${sIdx + 1}`
+          const placeName = s.placeName || s.activity || s.location || `Điểm dừng chân ${sIdx + 1}`
           return {
             id: `catalog-stop-${dto.id}-${dIdx}-${sIdx}`,
             time: s.time || '08:00',
@@ -91,7 +76,7 @@ export const ItineraryPage: React.FC = () => {
             duration: '1.5 giờ',
             transportMode: 'Xe máy',
             visitOrder: sIdx + 1,
-            img: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&h=300&fit=crop'
+            img: ''
           }
         })
       }
@@ -107,25 +92,23 @@ export const ItineraryPage: React.FC = () => {
       nightsCount: Math.max(0, (dto.daysCount || 1) - 1),
       estimatedBudget: totalCostNumber,
       privacy: 0,
-      coverImg: dto.coverUrl || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&h=400&fit=crop',
+      coverImg: dto.coverUrl || '',
       authorName: dto.author?.name || 'Cộng đồng',
-      authorAvatar: dto.author?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120&h=120&fit=crop',
+      authorAvatar: dto.author?.avatar || '',
       authorRank: 'Lữ khách',
-      rating: 4.8,
-      reviewCount: 12,
-      tags: ['Đề xuất', 'Cộng đồng'],
-      description: dto.overview || 'Lịch trình du lịch đề xuất tối ưu thời gian và chi phí.',
+      tags: [],
+      description: dto.overview || '',
       days,
       backlogStops: [],
-      members: [
+      members: dto.author?.name ? [
         {
           id: 1,
-          name: dto.author?.name || 'Tác giả',
-          avatar: dto.author?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120&h=120&fit=crop',
-          email: 'author@example.com',
+          name: dto.author.name,
+          avatar: dto.author.avatar || '',
+          email: '',
           role: 'Owner'
         }
-      ],
+      ] : [],
       createdAt: new Date().toISOString().split('T')[0]
     }
   }
@@ -151,7 +134,7 @@ export const ItineraryPage: React.FC = () => {
         duration: '1.5 giờ',
         transportMode: (s.transportMode as TransportType) || 'Xe máy',
         visitOrder: s.visitOrder,
-        img: s.imageUrl || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&h=300&fit=crop'
+        img: s.imageUrl || ''
       }))
     }))
 
@@ -168,20 +151,18 @@ export const ItineraryPage: React.FC = () => {
       startDate: dto.startDate,
       endDate: dto.endDate,
       privacy: dto.privacy as DetailedItineraryItem['privacy'],
-      coverImg: dto.coverImageUrl || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&h=400&fit=crop',
+      coverImg: dto.coverImageUrl || '',
       authorName: 'Bạn',
-      authorAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120&h=120&fit=crop',
+      authorAvatar: '',
       authorRank: 'Lữ khách',
-      rating: 5.0,
-      reviewCount: 0,
-      tags: ['Tự thiết kế', 'Khám phá'],
-      description: dto.description || 'Lịch trình du lịch cá nhân.',
+      tags: [],
+      description: dto.description || '',
       days,
       backlogStops: [],
       members: (dto.members || []).map((m) => ({
         id: Number(m.userId),
         name: m.fullName,
-        avatar: m.avatarUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120&h=120&fit=crop',
+        avatar: m.avatarUrl || '',
         email: m.email || '',
         role: (m.role as TripRole) || 'Viewer'
       })),
@@ -199,8 +180,7 @@ export const ItineraryPage: React.FC = () => {
         pageSize: 50
       })
       if (res.success && Array.isArray(res.data)) {
-        const mapped = res.data.map(mapCatalogDtoToDetailed)
-        setCatalogItineraries(mapped)
+        setCatalogItineraries(res.data)
       } else {
         setCatalogItineraries([])
       }
@@ -270,6 +250,7 @@ export const ItineraryPage: React.FC = () => {
           days: plannerTrip.days.map((day) => ({
             dayNumber: day.dayNumber,
             dayTitle: day.title,
+            date: day.date,
             stops: day.stops.map((s, sIdx) => ({
               placeId: s.placeId || Number(s.id.split('-')[1]) || 1,
               visitOrder: sIdx + 1,
@@ -368,7 +349,8 @@ export const ItineraryPage: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const handleApplyItinerary = async (itinerary: DetailedItineraryItem) => {
+  const handleApplyItinerary = async (dto: ItineraryDto) => {
+    const itinerary = mapCatalogDtoToDetailed(dto)
     try {
       const res = await tripService.createTrip({
         title: `[Chuyến đi] ${itinerary.title}`,
@@ -746,7 +728,7 @@ export const ItineraryPage: React.FC = () => {
       transportMode: 'Xe máy',
       visitOrder: wishlistCount + 1,
       note: 'Lưu vào kho chờ xếp lịch',
-      img: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&h=300&fit=crop'
+      img: ''
     }
 
     setPlannerTrip((prev) => {
@@ -759,15 +741,35 @@ export const ItineraryPage: React.FC = () => {
     showToast(`Đã lưu "${name}" vào Kho lưu trữ`)
   }
 
-  const handleAddNewDay = () => {
+  const handleAddNewDay = async () => {
     if (currentUserRole === 'Viewer' || !plannerTrip) {
       showToast('Bạn chỉ có quyền xem (Viewer).')
       return
     }
     const nextDayNum = plannerTrip.days.length + 1
+    const lastDay = plannerTrip.days[plannerTrip.days.length - 1]
+    let nextDate: string | undefined = undefined
+    if (lastDay?.date) {
+      try {
+        const d = new Date(lastDay.date)
+        d.setDate(d.getDate() + 1)
+        nextDate = d.toISOString().split('T')[0]
+      } catch {
+      }
+    } else if (plannerTrip.startDate) {
+      try {
+        const d = new Date(plannerTrip.startDate)
+        d.setDate(d.getDate() + (nextDayNum - 1))
+        nextDate = d.toISOString().split('T')[0]
+      } catch {
+      }
+    }
+
+    const dayTitle = `Ngày ${nextDayNum}: Tiếp tục hành trình`
     const newDay: ItineraryDayData = {
       dayNumber: nextDayNum,
-      title: `Ngày ${nextDayNum}: Tiếp tục hành trình`,
+      title: dayTitle,
+      date: nextDate,
       description: 'Chặng khám phá mới',
       stops: []
     }
@@ -776,17 +778,70 @@ export const ItineraryPage: React.FC = () => {
       return {
         ...prev,
         durationDays: nextDayNum,
-        nightsCount: nextDayNum - 1,
+        nightsCount: Math.max(0, nextDayNum - 1),
         days: [...prev.days, newDay]
       }
     })
     setHasUnsavedChanges(true)
     const newIdx = plannerTrip.days.length
     setExpandedDayIndices((prev) => new Set([...prev, newIdx]))
-    showToast(`Đã thêm Ngày ${newIdx + 1}`)
+
+    if (plannerTrip.id && plannerTrip.id < 1000000000000) {
+      try {
+        await tripService.addTripDay(plannerTrip.id, {
+          dayTitle,
+          date: nextDate
+        })
+      } catch {
+      }
+    }
+
+    showToast(`Đã thêm Ngày ${nextDayNum}`)
   }
 
-  const handleDeleteDay = (dayIdx: number) => {
+  const handleUpdateDay = async (
+    dayIndex: number,
+    title: string,
+    date?: string
+  ) => {
+    if (currentUserRole === 'Viewer' || !plannerTrip) {
+      showToast('Bạn chỉ có quyền xem (Viewer).')
+      return
+    }
+
+    const targetDay = plannerTrip.days[dayIndex]
+    if (!targetDay) return
+
+    setPlannerTrip((prev) => {
+      if (!prev) return null
+      const updatedDays = prev.days.map((day, idx) => {
+        if (idx === dayIndex) {
+          return {
+            ...day,
+            title: title.trim(),
+            date: date || undefined
+          }
+        }
+        return day
+      })
+      return { ...prev, days: updatedDays }
+    })
+    setHasUnsavedChanges(true)
+
+    if (plannerTrip.id && plannerTrip.id < 1000000000000) {
+      try {
+        await tripService.updateTripDay(plannerTrip.id, targetDay.dayNumber, {
+          dayTitle: title.trim(),
+          date: date || undefined
+        })
+      } catch {
+      }
+    }
+
+    showToast(`Đã cập nhật thông tin Ngày ${targetDay.dayNumber}.`)
+  }
+
+  const handleDeleteDay = async (dayIdx: number) => {
     if (currentUserRole !== 'Owner' || !plannerTrip) {
       showToast('Chỉ Owner mới có quyền xóa ngày.')
       return
@@ -796,62 +851,73 @@ export const ItineraryPage: React.FC = () => {
       return
     }
 
+    const targetDay = plannerTrip.days[dayIdx]
+    const targetDayNumber = targetDay?.dayNumber ?? dayIdx + 1
+    const targetDate = targetDay?.date
+
+    if (plannerTrip.id && plannerTrip.id < 1000000000000) {
+      try {
+        await tripService.deleteTripDay(plannerTrip.id, targetDayNumber)
+      } catch {
+      }
+    }
+
     setPlannerTrip((prev) => {
       if (!prev) return null
       const filtered = prev.days.filter((_, idx) => idx !== dayIdx)
-      const renumbered = filtered.map((d, idx) => ({
-        ...d,
-        dayNumber: idx + 1
-      }))
+      const renumbered = filtered.map((d, idx) => {
+        const newDayNum = idx + 1
+        let updatedTitle = d.title
+        if (updatedTitle) {
+          updatedTitle = updatedTitle.replace(/^Ngày\s*\d+/, `Ngày ${newDayNum}`)
+        } else {
+          updatedTitle = `Ngày ${newDayNum}`
+        }
+        let updatedDate = d.date
+        if (idx >= dayIdx && d.date && targetDate) {
+          try {
+            const prevD = new Date(d.date)
+            prevD.setDate(prevD.getDate() - 1)
+            updatedDate = prevD.toISOString().split('T')[0]
+          } catch {
+          }
+        }
+        return {
+          ...d,
+          dayNumber: newDayNum,
+          title: updatedTitle,
+          date: updatedDate
+        }
+      })
       return {
         ...prev,
         durationDays: renumbered.length,
-        nightsCount: Math.max(1, renumbered.length - 1),
+        nightsCount: Math.max(0, renumbered.length - 1),
         days: renumbered
       }
     })
     setHasUnsavedChanges(true)
     setSelectedStopInfo(null)
-    showToast('Đã xóa ngày khỏi lịch trình.')
+    showToast('Đã xóa ngày khỏi lịch trình. Các ngày sau đã được tự động đánh số lại.')
   }
 
-  const handleOpenPlacePickerForDay = async (dayIdx: number = 0) => {
-    setPickerDayIndex(dayIdx)
-    setIsPlacePickerOpen(true)
-    try {
-      const res = await placeService.searchPlaces({ pageSize: 50 })
-      if (res.success && Array.isArray(res.data)) {
-        const mapped = res.data.map((p) => ({
-          id: p.id,
-          name: p.name,
-          location: p.address || p.provinceName || 'Việt Nam',
-          category: p.categoryName || 'Tham quan',
-          rating: p.avgRating,
-          price: p.minPrice ? `${p.minPrice.toLocaleString('vi-VN')}đ` : 'Miễn phí',
-          priceMax: p.maxPrice || p.minPrice || 50000,
-          image: p.thumbnailUrl || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&h=400&fit=crop',
-          desc: p.description || ''
-        }))
-        setPlacesForPicker(mapped)
-      }
-    } catch {
-    }
-  }
-
-  const handleAddPlaceFromLibrary = async (place: {
-    id: number
-    name: string
-    location: string
-    category: string
-    priceMax?: number
-    image?: string
-    desc?: string
-    rating?: number
-  }) => {
+  const handleAddPlaceFromLibrary = async (
+    place: {
+      id: number
+      name: string
+      location: string
+      category: string
+      priceMax?: number
+      image?: string
+      desc?: string
+      rating?: number
+    },
+    targetDayIdx: number = -1
+  ) => {
     if (!plannerTrip) return
-    const isWishlist = pickerDayIndex === -1
-    const dayNumber = pickerDayIndex + 1
-    const nextVisitOrder = pickerDayIndex >= 0 ? (plannerTrip.days[pickerDayIndex]?.stops?.length || 0) + 1 : 1
+    const isWishlist = targetDayIdx === -1
+    const dayNumber = targetDayIdx + 1
+    const nextVisitOrder = targetDayIdx >= 0 ? (plannerTrip.days[targetDayIdx]?.stops?.length || 0) + 1 : 1
 
     let createdId = `place-${place.id}-${isWishlist ? 'w' : dayNumber}-${Date.now()}`
 
@@ -888,7 +954,7 @@ export const ItineraryPage: React.FC = () => {
       duration: '1.5 giờ',
       transportMode: 'Xe máy',
       visitOrder: nextVisitOrder,
-      img: place.image || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=300&h=200&fit=crop',
+      img: place.image || '',
       rating: place.rating
     }
 
@@ -898,7 +964,7 @@ export const ItineraryPage: React.FC = () => {
         return { ...prev, backlogStops: [...(prev.backlogStops || []), newStop] }
       }
       const updatedDays = prev.days.map((day, dIdx) => {
-        if (dIdx === pickerDayIndex) {
+        if (dIdx === targetDayIdx) {
           return { ...day, stops: [...day.stops, newStop] }
         }
         return day
@@ -912,81 +978,15 @@ export const ItineraryPage: React.FC = () => {
     })
     setHasUnsavedChanges(true)
 
-    setIsPlacePickerOpen(false)
     setSelectedStopInfo({
-      dayIndex: pickerDayIndex,
+      dayIndex: targetDayIdx,
       stop: newStop,
       isWishlist
     })
     showToast(
       isWishlist
         ? `Đã thêm "${place.name}" vào Kho lưu trữ`
-        : `Đã thêm "${place.name}" vào Ngày ${pickerDayIndex + 1}`
-    )
-  }
-
-  const handleAddCustomStop = (stopData: {
-    name: string
-    category: string
-    address: string
-    cost: number
-    startTime: string
-    endTime: string
-    transportMode: TransportType
-    note: string
-  }) => {
-    if (!plannerTrip) return
-    const isWishlist = pickerDayIndex === -1
-    const nextVisitOrder = pickerDayIndex >= 0 ? (plannerTrip.days[pickerDayIndex]?.stops?.length || 0) + 1 : 1
-    const uniqueStopId = `custom-${isWishlist ? 'w' : pickerDayIndex + 1}-${Date.now()}`
-
-    const newStop: ItineraryStop = {
-      id: uniqueStopId,
-      time: stopData.startTime,
-      startTime: stopData.startTime,
-      endTime: stopData.endTime,
-      name: stopData.name,
-      category: stopData.category,
-      area: 'Khu Trung tâm',
-      address: stopData.address || undefined,
-      note: stopData.note || 'Điểm dừng tự chọn',
-      costEstimate: stopData.cost || 0,
-      duration: '1.5 giờ',
-      transportMode: stopData.transportMode,
-      visitOrder: nextVisitOrder,
-      img: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=400&h=300&fit=crop'
-    }
-
-    setPlannerTrip((prev) => {
-      if (!prev) return null
-      if (isWishlist) {
-        return { ...prev, backlogStops: [...(prev.backlogStops || []), newStop] }
-      }
-      const updatedDays = prev.days.map((day, dIdx) => {
-        if (dIdx === pickerDayIndex) {
-          return { ...day, stops: [...day.stops, newStop] }
-        }
-        return day
-      })
-      const newTotal = updatedDays.reduce(
-        (sum, d) =>
-          sum + d.stops.reduce((sSum, s) => sSum + (s.costEstimate || 0), 0),
-        0
-      )
-      return { ...prev, days: updatedDays, estimatedBudget: newTotal }
-    })
-    setHasUnsavedChanges(true)
-
-    setIsPlacePickerOpen(false)
-    setSelectedStopInfo({
-      dayIndex: pickerDayIndex,
-      stop: newStop,
-      isWishlist
-    })
-    showToast(
-      isWishlist
-        ? `Đã thêm "${newStop.name}" vào Kho lưu trữ`
-        : `Đã thêm "${newStop.name}" vào Ngày ${pickerDayIndex + 1}`
+        : `Đã thêm "${place.name}" vào Ngày ${targetDayIdx + 1}`
     )
   }
 
@@ -1000,29 +1000,42 @@ export const ItineraryPage: React.FC = () => {
     const newMember = {
       id: Date.now(),
       name: email.split('@')[0] || 'Thành viên',
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&h=120&fit=crop',
+      avatar: '',
       role,
       email
     }
 
     setPlannerTrip((prev) => {
       if (!prev) return null
-      return { ...prev, members: [...(prev.members || []), newMember] }
+      return {
+        ...prev,
+        members: [...(prev.members || []), newMember]
+      }
     })
     setHasUnsavedChanges(true)
-    showToast(`Đã gửi lời mời tới ${email}!`)
+    showToast(`Đã thêm thành viên: ${email}`)
   }
 
   const handleRemoveMember = async (memberId: number) => {
     if (!plannerTrip) return
-    try {
-      await tripService.removeMember(plannerTrip.id, memberId)
-    } catch {
+    if (currentUserRole !== 'Owner') {
+      showToast('Chỉ Owner mới có quyền xóa thành viên.')
+      return
+    }
+
+    if (plannerTrip.id && plannerTrip.id < 1000000000000) {
+      try {
+        await tripService.removeMember(plannerTrip.id, memberId)
+      } catch {
+      }
     }
 
     setPlannerTrip((prev) => {
       if (!prev) return null
-      return { ...prev, members: prev.members.filter((m) => m.id !== memberId) }
+      return {
+        ...prev,
+        members: (prev.members || []).filter((m) => m.id !== memberId)
+      }
     })
     setHasUnsavedChanges(true)
     showToast('Đã xóa thành viên.')
@@ -1072,7 +1085,7 @@ export const ItineraryPage: React.FC = () => {
           onToggleWishlist={toggleWishlist}
           onAddNewDay={handleAddNewDay}
           onDeleteDay={handleDeleteDay}
-          onOpenPlacePicker={handleOpenPlacePickerForDay}
+          onUpdateDay={handleUpdateDay}
           onOpenMemberModal={() => setIsMemberModalOpen(true)}
           onSelectStop={handleSelectStop}
           onCloseDetailPanel={handleCloseDetailPanel}
@@ -1088,6 +1101,7 @@ export const ItineraryPage: React.FC = () => {
           onPublishTrip={handlePublishTrip}
           onUpdateBudgetTarget={handleUpdateBudgetTarget}
           onViewPlaceDetails={handleViewPlaceDetails}
+          onAddPlaceFromLibrary={handleAddPlaceFromLibrary}
         />
       ) : (
         <ItineraryCatalogView
@@ -1112,15 +1126,6 @@ export const ItineraryPage: React.FC = () => {
           onApplyItinerary={handleApplyItinerary}
         />
       )}
-
-      <ItineraryPlacePickerDrawer
-        isOpen={isPlacePickerOpen}
-        dayNumber={pickerDayIndex === -1 ? 0 : pickerDayIndex + 1}
-        placesList={placesForPicker}
-        onClose={() => setIsPlacePickerOpen(false)}
-        onAddPlace={handleAddPlaceFromLibrary}
-        onAddCustomStop={handleAddCustomStop}
-      />
 
       <ItineraryMemberModal
         isOpen={isMemberModalOpen}

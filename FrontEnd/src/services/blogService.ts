@@ -1,32 +1,14 @@
 import apiClient from './apiClient'
 import type { ApiSuccessResponse } from '@/types/responses/common.response'
-import type { BlogListItemDto, BlogDetailDto, BlogFilterParams } from '@/types/models/place.model'
+import type {
+  BlogListItemDto,
+  BlogDetailDto,
+  BlogFilterParams,
+  BlogLikeResponseDto,
+  CreateBlogRequest,
+  UpdateBlogRequest
+} from '@/types/models/blogArticle.model'
 import type { UserBlogItem } from '@/types/models/userProfile.model'
-
-export interface CreateBlogRequest {
-  title: string
-  categoryId?: number
-  coverImageUrl?: string
-  excerpt?: string
-  contentJSON?: string
-  readTimeMinutes?: number
-  status?: number
-}
-
-export interface UpdateBlogRequest {
-  title: string
-  categoryId?: number
-  coverImageUrl?: string
-  excerpt?: string
-  contentJSON?: string
-  readTimeMinutes?: number
-  status?: number
-}
-
-export interface ToggleBlogLikeResponse {
-  isLiked: boolean
-  likesCount: number
-}
 
 export const blogService = {
   async getBlogs(params?: BlogFilterParams): Promise<ApiSuccessResponse<BlogListItemDto[]>> {
@@ -53,8 +35,8 @@ export const blogService = {
     return response.data
   },
 
-  async toggleLike(id: number | string): Promise<ApiSuccessResponse<ToggleBlogLikeResponse>> {
-    const response = await apiClient.post<ApiSuccessResponse<ToggleBlogLikeResponse>>(`/api/blogs/${id}/toggle-like`)
+  async toggleLike(id: number | string): Promise<ApiSuccessResponse<BlogLikeResponseDto>> {
+    const response = await apiClient.post<ApiSuccessResponse<BlogLikeResponseDto>>(`/api/blogs/${id}/toggle-like`, {})
     return response.data
   },
 

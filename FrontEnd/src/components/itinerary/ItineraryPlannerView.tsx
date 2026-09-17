@@ -10,6 +10,7 @@ import { ItineraryDayTimelineSection } from './ItineraryDayTimelineSection'
 import { ItineraryWishlistSection } from './ItineraryWishlistSection'
 import { ItineraryStopDetailPanel } from './ItineraryStopDetailPanel'
 import { ItineraryBatchActionBar } from './ItineraryBatchActionBar'
+import { ItineraryPlacePickerDrawer, type PlaceItem } from './ItineraryPlacePickerDrawer'
 
 interface ItineraryPlannerViewProps {
   itinerary: DetailedItineraryItem
@@ -29,7 +30,8 @@ interface ItineraryPlannerViewProps {
   onToggleWishlist: () => void
   onAddNewDay: () => void
   onDeleteDay: (dayIdx: number) => void
-  onOpenPlacePicker: (dayIdx?: number) => void
+  onUpdateDay?: (dayIndex: number, title: string, date?: string) => void
+  onOpenPlacePicker?: (dayIdx?: number) => void
   onOpenMemberModal: () => void
   onSelectStop: (dayIdx: number, stop: ItineraryStop, isWishlist?: boolean) => void
   onCloseDetailPanel: () => void
@@ -53,6 +55,7 @@ interface ItineraryPlannerViewProps {
   onPublishTrip: () => void
   onUpdateBudgetTarget: (newBudget: number) => void
   onViewPlaceDetails: (stop: ItineraryStop) => void
+  onAddPlaceFromLibrary?: (place: PlaceItem, targetDayIdx: number) => void
   onSaveTrip?: () => void
   isSaving?: boolean
   hasUnsavedChanges?: boolean
@@ -74,6 +77,7 @@ export const ItineraryPlannerView: React.FC<ItineraryPlannerViewProps> = ({
   onToggleWishlist,
   onAddNewDay,
   onDeleteDay,
+  onUpdateDay,
   onOpenPlacePicker,
   onOpenMemberModal,
   onSelectStop,
@@ -90,73 +94,39 @@ export const ItineraryPlannerView: React.FC<ItineraryPlannerViewProps> = ({
   onPublishTrip,
   onUpdateBudgetTarget,
   onViewPlaceDetails,
+  onAddPlaceFromLibrary,
   onSaveTrip
 }) => {
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedArea, setSelectedArea] = useState('all')
-  const [selectedCategory, setSelectedCategory] = useState('all')
   const [selectedBatchStopIds, setSelectedBatchStopIds] = useState<Set<string>>(new Set())
-
-  const [draggedStopData, setDraggedStopData] = useState<{
-    sourceDayIdx: number
-    stop: ItineraryStop
-  } | null>(null)
   const [dragOverTargetIdx, setDragOverTargetIdx] = useState<number | null>(null)
+  const [explorerTargetDayIdx, setExplorerTargetDayIdx] = useState<number>(-1)
 
   const canEdit = currentUserRole !== 'Viewer'
+  const isAllExpanded = expandedDayIndices.size === itinerary.days.length
 
-  const allStopsFlat = useMemo(() => {
+  const allStops = useMemo(() => {
     const fromDays = itinerary.days.flatMap((d) => d.stops)
     const fromWishlist = itinerary.backlogStops || []
     return [...fromDays, ...fromWishlist]
-  }, [itinerary.days, itinerary.backlogStops])
+  }, [itinerary])
 
-  const totalStopsCount = allStopsFlat.length
+  const availableAreas = useMemo(() => {
+    const areas = new Set<string>()
+    allStops.forEach((s) => {
+      if (s.area) areas.add(s.area)
+    })
+    return Array.from(areas)
+  }, [allStops])
+
+  const totalStopsCount = allStops.length
   const totalTripCost = itinerary.days.reduce(
     (sum, d) =>
       sum + d.stops.reduce((sSum, s) => sSum + (s.costEstimate || 0), 0),
     0
   )
 
-  const availableAreas = useMemo(() => {
-    const areas = new Set<string>()
-    allStopsFlat.forEach((s) => {
-      if (s.area) areas.add(s.area)
-      else if (s.address) {
-        if (s.address.includes('Hoàn Kiếm')) areas.add('Khu Phố Cổ / Hoàn Kiếm')
-        else if (s.address.includes('Hồ Tây')) areas.add('Khu Hồ Tây')
-        else if (s.address.includes('Đà Lạt')) areas.add('Khu Trung tâm Đà Lạt')
-        else if (s.address.includes('Cầu Đất')) areas.add('Khu Cầu Đất')
-        else if (s.address.includes('Tuyền Lâm')) areas.add('Khu Tuyền Lâm')
-      }
-    })
-    if (areas.size === 0) {
-      areas.add('Khu Trung tâm')
-      areas.add('Khu Ngoại thành')
-      areas.add('Khu Điểm ngắm cảnh')
-    }
-    return Array.from(areas)
-  }, [allStopsFlat])
-
-  const availableCategories = useMemo(() => {
-    const cats = new Set<string>()
-    allStopsFlat.forEach((s) => {
-      if (s.category) cats.add(s.category)
-    })
-    return Array.from(cats)
-  }, [allStopsFlat])
-
-  const isAllExpanded = expandedDayIndices.size === itinerary.days.length
-
   const filterStop = (stop: ItineraryStop) => {
-    if (selectedCategory !== 'all' && stop.category !== selectedCategory) {
-      return false
-    }
-    if (selectedArea !== 'all') {
-      const matchAreaField = stop.area === selectedArea
-      const matchAddr = (stop.address || '').includes(selectedArea)
-      if (!matchAreaField && !matchAddr) return false
-    }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim()
       const matchName = stop.name.toLowerCase().includes(q)
@@ -169,21 +139,15 @@ export const ItineraryPlannerView: React.FC<ItineraryPlannerViewProps> = ({
   }
 
   const filteredDays = useMemo(() => {
-    return itinerary.days.map((day) => ({
-      ...day,
-      stops: day.stops.filter(filterStop)
+    return itinerary.days.map((d) => ({
+      ...d,
+      stops: d.stops.filter(filterStop)
     }))
-  }, [itinerary.days, searchQuery, selectedArea, selectedCategory])
+  }, [itinerary.days, searchQuery])
 
   const filteredWishlist = useMemo(() => {
     return (itinerary.backlogStops || []).filter(filterStop)
-  }, [itinerary.backlogStops, searchQuery, selectedArea, selectedCategory])
-
-  const handleResetFilters = () => {
-    setSearchQuery('')
-    setSelectedArea('all')
-    setSelectedCategory('all')
-  }
+  }, [itinerary.backlogStops, searchQuery])
 
   const handleToggleSelectBatchStop = (stopId: string) => {
     setSelectedBatchStopIds((prev) => {
@@ -202,18 +166,21 @@ export const ItineraryPlannerView: React.FC<ItineraryPlannerViewProps> = ({
   }
 
   const handleExecuteBatchMoveToDay = (targetDayIdx: number) => {
+    if (selectedBatchStopIds.size === 0) return
     const stopIds = Array.from(selectedBatchStopIds)
     onBatchMoveToDay(targetDayIdx, stopIds)
     setSelectedBatchStopIds(new Set())
   }
 
   const handleExecuteBatchMoveToWishlist = () => {
+    if (selectedBatchStopIds.size === 0) return
     const stopIds = Array.from(selectedBatchStopIds)
     onBatchMoveToWishlist(stopIds)
     setSelectedBatchStopIds(new Set())
   }
 
   const handleExecuteBatchDelete = () => {
+    if (selectedBatchStopIds.size === 0) return
     const stopIds = Array.from(selectedBatchStopIds)
     onBatchDeleteStops(stopIds)
     setSelectedBatchStopIds(new Set())
@@ -221,21 +188,20 @@ export const ItineraryPlannerView: React.FC<ItineraryPlannerViewProps> = ({
 
   const handleDragStartStop = (
     e: React.DragEvent,
-    sourceDayIdx: number,
+    fromDayIdx: number,
     stop: ItineraryStop
   ) => {
     if (!canEdit) return
-    setDraggedStopData({ sourceDayIdx, stop })
-    e.dataTransfer.setData('text/plain', stop.id)
+    e.dataTransfer.setData('text/plain', JSON.stringify({ fromDayIdx, stop }))
     e.dataTransfer.effectAllowed = 'move'
   }
 
-  const handleDragOverDay = (e: React.DragEvent, dayIdx: number) => {
+  const handleDragOverDay = (e: React.DragEvent, dIdx: number) => {
     if (!canEdit) return
     e.preventDefault()
     e.dataTransfer.dropEffect = 'move'
-    if (dragOverTargetIdx !== dayIdx) {
-      setDragOverTargetIdx(dayIdx)
+    if (dragOverTargetIdx !== dIdx) {
+      setDragOverTargetIdx(dIdx)
     }
   }
 
@@ -243,34 +209,55 @@ export const ItineraryPlannerView: React.FC<ItineraryPlannerViewProps> = ({
     setDragOverTargetIdx(null)
   }
 
-  const handleDropOnDay = (e: React.DragEvent, targetDayIdx: number) => {
+  const handleDropOnDay = (e: React.DragEvent, toDayIdx: number) => {
     e.preventDefault()
     setDragOverTargetIdx(null)
-    if (!draggedStopData || !canEdit) return
-
-    const { sourceDayIdx, stop } = draggedStopData
-    if (sourceDayIdx === -1) {
-      onMoveWishlistToDay(targetDayIdx, stop)
-    } else if (sourceDayIdx !== targetDayIdx) {
-      onMoveStopToDay(sourceDayIdx, targetDayIdx, stop)
+    if (!canEdit) return
+    try {
+      const dataStr = e.dataTransfer.getData('text/plain')
+      if (!dataStr) return
+      const { fromDayIdx, stop } = JSON.parse(dataStr) as {
+        fromDayIdx: number
+        stop: ItineraryStop
+      }
+      if (fromDayIdx === -1) {
+        onMoveWishlistToDay(toDayIdx, stop)
+      } else if (fromDayIdx !== toDayIdx) {
+        onMoveStopToDay(fromDayIdx, toDayIdx, stop)
+      }
+    } catch {
     }
-    setDraggedStopData(null)
   }
 
   const handleDropOnWishlist = (e: React.DragEvent) => {
     e.preventDefault()
     setDragOverTargetIdx(null)
-    if (!draggedStopData || !canEdit) return
-
-    const { sourceDayIdx, stop } = draggedStopData
-    if (sourceDayIdx !== -1) {
-      onMoveStopToWishlist(sourceDayIdx, stop)
+    if (!canEdit) return
+    try {
+      const dataStr = e.dataTransfer.getData('text/plain')
+      if (!dataStr) return
+      const { fromDayIdx, stop } = JSON.parse(dataStr) as {
+        fromDayIdx: number
+        stop: ItineraryStop
+      }
+      if (fromDayIdx !== -1) {
+        onMoveStopToWishlist(fromDayIdx, stop)
+      }
+    } catch {
     }
-    setDraggedStopData(null)
+  }
+
+  const handleTriggerOpenPlacePicker = (dayIdx: number = -1) => {
+    setExplorerTargetDayIdx(dayIdx)
+    onOpenPlacePicker?.(dayIdx)
+    const el = document.getElementById('itinerary-place-explorer')
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans antialiased pb-28 relative">
+    <div className="min-h-screen bg-slate-50/50 text-slate-900 font-sans antialiased pb-28 relative">
       <ItineraryPlannerToolbar
         itinerary={itinerary}
         currentUserRole={currentUserRole}
@@ -287,27 +274,21 @@ export const ItineraryPlannerView: React.FC<ItineraryPlannerViewProps> = ({
         onSaveTrip={onSaveTrip}
       />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
         <ItineraryFilterBar
           searchQuery={searchQuery}
-          selectedArea={selectedArea}
-          selectedCategory={selectedCategory}
-          availableAreas={availableAreas}
-          availableCategories={availableCategories}
           isAllExpanded={isAllExpanded}
           canEdit={canEdit}
           onSearchChange={setSearchQuery}
-          onSelectArea={setSelectedArea}
-          onSelectCategory={setSelectedCategory}
-          onResetFilters={handleResetFilters}
           onToggleAllDays={onToggleAllDays}
           onAddNewDay={onAddNewDay}
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           <div
-            className={`space-y-6 ${selectedStopInfo ? 'lg:col-span-8' : 'lg:col-span-12'
-              }`}
+            className={`space-y-6 transition-all duration-300 ${
+              selectedStopInfo ? 'lg:col-span-8' : 'lg:col-span-12'
+            }`}
           >
             <div className="space-y-4">
               {filteredDays.map((day, dIdx) => (
@@ -324,8 +305,9 @@ export const ItineraryPlannerView: React.FC<ItineraryPlannerViewProps> = ({
                   onToggleExpand={onToggleDay}
                   onSelectStop={onSelectStop}
                   onToggleSelectBatchStop={handleToggleSelectBatchStop}
-                  onOpenPlacePicker={onOpenPlacePicker}
+                  onOpenPlacePicker={() => handleTriggerOpenPlacePicker(dIdx)}
                   onDeleteDay={onDeleteDay}
+                  onUpdateDay={onUpdateDay}
                   onDeleteStop={onDeleteStop}
                   onMoveStopToDay={onMoveStopToDay}
                   onMoveStopToWishlist={onMoveStopToWishlist}
@@ -351,7 +333,7 @@ export const ItineraryPlannerView: React.FC<ItineraryPlannerViewProps> = ({
               onMoveStopToDay={onMoveWishlistToDay}
               onDeleteStop={onDeleteStop}
               onQuickAddStop={onQuickAddWishlistStop}
-              onOpenPlacePicker={() => onOpenPlacePicker(-1)}
+              onOpenPlacePicker={() => handleTriggerOpenPlacePicker(-1)}
               onDragStartStop={(e, stop) => handleDragStartStop(e, -1, stop)}
               onDragOverWishlist={(e) => {
                 e.preventDefault()
@@ -376,6 +358,20 @@ export const ItineraryPlannerView: React.FC<ItineraryPlannerViewProps> = ({
               />
             </aside>
           )}
+        </div>
+
+        <div className="w-full pt-2">
+          <ItineraryPlacePickerDrawer
+            targetDayIndex={explorerTargetDayIdx}
+            days={itinerary.days.map((d) => ({
+              dayNumber: d.dayNumber,
+              title: d.title || `Ngày ${d.dayNumber}`
+            }))}
+            onSelectTargetDay={setExplorerTargetDayIdx}
+            onAddPlace={(place, targetIdx) => {
+              onAddPlaceFromLibrary?.(place, targetIdx)
+            }}
+          />
         </div>
       </main>
 

@@ -34,10 +34,7 @@ const BlogCard: React.FC<BlogCardProps> = ({
     }
   }
 
-  const cover =
-    blog.coverImageUrl ||
-    blog.coverImg ||
-    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&h=500&fit=crop'
+  const cover = blog.coverImageUrl
   const isDraft = blog.status === 0
 
   return (
@@ -45,13 +42,17 @@ const BlogCard: React.FC<BlogCardProps> = ({
       onClick={() => onEdit(blog)}
       className="group bg-white rounded-2xl border border-slate-200/80 shadow-xs hover:border-emerald-300 hover:shadow-md transition-all flex flex-col overflow-hidden cursor-pointer select-none"
     >
-      <div className="relative aspect-16/10 w-full overflow-hidden bg-slate-100">
-        <img
-          src={cover}
-          alt={blog.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          loading="lazy"
-        />
+      <div className="relative aspect-16/10 w-full overflow-hidden bg-slate-100 flex items-center justify-center">
+        {cover ? (
+          <img
+            src={cover}
+            alt={blog.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            loading="lazy"
+          />
+        ) : (
+          <BookOpen className="w-10 h-10 text-slate-300" />
+        )}
       </div>
 
       <div className="p-4 flex flex-col flex-1 justify-between gap-3">

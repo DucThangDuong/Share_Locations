@@ -31,12 +31,7 @@ interface FavoriteCardProps {
 const FavoriteCard: React.FC<FavoriteCardProps> = ({ item, onRemove, onSelect }) => {
   const [activeImageIndex, setActiveImageIndex] = useState(0)
 
-  const mediaList =
-    item.mediaUrls && item.mediaUrls.length > 0
-      ? item.mediaUrls
-      : item.coverImg
-        ? [item.coverImg]
-        : []
+  const mediaList = item.coverImg ? [item.coverImg] : []
   const hasMultipleImages = mediaList.length > 1
 
   const handlePrev = (e: React.MouseEvent) => {
@@ -116,9 +111,13 @@ const FavoriteCard: React.FC<FavoriteCardProps> = ({ item, onRemove, onSelect })
         </h4>
 
         <div className="flex items-center gap-1.5 text-xs text-slate-900 font-bold">
-          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 shrink-0" />
-          <span>{ratingScore > 0 ? ratingScore.toFixed(1) : '5.0'}</span>
-          <span className="text-slate-400 font-normal">·</span>
+          {ratingScore > 0 ? (
+            <>
+              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 shrink-0" />
+              <span>{ratingScore.toFixed(1)}</span>
+              <span className="text-slate-400 font-normal">·</span>
+            </>
+          ) : null}
           <span className="text-slate-500 font-normal">
             {item.reviewCount ? `${item.reviewCount} đánh giá` : 'Mới'}
           </span>
@@ -241,7 +240,7 @@ export const FavoritesSection: React.FC<FavoritesSectionProps> = ({
     } else if (item.targetType === 1) {
       navigate(`/places/${item.targetId}`)
     } else if (item.targetType === 4) {
-      navigate('/blog')
+      navigate(item.targetId ? `/blog/${item.targetId}` : '/blog')
     } else if (item.targetType === 3) {
       navigate('/itinerary')
     } else {
@@ -368,12 +367,18 @@ export const FavoritesSection: React.FC<FavoritesSectionProps> = ({
                 onClick={() => handleItemClick(item)}
                 className="relative aspect-square w-24 sm:w-28 rounded-2xl overflow-hidden bg-slate-100 shrink-0 cursor-pointer"
               >
-                <img
-                  src={item.coverImg}
-                  alt={item.title}
-                  className="w-full h-full object-cover transition-opacity duration-300"
-                  loading="lazy"
-                />
+                {item.coverImg ? (
+                  <img
+                    src={item.coverImg}
+                    alt={item.title}
+                    className="w-full h-full object-cover transition-opacity duration-300"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-slate-100 text-slate-300">
+                    <Compass className="w-8 h-8" />
+                  </div>
+                )}
                 <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors duration-300 pointer-events-none" />
               </div>
 

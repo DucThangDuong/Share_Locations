@@ -318,7 +318,9 @@ public class PlaceRepository : IPlaceRepository
         int page,
         int pageSize,
         int? rating,
-        CancellationToken ct = default){
+        long? userId = null,
+        CancellationToken ct = default)
+    {
         var connection = _dbContext.Database.GetDbConnection();
 
         var safePage = page < 1 ? 1 : page;
@@ -326,20 +328,17 @@ public class PlaceRepository : IPlaceRepository
         var offset = (safePage - 1) * safePageSize;
 
         const string sql = @"
-            -- 1. Tổng điểm và số lượng review
             SELECT 
                 COALESCE(p.AvgRating, 0.0) AS AvgRating,
                 COALESCE(p.ReviewCount, 0) AS TotalReviews
             FROM dbo.Places p
             WHERE p.Id = @PlaceId;
 
-            -- 2. Thống kê theo sao (1 đến 5)
             SELECT Rating, COUNT(1) AS TotalCount
             FROM dbo.Reviews
             WHERE PlaceId = @PlaceId AND Status = 1
             GROUP BY Rating;
 
-            -- 3. Danh sách review phân trang
             SELECT 
                 r.Id,
                 CAST(r.UserId AS VARCHAR(50)) AS UserId,
@@ -348,7 +347,7 @@ public class PlaceRepository : IPlaceRepository
                 r.Rating,
                 r.Content,
                 r.CreatedAt,
-                0 AS LikesCount,
+                r.LikesCount,
                 (SELECT COUNT(1) FROM dbo.Comments c WHERE c.ReviewId = r.Id AND c.Status = 1) AS CommentsCount
             FROM dbo.Reviews r
             LEFT JOIN dbo.UserProfiles up ON r.UserId = up.UserId
@@ -395,10 +394,22 @@ public class PlaceRepository : IPlaceRepository
             var imagesLookup = medias.Where(m => m.MediaType == (byte)FoodMediaType.Image).ToLookup(m => m.ReviewId, m => m.Url);
             var videosLookup = medias.Where(m => m.MediaType == (byte)FoodMediaType.Video).ToLookup(m => m.ReviewId, m => m.Url);
 
+            var userLikedSet = new HashSet<long>();
+            if (userId.HasValue && userId.Value > 0)
+            {
+                const string likeSql = @"
+                    SELECT ReviewId 
+                    FROM dbo.ReviewLikes 
+                    WHERE UserId = @UserId AND ReviewId IN @ReviewIds;";
+                var likedIds = await connection.QueryAsync<long>(likeSql, new { UserId = userId.Value, ReviewIds = reviewIds });
+                userLikedSet = new HashSet<long>(likedIds);
+            }
+
             foreach (var item in reviewItems)
             {
                 item.Images = imagesLookup[item.Id].ToList();
                 item.Videos = videosLookup[item.Id].ToList();
+                item.IsLiked = userLikedSet.Contains(item.Id);
             }
         }
 

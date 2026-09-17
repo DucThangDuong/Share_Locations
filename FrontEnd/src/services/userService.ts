@@ -21,8 +21,8 @@ export const userService = {
     sortBy?: string
     page?: number
     pageSize?: number
-  }): Promise<ApiSuccessResponse<FavoriteItem[] | PagedResultDto<FavoriteItem>>> {
-    const response = await apiClient.get<ApiSuccessResponse<FavoriteItem[] | PagedResultDto<FavoriteItem>>>(
+  }): Promise<ApiSuccessResponse<PagedResultDto<FavoriteItem>>> {
+    const response = await apiClient.get<ApiSuccessResponse<PagedResultDto<FavoriteItem>>>(
       '/api/users/me/favorites',
       { params }
     )
@@ -50,8 +50,8 @@ export const userService = {
     sortBy?: string
     page?: number
     pageSize?: number
-  }): Promise<ApiSuccessResponse<VisitLogItem[] | PagedResultDto<VisitLogItem>>> {
-    const response = await apiClient.get<ApiSuccessResponse<VisitLogItem[] | PagedResultDto<VisitLogItem>>>(
+  }): Promise<ApiSuccessResponse<PagedResultDto<VisitLogItem>>> {
+    const response = await apiClient.get<ApiSuccessResponse<PagedResultDto<VisitLogItem>>>(
       '/api/users/me/visit-logs',
       { params }
     )
@@ -92,8 +92,8 @@ export const userService = {
   async getMyReviews(params?: {
     page?: number
     pageSize?: number
-  }): Promise<ApiSuccessResponse<UserReviewItem[] | PagedResultDto<UserReviewItem>>> {
-    const response = await apiClient.get<ApiSuccessResponse<UserReviewItem[] | PagedResultDto<UserReviewItem>>>(
+  }): Promise<ApiSuccessResponse<UserReviewItem[]>> {
+    const response = await apiClient.get<ApiSuccessResponse<UserReviewItem[]>>(
       '/api/users/me/reviews',
       { params }
     )
@@ -103,8 +103,8 @@ export const userService = {
   async getMyComments(params?: {
     page?: number
     pageSize?: number
-  }): Promise<ApiSuccessResponse<UserCommentItem[] | PagedResultDto<UserCommentItem>>> {
-    const response = await apiClient.get<ApiSuccessResponse<UserCommentItem[] | PagedResultDto<UserCommentItem>>>(
+  }): Promise<ApiSuccessResponse<UserCommentItem[]>> {
+    const response = await apiClient.get<ApiSuccessResponse<UserCommentItem[]>>(
       '/api/users/me/comments',
       { params }
     )
@@ -115,8 +115,8 @@ export const userService = {
     status?: number
     page?: number
     pageSize?: number
-  }): Promise<ApiSuccessResponse<UserBlogItem[] | PagedResultDto<UserBlogItem>>> {
-    const response = await apiClient.get<ApiSuccessResponse<UserBlogItem[] | PagedResultDto<UserBlogItem>>>(
+  }): Promise<ApiSuccessResponse<UserBlogItem[]>> {
+    const response = await apiClient.get<ApiSuccessResponse<UserBlogItem[]>>(
       '/api/users/me/blogs',
       { params }
     )
@@ -127,8 +127,8 @@ export const userService = {
     status?: number
     page?: number
     pageSize?: number
-  }): Promise<ApiSuccessResponse<ProposalItem[] | PagedResultDto<ProposalItem>>> {
-    const response = await apiClient.get<ApiSuccessResponse<ProposalItem[] | PagedResultDto<ProposalItem>>>(
+  }): Promise<ApiSuccessResponse<PagedResultDto<ProposalItem>>> {
+    const response = await apiClient.get<ApiSuccessResponse<PagedResultDto<ProposalItem>>>(
       '/api/users/me/proposals',
       { params }
     )
@@ -150,15 +150,18 @@ export const userService = {
     return response.data
   },
 
-  async getAccessHistories(limit: number = 10): Promise<ApiSuccessResponse<UserAccessHistoryItem[]>> {
+  async getMyAccessHistories(params?: {
+    page?: number
+    pageSize?: number
+  }): Promise<ApiSuccessResponse<UserAccessHistoryItem[]>> {
     const response = await apiClient.get<ApiSuccessResponse<UserAccessHistoryItem[]>>(
       '/api/users/me/access-histories',
-      { params: { limit } }
+      { params }
     )
     return response.data
   },
 
-  async recordAccessHistory(placeId: number | string): Promise<ApiSuccessResponse<boolean>> {
+  async recordAccessHistory(placeId: number): Promise<ApiSuccessResponse<boolean>> 
     const response = await apiClient.post<ApiSuccessResponse<boolean>>(
       `/api/places/${placeId}/access-history`
     )

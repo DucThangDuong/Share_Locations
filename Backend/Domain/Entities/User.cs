@@ -61,6 +61,12 @@ public class User
     private readonly List<Notification> _notifications = new();
     public virtual IReadOnlyCollection<Notification> Notifications => _notifications.AsReadOnly();
 
+    private readonly List<ReviewLike> _reviewLikes = new();
+    public virtual IReadOnlyCollection<ReviewLike> ReviewLikes => _reviewLikes.AsReadOnly();
+
+    private readonly List<MessageReaction> _messageReactions = new();
+    public virtual IReadOnlyCollection<MessageReaction> MessageReactions => _messageReactions.AsReadOnly();
+
     protected User() { }
 
     public User(string email, string passwordHash, UserRole role = UserRole.User)

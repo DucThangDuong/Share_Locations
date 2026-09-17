@@ -1,16 +1,16 @@
 export interface FriendItemDto {
   id: number
   name: string
-  avatar?: string
-  coverUrl?: string
-  email?: string
-  bio?: string
-  rankLevel?: string
+  avatar?: string | null
+  coverUrl?: string | null
+  email?: string | null
+  bio?: string | null
+  rankLevel?: string | null
   reputationScore?: number
   mutualFriendsCount: number
   tripsCount: number
   status: string
-  requestedAt?: string
+  requestedAt?: string | null
 }
 
 export interface FriendsResponseDto {
@@ -38,16 +38,13 @@ export interface FriendUser {
   id: number
   fullName: string
   email: string
-  avatarUrl: string
-  coverUrl?: string
-  rankLevel?: string
+  avatarUrl?: string | null
+  coverUrl?: string | null
+  city?: string
+  bio?: string
+  rankLevel?: string | null
   reputationScore?: number
-  city: string
-  bio: string
   mutualFriendsCount: number
-  commonPlacesCount?: number
   status: FriendshipStatus
   connectedDate?: string
-  blockedDate?: string
 }
-

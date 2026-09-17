@@ -9,7 +9,8 @@ public record GetPlaceReviewsQuery(
     long PlaceId,
     int Page = 1,
     int PageSize = 10,
-    int? Rating = null) : IRequest<Result<PlaceReviewSummaryDto>>;
+    int? Rating = null,
+    long? UserId = null) : IRequest<Result<PlaceReviewSummaryDto>>;
 
 public class GetPlaceReviewsQueryHandler : IRequestHandler<GetPlaceReviewsQuery, Result<PlaceReviewSummaryDto>>
 {
@@ -27,6 +28,7 @@ public class GetPlaceReviewsQueryHandler : IRequestHandler<GetPlaceReviewsQuery,
             request.Page,
             request.PageSize,
             request.Rating,
+            request.UserId,
             ct);
 
         return Result<PlaceReviewSummaryDto>.Success(summary);

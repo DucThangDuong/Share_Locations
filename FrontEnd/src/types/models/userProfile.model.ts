@@ -5,14 +5,12 @@ export interface FavoriteItem {
   targetId: number
   targetType: FavoriteType
   title: string
-  subtitle?: string
-  coverImg?: string
-  mediaUrls?: string[]
+  subtitle?: string | null
+  coverImg?: string | null
   categoryTag: string
-  rating?: number
-  reviewCount?: number
-  price?: string
-  extraInfo?: string
+  rating: number
+  reviewCount: number
+  price?: string | null
   savedDate: string
 }
 
@@ -20,13 +18,13 @@ export interface VisitLogItem {
   id: number
   placeId: number
   placeName: string
-  province?: string
-  category?: string
+  province?: string | null
+  category?: string | null
   visitedDate: string
-  privacy: 0 | 1
-  coverImg?: string
-  lat?: number
-  lng?: number
+  privacy: number
+  coverImg?: string | null
+  lat?: number | null
+  lng?: number | null
   createdAt: string
 }
 
@@ -44,24 +42,18 @@ export interface UpdateVisitLogRequest {
 export interface ProposalItem {
   id: number
   name: string
-  category?: string
-  categoryId?: number
-  province?: string
-  provinceId?: number
-  address: string
-  phone?: string
-  website?: string
-  openingHours?: string
-  minPrice?: number
-  maxPrice?: number
-  description?: string
-  coverImg?: string
-  mediaUrls?: string[]
-  status: 0 | 1 | 2
-  rejectReason?: string
+  category?: string | null
+  province?: string | null
+  address?: string | null
+  openingHours?: string | null
+  minPrice?: number | null
+  maxPrice?: number | null
+  description?: string | null
+  coverImg?: string | null
+  mediaUrls: string[]
+  status: number
+  rejectReason?: string | null
   createdAt: string
-  viewsCount?: number
-  favoritesCount?: number
 }
 
 export interface CreateProposalRequest {
@@ -85,57 +77,49 @@ export interface UserReviewItem {
   id: number
   placeId: number
   placeName: string
-  placeThumb?: string
-  province?: string
-  category?: string
+  category?: string | null
+  address?: string | null
+  province?: string | null
   rating: number
-  content?: string
-  visitDate?: string
-  coverImg?: string
-  images?: string[]
-  photos?: string[]
-  helpfulCount?: number
+  content?: string | null
+  visitDate?: string | null
+  coverImg?: string | null
+  images: string[]
   createdAt: string
 }
 
 export interface UserCommentItem {
   id: number
-  reviewId?: number
+  reviewId: number
   placeId: number
   placeName: string
-  placeThumb?: string
+  placeThumb?: string | null
   content: string
-  parentAuthor?: string
+  parentAuthor?: string | null
   createdAt: string
 }
 
 export interface UserBlogItem {
   id: number
   title: string
-  slug?: string
-  coverImageUrl?: string
-  coverImg?: string
-  excerpt?: string
-  contentJSON?: string
-  status: 0 | 1
-  categoryId?: number
-  categoryName?: string
-  category?: string
-  readTimeMinutes?: number
-  readTime?: string
-  viewCount?: number
-  viewsCount?: number
-  likesCount?: number
+  excerpt?: string | null
+  coverImageUrl?: string | null
+  contentJSON: string
+  categoryId?: number | null
+  categoryName?: string | null
+  readTimeMinutes: number
+  viewCount: number
+  status: number
   createdAt: string
-  updatedAt?: string
+  updatedAt: string
 }
 
 export interface UserAccessHistoryItem {
   id: number
   placeId: number
   placeName: string
-  coverImg?: string
-  province?: string
+  coverImg?: string | null
+  province?: string | null
   avgRating: number
   viewedAt: string
 }

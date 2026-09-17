@@ -1,3 +1,4 @@
+using System.Globalization;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
 using Dapper;
@@ -9,6 +10,7 @@ namespace Infrastructure.Persistence.Repositories;
 
 public class FoodRepository : IFoodRepository
 {
+    private static readonly CultureInfo ViCulture = CultureInfo.GetCultureInfo("vi-VN");
     private readonly TravelReviewDbContext _dbContext;
 
     public FoodRepository(TravelReviewDbContext dbContext)
@@ -89,7 +91,9 @@ public class FoodRepository : IFoodRepository
                 f.Id,
                 f.Name,
                 f.Description,
-                f.CoverImageUrl AS ImageUrl
+                f.CoverImageUrl AS ImageUrl,
+                f.MinPrice,
+                f.MaxPrice
             FROM dbo.Foods f
             WHERE {whereClause}
             ORDER BY f.Id
@@ -125,15 +129,15 @@ public class FoodRepository : IFoodRepository
         foreach (var food in foodRows)
         {
             var places = placesByFood[food.Id].ToList();
-            var itemMin = places.Where(p => p.MinPrice.HasValue).Select(p => p.MinPrice!.Value).DefaultIfEmpty(0).Min();
-            var itemMax = places.Where(p => p.MaxPrice.HasValue).Select(p => p.MaxPrice!.Value).DefaultIfEmpty(0).Max();
+            var itemMin = food.MinPrice ?? places.Where(p => p.MinPrice.HasValue).Select(p => p.MinPrice!.Value).DefaultIfEmpty(0).Min();
+            var itemMax = food.MaxPrice ?? places.Where(p => p.MaxPrice.HasValue).Select(p => p.MaxPrice!.Value).DefaultIfEmpty(0).Max();
 
             if (minPrice.HasValue && itemMax > 0 && itemMax < minPrice.Value) continue;
             if (maxPrice.HasValue && itemMin > 0 && itemMin > maxPrice.Value) continue;
 
             string priceRange = itemMin > 0 && itemMax > 0
-                ? $"{itemMin:N0}đ - {itemMax:N0}đ"
-                : (itemMin > 0 ? $"Từ {itemMin:N0}đ" : "30.000đ - 100.000đ");
+                ? $"{itemMin.ToString("N0", ViCulture)}đ - {itemMax.ToString("N0", ViCulture)}đ"
+                : (itemMin > 0 ? $"Từ {itemMin.ToString("N0", ViCulture)}đ" : (itemMax > 0 ? $"Đến {itemMax.ToString("N0", ViCulture)}đ" : "Đang cập nhật"));
 
             result.Add(new FoodItemDto
             {
@@ -150,7 +154,7 @@ public class FoodRepository : IFoodRepository
                     Name = p.Name,
                     Address = p.Address,
                     Rating = p.Rating,
-                    Price = p.MinPrice.HasValue ? $"{p.MinPrice.Value:N0}đ" : "Theo thời giá"
+                    Price = p.MinPrice.HasValue ? $"{p.MinPrice.Value.ToString("N0", ViCulture)}đ" : "Theo thời giá"
                 }).ToList()
             });
         }
