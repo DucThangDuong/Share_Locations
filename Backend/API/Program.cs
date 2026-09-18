@@ -39,6 +39,8 @@ public class Program
         builder.Services.AddAppCors(builder.Configuration);
         builder.Services.AddAppSwagger();
         builder.Services.AddFastEndpoints();
+        builder.Services.AddSignalR();
+        builder.Services.AddScoped<Application.Common.Interfaces.IChatNotifier, API.Services.ChatNotifier>();
 
         var app = builder.Build();
 
@@ -70,6 +72,8 @@ public class Program
 
         app.UseAuthentication();
         app.UseAuthorization();
+
+        app.MapHub<API.Hubs.ChatHub>("/hubs/chat");
 
         app.UseFastEndpoints(c =>
         {

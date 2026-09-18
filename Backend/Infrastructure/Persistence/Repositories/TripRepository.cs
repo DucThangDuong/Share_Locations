@@ -181,7 +181,7 @@ public class TripRepository : ITripRepository
                 Duration = durationText,
                 DaysCount = calculatedDays,
                 Style = "Văn hóa & Trải nghiệm",
-                EstimatedCost = $"{calculatedDays * 1200000:N0}đ / người",
+                EstimatedCost = $"{calculatedDays * 1200000:N0}đ",
                 CoverUrl = trip.CoverImageUrl,
                 Author = new ItineraryAuthorDto
                 {
