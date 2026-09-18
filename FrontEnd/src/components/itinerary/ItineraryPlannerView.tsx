@@ -367,7 +367,6 @@ export const ItineraryPlannerView: React.FC<ItineraryPlannerViewProps> = ({
               dayNumber: d.dayNumber,
               title: d.title || `Ngày ${d.dayNumber}`
             }))}
-            onSelectTargetDay={setExplorerTargetDayIdx}
             onAddPlace={(place, targetIdx) => {
               onAddPlaceFromLibrary?.(place, targetIdx)
             }}

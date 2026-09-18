@@ -1,8 +1,10 @@
 import React, { Suspense, lazy } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useNavigate, useSearchParams } from 'react-router-dom'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import { AuthProvider } from '@/context/AuthContext'
+import { ChatProvider } from '@/context/ChatContext'
 import { MainLayout } from '@/layouts/MainLayout'
+import { ChatLayout } from '@/layouts/ChatLayout'
 
 const HomePage = lazy(() => import('@/pages/HomePage').then((m) => ({ default: m.HomePage })))
 const ExplorePage = lazy(() => import('@/pages/ExplorePage').then((m) => ({ default: m.ExplorePage })))
@@ -18,6 +20,22 @@ const ProposePlacePage = lazy(() => import('@/pages/ProposePlacePage').then((m) 
 const RegionPage = lazy(() => import('@/pages/RegionPage').then((m) => ({ default: m.RegionPage })))
 const ProvincePage = lazy(() => import('@/pages/ProvincePage').then((m) => ({ default: m.ProvincePage })))
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })))
+const ChatPage = lazy(() => import('@/pages/ChatPage'))
+
+const ChatRoute: React.FC = () => {
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const conversationId = searchParams.get('conversation') || undefined
+
+  return (
+    <ChatPage
+      initialConversationId={conversationId}
+      onBack={() => navigate(-1)}
+      onSelectPlace={(placeId) => navigate(`/places/${placeId}`)}
+      onViewTripDetail={(tripId) => navigate(`/itinerary/${tripId}`)}
+    />
+  )
+}
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
 
@@ -31,10 +49,11 @@ export const App: React.FC = () => {
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
       <AuthProvider>
-        <BrowserRouter>
-          <Suspense fallback={<PageLoadingFallback />}>
-            <Routes>
-              <Route path="/" element={<MainLayout />}>
+        <ChatProvider>
+          <BrowserRouter>
+            <Suspense fallback={<PageLoadingFallback />}>
+              <Routes>
+                <Route path="/" element={<MainLayout />}>
                 <Route index element={<HomePage />} />
                 <Route path="explore" element={<ExplorePage />} />
                 <Route path="diadiem" element={<ExplorePage />} />
@@ -71,11 +90,17 @@ export const App: React.FC = () => {
                 <Route path="*" element={<NotFoundPage />} />
               </Route>
 
+              {/* Dedicated Chat Layout without Footer */}
+              <Route path="/chat" element={<ChatLayout />}>
+                <Route index element={<ChatRoute />} />
+              </Route>
+
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
             </Routes>
           </Suspense>
         </BrowserRouter>
+        </ChatProvider>
       </AuthProvider>
     </GoogleOAuthProvider>
   )

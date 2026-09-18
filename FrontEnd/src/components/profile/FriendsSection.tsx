@@ -5,10 +5,12 @@ import {
   MessageCircle,
   UserX,
   Check,
-  Users
+  Users,
+  Loader2,
 } from 'lucide-react'
 import type { FriendUser, FriendshipStatus } from '@/types/models/friend.model'
 import { friendService } from '@/services/friendService'
+import { useChat } from '@/context/ChatContext'
 import { UnfriendConfirmModal } from './UnfriendConfirmModal'
 
 interface FriendsSectionProps {
@@ -20,9 +22,11 @@ type SubTabType = 'accepted' | 'suggestions' | 'incoming' | 'outgoing' | 'blocke
 export const FriendsSection: React.FC<FriendsSectionProps> = ({
   onShowToast
 }) => {
+  const { openFloatingChat } = useChat()
   const [friends, setFriends] = useState<FriendUser[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<SubTabType>('accepted')
+  const [chattingUserId, setChattingUserId] = useState<number | null>(null)
 
   const [searchQuery, setSearchQuery] = useState('')
   const [suggestionSearchQuery, setSuggestionSearchQuery] = useState('')
@@ -262,6 +266,17 @@ export const FriendsSection: React.FC<FriendsSectionProps> = ({
     onShowToast(`Đã bỏ chặn ${friend.fullName}.`)
   }
 
+  const handleStartChat = async (friend: FriendUser) => {
+    setChattingUserId(friend.id)
+    try {
+      await openFloatingChat(undefined, friend.id)
+    } catch {
+      onShowToast('Không thể mở cuộc trò chuyện với bạn bè')
+    } finally {
+      setChattingUserId(null)
+    }
+  }
+
   const tabs = [
     { key: 'accepted' as const, label: 'Tất cả bạn bè', count: acceptedFriends.length },
     { key: 'suggestions' as const, label: 'Khám phá bạn mới', count: 0 },
@@ -400,9 +415,16 @@ export const FriendsSection: React.FC<FriendsSectionProps> = ({
                           <div className="flex items-center gap-2 mt-auto">
                             <button
                               type="button"
-                              className="flex-1 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 font-bold text-xs rounded-xl cursor-pointer transition-colors flex items-center justify-center gap-1.5"
+                              disabled={chattingUserId === friend.id}
+                              onClick={() => handleStartChat(friend)}
+                              className="flex-1 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 font-bold text-xs rounded-xl cursor-pointer transition-colors flex items-center justify-center gap-1.5 disabled:opacity-60"
                             >
-                              <MessageCircle size={14} /> Nhắn tin
+                              {chattingUserId === friend.id ? (
+                                <Loader2 size={14} className="animate-spin" />
+                              ) : (
+                                <MessageCircle size={14} />
+                              )}
+                              Nhắn tin
                             </button>
                             <button
                               type="button"
@@ -513,9 +535,19 @@ export const FriendsSection: React.FC<FriendsSectionProps> = ({
                                     Tài khoản của bạn
                                   </div>
                                 ) : user.status === 'accepted' ? (
-                                  <div className="w-full py-2 bg-emerald-50 text-emerald-800 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 border border-emerald-200">
-                                    <Check size={14} /> Bạn bè
-                                  </div>
+                                  <button
+                                    type="button"
+                                    disabled={chattingUserId === user.id}
+                                    onClick={() => handleStartChat(user)}
+                                    className="w-full py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 border border-emerald-200 cursor-pointer transition-colors disabled:opacity-60"
+                                  >
+                                    {chattingUserId === user.id ? (
+                                      <Loader2 size={14} className="animate-spin" />
+                                    ) : (
+                                      <MessageCircle size={14} />
+                                    )}
+                                    Nhắn tin
+                                  </button>
                                 ) : user.status === 'pending_outgoing' ? (
                                   <button
                                     type="button"
