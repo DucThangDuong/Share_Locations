@@ -1,4 +1,4 @@
-﻿﻿using API.DTOs;
+﻿using API.DTOs;
 using API.Extensions;
 using Application.Common;
 using Application.DTOs;
@@ -27,7 +27,7 @@ public class GetRoomMembersEndpoint : Endpoint<GetRoomMembersRequest, ApiSuccess
         Summary(s =>
         {
             s.Summary = "Lấy danh sách thành viên phòng chat";
-            s.Description = "Trả về danh sách tất cả thành viên kèm thông tin avatar, tên trong phòng chat.";
+            s.Description = "Trả về danh sách tất cả thành viên trong phòng chat, trong đó người tạo nhóm đầu tiên là quản trị viên (IsAdmin = true, Role = 'Admin').";
         });
     }
 

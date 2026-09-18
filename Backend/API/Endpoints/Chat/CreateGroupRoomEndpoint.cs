@@ -1,4 +1,4 @@
-﻿﻿using API.DTOs;
+﻿using API.DTOs;
 using API.Extensions;
 using Application.Common;
 using Application.Features.Chat.Commands;
@@ -27,7 +27,7 @@ public class CreateGroupRoomEndpoint : Endpoint<CreateGroupRoomRequest, ApiSucce
         Summary(s =>
         {
             s.Summary = "Tạo phòng chat nhóm";
-            s.Description = "Tạo phòng trò chuyện nhóm mới với tên nhóm và danh sách thành viên bạn bè.";
+            s.Description = "Tạo phòng trò chuyện nhóm mới với tên nhóm và danh sách thành viên bạn bè. Người gửi yêu cầu là quản trị viên và được tạo đầu tiên.";
         });
     }
 
@@ -43,7 +43,7 @@ public class CreateGroupRoomEndpoint : Endpoint<CreateGroupRoomRequest, ApiSucce
         var result = await Mediator.Send(new CreateGroupRoomCommand(userId.Value, req.Name, req.MemberIds), ct);
         if (result.IsSuccess)
         {
-            await this.SendApiResponseAsync(Result<object>.Success(new { roomId = result.Data }, "Tạo nhóm trò chuyện thành công."), ct);
+            await this.SendApiResponseAsync(Result<object>.Success(new { roomId = result.Data, adminId = userId.Value }, "Tạo nhóm trò chuyện thành công."), ct);
         }
         else
         {
