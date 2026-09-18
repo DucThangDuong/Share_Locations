@@ -22,7 +22,7 @@ import type {
   LookupItemDto,
   RegionLookupDto
 } from '@/types/models/place.model'
-import { PRICE_TIERS, SORT_OPTIONS } from '@/components/explore/explore.types'
+import { PRICE_TIERS} from '@/components/explore/explore.types'
 
 export interface PlaceItem {
   id: number
@@ -39,14 +39,12 @@ export interface PlaceItem {
 interface ItineraryPlacePickerDrawerProps {
   targetDayIndex?: number
   days?: { dayNumber: number; title: string }[]
-  onSelectTargetDay?: (dayIndex: number) => void
   onAddPlace: (place: PlaceItem, targetDayIndex: number) => void
 }
 
 export const ItineraryPlacePickerDrawer: React.FC<ItineraryPlacePickerDrawerProps> = ({
   targetDayIndex = -1,
   days = [],
-  onSelectTargetDay,
   onAddPlace
 }) => {
   const [categories, setCategories] = useState<LookupItemDto[]>([])
@@ -235,45 +233,6 @@ export const ItineraryPlacePickerDrawer: React.FC<ItineraryPlacePickerDrawerProp
       id="itinerary-place-explorer"
       className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs space-y-0 scroll-mt-24"
     >
-      <div className="p-4 sm:p-5 border-b border-slate-200 bg-slate-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-9 h-9 rounded-xl bg-emerald-800 text-white flex items-center justify-center font-extrabold text-xs shadow-xs shrink-0">
-            <Compass size={18} />
-          </div>
-          <div className="min-w-0">
-            <h3 className="text-sm sm:text-base font-extrabold text-slate-900 flex items-center gap-2 flex-wrap">
-              <span>Kho địa điểm toàn quốc</span>
-              <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-200">
-                {totalElements} địa điểm
-              </span>
-            </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Tìm kiếm và thêm địa điểm trực tiếp vào lịch trình hoặc kho lưu trữ
-            </p>
-          </div>
-        </div>
-
-        {days && days.length > 0 && (
-          <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-2xs shrink-0 self-start sm:self-auto">
-            <span className="text-xs font-bold text-slate-600 whitespace-nowrap">
-              Thêm vào:
-            </span>
-            <select
-              value={targetDayIndex}
-              onChange={(e) => onSelectTargetDay?.(Number(e.target.value))}
-              className="text-xs font-extrabold text-emerald-900 bg-transparent outline-none cursor-pointer pr-1"
-            >
-              <option value={-1}>⭐ Kho địa điểm đã lưu (Chờ xếp ngày)</option>
-              {days.map((d, idx) => (
-                <option key={idx} value={idx}>
-                  📍 Ngày {d.dayNumber}: {d.title || `Ngày ${d.dayNumber}`}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-      </div>
-
       <div className="p-4 sm:p-5 border-b border-slate-200 bg-white">
         <form onSubmit={handleSearchSubmit} className="relative flex items-center gap-2">
           <div className="relative flex-1">
@@ -544,27 +503,7 @@ export const ItineraryPlacePickerDrawer: React.FC<ItineraryPlacePickerDrawerProp
 
           <main className="lg:col-span-8 xl:col-span-9 space-y-4">
             <div className="bg-white rounded-2xl border border-slate-200 p-3 sm:px-4 flex items-center justify-between gap-3 shadow-2xs flex-wrap">
-              <div className="flex items-center gap-2">
-                <select
-                  value={selectedSort}
-                  onChange={(e) => {
-                    setSelectedSort(e.target.value)
-                    setCurrentPage(1)
-                  }}
-                  className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none cursor-pointer focus:border-emerald-700"
-                >
-                  {SORT_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
               <div className="flex items-center gap-3">
-                <span className="text-xs text-slate-500 font-medium hidden sm:inline">
-                  Hiển thị <strong className="text-slate-800">{places.length}</strong> / {totalElements}
-                </span>
 
                 <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200/80">
                   <button
@@ -630,12 +569,12 @@ export const ItineraryPlacePickerDrawer: React.FC<ItineraryPlacePickerDrawerProp
                       key={place.id}
                       className="group bg-white rounded-2xl overflow-hidden border border-slate-200/90 hover:border-emerald-300 hover:shadow-md transition-all duration-200 flex flex-col h-full shadow-2xs"
                     >
-                      <div className="relative aspect-4/3 w-full bg-slate-100 overflow-hidden shrink-0">
+                      <div className="group/image relative aspect-4/3 w-full bg-slate-100 overflow-hidden shrink-0">
                         {place.thumbnailUrl ? (
                           <img
                             src={place.thumbnailUrl}
                             alt={place.name}
-                            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            className="absolute inset-0 w-full h-full object-cover"
                             loading="lazy"
                           />
                         ) : (
@@ -643,11 +582,7 @@ export const ItineraryPlacePickerDrawer: React.FC<ItineraryPlacePickerDrawerProp
                             <Compass className="w-10 h-10 stroke-1" />
                           </div>
                         )}
-                        {place.categoryName && (
-                          <span className="absolute top-2.5 left-2.5 text-[10px] font-bold text-emerald-950 bg-white/95 backdrop-blur-xs px-2 py-0.5 rounded-lg shadow-2xs">
-                            {place.categoryName}
-                          </span>
-                        )}
+                        <div className="absolute inset-0 bg-white/45 opacity-0 group-hover/image:opacity-20 transition-opacity duration-200" />
                       </div>
 
                       <div className="p-4 flex flex-col flex-1 justify-between space-y-3">
@@ -730,12 +665,12 @@ export const ItineraryPlacePickerDrawer: React.FC<ItineraryPlacePickerDrawerProp
                       key={place.id}
                       className="group bg-white rounded-2xl overflow-hidden border border-slate-200/90 hover:border-emerald-300 hover:shadow-sm transition-all duration-200 flex flex-col sm:flex-row shadow-2xs"
                     >
-                      <div className="w-full sm:w-48 aspect-4/3 sm:aspect-square relative bg-slate-100 shrink-0 overflow-hidden">
+                      <div className="group/image w-full sm:w-48 aspect-4/3 sm:aspect-square relative bg-slate-100 shrink-0 overflow-hidden">
                         {place.thumbnailUrl ? (
                           <img
                             src={place.thumbnailUrl}
                             alt={place.name}
-                            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            className="absolute inset-0 w-full h-full object-cover"
                             loading="lazy"
                           />
                         ) : (
@@ -743,11 +678,7 @@ export const ItineraryPlacePickerDrawer: React.FC<ItineraryPlacePickerDrawerProp
                             <Compass className="w-10 h-10 stroke-1" />
                           </div>
                         )}
-                        {place.categoryName && (
-                          <span className="absolute top-2.5 left-2.5 text-[10px] font-bold text-emerald-950 bg-white/95 backdrop-blur-xs px-2 py-0.5 rounded-lg shadow-2xs">
-                            {place.categoryName}
-                          </span>
-                        )}
+                        <div className="absolute inset-0 bg-white/45 opacity-0 group-hover/image:opacity-100 transition-opacity duration-200" />
                       </div>
 
                       <div className="p-4 sm:p-5 flex flex-col flex-1 justify-between space-y-2">
