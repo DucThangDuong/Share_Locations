@@ -14,6 +14,7 @@ public class GetFeaturedCollectionsEndpoint : EndpointWithoutRequest<ApiSuccessR
     public override void Configure()
     {
         Get("/api/collections/featured");
+        Tags("Catalog");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
         Summary(s =>

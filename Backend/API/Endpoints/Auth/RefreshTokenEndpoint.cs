@@ -12,6 +12,7 @@ public class RefreshTokenEndpoint : EndpointWithoutRequest
     public override void Configure()
     {
         Post("/api/auth/refresh-token");
+        Tags("Auth");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("auth_strict"));
         Summary(s =>

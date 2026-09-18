@@ -20,6 +20,7 @@ public class DeleteBlogEndpoint : Endpoint<DeleteBlogRequest>
     public override void Configure()
     {
         Delete("/api/blogs/{id}");
+        Tags("Blogs");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

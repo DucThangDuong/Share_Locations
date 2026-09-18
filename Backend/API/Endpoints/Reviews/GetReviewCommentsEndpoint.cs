@@ -20,6 +20,7 @@ public class GetReviewCommentsEndpoint : Endpoint<GetReviewCommentsRequest, ApiS
     public override void Configure()
     {
         Get("/api/reviews/{id}/comments");
+        Tags("Reviews");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
         Summary(s =>

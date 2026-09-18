@@ -20,6 +20,7 @@ public class GetRegionLandingEndpoint : Endpoint<GetRegionLandingRequest, ApiSuc
     public override void Configure()
     {
         Get("/api/regions/{regionSlug}/landing");
+        Tags("Geography");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
         Summary(s =>

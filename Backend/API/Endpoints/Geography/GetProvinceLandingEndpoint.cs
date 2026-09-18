@@ -20,6 +20,7 @@ public class GetProvinceLandingEndpoint : Endpoint<GetProvinceLandingRequest, Ap
     public override void Configure()
     {
         Get("/api/provinces/{idOrSlug}/landing");
+        Tags("Geography");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
         Summary(s =>

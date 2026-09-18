@@ -21,6 +21,7 @@ public class DeleteTripDayEndpoint : Endpoint<DeleteTripDayRequest, ApiSuccessRe
     public override void Configure()
     {
         Delete("/api/trips/{id}/days/{dayNumber}");
+        Tags("Trips");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

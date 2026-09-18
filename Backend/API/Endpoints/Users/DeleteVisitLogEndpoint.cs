@@ -20,6 +20,7 @@ public class DeleteVisitLogEndpoint : Endpoint<DeleteVisitLogRequest>
     public override void Configure()
     {
         Delete("/api/users/me/visit-logs/{id}");
+        Tags("Users");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

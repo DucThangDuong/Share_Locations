@@ -19,6 +19,7 @@ public class UpdatePlaceReviewEndpoint : Endpoint<UpdatePlaceReviewRequest, ApiS
     public override void Configure()
     {
         Put("/api/reviews/{id}");
+        Tags("Places");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         AllowFileUploads();

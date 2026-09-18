@@ -1,4 +1,4 @@
-﻿using API.DTOs;
+﻿﻿using API.DTOs;
 using API.Extensions;
 using Application.Common;
 using Application.DTOs;
@@ -21,6 +21,7 @@ public class GetRoomMembersEndpoint : Endpoint<GetRoomMembersRequest, ApiSuccess
     public override void Configure()
     {
         Get("/api/chat/rooms/{roomId}/members");
+        Tags("Chat");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Summary(s =>

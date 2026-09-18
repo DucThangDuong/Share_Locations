@@ -21,6 +21,7 @@ public class ToggleBlogLikeEndpoint : Endpoint<ToggleBlogLikeRequest, ApiSuccess
     public override void Configure()
     {
         Post("/api/blogs/{id}/toggle-like");
+        Tags("Blogs");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

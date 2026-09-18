@@ -23,6 +23,7 @@ public class RemoveFavoriteEndpoint : Endpoint<RemoveFavoriteRequest>
     public override void Configure()
     {
         Delete("/api/users/me/favorites/{targetType}/{targetId}");
+        Tags("Users");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

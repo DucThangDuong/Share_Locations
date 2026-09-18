@@ -20,6 +20,7 @@ public class GetBlogDetailEndpoint : Endpoint<GetBlogDetailRequest, ApiSuccessRe
     public override void Configure()
     {
         Get("/api/blogs/{idOrSlug}");
+        Tags("Blogs");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
         Summary(s =>

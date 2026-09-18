@@ -22,6 +22,7 @@ public class GetUserAccessHistoriesEndpoint : Endpoint<GetUserAccessHistoriesReq
     public override void Configure()
     {
         Get("/api/users/me/access-histories");
+        Tags("Users");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("general_api"));

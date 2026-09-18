@@ -28,6 +28,7 @@ public class GetUserProposalsEndpoint : Endpoint<GetUserProposalsRequest, ApiSuc
     public override void Configure()
     {
         Get("/api/users/me/proposals");
+        Tags("Users");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("general_api"));

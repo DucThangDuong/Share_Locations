@@ -20,6 +20,7 @@ public class DeleteTripPlaceEndpoint : Endpoint<DeleteTripPlaceRequest, ApiSucce
     public override void Configure()
     {
         Delete("/api/trips/places/{tripPlaceId}");
+        Tags("Trips");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

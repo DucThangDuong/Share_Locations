@@ -14,6 +14,7 @@ public class GetProvincesEndpoint : EndpointWithoutRequest<ApiSuccessResponse<IR
     public override void Configure()
     {
         Get("/api/provinces");
+        Tags("Geography");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
         Summary(s =>

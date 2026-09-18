@@ -20,6 +20,7 @@ public class DeleteProposalEndpoint : Endpoint<DeleteProposalRequest>
     public override void Configure()
     {
         Delete("/api/proposals/{id}");
+        Tags("Proposals");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

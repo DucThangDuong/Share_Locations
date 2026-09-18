@@ -24,6 +24,7 @@ public class SaveItineraryEndpoint : Endpoint<SaveItineraryRequest, ApiSuccessRe
     public override void Configure()
     {
         Post("/api/itineraries/{id}/save");
+        Tags("Itineraries");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

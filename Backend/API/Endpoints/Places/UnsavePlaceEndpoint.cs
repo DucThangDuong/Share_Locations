@@ -24,6 +24,7 @@ public class UnsavePlaceEndpoint : Endpoint<UnsavePlaceRequest, ApiSuccessRespon
     public override void Configure()
     {
         Delete("/api/places/{id}/save");
+        Tags("Places");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

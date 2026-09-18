@@ -19,6 +19,7 @@ public class CreatePlaceReviewEndpoint : Endpoint<CreatePlaceReviewRequest, ApiS
     public override void Configure()
     {
         Post("/api/places/{id}/reviews");
+        Tags("Places");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         AllowFileUploads();

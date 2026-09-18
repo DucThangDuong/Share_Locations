@@ -15,6 +15,7 @@ public class GetBlogsEndpoint : Endpoint<GetBlogsRequest, ApiSuccessResponse<IRe
     public override void Configure()
     {
         Get("/api/blogs");
+        Tags("Blogs");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
         Summary(s =>

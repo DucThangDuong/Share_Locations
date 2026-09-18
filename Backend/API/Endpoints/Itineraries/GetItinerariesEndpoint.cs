@@ -19,6 +19,7 @@ public class GetItinerariesEndpoint : Endpoint<GetItinerariesRequest, ApiSuccess
     public override void Configure()
     {
         Get("/api/itineraries");
+        Tags("Itineraries");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
         Summary(s =>

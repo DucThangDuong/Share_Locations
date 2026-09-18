@@ -25,6 +25,7 @@ public class GetUserReviewsEndpoint : Endpoint<GetUserReviewsRequest, ApiSuccess
     public override void Configure()
     {
         Get("/api/users/me/reviews");
+        Tags("Users");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("general_api"));

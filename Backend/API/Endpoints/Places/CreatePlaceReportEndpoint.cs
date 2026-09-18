@@ -16,6 +16,7 @@ public class CreatePlaceReportEndpoint : Endpoint<CreatePlaceReportRequest, ApiS
     public override void Configure()
     {
         Post("/api/places/{id}/reports");
+        Tags("Places");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("write_api"));
         Summary(s =>

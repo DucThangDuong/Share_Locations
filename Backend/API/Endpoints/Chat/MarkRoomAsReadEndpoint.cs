@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.Extensions;
 using Application.Common;
 using Application.Features.Chat.Commands;
@@ -20,6 +20,7 @@ public class MarkRoomAsReadEndpoint : Endpoint<MarkRoomAsReadRequest, ApiSuccess
     public override void Configure()
     {
         Put("/api/chat/rooms/{roomId}/read");
+        Tags("Chat");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Summary(s =>

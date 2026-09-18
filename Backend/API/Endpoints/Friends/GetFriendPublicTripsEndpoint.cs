@@ -19,6 +19,7 @@ public class GetFriendPublicTripsEndpoint : Endpoint<GetFriendPublicTripsRequest
     public override void Configure()
     {
         Get("/api/users/{userId}/trips/public");
+        Tags("Friends");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
         Summary(s =>

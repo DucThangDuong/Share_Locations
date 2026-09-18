@@ -16,6 +16,7 @@ public class CreateBlogEndpoint : Endpoint<CreateBlogRequestDto, ApiSuccessRespo
     public override void Configure()
     {
         Post("/api/blogs");
+        Tags("Blogs");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

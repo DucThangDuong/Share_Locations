@@ -15,6 +15,7 @@ public class SearchPlacesEndpoint : Endpoint<SearchPlacesRequest, ApiSuccessResp
     public override void Configure()
     {
         Get("/api/places");
+        Tags("Places");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
         Summary(s =>

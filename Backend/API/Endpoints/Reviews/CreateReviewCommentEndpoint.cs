@@ -19,6 +19,7 @@ public class CreateReviewCommentEndpoint : Endpoint<CreateReviewCommentRequest, 
     public override void Configure()
     {
         Post("/api/reviews/{id}/comments");
+        Tags("Reviews");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

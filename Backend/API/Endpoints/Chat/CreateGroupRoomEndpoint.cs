@@ -1,4 +1,4 @@
-﻿using API.DTOs;
+﻿﻿using API.DTOs;
 using API.Extensions;
 using Application.Common;
 using Application.Features.Chat.Commands;
@@ -21,6 +21,7 @@ public class CreateGroupRoomEndpoint : Endpoint<CreateGroupRoomRequest, ApiSucce
     public override void Configure()
     {
         Post("/api/chat/group", "/api/chat/rooms");
+        Tags("Chat");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Summary(s =>

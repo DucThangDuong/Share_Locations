@@ -21,6 +21,7 @@ public class RespondFriendRequestEndpoint : Endpoint<RespondFriendRequest, ApiSu
     public override void Configure()
     {
         Put("/api/friends/respond/{targetUserId}");
+        Tags("Friends");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

@@ -23,6 +23,7 @@ public class DeleteReviewCommentEndpoint : Endpoint<DeleteReviewCommentRequest, 
     public override void Configure()
     {
         Delete("/api/reviews/comments/{id}", "/api/comments/{id}");
+        Tags("Reviews");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

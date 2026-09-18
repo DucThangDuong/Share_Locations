@@ -28,6 +28,7 @@ public class GetUserVisitLogsEndpoint : Endpoint<GetUserVisitLogsRequest, ApiSuc
     public override void Configure()
     {
         Get("/api/users/me/visit-logs");
+        Tags("Users");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("general_api"));

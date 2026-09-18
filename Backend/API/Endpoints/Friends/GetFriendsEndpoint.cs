@@ -16,6 +16,7 @@ public class GetFriendsEndpoint : Endpoint<EmptyRequest, ApiSuccessResponse<Frie
     public override void Configure()
     {
         Get("/api/users/me/friends");
+        Tags("Friends");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("general_api"));

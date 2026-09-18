@@ -21,6 +21,7 @@ public class AddMembersToRoomEndpoint : Endpoint<AddMembersToRoomRequest, ApiSuc
     public override void Configure()
     {
         Post("/api/chat/rooms/{roomId}/members");
+        Tags("Chat");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Summary(s =>
