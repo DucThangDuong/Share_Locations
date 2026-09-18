@@ -10,4 +10,19 @@ public class ChatRoomMember
     // Navigation
     public virtual ChatRoom ChatRoom { get; private set; } = null!;
     public virtual User User { get; private set; } = null!;
+
+    protected ChatRoomMember() { }
+
+    public ChatRoomMember(long chatRoomId, long userId)
+    {
+        ChatRoomId = chatRoomId;
+        UserId = userId;
+        JoinedAt = DateTime.UtcNow;
+        LastReadAt = DateTime.UtcNow;
+    }
+
+    public void MarkRead(DateTime readAt)
+    {
+        LastReadAt = readAt;
+    }
 }
