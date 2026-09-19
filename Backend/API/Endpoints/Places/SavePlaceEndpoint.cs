@@ -24,7 +24,6 @@ public class SavePlaceEndpoint : Endpoint<SavePlaceRequest, ApiSuccessResponse<T
     public override void Configure()
     {
         Post("/api/places/{id}/save");
-        Tags("Places");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

@@ -1,4 +1,4 @@
-﻿using Domain.Enums;
+using Domain.Enums;
 
 namespace Application.DTOs;
 
@@ -85,4 +85,6 @@ public class ChatRoomMemberDto
     public string? AvatarUrl { get; set; }
     public string? Email { get; set; }
     public DateTime JoinedAt { get; set; }
+    public bool IsAdmin { get; set; }
+    public string Role { get; set; } = "Member";
 }

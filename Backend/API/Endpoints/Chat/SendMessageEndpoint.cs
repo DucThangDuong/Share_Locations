@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.Extensions;
 using Application.Common;
 using Application.DTOs;
@@ -33,7 +33,6 @@ public class SendMessageEndpoint : Endpoint<SendMessageRequest, ApiSuccessRespon
     public override void Configure()
     {
         Post("/api/chat/rooms/{roomId}/messages");
-        Tags("Chat");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         AllowFileUploads();

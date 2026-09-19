@@ -18,7 +18,6 @@ public class GetProfileEndpoint : EndpointWithoutRequest<ApiSuccessResponse<User
     public override void Configure()
     {
         Get("/api/auth/profile");
-        Tags("Auth");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Summary(s =>

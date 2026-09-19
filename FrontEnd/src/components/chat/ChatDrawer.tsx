@@ -11,11 +11,15 @@ import {
   User,
   ShieldCheck,
   Loader2,
+  Pencil,
+  UserMinus,
+  LogOut,
 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { useChat } from '@/context/ChatContext'
 import { AddMembersModal } from './AddMembersModal'
 import { ViewGroupMembersModal } from './ViewGroupMembersModal'
+import { RenameGroupModal } from './RenameGroupModal'
 import {
   chatService,
   type ChatRoomMemberDto,
@@ -45,20 +49,37 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
 }) => {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const { addMembersToGroup, openDirectChatWithUser, messages } = useChat()
+  const {
+    addMembersToGroup,
+    renameGroup,
+    removeMemberFromGroup,
+    leaveGroupChat,
+    openDirectChatWithUser,
+    messages,
+  } = useChat()
 
   const currentUserId = user?.id ? Number(user.id) : null
 
   // Accordion open/close states
+  const [isCustomizationOpen, setIsCustomizationOpen] = useState(true)
   const [isMembersOpen, setIsMembersOpen] = useState(true)
   const [isPhotosOpen, setIsPhotosOpen] = useState(true)
   const [isFilesOpen, setIsFilesOpen] = useState(true)
 
   // Modals state
+  const [isRenameModalOpen, setIsRenameModalOpen] = useState(false)
   const [isAddMembersOpen, setIsAddMembersOpen] = useState(false)
   const [isViewMembersOpen, setIsViewMembersOpen] = useState(false)
   const [previewMembers, setPreviewMembers] = useState<ChatRoomMemberDto[]>([])
   const [isLoadingMembers, setIsLoadingMembers] = useState(false)
+
+  // Remove member confirmation state
+  const [memberToRemove, setMemberToRemove] = useState<ChatRoomMemberDto | null>(null)
+  const [isRemovingMember, setIsRemovingMember] = useState(false)
+
+  // Leave group confirmation state
+  const [isConfirmLeaveOpen, setIsConfirmLeaveOpen] = useState(false)
+  const [isLeavingGroup, setIsLeavingGroup] = useState(false)
 
   // Member Action Menu dropdown: userId -> boolean
   const [activeMenuUserId, setActiveMenuUserId] = useState<number | null>(null)
@@ -112,6 +133,8 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
         avatarUrl: user.avatarUrl || null,
         email: user.email || null,
         joinedAt: new Date().toISOString(),
+        isAdmin: false,
+        role: 'Member',
       })
     }
 
@@ -126,6 +149,8 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
             avatarUrl: msg.senderAvatarUrl || null,
             email: null,
             joinedAt: msg.createdAt,
+            isAdmin: false,
+            role: 'Member',
           })
         }
       })
@@ -133,6 +158,13 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
 
     return Array.from(map.values())
   }, [previewMembers, user, messages, roomId])
+
+  // Check if current user is group administrator based on isAdmin / role property
+  const isCurrentUserAdmin = useMemo(() => {
+    if (!currentUserId || displayMembers.length === 0) return false
+    const me = displayMembers.find((m) => m.userId === currentUserId)
+    return Boolean(me?.isAdmin || me?.role === 'Admin')
+  }, [currentUserId, displayMembers])
 
   if (!isOpen) return null
 
@@ -149,21 +181,72 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
           )}
         </div>
         <h3 className="font-bold text-base text-slate-900 px-2 line-clamp-1">{roomTitle}</h3>
-        {isGroup ? (
-          <span className="mt-1 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-[#0084FF]">
-            Nhóm trò chuyện
-          </span>
-        ) : (
-          <span className="mt-1 text-[12px] text-emerald-600 font-medium flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
-            Đang hoạt động
-          </span>
-        )}
       </div>
 
       <div className="py-2 space-y-1">
         {/* ═══════════════════════════════════════════════════════════════
-            ACCORDION 1: THÀNH VIÊN TRONG ĐOẠN CHAT (CHỈ HIỆN KHI LÀ GROUP)
+            ACCORDION 1: TÙY CHỈNH ĐOẠN CHAT (CHỈ HIỆN KHI LÀ GROUP)
+        ═══════════════════════════════════════════════════════════════ */}
+        {isGroup && roomId && (
+          <div className="border-b border-slate-100 pb-2">
+            {/* Header Nút Dropdown */}
+            <button
+              type="button"
+              onClick={() => setIsCustomizationOpen((prev) => !prev)}
+              className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-[#F0F2F5] transition-colors cursor-pointer text-left group"
+            >
+              <span className="font-bold text-[14px] text-slate-900 group-hover:text-[#0084FF] transition-colors">
+                Tùy chỉnh đoạn chat
+              </span>
+              <div className="text-slate-500 group-hover:text-slate-800 transition-colors">
+                {isCustomizationOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+              </div>
+            </button>
+
+            {/* Nội dung bên trong Dropdown Tùy chỉnh */}
+            {isCustomizationOpen && (
+              <div className="mt-1 space-y-1 animate-in slide-in-from-top-2 fade-in duration-150">
+                {/* 1. Đổi tên đoạn chat */}
+                <button
+                  type="button"
+                  onClick={() => setIsRenameModalOpen(true)}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#F0F2F5] transition-colors cursor-pointer text-left group/item"
+                >
+                  <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-900 flex items-center justify-center shrink-0 group-hover/item:bg-slate-200 transition-colors">
+                    <Pencil size={15} />
+                  </div>
+                  <span className="text-[13px] font-semibold text-slate-900 truncate">
+                    Đổi tên đoạn chat
+                  </span>
+                </button>
+
+                {/* 2. Rời khỏi nhóm */}
+                <button
+                  type="button"
+                  onClick={() => setIsConfirmLeaveOpen(true)}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-rose-50 transition-colors cursor-pointer text-left group/item"
+                >
+                  <div className="w-8 h-8 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 group-hover/item:bg-rose-100 transition-colors">
+                    <LogOut size={15} />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-[13px] font-semibold text-rose-600 truncate block">
+                      {isCurrentUserAdmin ? 'Giải tán & Rời nhóm' : 'Rời khỏi nhóm'}
+                    </span>
+                    <span className="text-[11px] text-slate-400 truncate block">
+                      {isCurrentUserAdmin
+                        ? 'Xóa tất cả thành viên khỏi nhóm'
+                        : 'Rời cuộc trò chuyện này'}
+                    </span>
+                  </div>
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ═══════════════════════════════════════════════════════════════
+            ACCORDION 2: THÀNH VIÊN TRONG ĐOẠN CHAT (CHỈ HIỆN KHI LÀ GROUP)
         ═══════════════════════════════════════════════════════════════ */}
         {isGroup && roomId && (
           <div className="border-b border-slate-100 pb-2">
@@ -208,11 +291,11 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
                 )}
 
                 {/* Danh sách các thành viên */}
-                {displayMembers.map((member, index) => {
+                {displayMembers.map((member) => {
                   const avatar =
                     member.avatarUrl ||
                     'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop'
-                  const isCreator = index === 0
+                  const isMemberAdmin = Boolean(member.isAdmin || member.role === 'Admin')
                   const isMe = currentUserId === member.userId
                   const isMenuOpen = activeMenuUserId === member.userId
 
@@ -232,7 +315,7 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
                             {member.name} {isMe && <span className="text-slate-400 font-normal">(Bạn)</span>}
                           </p>
                           <p className="text-[11px] text-slate-500 flex items-center gap-1">
-                            {isCreator ? (
+                            {isMemberAdmin ? (
                               <span className="text-[#0084FF] font-medium flex items-center gap-0.5">
                                 <ShieldCheck size={11} /> Quản trị viên
                               </span>
@@ -292,6 +375,21 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
                               <User size={15} className="text-slate-500" />
                               <span>Xem trang cá nhân</span>
                             </button>
+
+                            {/* Chỉ Quản trị viên nhóm mới có quyền xóa thành viên khác khỏi nhóm */}
+                            {isCurrentUserAdmin && !isMe && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setActiveMenuUserId(null)
+                                  setMemberToRemove(member)
+                                }}
+                                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors text-left cursor-pointer border-t border-slate-100 mt-1 pt-1.5"
+                              >
+                                <UserMinus size={15} className="text-rose-600" />
+                                <span>Xóa khỏi nhóm</span>
+                              </button>
+                            )}
                           </div>
                         )}
                       </div>
@@ -304,7 +402,7 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
         )}
 
         {/* ═══════════════════════════════════════════════════════════════
-            ACCORDION 2: ẢNH ĐÃ CHIA SẺ
+            ACCORDION 3: ẢNH ĐÃ CHIA SẺ
         ═══════════════════════════════════════════════════════════════ */}
         <div className="border-b border-slate-100 pb-2">
           <button
@@ -342,7 +440,7 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
         </div>
 
         {/* ═══════════════════════════════════════════════════════════════
-            ACCORDION 3: TỆP ĐÍNH KÈM
+            ACCORDION 4: TỆP ĐÍNH KÈM
         ═══════════════════════════════════════════════════════════════ */}
         <div className="border-b border-slate-100 pb-2">
           <button
@@ -381,6 +479,129 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
         </div>
       </div>
 
+      {/* Modal Đổi Tên Nhóm */}
+      {isGroup && roomId && (
+        <RenameGroupModal
+          isOpen={isRenameModalOpen}
+          currentTitle={roomTitle}
+          onClose={() => setIsRenameModalOpen(false)}
+          onSave={async (newName) => {
+            await renameGroup(roomId, newName)
+          }}
+        />
+      )}
+
+      {/* Modal Xác Nhận Xóa Thành Viên Khỏi Nhóm */}
+      {memberToRemove && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150 font-sans">
+          <div
+            className="fixed inset-0"
+            onClick={() => !isRemovingMember && setMemberToRemove(null)}
+          />
+          <div className="relative w-full max-w-sm bg-white rounded-2xl shadow-2xl border border-slate-200 p-5 z-10 animate-in zoom-in-95 duration-150">
+            <h3 className="font-bold text-base text-slate-900 mb-2">Xóa thành viên khỏi nhóm?</h3>
+            <p className="text-xs text-slate-500 mb-5 leading-relaxed">
+              Bạn có chắc chắn muốn xóa{' '}
+              <span className="font-semibold text-slate-800">"{memberToRemove.name}"</span> ra khỏi
+              nhóm trò chuyện này không?
+            </p>
+            <div className="flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                disabled={isRemovingMember}
+                onClick={() => setMemberToRemove(null)}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                disabled={isRemovingMember}
+                onClick={async () => {
+                  if (!roomId || !memberToRemove) return
+                  setIsRemovingMember(true)
+                  try {
+                    await removeMemberFromGroup(roomId, memberToRemove.userId)
+                    setPreviewMembers((prev) =>
+                      prev.filter((m) => m.userId !== memberToRemove.userId)
+                    )
+                    setMemberToRemove(null)
+                  } catch (err: any) {
+                    const apiMsg =
+                      err?.response?.data?.message ||
+                      err?.response?.data?.error ||
+                      err?.message ||
+                      'Không thể xóa thành viên khỏi nhóm. Vui lòng thử lại sau.'
+                    alert(apiMsg)
+                  } finally {
+                    setIsRemovingMember(false)
+                  }
+                }}
+                className="px-4 py-2 text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs disabled:opacity-50"
+              >
+                {isRemovingMember && <Loader2 size={13} className="animate-spin" />}
+                <span>Xóa khỏi nhóm</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Xác Nhận Rời / Giải Tán Nhóm */}
+      {isConfirmLeaveOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150 font-sans">
+          <div
+            className="fixed inset-0"
+            onClick={() => !isLeavingGroup && setIsConfirmLeaveOpen(false)}
+          />
+          <div className="relative w-full max-w-sm bg-white rounded-2xl shadow-2xl border border-slate-200 p-5 z-10 animate-in zoom-in-95 duration-150">
+            <h3 className="font-bold text-base text-slate-900 mb-2">
+              {isCurrentUserAdmin ? 'Giải tán nhóm và rời đi?' : 'Rời khỏi nhóm trò chuyện?'}
+            </h3>
+            <p className="text-xs text-slate-500 mb-5 leading-relaxed">
+              {isCurrentUserAdmin
+                ? 'Bạn là Quản trị viên của nhóm này. Khi bạn rời đi, toàn bộ thành viên sẽ bị xóa và cuộc trò chuyện nhóm này sẽ được giải tán vĩnh viễn.'
+                : 'Bạn sẽ rời khỏi cuộc trò chuyện này và không còn nhận được tin nhắn mới từ nhóm nữa.'}
+            </p>
+            <div className="flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                disabled={isLeavingGroup}
+                onClick={() => setIsConfirmLeaveOpen(false)}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                disabled={isLeavingGroup}
+                onClick={async () => {
+                  if (!roomId) return
+                  setIsLeavingGroup(true)
+                  try {
+                    await leaveGroupChat(roomId)
+                    setIsConfirmLeaveOpen(false)
+                  } catch (err: any) {
+                    const apiMsg =
+                      err?.response?.data?.message ||
+                      err?.response?.data?.error ||
+                      err?.message ||
+                      'Không thể rời khỏi nhóm. Vui lòng thử lại sau.'
+                    alert(apiMsg)
+                  } finally {
+                    setIsLeavingGroup(false)
+                  }
+                }}
+                className="px-4 py-2 text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs disabled:opacity-50"
+              >
+                {isLeavingGroup && <Loader2 size={13} className="animate-spin" />}
+                <span>{isCurrentUserAdmin ? 'Giải tán & Rời nhóm' : 'Rời khỏi nhóm'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal Xem Thành Viên Full */}
       {isGroup && roomId && (
         <ViewGroupMembersModal
@@ -401,7 +622,7 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
           onClose={() => {
             setIsAddMembersOpen(false)
             // Reload members list
-            chatService.getRoomMembers(roomId).then(setPreviewMembers).catch(() => {})
+            chatService.getRoomMembers(roomId).then(setPreviewMembers).catch(() => { })
           }}
           onAddMembers={async (rId, userIds) => {
             await addMembersToGroup(rId, userIds)

@@ -14,7 +14,6 @@ public class GetFeaturedBlogEndpoint : EndpointWithoutRequest<ApiSuccessResponse
     public override void Configure()
     {
         Get("/api/blogs/featured");
-        Tags("Blogs");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
         Summary(s =>

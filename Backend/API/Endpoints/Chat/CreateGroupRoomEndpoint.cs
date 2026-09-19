@@ -21,7 +21,6 @@ public class CreateGroupRoomEndpoint : Endpoint<CreateGroupRoomRequest, ApiSucce
     public override void Configure()
     {
         Post("/api/chat/group", "/api/chat/rooms");
-        Tags("Chat");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Summary(s =>

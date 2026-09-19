@@ -14,7 +14,6 @@ public class GetPlaceTypesEndpoint : EndpointWithoutRequest<ApiSuccessResponse<I
     public override void Configure()
     {
         Get("/api/place-types");
-        Tags("Catalog");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
         Summary(s =>

@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.Extensions;
 using Application.Common;
 using Application.DTOs;
@@ -27,7 +27,6 @@ public class SearchUsersEndpoint : Endpoint<SearchUsersRequest, ApiSuccessRespon
     public override void Configure()
     {
         Get("/api/users/search", "/api/friends/search");
-        Tags("Friends");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));

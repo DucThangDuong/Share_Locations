@@ -23,7 +23,6 @@ public class DeletePlaceReviewEndpoint : Endpoint<DeletePlaceReviewRequest, ApiS
     public override void Configure()
     {
         Delete("/api/reviews/{id}", "/api/places/{placeId}/reviews/{id}");
-        Tags("Places");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

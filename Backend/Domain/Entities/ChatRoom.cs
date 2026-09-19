@@ -1,4 +1,4 @@
-namespace Domain.Entities;
+﻿namespace Domain.Entities;
 
 public class ChatRoom
 {
@@ -29,5 +29,10 @@ public class ChatRoom
         {
             _members.Add(new ChatRoomMember(Id, userId));
         }
+    }
+
+    public void UpdateName(string? newName)
+    {
+        Name = newName?.Trim();
     }
 }

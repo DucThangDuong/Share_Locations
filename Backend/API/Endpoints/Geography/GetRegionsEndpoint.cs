@@ -14,7 +14,6 @@ public class GetRegionsEndpoint : EndpointWithoutRequest<ApiSuccessResponse<IRea
     public override void Configure()
     {
         Get("/api/regions");
-        Tags("Geography");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
         Summary(s =>

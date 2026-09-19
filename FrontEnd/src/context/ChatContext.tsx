@@ -64,6 +64,9 @@ interface ChatContextType {
   openDirectChatWithUser: (targetUserId: number) => Promise<number | null>
   createGroupChat: (name: string, memberIds: number[]) => Promise<number | null>
   addMembersToGroup: (roomId: number, userIds: number[]) => Promise<void>
+  renameGroup: (roomId: number, name: string) => Promise<void>
+  removeMemberFromGroup: (roomId: number, userId: number) => Promise<void>
+  leaveGroupChat: (roomId: number) => Promise<void>
   sendMessage: (payload: Omit<SendMessagePayload, 'roomId'>) => Promise<ChatMessageDto | null>
   markRoomAsRead: (roomId: number) => Promise<void>
   addReaction: (messageId: number, emoji: string) => Promise<void>
@@ -511,6 +514,29 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     [fetchInbox]
   )
 
+  // Rename Group
+  const renameGroup = useCallback(
+    async (roomId: number, name: string) => {
+      try {
+        await chatService.renameGroupRoom(roomId, name)
+      } catch (err) {
+        console.warn('[ChatContext] renameGroupRoom API call failed, updating locally:', err)
+      }
+      setInbox((prev) =>
+        prev.map((item) => (item.roomId === roomId ? { ...item, name } : item))
+      )
+    },
+    []
+  )
+
+  // Remove Member from Group
+  const removeMemberFromGroup = useCallback(
+    async (roomId: number, userId: number) => {
+      await chatService.removeMemberFromRoom(roomId, userId)
+    },
+    []
+  )
+
   // Open Floating Chat Widget
   const openFloatingChat = useCallback(
     async (roomId?: number, targetUserId?: number) => {
@@ -595,6 +621,25 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       })
     },
     [selectRoom]
+  )
+
+  // Leave Group Chat
+  const leaveGroupChat = useCallback(
+    async (roomId: number) => {
+      try {
+        await chatService.leaveGroupRoom(roomId)
+      } catch (err) {
+        console.error('[ChatContext] leaveGroupRoom API failed:', err)
+        throw err
+      }
+      // Dọn dẹp state local sau khi API thành công
+      if (activeRoomIdRef.current === roomId) {
+        setActiveRoomId(null)
+      }
+      setInbox((prev) => prev.filter((item) => item.roomId !== roomId))
+      closeChatHead(roomId)
+    },
+    [closeChatHead]
   )
 
   const toggleHeaderDropdown = useCallback(() => {
@@ -741,6 +786,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         openDirectChatWithUser,
         createGroupChat,
         addMembersToGroup,
+        renameGroup,
+        removeMemberFromGroup,
+        leaveGroupChat,
         sendMessage,
         markRoomAsRead,
         addReaction,

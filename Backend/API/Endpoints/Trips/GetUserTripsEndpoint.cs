@@ -23,7 +23,6 @@ public class GetUserTripsEndpoint : Endpoint<GetUserTripsRequest, ApiSuccessResp
     public override void Configure()
     {
         Get("/api/users/me/trips");
-        Tags("Trips");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("general_api"));

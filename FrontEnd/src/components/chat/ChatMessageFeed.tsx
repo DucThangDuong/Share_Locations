@@ -74,8 +74,8 @@ export const ChatMessageFeed: React.FC<ChatMessageFeedProps> = ({
       {/* Header */}
       <header className="h-16 px-4 border-b border-[#E4E6EB] flex items-center justify-between gap-4 z-10 bg-white">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="relative flex-shrink-0">
-            <img src={roomAvatar} alt="" className="w-10 h-10 rounded-full object-cover" />
+          <div className="relative shrink-0">
+            <img src={roomAvatar} alt={`${roomTitle} avatar`} className="w-10 h-10 rounded-full object-cover" />
           </div>
 
           <div className="min-w-0">
@@ -86,7 +86,7 @@ export const ChatMessageFeed: React.FC<ChatMessageFeedProps> = ({
               ) : isGroup ? (
                 'Nhóm trò chuyện'
               ) : (
-                'Đang trực tuyến'
+                ''
               )}
             </p>
           </div>
@@ -96,8 +96,9 @@ export const ChatMessageFeed: React.FC<ChatMessageFeedProps> = ({
           <button
             type="button"
             onClick={onToggleRightDrawer}
-            className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors cursor-pointer ${showRightDrawer ? 'bg-[#F0F2F5]' : 'hover:bg-[#F0F2F5]'
+            className={`min-h-11 min-w-11 rounded-full flex items-center justify-center transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[#0084FF] ${showRightDrawer ? 'bg-[#F0F2F5]' : 'hover:bg-[#F0F2F5]'
               }`}
+            aria-label="Mở thông tin đoạn chat"
             title="Thông tin đoạn chat"
           >
             <Info size={20} />
@@ -151,6 +152,7 @@ export const ChatMessageFeed: React.FC<ChatMessageFeedProps> = ({
             const isMe = currentUserId ? msg.senderId === currentUserId : false
             const isNextSameSender = messages[idx + 1]?.senderId === msg.senderId
             const isPrevSameSender = idx > 0 && messages[idx - 1]?.senderId === msg.senderId
+            const messageContent = msg.content
 
             return (
               <div
@@ -159,14 +161,14 @@ export const ChatMessageFeed: React.FC<ChatMessageFeedProps> = ({
                   }`}
               >
                 {!isMe && (
-                  <div className="w-7 h-7 flex-shrink-0">
+                  <div className="w-7 h-7 shrink-0">
                     {!isNextSameSender && (
                       <img
                         src={
                           msg.senderAvatarUrl ||
                           'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop'
                         }
-                        alt=""
+                        alt={`Ảnh đại diện của ${msg.senderName}`}
                         className="w-7 h-7 rounded-full object-cover"
                       />
                     )}
@@ -197,20 +199,33 @@ export const ChatMessageFeed: React.FC<ChatMessageFeedProps> = ({
                   )}
 
                   {/* Bubble Content */}
-                  {msg.content && (
+                  {messageContent && (
                     <div
                       onClick={() => {
                         onReplyToMessage({
                           id: msg.id,
                           senderName: `${msg.senderName} đã trả lời bạn`,
-                          text: msg.content || '',
+                          text: messageContent,
                         })
                       }}
-                      className={`relative text-[15px] leading-snug break-words rounded-[18px] px-3.5 py-2 shadow-2xs cursor-pointer ${isMe ? 'bg-[#0084FF] text-white' : 'bg-[#F0F2F5] text-[#050505]'
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault()
+                          onReplyToMessage({
+                            id: msg.id,
+                            senderName: `${msg.senderName} đã trả lời bạn`,
+                            text: messageContent,
+                          })
+                        }
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      aria-label="Trả lời tin nhắn"
+                      className={`relative text-[15px] leading-snug wrap-break-word rounded-[18px] px-3.5 py-2 shadow-2xs cursor-pointer ${isMe ? 'bg-[#0084FF] text-white' : 'bg-[#F0F2F5] text-[#050505]'
                         }`}
                       title="Bấm để trả lời tin nhắn này"
                     >
-                      <p className="whitespace-pre-wrap">{msg.content}</p>
+                      <p className="whitespace-pre-wrap">{messageContent}</p>
                     </div>
                   )}
 
@@ -221,19 +236,27 @@ export const ChatMessageFeed: React.FC<ChatMessageFeedProps> = ({
                         <img
                           key={att.id}
                           src={att.mediaUrl}
-                          alt=""
+                          alt={`Ảnh đính kèm từ ${msg.senderName}`}
                           className="mt-1 rounded-2xl max-w-sm max-h-72 object-cover cursor-pointer hover:opacity-95 shadow-sm"
                           onClick={() => onPreviewImage(att.mediaUrl!)}
                         />
                       )
                     }
                     if (att.attachmentType === MessageAttachmentType.Place && att.placeId) {
+                      const placeId = att.placeId
                       return (
                         <div
                           key={att.id}
-                          onClick={() => {
-                            if (onSelectPlace && att.placeId) onSelectPlace(att.placeId)
+                          onClick={() => onSelectPlace?.(placeId)}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                              event.preventDefault()
+                              onSelectPlace?.(placeId)
+                            }
                           }}
+                          role="button"
+                          tabIndex={0}
+                          aria-label={`Xem địa điểm ${att.placeName || ''}`.trim()}
                           className="mt-1 bg-white rounded-2xl overflow-hidden border border-[#E4E6EB] shadow-sm max-w-[320px] cursor-pointer hover:bg-slate-50"
                         >
                           {att.placeCoverUrl && (

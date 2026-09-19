@@ -20,7 +20,6 @@ public class UnfriendEndpoint : Endpoint<UnfriendRequest, ApiSuccessResponse<obj
     public override void Configure()
     {
         Delete("/api/friends/{targetUserId}");
-        Tags("Friends");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

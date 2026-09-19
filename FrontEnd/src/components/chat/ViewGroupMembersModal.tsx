@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { X, Users, UserPlus, Loader2, Search } from 'lucide-react'
+import { X, Users, UserPlus, Loader2, Search, ShieldCheck } from 'lucide-react'
 import { chatService, type ChatRoomMemberDto } from '@/services/chatService'
 
 interface ViewGroupMembersModalProps {
@@ -130,6 +130,8 @@ export const ViewGroupMembersModal: React.FC<ViewGroupMembersModalProps> = ({
                 m.avatarUrl ||
                 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop'
 
+              const isMemberAdmin = Boolean(m.isAdmin || m.role === 'Admin')
+
               return (
                 <div
                   key={m.userId}
@@ -152,6 +154,13 @@ export const ViewGroupMembersModal: React.FC<ViewGroupMembersModalProps> = ({
                       )}
                     </div>
                   </div>
+
+                  {isMemberAdmin && (
+                    <span className="text-[11px] font-semibold text-[#0084FF] bg-blue-50 px-2 py-0.5 rounded-full flex items-center gap-1 shrink-0">
+                      <ShieldCheck size={12} />
+                      <span>Quản trị viên</span>
+                    </span>
+                  )}
                 </div>
               )
             })

@@ -9,7 +9,6 @@ import {
   ChatInputBar,
   ChatDrawer,
   ChatPlacePickerModal,
-  ChatCallModal,
   ChatLightbox,
 } from '@/components/chat'
 
@@ -55,12 +54,6 @@ export default function ChatPage({
   const [showRightDrawer, setShowRightDrawer] = useState(true)
   const [showPlacePicker, setShowPlacePicker] = useState(false)
   const [lightboxImage, setLightboxImage] = useState<string | null>(null)
-  const [callModal, setCallModal] = useState<{
-    isOpen: boolean
-    type: 'voice' | 'video'
-    partnerName: string
-    partnerAvatar: string
-  } | null>(null)
 
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -250,15 +243,6 @@ export default function ChatPage({
         isOpen={showPlacePicker}
         onClose={() => setShowPlacePicker(false)}
         onSelectPlace={handleSharePlace}
-      />
-
-      {/* MODAL GỌI THOẠI / VIDEO */}
-      <ChatCallModal
-        isOpen={!!callModal?.isOpen}
-        callType={callModal?.type || 'voice'}
-        partnerName={callModal?.partnerName || roomTitle}
-        partnerAvatar={callModal?.partnerAvatar || roomAvatar}
-        onEndCall={() => setCallModal(null)}
       />
 
       {/* LIGHTBOX XEM ẢNH */}

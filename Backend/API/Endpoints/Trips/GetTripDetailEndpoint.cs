@@ -19,7 +19,6 @@ public class GetTripDetailEndpoint : Endpoint<GetTripDetailRequest, ApiSuccessRe
     public override void Configure()
     {
         Get("/api/trips/{id}");
-        Tags("Trips");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
         Summary(s =>

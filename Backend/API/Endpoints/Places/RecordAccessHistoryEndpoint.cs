@@ -20,7 +20,6 @@ public class RecordAccessHistoryEndpoint : Endpoint<RecordAccessHistoryRequest>
     public override void Configure()
     {
         Post("/api/places/{id}/access-history");
-        Tags("Places");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

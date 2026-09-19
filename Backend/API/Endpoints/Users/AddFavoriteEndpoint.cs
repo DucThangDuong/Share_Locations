@@ -30,7 +30,6 @@ public class AddFavoriteEndpoint : Endpoint<AddFavoriteRequest, ApiSuccessRespon
         Post(
             "/api/users/me/favorites",
             "/api/users/me/favorites/{targetType}/{targetId}");
-        Tags("Users");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

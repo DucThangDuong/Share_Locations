@@ -34,7 +34,6 @@ public class GetUserFavoritesEndpoint : Endpoint<GetUserFavoritesRequest, ApiSuc
     public override void Configure()
     {
         Get("/api/users/me/favorites");
-        Tags("Users");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("general_api"));

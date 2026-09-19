@@ -15,7 +15,6 @@ public class GoogleLoginEndpoint : Endpoint<GoogleLoginRequest, ApiSuccessRespon
     public override void Configure()
     {
         Post("/api/auth/google");
-        Tags("Auth");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("auth_strict"));
         Summary(s =>

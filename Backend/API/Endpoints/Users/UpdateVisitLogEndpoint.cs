@@ -24,7 +24,6 @@ public class UpdateVisitLogEndpoint : Endpoint<UpdateVisitLogRequest>
     public override void Configure()
     {
         Put("/api/users/me/visit-logs/{id}");
-        Tags("Users");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

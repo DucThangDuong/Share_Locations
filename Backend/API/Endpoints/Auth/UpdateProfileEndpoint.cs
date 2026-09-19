@@ -18,7 +18,6 @@ public class UpdateProfileEndpoint : Endpoint<UpdateProfileRequest, ApiSuccessRe
     public override void Configure()
     {
         Put("/api/auth/profile");
-        Tags("Auth");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         AllowFileUploads();

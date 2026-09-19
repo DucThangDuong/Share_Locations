@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.Extensions;
 using Application.Common;
 using Application.DTOs;
@@ -21,7 +21,6 @@ public class ToggleReviewLikeEndpoint : Endpoint<ToggleReviewLikeRequest, ApiSuc
     public override void Configure()
     {
         Post("/api/reviews/{id}/toggle-like");
-        Tags("Reviews");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

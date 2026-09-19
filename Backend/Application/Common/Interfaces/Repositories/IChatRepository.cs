@@ -9,6 +9,9 @@ public interface IChatRepository
     Task<long> GetOrCreateDirectRoomAsync(long userAId, long userBId, CancellationToken ct = default);
     Task<long> CreateGroupRoomAsync(string name, long creatorId, IReadOnlyList<long> memberIds, CancellationToken ct = default);
     Task<bool> AddMembersToRoomAsync(long roomId, IReadOnlyList<long> userIds, CancellationToken ct = default);
+    Task<bool> UpdateRoomNameAsync(long roomId, string name, CancellationToken ct = default);
+    Task<bool> RemoveMemberFromRoomAsync(long roomId, long userId, CancellationToken ct = default);
+    Task<bool> DisbandGroupRoomAsync(long roomId, CancellationToken ct = default);
     Task<ChatRoom?> GetRoomByIdAsync(long roomId, CancellationToken ct = default);
     Task<IReadOnlyList<long>> GetRoomMemberUserIdsAsync(long roomId, CancellationToken ct = default);
     Task<IReadOnlyList<ChatRoomMemberDto>> GetRoomMembersAsync(long roomId, CancellationToken ct = default);

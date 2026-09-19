@@ -21,7 +21,6 @@ public class RemoveTripMemberEndpoint : Endpoint<RemoveTripMemberRequest, ApiSuc
     public override void Configure()
     {
         Delete("/api/trips/{id}/members/{userId}");
-        Tags("Trips");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

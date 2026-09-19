@@ -16,7 +16,6 @@ public class CreateVisitLogEndpoint : Endpoint<CreateVisitLogRequestDto, ApiSucc
     public override void Configure()
     {
         Post("/api/users/me/visit-logs");
-        Tags("Users");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

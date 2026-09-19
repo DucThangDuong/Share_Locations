@@ -14,7 +14,6 @@ public class RegisterEndpoint : Endpoint<RegisterRequest, ApiSuccessResponse<lon
     public override void Configure()
     {
         Post("/api/auth/register");
-        Tags("Auth");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("auth_strict"));
         Summary(s =>

@@ -1,4 +1,4 @@
-﻿using Application.Common.Interfaces.Repositories;
+using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
 using Dapper;
 using Domain.Entities;
@@ -441,10 +441,26 @@ public class ChatRepository : IChatRepository
         _dbContext.ChatRooms.Add(newRoom);
         await _dbContext.SaveChangesAsync(ct);
 
-        var allMemberIds = memberIds.Append(creatorId).Distinct().ToList();
-        var members = allMemberIds.Select(uid => new ChatRoomMember(newRoom.Id, uid)).ToList();
-        _dbContext.ChatRoomMembers.AddRange(members);
+        // 1. Tạo và lưu Quản trị viên (người gửi yêu cầu tạo nhóm) ĐẦU TIÊN
+        var creatorMember = new ChatRoomMember(newRoom.Id, creatorId);
+        _dbContext.ChatRoomMembers.Add(creatorMember);
         await _dbContext.SaveChangesAsync(ct);
+
+        // 2. Thêm các thành viên còn lại
+        var otherMemberIds = memberIds
+            .Where(id => id > 0 && id != creatorId)
+            .Distinct()
+            .ToList();
+
+        if (otherMemberIds.Count > 0)
+        {
+            var otherMembers = otherMemberIds
+                .Select(uid => new ChatRoomMember(newRoom.Id, uid))
+                .ToList();
+
+            _dbContext.ChatRoomMembers.AddRange(otherMembers);
+            await _dbContext.SaveChangesAsync(ct);
+        }
 
         return newRoom.Id;
     }
@@ -464,6 +480,41 @@ public class ChatRepository : IChatRepository
             await _dbContext.SaveChangesAsync(ct);
         }
 
+        return true;
+    }
+
+    public async Task<bool> UpdateRoomNameAsync(long roomId, string name, CancellationToken ct = default)
+    {
+        var room = await _dbContext.ChatRooms.FirstOrDefaultAsync(r => r.Id == roomId, ct);
+        if (room == null) return false;
+
+        room.UpdateName(name);
+        await _dbContext.SaveChangesAsync(ct);
+        return true;
+    }
+
+    public async Task<bool> RemoveMemberFromRoomAsync(long roomId, long userId, CancellationToken ct = default)
+    {
+        var member = await _dbContext.ChatRoomMembers
+            .FirstOrDefaultAsync(m => m.ChatRoomId == roomId && m.UserId == userId, ct);
+        if (member == null) return false;
+
+        _dbContext.ChatRoomMembers.Remove(member);
+        await _dbContext.SaveChangesAsync(ct);
+        return true;
+    }
+
+    public async Task<bool> DisbandGroupRoomAsync(long roomId, CancellationToken ct = default)
+    {
+        var members = await _dbContext.ChatRoomMembers
+            .Where(m => m.ChatRoomId == roomId)
+            .ToListAsync(ct);
+
+        if (members.Count > 0)
+        {
+            _dbContext.ChatRoomMembers.RemoveRange(members);
+            await _dbContext.SaveChangesAsync(ct);
+        }
         return true;
     }
 
@@ -497,7 +548,15 @@ public class ChatRepository : IChatRepository
                 COALESCE(p.FullName, u.Email, N'Người dùng') AS Name,
                 p.AvatarUrl,
                 u.Email,
-                m.JoinedAt
+                m.JoinedAt,
+                CASE 
+                    WHEN ROW_NUMBER() OVER (ORDER BY m.JoinedAt ASC) = 1 THEN CAST(1 AS BIT)
+                    ELSE CAST(0 AS BIT)
+                END AS IsAdmin,
+                CASE 
+                    WHEN ROW_NUMBER() OVER (ORDER BY m.JoinedAt ASC) = 1 THEN 'Admin'
+                    ELSE 'Member'
+                END AS Role
             FROM dbo.ChatRoomMembers m
             INNER JOIN dbo.Users u ON m.UserId = u.Id
             LEFT JOIN dbo.UserProfiles p ON u.Id = p.UserId

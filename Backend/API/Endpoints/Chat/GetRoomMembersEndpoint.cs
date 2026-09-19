@@ -21,7 +21,6 @@ public class GetRoomMembersEndpoint : Endpoint<GetRoomMembersRequest, ApiSuccess
     public override void Configure()
     {
         Get("/api/chat/rooms/{roomId}/members");
-        Tags("Chat");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Summary(s =>

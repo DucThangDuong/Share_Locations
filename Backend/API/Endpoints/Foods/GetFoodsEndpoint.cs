@@ -15,7 +15,6 @@ public class GetFoodsEndpoint : Endpoint<GetFoodsRequest, ApiSuccessResponse<IRe
     public override void Configure()
     {
         Get("/api/foods");
-        Tags("Foods");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
         Summary(s =>

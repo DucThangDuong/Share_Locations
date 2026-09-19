@@ -80,6 +80,8 @@ export interface ChatRoomMemberDto {
   avatarUrl: string | null
   email: string | null
   joinedAt: string
+  isAdmin: boolean
+  role: string
 }
 
 export const chatService = {
@@ -185,11 +187,28 @@ export const chatService = {
         avatarUrl: m.avatarUrl ?? m.avatar ?? null,
         email: m.email ?? null,
         joinedAt: m.joinedAt ?? m.createdAt ?? new Date().toISOString(),
+        isAdmin: Boolean(m.isAdmin ?? m.role === 'Admin'),
+        role: m.role ?? (m.isAdmin ? 'Admin' : 'Member'),
       }))
     } catch (err) {
       console.warn('Failed to get room members from API:', err)
       return []
     }
+  },
+
+  // 10. Đổi tên phòng chat nhóm
+  renameGroupRoom: async (roomId: number, name: string): Promise<void> => {
+    await apiClient.put(`/api/chat/rooms/${roomId}/name`, { roomId, name })
+  },
+
+  // 11. Xóa thành viên khỏi phòng chat nhóm
+  removeMemberFromRoom: async (roomId: number, userId: number): Promise<void> => {
+    await apiClient.delete(`/api/chat/rooms/${roomId}/members/${userId}`)
+  },
+
+  // 12. Rời khỏi phòng chat nhóm
+  leaveGroupRoom: async (roomId: number): Promise<void> => {
+    await apiClient.post(`/api/chat/rooms/${roomId}/leave`)
   },
 }
 

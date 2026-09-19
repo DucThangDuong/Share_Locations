@@ -24,7 +24,6 @@ public class ChangeVisitPrivacyEndpoint : Endpoint<ChangeVisitPrivacyRequest>
     public override void Configure()
     {
         Patch("/api/users/me/visit-logs/{id}/privacy");
-        Tags("Users");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

@@ -16,7 +16,6 @@ public class CreateTripEndpoint : Endpoint<CreateTripRequestDto, ApiSuccessRespo
     public override void Configure()
     {
         Post("/api/trips");
-        Tags("Trips");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

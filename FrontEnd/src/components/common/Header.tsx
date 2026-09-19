@@ -30,6 +30,7 @@ export const Header: React.FC = () => {
   const drawerRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
   const location = useLocation()
+  const isChatRoute = location.pathname === '/chat'
 
   const displayName = user?.fullName || profile?.fullName || 'Người dùng'
   const avatarUrl = user?.avatarUrl || profile?.avatarUrl || null
@@ -101,7 +102,7 @@ export const Header: React.FC = () => {
           <button
             type="button"
             onClick={() => setIsNavDrawerOpen(true)}
-            className="p-2 -ml-2 rounded-xl text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center shrink-0"
+            className="min-h-11 min-w-11 p-2 -ml-2 rounded-xl text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center shrink-0"
             aria-label="Mở danh mục điều hướng"
             title="Danh mục điều hướng"
           >
@@ -138,13 +139,13 @@ export const Header: React.FC = () => {
             <span className="hidden sm:inline">Đề xuất địa điểm</span>
           </Link>
 
-          {isAuthenticated && (
+          {isAuthenticated && !isChatRoute && (
             <div className="relative">
               <button
                 type="button"
                 onClick={toggleHeaderDropdown}
                 className={`relative inline-flex h-11 w-11 items-center justify-center rounded-full transition-colors cursor-pointer ${
-                  isHeaderDropdownOpen || location.pathname === '/chat'
+                  isHeaderDropdownOpen
                     ? 'bg-blue-100 text-[#0084FF]'
                     : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                 }`}

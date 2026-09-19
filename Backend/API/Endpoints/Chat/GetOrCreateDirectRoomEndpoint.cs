@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.Extensions;
 using Application.Common;
 using Application.Features.Chat.Commands;
@@ -20,7 +20,6 @@ public class GetOrCreateDirectRoomEndpoint : Endpoint<GetOrCreateDirectRoomReque
     public override void Configure()
     {
         Post("/api/chat/direct/{targetUserId}");
-        Tags("Chat");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Summary(s =>

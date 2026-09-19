@@ -29,7 +29,6 @@ public class AddTripPlaceEndpoint : Endpoint<AddTripPlaceRequest, ApiSuccessResp
     public override void Configure()
     {
         Post("/api/trips/{id}/days/{dayNumber}/places");
-        Tags("Trips");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

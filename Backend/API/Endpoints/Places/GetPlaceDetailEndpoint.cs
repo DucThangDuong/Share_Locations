@@ -20,7 +20,6 @@ public class GetPlaceDetailEndpoint : Endpoint<GetPlaceDetailRequest, ApiSuccess
     public override void Configure()
     {
         Get("/api/places/{id}");
-        Tags("Places");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
         Summary(s =>

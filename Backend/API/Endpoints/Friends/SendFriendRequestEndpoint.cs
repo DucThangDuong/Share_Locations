@@ -20,7 +20,6 @@ public class SendFriendRequestEndpoint : Endpoint<SendFriendRequest, ApiSuccessR
     public override void Configure()
     {
         Post("/api/friends/request/{targetUserId}");
-        Tags("Friends");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("auth_strict"));

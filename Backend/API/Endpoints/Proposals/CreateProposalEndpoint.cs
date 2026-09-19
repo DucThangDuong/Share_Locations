@@ -16,7 +16,6 @@ public class CreateProposalEndpoint : Endpoint<CreateProposalRequestDto, ApiSucc
     public override void Configure()
     {
         Post("/api/proposals");
-        Tags("Proposals");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

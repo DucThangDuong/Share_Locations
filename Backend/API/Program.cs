@@ -77,6 +77,16 @@ public class Program
 
         app.UseFastEndpoints(c =>
         {
+            c.Endpoints.Configurator = ep =>
+            {
+                var ns = ep.EndpointType.Namespace;
+                if (ns != null)
+                {
+                    var tag = ns.Split('.').Last();
+                    ep.Description(b => b.WithTags(tag));
+                }
+            };
+
             c.Binding.ValueParserFor<IFormFile>(input => new(true, null));
 
             c.Errors.ResponseBuilder = (failures, ctx, statusCode) =>

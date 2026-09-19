@@ -24,7 +24,6 @@ public class UpdateBlogEndpoint : Endpoint<UpdateBlogRequest>
     public override void Configure()
     {
         Put("/api/blogs/{id}");
-        Tags("Blogs");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

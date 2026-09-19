@@ -15,7 +15,6 @@ public class GetPlaceReviewsEndpoint : Endpoint<GetPlaceReviewsRequest, ApiSucce
     public override void Configure()
     {
         Get("/api/places/{id}/reviews");
-        Tags("Places");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
         Summary(s =>

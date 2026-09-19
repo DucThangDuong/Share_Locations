@@ -24,7 +24,6 @@ public class UpdateTripDayEndpoint : Endpoint<UpdateTripDayRequest, ApiSuccessRe
     public override void Configure()
     {
         Put("/api/trips/{id}/days/{dayNumber}");
-        Tags("Trips");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));

@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.Extensions;
 using Application.Common;
 using Application.DTOs;
@@ -16,7 +16,6 @@ public class GetInboxEndpoint : EndpointWithoutRequest<ApiSuccessResponse<IReadO
     public override void Configure()
     {
         Get("/api/chat/inbox");
-        Tags("Chat");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Summary(s =>

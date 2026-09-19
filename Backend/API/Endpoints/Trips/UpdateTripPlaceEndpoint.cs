@@ -27,7 +27,6 @@ public class UpdateTripPlaceEndpoint : Endpoint<UpdateTripPlaceRequest, ApiSucce
     public override void Configure()
     {
         Put("/api/trips/places/{tripPlaceId}");
-        Tags("Trips");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
         Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));
