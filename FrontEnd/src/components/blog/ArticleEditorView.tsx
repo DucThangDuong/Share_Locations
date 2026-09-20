@@ -422,7 +422,7 @@ export const ArticleEditorView = forwardRef<ArticleEditorRef, ArticleEditorViewP
           setCategoriesList(res.data.categories)
         }
       })
-      .catch(() => {})
+      .catch(() => { })
     return () => {
       isMounted = false
     }
@@ -507,7 +507,7 @@ export const ArticleEditorView = forwardRef<ArticleEditorRef, ArticleEditorViewP
 
       if (onPublish) onPublish(data)
       if (onSave) onSave(data)
-      showNotification('Xuất bản cẩm nang thành công!', 'success')
+      showNotification('Công bố thành công!', 'success')
     } catch {
       showNotification('Có lỗi xảy ra khi xuất bản bài viết.', 'error')
     } finally {
@@ -778,7 +778,7 @@ export const ArticleEditorView = forwardRef<ArticleEditorRef, ArticleEditorViewP
               className="px-4 py-1.5 bg-emerald-800 text-white text-xs font-bold rounded-xl hover:bg-emerald-900 transition-colors cursor-pointer disabled:opacity-50 shadow-xs flex items-center gap-1.5"
             >
               <Send size={13} />
-              <span>{isPublishing ? 'Đang xuất bản...' : isManagerMode ? 'Lưu nội dung' : 'Xuất bản cẩm nang'}</span>
+              <span>{isPublishing ? 'Đang xuất bản...' : isManagerMode ? 'Lưu nội dung' : 'Công bố'}</span>
             </button>
           </div>
         </div>

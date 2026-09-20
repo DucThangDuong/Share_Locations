@@ -106,7 +106,6 @@ export interface DetailedItineraryItem {
   coverImg?: string
   authorName: string
   authorAvatar?: string | null
-  authorRank?: string
   tags?: string[]
   description: string
   days: ItineraryDayData[]

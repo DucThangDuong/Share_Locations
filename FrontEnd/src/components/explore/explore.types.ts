@@ -24,5 +24,4 @@ export const SORT_OPTIONS: SortOption[] = [
   { label: 'Nhiều lượt đánh giá nhất', value: 'reviews_desc' },
   { label: 'Giá: Thấp đến cao', value: 'price_asc' },
   { label: 'Giá: Cao đến thấp', value: 'price_desc' },
-  { label: 'Mới nhất', value: 'newest' }
 ]

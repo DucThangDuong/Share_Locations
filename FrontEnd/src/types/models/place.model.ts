@@ -78,11 +78,6 @@ export interface PlaceFilterParams {
   pageSize?: number
 }
 
-export interface PlaceAmenityDto {
-  id: string
-  name: string
-  icon: string
-}
 
 export interface PlaceDetailDto {
   id: number
@@ -111,7 +106,6 @@ export interface PlaceDetailDto {
   website?: string | null
   email?: string | null
   highlights: string[]
-  amenities: PlaceAmenityDto[]
   status: number
   createdAt: string
 }

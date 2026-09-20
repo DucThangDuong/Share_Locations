@@ -210,6 +210,40 @@ export const chatService = {
   leaveGroupRoom: async (roomId: number): Promise<void> => {
     await apiClient.post(`/api/chat/rooms/${roomId}/leave`)
   },
+
+  // 13. Sửa tin nhắn
+  editMessage: async (messageId: number, content: string, roomId?: number): Promise<ChatMessageDto> => {
+    try {
+      const response = await apiClient.put<any>(`/api/chat/messages/${messageId}`, {
+        content,
+        roomId,
+      })
+      const payload = response.data
+      return payload?.data ?? payload
+    } catch (err) {
+      if (roomId) {
+        const response = await apiClient.put<any>(`/api/chat/rooms/${roomId}/messages/${messageId}`, {
+          content,
+        })
+        const payload = response.data
+        return payload?.data ?? payload
+      }
+      throw err
+    }
+  },
+
+  // 14. Xóa tin nhắn
+  deleteMessage: async (messageId: number, roomId?: number): Promise<void> => {
+    try {
+      await apiClient.delete(`/api/chat/messages/${messageId}`)
+    } catch (err) {
+      if (roomId) {
+        await apiClient.delete(`/api/chat/rooms/${roomId}/messages/${messageId}`)
+      } else {
+        throw err
+      }
+    }
+  },
 }
 
 export default chatService

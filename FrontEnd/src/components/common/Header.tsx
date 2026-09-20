@@ -4,29 +4,26 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { useChat } from '@/context/ChatContext'
 import { HeaderChatDropdown } from './HeaderChatDropdown'
+import { UserUtilityDrawer } from './UserUtilityDrawer'
 import {
   Search,
   Compass,
   MapPin,
   Route,
   BookOpen,
-  User,
-  LogOut,
   Menu,
   X,
   ChevronDown,
   Plus,
-  Sliders,
   MessageCircle
 } from 'lucide-react'
 
 export const Header: React.FC = () => {
-  const { isAuthenticated, profile, user, logout } = useAuth()
+  const { isAuthenticated, profile, user } = useAuth()
   const { isHeaderDropdownOpen, setIsHeaderDropdownOpen, toggleHeaderDropdown, totalUnreadCount } = useChat()
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [isUtilityDrawerOpen, setIsUtilityDrawerOpen] = useState(false)
   const [isNavDrawerOpen, setIsNavDrawerOpen] = useState(false)
   const [headerSearch, setHeaderSearch] = useState('')
-  const dropdownRef = useRef<HTMLDivElement>(null)
   const drawerRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
   const location = useLocation()
@@ -37,9 +34,6 @@ export const Header: React.FC = () => {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false)
-      }
       if (drawerRef.current && !drawerRef.current.contains(event.target as Node)) {
         setIsNavDrawerOpen(false)
       }
@@ -47,7 +41,6 @@ export const Header: React.FC = () => {
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        setIsDropdownOpen(false)
         setIsNavDrawerOpen(false)
       }
     }
@@ -70,13 +63,6 @@ export const Header: React.FC = () => {
       document.body.style.overflow = ''
     }
   }, [isNavDrawerOpen])
-
-  const handleLogout = async () => {
-    await logout()
-    setIsDropdownOpen(false)
-    setIsNavDrawerOpen(false)
-    navigate('/login')
-  }
 
   const handleHeaderSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -168,12 +154,14 @@ export const Header: React.FC = () => {
           )}
 
           {isAuthenticated ? (
-            <div className="relative" ref={dropdownRef}>
+            <div>
               <button
                 type="button"
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center gap-1.5 p-1 pr-1.5 rounded-full border border-slate-200/90 bg-white hover:bg-slate-50 hover:border-slate-300 transition-colors cursor-pointer shadow-2xs"
-                aria-expanded={isDropdownOpen}
+                onClick={() => setIsUtilityDrawerOpen(true)}
+                className="flex items-center gap-1.5 p-1 pr-1.5 rounded-full border border-slate-200/90 bg-white hover:bg-slate-50 hover:border-slate-300 transition-colors cursor-pointer shadow-2xs group"
+                aria-expanded={isUtilityDrawerOpen}
+                aria-label="Mở tiện ích cá nhân"
+                title="Tiện ích cá nhân"
               >
                 <div className="relative">
                   {avatarUrl ? (
@@ -187,63 +175,15 @@ export const Header: React.FC = () => {
                       {displayName.charAt(0).toUpperCase()}
                     </div>
                   )}
-                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white"></span>
+                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white" />
                 </div>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400 mr-0.5" />
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 transition-colors mr-0.5" />
               </button>
 
-              {isDropdownOpen && (
-                <div className="absolute right-0 mt-2.5 w-64 bg-white rounded-2xl border border-slate-200/90 z-50 py-2 animate-in fade-in slide-in-from-top-2 duration-150 divide-y divide-slate-100 shadow-xl">
-                  <div className="px-4 py-3 flex items-center gap-3">
-                    {avatarUrl ? (
-                      <img
-                        alt={displayName}
-                        className="w-10 h-10 rounded-full object-cover border border-emerald-500/30 ring-1 ring-emerald-500/20 shrink-0"
-                        src={avatarUrl}
-                      />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center text-sm font-bold border border-emerald-500/30 shrink-0">
-                        {displayName.charAt(0).toUpperCase()}
-                      </div>
-                    )}
-                    <div className="overflow-hidden">
-                      <p className="text-xs font-bold text-slate-900 truncate">{displayName}</p>
-                      <p className="text-[10px] text-slate-400 truncate">{user?.email || profile?.email}</p>
-                    </div>
-                  </div>
-
-                  <div className="py-1">
-                    <Link
-                      to="/profile"
-                      onClick={() => setIsDropdownOpen(false)}
-                      className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium text-slate-700 hover:bg-emerald-50/50 hover:text-emerald-700 transition-colors"
-                    >
-                      <User className="w-4 h-4 text-slate-400" />
-                      <span>Xem trang cá nhân</span>
-                    </Link>
-
-                    <Link
-                      to="/settings"
-                      onClick={() => setIsDropdownOpen(false)}
-                      className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium text-slate-700 hover:bg-emerald-50/50 hover:text-emerald-700 transition-colors"
-                    >
-                      <Sliders className="w-4 h-4 text-slate-400" />
-                      <span>Cài đặt</span>
-                    </Link>
-                  </div>
-
-                  <div className="pt-1">
-                    <button
-                      type="button"
-                      onClick={handleLogout}
-                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer text-left"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      <span>Đăng xuất</span>
-                    </button>
-                  </div>
-                </div>
-              )}
+              <UserUtilityDrawer
+                isOpen={isUtilityDrawerOpen}
+                onClose={() => setIsUtilityDrawerOpen(false)}
+              />
             </div>
           ) : (
             <div className="flex items-center gap-2">

@@ -1,5 +1,5 @@
 import React from 'react'
-import { MapPin, Image as ImageIcon, FileText, Send, Loader2, Reply, X } from 'lucide-react'
+import { Image as ImageIcon, Send, Loader2, Reply, X } from 'lucide-react'
 
 interface ChatInputBarProps {
   inputText: string
@@ -8,9 +8,7 @@ interface ChatInputBarProps {
   isSending: boolean
   replyingTo: { id: number; senderName: string; text: string } | null
   onCancelReply: () => void
-  onOpenPlacePicker: () => void
   onTriggerImageUpload: () => void
-  onTriggerFileUpload: () => void
 }
 
 export const ChatInputBar: React.FC<ChatInputBarProps> = ({
@@ -20,9 +18,7 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
   isSending,
   replyingTo,
   onCancelReply,
-  onOpenPlacePicker,
   onTriggerImageUpload,
-  onTriggerFileUpload,
 }) => {
   return (
     <>
@@ -49,32 +45,16 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
       <footer className="p-3 bg-white border-t border-[#E4E6EB] flex items-center gap-2 z-10">
         <button
           type="button"
-          onClick={onOpenPlacePicker}
-          className="p-2 rounded-full hover:bg-[#F0F2F5] text-[#0084FF] transition-colors cursor-pointer"
-          title="Chia sẻ địa điểm"
-        >
-          <MapPin size={20} />
-        </button>
-        <button
-          type="button"
           onClick={onTriggerImageUpload}
           className="p-2 rounded-full hover:bg-[#F0F2F5] text-[#0084FF] transition-colors cursor-pointer"
           title="Đính kèm ảnh"
         >
           <ImageIcon size={20} />
         </button>
-        <button
-          type="button"
-          onClick={onTriggerFileUpload}
-          className="p-2 rounded-full hover:bg-[#F0F2F5] text-[#0084FF] transition-colors cursor-pointer"
-          title="Đính kèm tệp"
-        >
-          <FileText size={20} />
-        </button>
 
         <input
           type="text"
-          placeholder="Aa"
+          placeholder="Nhập tin nhắn..."
           value={inputText}
           onChange={onInputChange}
           onKeyDown={(e) => {
@@ -83,26 +63,19 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
           className="flex-1 px-4 py-2 bg-[#F0F2F5] focus:bg-white text-sm text-[#050505] rounded-full outline-none placeholder-[#65676B] border border-transparent focus:border-[#0084FF] transition-all"
         />
 
-        {inputText.trim() ? (
-          <button
-            type="button"
-            disabled={isSending}
-            onClick={() => onSendMessage()}
-            className="p-2 rounded-full bg-[#0084FF] hover:bg-[#0073E6] text-white transition-colors cursor-pointer disabled:opacity-50"
-            title="Gửi"
-          >
-            {isSending ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={() => onSendMessage('👍')}
-            className="p-2 rounded-full text-[#0084FF] hover:bg-[#F0F2F5] transition-colors cursor-pointer text-lg"
-            title="Thích"
-          >
-            👍
-          </button>
-        )}
+        <button
+          type="button"
+          disabled={!inputText.trim() || isSending}
+          onClick={() => onSendMessage()}
+          className={`p-2 rounded-full transition-colors ${
+            inputText.trim() && !isSending
+              ? 'bg-[#0084FF] hover:bg-[#0073E6] text-white cursor-pointer'
+              : 'text-slate-300 cursor-not-allowed'
+          }`}
+          title="Gửi"
+        >
+          {isSending ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+        </button>
       </footer>
     </>
   )

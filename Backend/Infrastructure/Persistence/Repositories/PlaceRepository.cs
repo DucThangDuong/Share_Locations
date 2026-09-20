@@ -200,15 +200,6 @@ public class PlaceRepository : IPlaceRepository
             $"Được đánh giá {place.AvgRating:F1} sao từ {place.ReviewCount} lượt du khách"
         ];
 
-        place.Amenities =
-        [
-            new PlaceAmenityDto { Id = "1", Name = "Wifi miễn phí", Icon = "wifi" },
-            new PlaceAmenityDto { Id = "2", Name = "Bãi đỗ xe thuận tiện", Icon = "car" },
-            new PlaceAmenityDto { Id = "3", Name = "Hỗ trợ thanh toán thẻ / QR", Icon = "credit-card" },
-            new PlaceAmenityDto { Id = "4", Name = "Không gian thoáng mát", Icon = "wind" },
-            new PlaceAmenityDto { Id = "5", Name = "Phù hợp gia đình & nhóm bạn", Icon = "users" }
-        ];
-
         return place;
     }
 

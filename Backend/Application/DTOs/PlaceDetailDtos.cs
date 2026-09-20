@@ -1,12 +1,4 @@
 namespace Application.DTOs;
-
-public class PlaceAmenityDto
-{
-    public string Id { get; set; } = string.Empty;
-    public string Name { get; set; } = string.Empty;
-    public string Icon { get; set; } = string.Empty;
-}
-
 public class PlaceDetailDto
 {
     public long Id { get; set; }
@@ -35,7 +27,6 @@ public class PlaceDetailDto
     public string? Website { get; set; }
     public string? Email { get; set; }
     public IReadOnlyList<string> Highlights { get; set; } = [];
-    public IReadOnlyList<PlaceAmenityDto> Amenities { get; set; } = [];
     public int Status { get; set; } = 1;
     public DateTime CreatedAt { get; set; }
 }

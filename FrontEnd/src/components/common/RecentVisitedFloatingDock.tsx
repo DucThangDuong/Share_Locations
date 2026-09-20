@@ -200,12 +200,12 @@ export const RecentVisitedFloatingDock: React.FC = () => {
               type="button"
               onClick={() => {
                 setIsOpen(false)
-                navigate('/profile')
+                navigate('/explore')
               }}
               className="text-[11px] font-bold text-emerald-800 hover:text-emerald-900 transition-colors flex items-center gap-1 cursor-pointer"
             >
               <Compass size={12} />
-              <span>Xem nhật ký cá nhân</span>
+              <span>Khám phá thêm địa điểm</span>
             </button>
 
             <button

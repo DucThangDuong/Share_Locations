@@ -46,7 +46,7 @@ export const RegionBlogSection: React.FC<RegionBlogSectionProps> = ({ posts, reg
                 <img
                   src={post.coverUrl}
                   alt={post.title}
-                  className="w-full h-full object-cover group-hover:scale-102 transition-all duration-300"
+                  className="w-full h-full object-cover group-hover:opacity-80 transition-opacity duration-300"
                   loading="lazy"
                 />
               ) : (

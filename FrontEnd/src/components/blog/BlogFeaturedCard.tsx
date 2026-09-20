@@ -1,4 +1,4 @@
-import { ChevronRight, Sparkles, BookOpen } from 'lucide-react'
+import { ChevronRight, BookOpen } from 'lucide-react'
 import { extractPlainText } from '@/components/common/RichContentRenderer'
 import type { BlogListItemDto } from '@/types/models/place.model'
 
@@ -29,7 +29,6 @@ export const BlogFeaturedCard = ({ post, onRead }: BlogFeaturedCardProps) => {
         <div className="absolute inset-0 bg-white/0 group-hover:bg-white/15 transition-colors duration-300 pointer-events-none" />
         <div className="absolute top-4 left-4">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-400 text-amber-950 font-bold text-xs rounded-lg shadow-sm">
-            <Sparkles className="w-3.5 h-3.5" />
             <span>Bài viết nổi bật</span>
           </span>
         </div>

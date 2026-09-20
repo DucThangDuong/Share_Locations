@@ -5,14 +5,16 @@ import {
   Minus,
   X,
   ChevronDown,
-  Plus,
   Image as ImageIcon,
-  Smile,
   Send,
   Reply,
   PhoneOff,
   Loader2,
-  MapPin,
+  MoreHorizontal,
+  Edit3,
+  Trash2,
+  Copy,
+  Check,
 } from 'lucide-react'
 import Draggable from 'react-draggable'
 import { useChat } from '@/context/ChatContext'
@@ -52,14 +54,22 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
     closeChatHead,
     selectRoom,
     sendMessage,
+    editMessage,
+    deleteMessage,
     sendTyping,
   } = useChat()
 
   const [inputText, setInputText] = useState('')
   const [showConvPicker, setShowConvPicker] = useState(false)
-  const [showQuickShareMenu, setShowQuickShareMenu] = useState(false)
   const [replyingTo, setReplyingTo] = useState<{ id: number; senderName: string; text: string } | null>(null)
   const [isSending, setIsSending] = useState(false)
+
+  // Edit / Delete States
+  const [editingMessageId, setEditingMessageId] = useState<number | null>(null)
+  const [editingText, setEditingText] = useState('')
+  const [isSavingEdit, setIsSavingEdit] = useState(false)
+  const [activeMenuMessageId, setActiveMenuMessageId] = useState<number | null>(null)
+  const [copiedMessageId, setCopiedMessageId] = useState<number | null>(null)
 
   // Simulated Voice/Video Call Modal
   const [activeCall, setActiveCall] = useState<{ type: 'voice' | 'video'; partnerName: string } | null>(null)
@@ -145,6 +155,50 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
 
   if (!isFloatingChatOpen) {
     return null
+  }
+
+  // Close menus when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setActiveMenuMessageId(null)
+    }
+    window.addEventListener('click', handleClickOutside)
+    return () => window.removeEventListener('click', handleClickOutside)
+  }, [])
+
+  // Handle Copy Message
+  const handleCopy = (messageId: number, text: string) => {
+    navigator.clipboard.writeText(text)
+    setCopiedMessageId(messageId)
+    setTimeout(() => setCopiedMessageId(null), 2000)
+  }
+
+  // Handle Delete Message
+  const handleDelete = async (messageId: number) => {
+    setActiveMenuMessageId(null)
+    if (!confirm('Bạn có chắc chắn muốn xóa tin nhắn này?')) return
+    try {
+      await deleteMessage(messageId, activeRoomId || undefined)
+      showToast('Đã xóa tin nhắn')
+    } catch {
+      showToast('Xóa tin nhắn thất bại')
+    }
+  }
+
+  // Handle Save Edit
+  const handleSaveEdit = async (messageId: number) => {
+    if (!editingText.trim()) return
+    setIsSavingEdit(true)
+    try {
+      await editMessage(messageId, editingText.trim(), activeRoomId || undefined)
+      setEditingMessageId(null)
+      setEditingText('')
+      showToast('Đã cập nhật tin nhắn')
+    } catch {
+      showToast('Chỉnh sửa tin nhắn thất bại')
+    } finally {
+      setIsSavingEdit(false)
+    }
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -270,15 +324,15 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                           }}
                           className={`relative w-14 h-14 rounded-full overflow-hidden shadow-2xl transition-all duration-200 cursor-pointer bg-slate-900 border-2 ${
                             isCurrentActive
-                              ? 'border-white ring-4 ring-amber-400 scale-105'
-                              : 'border-white ring-2 ring-slate-300 hover:ring-amber-300 hover:scale-110 active:scale-95'
+                              ? 'border-white ring-4 ring-amber-400'
+                              : 'border-white ring-2 ring-slate-300 hover:ring-amber-300'
                           }`}
                           title={`Đoạn chat: ${headTitle} (Bấm để mở cuộc trò chuyện)`}
                         >
                           <img
                             src={headAvatar}
                             alt={headTitle}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover hover:opacity-80 transition-opacity duration-200"
                           />
                         </button>
 
@@ -316,7 +370,7 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                   restoreFloatingChat()
                   onOpenFullChat(activeRoomId || undefined)
                 }}
-                className="w-11 h-11 rounded-full bg-white shadow-xl border border-slate-200 flex items-center justify-center text-slate-800 hover:bg-slate-50 hover:scale-105 active:scale-95 transition-all duration-150 cursor-pointer mr-1.5"
+                className="w-11 h-11 rounded-full bg-white shadow-xl border border-slate-200 flex items-center justify-center text-slate-800 hover:bg-slate-50 transition-all duration-150 cursor-pointer mr-1.5"
                 title="Mở toàn màn hình tin nhắn"
               >
                 <svg
@@ -454,7 +508,7 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                         loadMoreMessages(activeRoomId || undefined)
                       }}
                       disabled={isLoadingMoreMessages}
-                      className="px-3 py-1 bg-white/95 hover:bg-white text-amber-950 text-[11px] font-bold rounded-full border border-amber-300 shadow-md flex items-center gap-1.5 transition-all cursor-pointer backdrop-blur-xs disabled:opacity-50 hover:scale-105 active:scale-95"
+                      className="px-3 py-1 bg-white/95 hover:bg-white text-amber-950 text-[11px] font-bold rounded-full border border-amber-300 shadow-md flex items-center gap-1.5 transition-all cursor-pointer backdrop-blur-xs disabled:opacity-50"
                     >
                       {isLoadingMoreMessages ? (
                         <>
@@ -481,11 +535,133 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                   messages.map((m, idx) => {
                     const isMe = currentUserId ? m.senderId === currentUserId : false
                     const isPrevSameSender = idx > 0 && messages[idx - 1]?.senderId === m.senderId
+                    const isEditingThis = editingMessageId === m.id
+                    const isMenuOpen = activeMenuMessageId === m.id
+                    // Action Toolbar (3-dots, reply)
+                    const actionToolbar = (
+                      <div
+                        className={`relative flex items-center gap-1 mb-1 shrink-0 transition-all ${
+                          isMenuOpen ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                        }`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {/* 1. Nút 3 chấm (More Options) */}
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setActiveMenuMessageId(isMenuOpen ? null : m.id)
+                            }}
+                            className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors cursor-pointer ${
+                              isMenuOpen
+                                ? 'bg-amber-200 text-amber-950 shadow-2xs'
+                                : 'bg-white/90 hover:bg-white text-slate-600 hover:text-slate-900 border border-amber-200/80 shadow-2xs'
+                            }`}
+                            title="Tùy chọn khác"
+                          >
+                            <MoreHorizontal size={13} />
+                          </button>
+
+                          {/* Dropdown Menu */}
+                          {isMenuOpen && (
+                            <div
+                              className={`absolute bottom-full mb-1.5 w-36 bg-white rounded-xl shadow-xl border border-amber-200/80 py-1.5 z-50 animate-in zoom-in-95 duration-150 ${
+                                isMe ? 'right-0' : 'left-0'
+                              }`}
+                            >
+                              {/* Trả lời */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setActiveMenuMessageId(null)
+                                  setReplyingTo({
+                                    id: m.id,
+                                    senderName: isMe ? 'Chính bạn' : m.senderName,
+                                    text: m.content || 'Đính kèm',
+                                  })
+                                }}
+                                className="w-full px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-amber-50 flex items-center gap-2 transition-colors cursor-pointer text-left"
+                              >
+                                <Reply size={13} className="rotate-180 text-blue-600" />
+                                <span>Phản hồi</span>
+                              </button>
+
+                              {/* Sao chép văn bản */}
+                              {m.content && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopy(m.id, m.content || '')}
+                                  className="w-full px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-amber-50 flex items-center gap-2 transition-colors cursor-pointer text-left"
+                                >
+                                  {copiedMessageId === m.id ? (
+                                    <>
+                                      <Check size={13} className="text-emerald-600" />
+                                      <span className="text-emerald-700 font-bold">Đã chép</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Copy size={13} className="text-slate-500" />
+                                      <span>Sao chép</span>
+                                    </>
+                                  )}
+                                </button>
+                              )}
+
+                              {/* Sửa & Xóa (Chỉ cho tin nhắn của chính mình) */}
+                              {isMe && (
+                                <>
+                                  <div className="my-1 border-t border-slate-100" />
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setActiveMenuMessageId(null)
+                                      setEditingMessageId(m.id)
+                                      setEditingText(m.content || '')
+                                    }}
+                                    className="w-full px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-amber-50 flex items-center gap-2 transition-colors cursor-pointer text-left"
+                                  >
+                                    <Edit3 size={13} className="text-amber-600" />
+                                    <span>Sửa tin nhắn</span>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDelete(m.id)}
+                                    className="w-full px-2.5 py-1.5 text-xs font-bold text-rose-600 hover:bg-rose-50 flex items-center gap-2 transition-colors cursor-pointer text-left"
+                                  >
+                                    <Trash2 size={13} className="text-rose-500" />
+                                    <span>Xóa tin nhắn</span>
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* 2. Nút Phản hồi (Reply) */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setReplyingTo({
+                              id: m.id,
+                              senderName: isMe ? 'Chính bạn' : m.senderName,
+                              text: m.content || 'Đính kèm',
+                            })
+                          }}
+                          className="w-6 h-6 rounded-full bg-white/90 hover:bg-white text-slate-600 hover:text-slate-900 border border-amber-200/80 shadow-2xs flex items-center justify-center transition-colors cursor-pointer"
+                          title="Phản hồi tin nhắn"
+                        >
+                          <Reply size={13} className="rotate-180" />
+                        </button>
+                      </div>
+                    )
 
                     return (
                       <div
                         key={m.id}
-                        className={`relative flex items-end gap-1.5 ${isMe ? 'justify-end' : 'justify-start'}`}
+                        className={`group relative flex items-end gap-1.5 ${isMe ? 'justify-end' : 'justify-start'}`}
                       >
                         {!isMe && (
                           <img
@@ -494,6 +670,9 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                             className="w-7 h-7 rounded-full object-cover shrink-0 mb-0.5 border border-amber-300"
                           />
                         )}
+
+                        {/* Action Toolbar on LEFT for my messages */}
+                        {isMe && !isEditingThis && actionToolbar}
 
                         <div className={`flex flex-col max-w-[82%] ${isMe ? 'items-end' : 'items-start'}`}>
                           {/* Tên người gửi trong nhóm chat */}
@@ -516,22 +695,70 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                             </div>
                           )}
 
-                          {/* MESSAGE BUBBLE */}
-                          {m.content && (
-                            <div
-                              onClick={() => {
-                                setReplyingTo({
-                                  id: m.id,
-                                  senderName: `${m.senderName} đã trả lời bạn`,
-                                  text: m.content || '',
-                                daylight: true,
-                                } as unknown as { id: number; senderName: string; text: string })
-                              }}
-                              className="relative text-[13.5px] leading-snug break-words px-3 py-1.5 rounded-[18px] cursor-pointer transition-transform active:scale-95 shadow-2xs bg-[#FFF3C4] text-slate-900 border border-amber-200/80"
-                              title="Bấm để trả lời tin nhắn này"
-                            >
-                              <p className="whitespace-pre-wrap">{m.content}</p>
+                          {/* INLINE EDIT UI */}
+                          {isEditingThis ? (
+                            <div className="w-full min-w-[200px] max-w-xs bg-white p-2.5 rounded-2xl border-2 border-amber-400 shadow-md">
+                              <textarea
+                                value={editingText}
+                                onChange={(e) => setEditingText(e.target.value)}
+                                className="w-full text-xs text-slate-800 border border-slate-200 rounded-lg p-1.5 focus:outline-none focus:ring-1 focus:ring-amber-500 resize-none"
+                                rows={2}
+                                autoFocus
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault()
+                                    handleSaveEdit(m.id)
+                                  } else if (e.key === 'Escape') {
+                                    setEditingMessageId(null)
+                                  }
+                                }}
+                              />
+                              <div className="flex justify-end gap-1.5 mt-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingMessageId(null)}
+                                  disabled={isSavingEdit}
+                                  className="px-2.5 py-1 text-[11px] font-bold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                                >
+                                  Hủy
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleSaveEdit(m.id)}
+                                  disabled={isSavingEdit || !editingText.trim()}
+                                  className="px-3 py-1 text-[11px] font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1"
+                                >
+                                  {isSavingEdit ? (
+                                    <Loader2 size={11} className="animate-spin" />
+                                  ) : (
+                                    'Lưu'
+                                  )}
+                                </button>
+                              </div>
                             </div>
+                          ) : (
+                            /* MESSAGE BUBBLE */
+                            m.content && (
+                              <div
+                                onClick={() => {
+                                  if (!isMe) {
+                                    setReplyingTo({
+                                      id: m.id,
+                                      senderName: m.senderName,
+                                      text: m.content || '',
+                                    })
+                                  }
+                                }}
+                                className={`relative text-[13.5px] leading-snug break-words px-3.5 py-2 rounded-[18px] transition-colors shadow-2xs ${
+                                  isMe
+                                    ? 'bg-[#FF8800] text-white font-medium border border-orange-400/50'
+                                    : 'bg-[#FFF3C4] text-slate-900 border border-amber-200/80 cursor-pointer'
+                                }`}
+                                title={!isMe ? 'Bấm để trả lời tin nhắn này' : undefined}
+                              >
+                                <p className="whitespace-pre-wrap">{m.content}</p>
+                              </div>
+                            )
                           )}
 
                           {/* ATTACHMENTS */}
@@ -542,7 +769,7 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                                   key={att.id}
                                   src={att.mediaUrl}
                                   alt=""
-                                  className="mt-1 rounded-xl w-full max-h-40 object-cover cursor-pointer shadow-sm hover:opacity-95"
+                                  className="mt-1 rounded-xl w-full max-h-40 object-cover cursor-pointer shadow-sm hover:opacity-80 transition-opacity duration-200"
                                   onClick={() => onOpenFullChat(activeRoomId || undefined)}
                                 />
                               )
@@ -554,10 +781,10 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                                   onClick={() => {
                                     if (onSelectPlace && att.placeId) onSelectPlace(att.placeId)
                                   }}
-                                  className="mt-1 bg-white/95 p-2 rounded-xl border border-amber-200 text-slate-800 cursor-pointer hover:bg-white shadow-sm"
+                                  className="group mt-1 bg-white/95 p-2 rounded-xl border border-amber-200 text-slate-800 cursor-pointer hover:bg-white shadow-sm"
                                 >
                                   {att.placeCoverUrl && (
-                                    <img src={att.placeCoverUrl} alt="" className="w-full h-24 rounded-lg object-cover" />
+                                    <img src={att.placeCoverUrl} alt="" className="w-full h-24 rounded-lg object-cover group-hover:opacity-80 transition-opacity duration-200" />
                                   )}
                                   <p className="font-bold text-xs mt-1 truncate text-slate-900">{att.placeName || 'Địa điểm'}</p>
                                 </div>
@@ -591,6 +818,9 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                             </div>
                           )}
                         </div>
+
+                        {/* Action Toolbar on RIGHT for other's messages */}
+                        {!isMe && !isEditingThis && actionToolbar}
                       </div>
                     )
                   })
@@ -627,121 +857,45 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
               )}
 
               {/* ── FOOTER INPUT BAR ── */}
-              <div className="p-2 bg-[#FFF8DE] border-t border-amber-200/80 flex items-center gap-1 relative z-10">
-                {/* Icon '+' */}
-                <button
-                  type="button"
-                  onClick={() => setShowQuickShareMenu(!showQuickShareMenu)}
-                  className="w-7 h-7 rounded-full hover:bg-amber-200/60 text-[#F97316] flex items-center justify-center transition-colors cursor-pointer shrink-0"
-                  title="Thêm tiện ích & chia sẻ"
-                >
-                  <Plus size={18} strokeWidth={2.8} />
-                </button>
-
-                {/* Quick Share Menu */}
-                {showQuickShareMenu && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setShowQuickShareMenu(false)} />
-                    <div className="absolute bottom-12 left-2 w-56 bg-white rounded-xl shadow-2xl border border-amber-200 p-1.5 z-50 divide-y divide-slate-100">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowQuickShareMenu(false)
-                          fileInputRef.current?.click()
-                        }}
-                        className="w-full px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-amber-50 rounded-lg flex items-center gap-2"
-                      >
-                        <ImageIcon size={15} className="text-amber-600" />
-                        <span>Gửi ảnh / tệp từ máy</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowQuickShareMenu(false)
-                          onOpenFullChat(activeRoomId || undefined)
-                        }}
-                        className="w-full px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-amber-50 rounded-lg flex items-center gap-2"
-                      >
-                        <MapPin size={15} className="text-emerald-600" />
-                        <span>Mở bản đồ chọn điểm đến</span>
-                      </button>
-                    </div>
-                  </>
-                )}
-
+              <div className="p-2.5 bg-[#FFF8DE] border-t border-amber-200/80 flex items-center gap-2 relative z-10">
                 {/* Icon Đính kèm ảnh */}
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-7 h-7 rounded-full hover:bg-amber-200/60 text-[#F97316] flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                  className="w-8 h-8 rounded-full hover:bg-amber-200/60 text-[#F97316] flex items-center justify-center transition-colors cursor-pointer shrink-0"
                   title="Gửi ảnh từ máy"
                 >
-                  <ImageIcon size={18} />
-                </button>
-
-                {/* Icon Nhãn dán / Smile */}
-                <button
-                  type="button"
-                  onClick={() => handleSend('🥰')}
-                  className="w-7 h-7 rounded-full hover:bg-amber-200/60 text-[#F97316] flex items-center justify-center transition-colors cursor-pointer shrink-0"
-                  title="Gửi sticker cảm xúc"
-                >
-                  <Smile size={18} />
-                </button>
-
-                {/* Icon GIF badge */}
-                <button
-                  type="button"
-                  onClick={() => handleSend('🎉')}
-                  className="px-1.5 py-0.5 rounded-md hover:bg-amber-200/60 text-[#F97316] text-[10px] font-black tracking-wider transition-colors cursor-pointer border border-[#F97316]/40 shrink-0"
-                  title="Gửi GIF"
-                >
-                  GIF
+                  <ImageIcon size={19} />
                 </button>
 
                 {/* Ô nhập tin nhắn */}
                 <div className="flex-1 relative flex items-center min-w-0">
                   <input
                     type="text"
-                    placeholder="Aa"
+                    placeholder="Nhập tin nhắn..."
                     value={inputText}
                     onChange={handleInputChange}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') handleSend()
                     }}
-                    className="w-full pl-3 pr-7 py-1.5 bg-[#FFF0C2] focus:bg-white text-xs text-slate-900 placeholder:text-amber-900/60 rounded-full outline-none transition-all border border-transparent focus:border-amber-400"
+                    className="w-full px-3.5 py-1.5 bg-[#FFF0C2] focus:bg-white text-xs text-slate-900 placeholder:text-amber-900/60 rounded-full outline-none transition-all border border-transparent focus:border-amber-400"
                   />
-                  <button
-                    type="button"
-                    onClick={() => handleSend('😊')}
-                    className="absolute right-2 text-[#F97316] hover:scale-110 transition-transform cursor-pointer"
-                    title="Chèn biểu tượng"
-                  >
-                    <Smile size={15} />
-                  </button>
                 </div>
 
-                {/* Nút Gửi hoặc Nút Like/Star */}
-                {inputText.trim() ? (
-                  <button
-                    type="button"
-                    disabled={isSending}
-                    onClick={() => handleSend()}
-                    className="w-8 h-8 rounded-full bg-[#F97316] hover:bg-[#EA580C] text-white flex items-center justify-center transition-all cursor-pointer shrink-0 shadow-xs active:scale-95 disabled:opacity-50"
-                    title="Gửi tin nhắn"
-                  >
-                    {isSending ? <Loader2 size={14} className="animate-spin" /> : <Send size={15} />}
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => handleSend('⭐')}
-                    className="w-8 h-8 rounded-full hover:bg-amber-200/60 text-[#F97316] flex items-center justify-center transition-all cursor-pointer shrink-0 hover:scale-110 active:scale-90"
-                    title="Gửi sao may mắn"
-                  >
-                    <span className="text-base">⭐</span>
-                  </button>
-                )}
+                {/* Nút Gửi */}
+                <button
+                  type="button"
+                  disabled={!inputText.trim() || isSending}
+                  onClick={() => handleSend()}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all shrink-0 shadow-xs ${
+                    inputText.trim() && !isSending
+                      ? 'bg-[#F97316] hover:bg-[#EA580C] text-white cursor-pointer'
+                      : 'bg-amber-200/60 text-amber-500/50 cursor-not-allowed'
+                  }`}
+                  title="Gửi tin nhắn"
+                >
+                  {isSending ? <Loader2 size={14} className="animate-spin" /> : <Send size={15} />}
+                </button>
               </div>
             </div>
           )}
@@ -775,7 +929,7 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                   showToast('Đã ngắt cuộc gọi')
                   setActiveCall(null)
                 }}
-                className="w-12 h-12 rounded-full bg-rose-600 hover:bg-rose-700 flex items-center justify-center text-white cursor-pointer shadow-lg hover:scale-105 active:scale-95 transition-all"
+                className="w-12 h-12 rounded-full bg-rose-600 hover:bg-rose-700 flex items-center justify-center text-white cursor-pointer shadow-lg transition-all"
                 title="Ngắt kết nối"
               >
                 <PhoneOff size={22} />

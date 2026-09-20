@@ -566,4 +566,40 @@ public class ChatRepository : IChatRepository
         var members = await connection.QueryAsync<ChatRoomMemberDto>(sql, new { RoomId = roomId });
         return members.ToList();
     }
+
+    public async Task<bool> UpdateMessageContentAsync(long messageId, long senderId, string newContent, CancellationToken ct = default)
+    {
+        var connection = _dbContext.Database.GetDbConnection();
+        const string sql = @"
+            UPDATE dbo.Messages
+            SET Content = @Content
+            WHERE Id = @MessageId AND SenderId = @SenderId;";
+
+        var rows = await connection.ExecuteAsync(sql, new
+        {
+            MessageId = messageId,
+            SenderId = senderId,
+            Content = newContent
+        });
+
+        return rows > 0;
+    }
+
+    public async Task<bool> DeleteMessageAsync(long messageId, long senderId, CancellationToken ct = default)
+    {
+        var connection = _dbContext.Database.GetDbConnection();
+
+        const string checkSql = "SELECT COUNT(1) FROM dbo.Messages WHERE Id = @MessageId AND SenderId = @SenderId;";
+        var count = await connection.ExecuteScalarAsync<int>(checkSql, new { MessageId = messageId, SenderId = senderId });
+        if (count == 0) return false;
+
+        const string deleteSql = @"
+            UPDATE dbo.Messages SET ReplyToMessageId = NULL WHERE ReplyToMessageId = @MessageId;
+            DELETE FROM dbo.MessageAttachments WHERE MessageId = @MessageId;
+            DELETE FROM dbo.MessageReactions WHERE MessageId = @MessageId;
+            DELETE FROM dbo.Messages WHERE Id = @MessageId AND SenderId = @SenderId;";
+
+        var rows = await connection.ExecuteAsync(deleteSql, new { MessageId = messageId, SenderId = senderId });
+        return rows > 0;
+    }
 }

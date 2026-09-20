@@ -68,6 +68,8 @@ interface ChatContextType {
   removeMemberFromGroup: (roomId: number, userId: number) => Promise<void>
   leaveGroupChat: (roomId: number) => Promise<void>
   sendMessage: (payload: Omit<SendMessagePayload, 'roomId'>) => Promise<ChatMessageDto | null>
+  editMessage: (messageId: number, content: string, roomId?: number) => Promise<void>
+  deleteMessage: (messageId: number, roomId?: number) => Promise<void>
   markRoomAsRead: (roomId: number) => Promise<void>
   addReaction: (messageId: number, emoji: string) => Promise<void>
   sendTyping: (isTyping: boolean) => void
@@ -426,6 +428,41 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       })
     })
 
+    // ── EVENT: MessageEdited ──
+    const unsubEdited = chatSignalR.onMessageEdited((updatedMsg) => {
+      const roomId = updatedMsg.roomId
+      setMessagesMap((prev) => {
+        const roomMsgs = prev[roomId]
+        if (!roomMsgs) return prev
+        return {
+          ...prev,
+          [roomId]: roomMsgs.map((m) => (m.id === updatedMsg.id ? { ...m, ...updatedMsg } : m)),
+        }
+      })
+      setInbox((prev) =>
+        prev.map((item) =>
+          item.roomId === roomId
+            ? {
+                ...item,
+                lastMessage: updatedMsg.content || item.lastMessage,
+              }
+            : item
+        )
+      )
+    })
+
+    // ── EVENT: MessageDeleted ──
+    const unsubDeleted = chatSignalR.onMessageDeleted((roomId, messageId) => {
+      setMessagesMap((prev) => {
+        const roomMsgs = prev[roomId]
+        if (!roomMsgs) return prev
+        return {
+          ...prev,
+          [roomId]: roomMsgs.filter((m) => m.id !== messageId),
+        }
+      })
+    })
+
     return () => {
       isSubscribed = false
       unsubReconnect()
@@ -433,6 +470,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       unsubRead()
       unsubReacted()
       unsubTyping()
+      unsubEdited()
+      unsubDeleted()
       chatSignalR.stopConnection()
     }
   }, [isAuthenticated, user?.id, fetchInbox])
@@ -693,6 +732,59 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     []
   )
 
+  // Edit Message
+  const editMessage = useCallback(
+    async (messageId: number, content: string, customRoomId?: number) => {
+      const roomId = customRoomId || activeRoomIdRef.current
+      if (!roomId) return
+
+      try {
+        const updated = await chatService.editMessage(messageId, content, roomId)
+        setMessagesMap((prev) => {
+          const list = prev[roomId] || []
+          return {
+            ...prev,
+            [roomId]: list.map((m) =>
+              m.id === messageId ? { ...m, content: updated?.content ?? content } : m
+            ),
+          }
+        })
+        setInbox((prev) =>
+          prev.map((item) =>
+            item.roomId === roomId ? { ...item, lastMessage: content } : item
+          )
+        )
+      } catch (err) {
+        console.error('[ChatContext] editMessage failed:', err)
+        throw err
+      }
+    },
+    []
+  )
+
+  // Delete Message
+  const deleteMessage = useCallback(
+    async (messageId: number, customRoomId?: number) => {
+      const roomId = customRoomId || activeRoomIdRef.current
+      if (!roomId) return
+
+      try {
+        await chatService.deleteMessage(messageId, roomId)
+        setMessagesMap((prev) => {
+          const list = prev[roomId] || []
+          return {
+            ...prev,
+            [roomId]: list.filter((m) => m.id !== messageId),
+          }
+        })
+      } catch (err) {
+        console.error('[ChatContext] deleteMessage failed:', err)
+        throw err
+      }
+    },
+    []
+  )
+
   // Mark room as read
   const markRoomAsRead = useCallback(async (roomId: number) => {
     try {
@@ -790,6 +882,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         removeMemberFromGroup,
         leaveGroupChat,
         sendMessage,
+        editMessage,
+        deleteMessage,
         markRoomAsRead,
         addReaction,
         sendTyping,

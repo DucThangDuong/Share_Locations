@@ -50,13 +50,6 @@ export const BlogReaderView: React.FC<BlogReaderViewProps> = ({
     }
   }
 
-  const formattedDate = article.publishedAt
-    ? new Date(article.publishedAt).toLocaleDateString('vi-VN', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      })
-    : ''
 
   return (
     <div className="bg-white min-h-screen">
@@ -71,10 +64,10 @@ export const BlogReaderView: React.FC<BlogReaderViewProps> = ({
             <div className="space-y-4">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold">
                 <span>{article.category || 'Cẩm nang du lịch'}</span>
-                {formattedDate && (
+                {article.publishedAt && (
                   <>
                     <span>•</span>
-                    <span>{formattedDate}</span>
+                    <span>{article.publishedAt}</span>
                   </>
                 )}
               </div>

@@ -139,6 +139,22 @@ class ChatSignalRService {
     this.connection.on('UserTyping', handler)
     return () => this.connection?.off('UserTyping', handler)
   }
+
+  public onMessageEdited(handler: (message: ChatMessageDto) => void): () => void {
+    if (!this.connection) return () => {}
+    this.connection.on('MessageEdited', handler)
+    this.connection.on('MessageUpdated', handler)
+    return () => {
+      this.connection?.off('MessageEdited', handler)
+      this.connection?.off('MessageUpdated', handler)
+    }
+  }
+
+  public onMessageDeleted(handler: (roomId: number, messageId: number) => void): () => void {
+    if (!this.connection) return () => {}
+    this.connection.on('MessageDeleted', handler)
+    return () => this.connection?.off('MessageDeleted', handler)
+  }
 }
 
 export const chatSignalR = new ChatSignalRService()

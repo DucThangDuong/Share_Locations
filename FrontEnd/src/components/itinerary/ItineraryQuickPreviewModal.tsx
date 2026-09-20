@@ -6,7 +6,6 @@ import {
   CheckCircle2,
   Plus,
   Compass,
-  Sparkles
 } from 'lucide-react'
 import type { DetailedItineraryItem } from '@/types/models/itinerary.model'
 
@@ -77,9 +76,6 @@ export const ItineraryQuickPreviewModal: React.FC<ItineraryQuickPreviewModalProp
                     className="text-emerald-500 fill-emerald-100 shrink-0"
                   />
                 </div>
-                <span className="text-[11px] text-slate-400 block font-medium">
-                  {itinerary.authorRank || 'Chuyên gia hành trình'}
-                </span>
               </div>
             </div>
 
@@ -105,7 +101,6 @@ export const ItineraryQuickPreviewModal: React.FC<ItineraryQuickPreviewModalProp
 
           <div className="pt-4 space-y-2">
             <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-              <Sparkles size={13} className="text-emerald-700" />
               <span>Tóm tắt lịch trình</span>
             </h3>
             <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import {
   ChevronDown,
   ChevronUp,
@@ -44,25 +44,13 @@ export const ItineraryWishlistSection: React.FC<ItineraryWishlistSectionProps> =
   onToggleExpand,
   onSelectStop,
   onToggleSelectBatchStop,
-  onQuickAddStop,
-  onOpenPlacePicker,
   onDragStartStop,
   onDragOverWishlist,
   onDragLeaveWishlist,
   onDropOnWishlist
 }) => {
-  const [isAddingQuick, setIsAddingQuick] = useState(false)
-  const [quickTitle, setQuickTitle] = useState('')
 
   const canEdit = currentUserRole !== 'Viewer'
-
-  const handleQuickSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!quickTitle.trim()) return
-    onQuickAddStop(quickTitle.trim())
-    setQuickTitle('')
-    setIsAddingQuick(false)
-  }
 
   return (
     <div
@@ -85,7 +73,7 @@ export const ItineraryWishlistSection: React.FC<ItineraryWishlistSectionProps> =
           </div>
           <div className="min-w-0">
             <h3 className="text-sm sm:text-base font-extrabold text-slate-900 truncate">
-              Kho địa điểm đã lưu (Chờ xếp ngày)
+              Kho địa điểm đã lưu
             </h3>
             <p className="text-xs text-slate-600 mt-0.5 font-medium">
               {stops.length} địa điểm yêu thích · Kéo thả trực tiếp vào từng ngày
@@ -196,62 +184,6 @@ export const ItineraryWishlistSection: React.FC<ItineraryWishlistSectionProps> =
               </div>
             )
           })}
-
-          {stops.length === 0 && !isAddingQuick && (
-            <div className="py-8 text-center border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50 space-y-1">
-              <Bookmark size={24} className="mx-auto text-slate-300" />
-              <p className="text-xs text-slate-500 font-semibold">
-                Kho lưu trữ địa điểm đang trống.
-              </p>
-              <p className="text-[11px] text-slate-400">
-                Lưu lại các điểm yêu thích vào đây để sắp xếp vào lịch trình sau.
-              </p>
-            </div>
-          )}
-
-          {isAddingQuick ? (
-            <form
-              onSubmit={handleQuickSubmit}
-              className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center gap-2"
-            >
-              <input
-                type="text"
-                autoFocus
-                value={quickTitle}
-                onChange={(e) => setQuickTitle(e.target.value)}
-                placeholder="Nhập tên địa điểm muốn lưu vào kho..."
-                className="flex-1 px-3 py-2 bg-white border border-slate-200 focus:border-emerald-600 rounded-xl text-xs text-slate-900 outline-none"
-              />
-              <button
-                type="submit"
-                className="px-3.5 py-2 bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs rounded-xl transition-colors cursor-pointer"
-              >
-                Lưu
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsAddingQuick(false)
-                  setQuickTitle('')
-                }}
-                className="px-3 py-2 bg-white hover:bg-slate-100 text-slate-600 text-xs rounded-xl border border-slate-200 transition-colors cursor-pointer"
-              >
-                Hủy
-              </button>
-            </form>
-          ) : (
-            canEdit && (
-              <div className="pt-1 flex items-center gap-2 flex-wrap">
-                <button
-                  type="button"
-                  onClick={onOpenPlacePicker}
-                  className="px-3.5 py-1.5 text-emerald-800 hover:bg-emerald-50 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer border border-emerald-200"
-                >
-                  <span>Khám phá & Chọn địa điểm thêm vào kho</span>
-                </button>
-              </div>
-            )
-          )}
         </div>
       )}
     </div>

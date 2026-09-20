@@ -143,7 +143,7 @@ export default function ChatPage({
   }
 
   // Shared media in right drawer
-  const { allMediaAttachments, allFileAttachments } = useMemo(() => {
+  const { allMediaAttachments } = useMemo(() => {
     const images: MessageAttachmentDto[] = []
     const files: MessageAttachmentDto[] = []
 
@@ -220,9 +220,7 @@ export default function ChatPage({
           isSending={isSending}
           replyingTo={replyingTo}
           onCancelReply={() => setReplyingTo(null)}
-          onOpenPlacePicker={() => setShowPlacePicker(true)}
           onTriggerImageUpload={() => imageInputRef.current?.click()}
-          onTriggerFileUpload={() => fileInputRef.current?.click()}
         />
       </main>
 
@@ -234,7 +232,6 @@ export default function ChatPage({
         isGroup={activeRoom?.isGroup}
         roomId={activeRoomId}
         images={allMediaAttachments}
-        files={allFileAttachments}
         onPreviewImage={(url) => setLightboxImage(url)}
       />
 

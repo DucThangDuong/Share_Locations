@@ -99,17 +99,15 @@ export const ItineraryDayTimelineSection: React.FC<ItineraryDayTimelineSectionPr
       onDragOver={(e) => onDragOverDay(e, dayIndex)}
       onDragLeave={onDragLeaveDay}
       onDrop={(e) => onDropOnDay(e, dayIndex)}
-      className={`bg-white rounded-2xl border transition-all overflow-hidden shadow-2xs ${
-        isDropTarget
+      className={`bg-white rounded-2xl border transition-all overflow-hidden shadow-2xs ${isDropTarget
           ? 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/20'
           : 'border-slate-200'
-      }`}
+        }`}
     >
       <div
         onClick={() => onToggleExpand(dayIndex)}
-        className={`p-4 sm:p-5 transition-colors flex items-center justify-between gap-3 cursor-pointer border-b border-slate-200 ${
-          isExpanded ? 'bg-slate-50/90 hover:bg-slate-100/90' : 'bg-white hover:bg-slate-50/80'
-        }`}
+        className={`p-4 sm:p-5 transition-colors flex items-center justify-between gap-3 cursor-pointer border-b border-slate-200 ${isExpanded ? 'bg-slate-50/90 hover:bg-slate-100/90' : 'bg-white hover:bg-slate-50/80'
+          }`}
       >
         <div className="flex items-center gap-3 min-w-0 flex-1">
           <div
@@ -246,13 +244,12 @@ export const ItineraryDayTimelineSection: React.FC<ItineraryDayTimelineSectionPr
                 draggable={canEdit}
                 onDragStart={(e) => onDragStartStop(e, dayIndex, stop)}
                 onClick={() => onSelectStop(dayIndex, stop)}
-                className={`group p-3 sm:p-3.5 rounded-xl border transition-all flex items-center justify-between gap-3 text-xs cursor-pointer ${
-                  isBatchSelected
+                className={`group p-3 sm:p-3.5 rounded-xl border transition-all flex items-center justify-between gap-3 text-xs cursor-pointer ${isBatchSelected
                     ? 'bg-emerald-50/90 border-emerald-600 ring-2 ring-emerald-600/30'
                     : isSelected
-                    ? 'bg-emerald-50/50 border-emerald-600 ring-2 ring-emerald-600/30 shadow-xs'
-                    : 'bg-white hover:bg-slate-50/90 border-slate-200 hover:border-slate-300 shadow-2xs'
-                }`}
+                      ? 'bg-emerald-50/50 border-emerald-600 ring-2 ring-emerald-600/30 shadow-xs'
+                      : 'bg-white hover:bg-slate-50/90 border-slate-200 hover:border-slate-300 shadow-2xs'
+                  }`}
               >
                 <div className="flex items-center gap-2.5 min-w-0 flex-1">
                   {canEdit && (
@@ -262,11 +259,10 @@ export const ItineraryDayTimelineSection: React.FC<ItineraryDayTimelineSectionPr
                         e.stopPropagation()
                         onToggleSelectBatchStop?.(stop.id)
                       }}
-                      className={`w-4 h-4 rounded-md border flex items-center justify-center transition-colors cursor-pointer shrink-0 ${
-                        isBatchSelected
+                      className={`w-4 h-4 rounded-md border flex items-center justify-center transition-colors cursor-pointer shrink-0 ${isBatchSelected
                           ? 'bg-emerald-800 border-emerald-800 text-white'
                           : 'border-slate-400 hover:border-emerald-600 bg-white shadow-2xs'
-                      }`}
+                        }`}
                       title={isBatchSelected ? 'Bỏ chọn' : 'Chọn địa điểm này'}
                     >
                       {isBatchSelected && <Check size={11} strokeWidth={3} />}
@@ -302,12 +298,6 @@ export const ItineraryDayTimelineSection: React.FC<ItineraryDayTimelineSectionPr
                         </span>
                       )}
 
-                      {stop.area && (
-                        <span className="inline-flex px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-300 text-[10px] font-semibold items-center gap-1">
-                          <MapPin size={10} className="text-slate-500" />
-                          <span>{stop.area}</span>
-                        </span>
-                      )}
                     </div>
 
                     <div className="flex items-center gap-2 text-[11px] mt-1.5 flex-wrap">

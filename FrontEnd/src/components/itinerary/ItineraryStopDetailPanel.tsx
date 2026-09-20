@@ -5,9 +5,7 @@ import {
   Clock,
   Car,
   MapPin,
-  Tag,
   DollarSign,
-  Compass,
   FileText
 } from 'lucide-react'
 import type {
@@ -22,7 +20,6 @@ interface ItineraryStopDetailPanelProps {
   dayIndex: number
   isWishlist?: boolean
   currentUserRole: TripRole
-  availableAreas: string[]
   onClose: () => void
   onUpdateStop: (
     dayIdx: number,
@@ -31,20 +28,6 @@ interface ItineraryStopDetailPanelProps {
   ) => void
   onViewPlaceDetails: (stop: ItineraryStop) => void
 }
-
-const CATEGORY_OPTIONS = [
-  'Ăn sáng',
-  'Ăn trưa',
-  'Ăn tối',
-  'Ẩm thực & Quán ngon',
-  'Cà phê view đẹp',
-  'Tham quan di tích',
-  'Khám phá thiên nhiên',
-  'Dạo chơi & Check-in',
-  'Mua sắm & Đặc sản',
-  'Trải nghiệm & Hoạt động',
-  'Nghỉ ngơi'
-]
 
 const TRANSPORT_OPTIONS: TransportType[] = [
   'Xe máy',
@@ -61,7 +44,6 @@ export const ItineraryStopDetailPanel: React.FC<ItineraryStopDetailPanelProps> =
   dayIndex,
   isWishlist = false,
   currentUserRole,
-  availableAreas,
   onClose,
   onUpdateStop,
   onViewPlaceDetails
@@ -86,9 +68,8 @@ export const ItineraryStopDetailPanel: React.FC<ItineraryStopDetailPanelProps> =
       <div className="p-4 bg-slate-50/90 border-b border-slate-200 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
           <div
-            className={`w-6 h-6 rounded-lg ${
-              isWishlist ? 'bg-amber-500' : dayTheme.badgeBg
-            } text-white flex items-center justify-center font-extrabold text-xs shrink-0 shadow-2xs`}
+            className={`w-6 h-6 rounded-lg ${isWishlist ? 'bg-amber-500' : dayTheme.badgeBg
+              } text-white flex items-center justify-center font-extrabold text-xs shrink-0 shadow-2xs`}
           >
             {isWishlist ? '★' : `#${dayIndex + 1}`}
           </div>
@@ -165,90 +146,56 @@ export const ItineraryStopDetailPanel: React.FC<ItineraryStopDetailPanelProps> =
             />
           </div>
         </div>
-
-        <div>
-          <label className="block text-[11px] font-bold text-slate-500 mb-1 flex items-center gap-1">
-            <DollarSign size={13} className="text-emerald-700" />
-            <span>Chi phí dự tính (VNĐ)</span>
-          </label>
-          <input
-            type="number"
-            step={10000}
-            disabled={!canEdit}
-            value={stop.costEstimate || 0}
-            onChange={(e) =>
-              handleChangeField(
-                'costEstimate',
-                Math.max(0, parseInt(e.target.value, 10) || 0)
-              )
-            }
-            className="w-full px-3 py-2 bg-slate-50 focus:bg-white border border-slate-200 focus:border-emerald-600 rounded-xl text-emerald-900 font-extrabold text-sm outline-none"
-          />
-        </div>
-
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-[11px] font-bold text-slate-500 mb-1 flex items-center gap-1">
-              <Tag size={12} className="text-emerald-700" />
-              <span>Danh mục</span>
-            </label>
-            <select
-              disabled={!canEdit}
-              value={stop.category || 'Ăn sáng'}
-              onChange={(e) => handleChangeField('category', e.target.value)}
-              className="w-full px-2.5 py-2 bg-slate-50 focus:bg-white border border-slate-200 focus:border-emerald-600 rounded-xl text-slate-800 font-semibold outline-none cursor-pointer text-xs"
-            >
-              {CATEGORY_OPTIONS.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
-          </div>
 
           <div>
             <label className="block text-[11px] font-bold text-slate-500 mb-1 flex items-center gap-1">
-              <Car size={12} className="text-emerald-700" />
-              <span>Phương tiện</span>
+              <DollarSign size={13} className="text-emerald-700" />
+              <span>Chi phí dự tính (VNĐ)</span>
             </label>
-            <select
+            <input
+              type="number"
+              step={10000}
+              min={0}
               disabled={!canEdit}
-              value={stop.transportMode || 'Xe máy'}
-              onChange={(e) =>
-                handleChangeField('transportMode', e.target.value as TransportType)
-              }
-              className="w-full px-2.5 py-2 bg-slate-50 focus:bg-white border border-slate-200 focus:border-emerald-600 rounded-xl text-slate-800 font-semibold outline-none cursor-pointer text-xs"
-            >
-              {TRANSPORT_OPTIONS.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
+              placeholder="0"
+              value={stop.costEstimate ? stop.costEstimate : ''}
+              onChange={(e) => {
+                const val = e.target.value
+                if (val === '') {
+                  handleChangeField('costEstimate', 0)
+                } else {
+                  const parsed = parseInt(val, 10)
+                  handleChangeField('costEstimate', isNaN(parsed) ? 0 : Math.max(0, parsed))
+                }
+              }}
+              className="w-full px-3 py-2 bg-slate-50 focus:bg-white border border-slate-200 focus:border-emerald-600 rounded-xl text-emerald-900 font-extrabold text-sm outline-none"
+            />
+          </div>
+
+          <div>
+            <div>
+              <label className="block text-[11px] font-bold text-slate-500 mb-1 flex items-center gap-1">
+                <Car size={12} className="text-emerald-700" />
+                <span>Phương tiện</span>
+              </label>
+              <select
+                disabled={!canEdit}
+                value={stop.transportMode || 'Xe máy'}
+                onChange={(e) =>
+                  handleChangeField('transportMode', e.target.value as TransportType)
+                }
+                className="w-full px-2.5 py-2 bg-slate-50 focus:bg-white border border-slate-200 focus:border-emerald-600 rounded-xl text-slate-800 font-semibold outline-none cursor-pointer text-xs"
+              >
+                {TRANSPORT_OPTIONS.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
-
-        <div>
-          <label className="block text-[11px] font-bold text-slate-500 mb-1 flex items-center gap-1">
-            <Compass size={12} className="text-emerald-700" />
-            <span>Khu vực / Khoanh vùng</span>
-          </label>
-          <input
-            type="text"
-            disabled={!canEdit}
-            value={stop.area || ''}
-            onChange={(e) => handleChangeField('area', e.target.value)}
-            placeholder="Ví dụ: Khu Trung tâm, Khu Tuyền Lâm, Khu Cầu Đất..."
-            list="area-suggestions"
-            className="w-full px-3 py-2 bg-slate-50 focus:bg-white border border-slate-200 focus:border-emerald-600 rounded-xl text-slate-800 outline-none"
-          />
-          <datalist id="area-suggestions">
-            {availableAreas.map((a) => (
-              <option key={a} value={a} />
-            ))}
-          </datalist>
-        </div>
-
 
         <div>
           <label className="block text-[11px] font-bold text-slate-500 mb-1 flex items-center gap-1">

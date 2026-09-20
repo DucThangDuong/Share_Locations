@@ -41,7 +41,6 @@ public class PlaceSummaryDto
     public decimal AvgRating { get; set; }
     public int ReviewCount { get; set; }
     public string? ThumbnailUrl { get; set; }
-    public IReadOnlyList<string>? MediaUrls { get; set; }
     public PlaceStatus Status { get; set; }
     public DateTime CreatedAt { get; set; }
 }

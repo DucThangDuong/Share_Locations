@@ -1,4 +1,4 @@
-﻿using API.Hubs;
+using API.Hubs;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
@@ -90,6 +90,50 @@ public class ChatNotifier : IChatNotifier
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Error sending direct reaction notification for room {RoomId}", roomId);
+        }
+    }
+
+    public async Task NotifyMessageEditedAsync(long roomId, long messageId, string newContent, CancellationToken ct = default)
+    {
+        var groupName = ChatHub.GetRoomGroupName(roomId);
+        await _hubContext.Clients.Group(groupName).MessageEdited(roomId, messageId, newContent);
+
+        try
+        {
+            using var scope = _serviceProvider.CreateScope();
+            var chatRepo = scope.ServiceProvider.GetRequiredService<IChatRepository>();
+            var memberIds = await chatRepo.GetRoomMemberUserIdsAsync(roomId, ct);
+            if (memberIds.Count > 0)
+            {
+                var userIdentifiers = memberIds.Select(id => id.ToString()).ToList();
+                await _hubContext.Clients.Users(userIdentifiers).MessageEdited(roomId, messageId, newContent);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error sending direct edit notification for room {RoomId}", roomId);
+        }
+    }
+
+    public async Task NotifyMessageDeletedAsync(long roomId, long messageId, CancellationToken ct = default)
+    {
+        var groupName = ChatHub.GetRoomGroupName(roomId);
+        await _hubContext.Clients.Group(groupName).MessageDeleted(roomId, messageId);
+
+        try
+        {
+            using var scope = _serviceProvider.CreateScope();
+            var chatRepo = scope.ServiceProvider.GetRequiredService<IChatRepository>();
+            var memberIds = await chatRepo.GetRoomMemberUserIdsAsync(roomId, ct);
+            if (memberIds.Count > 0)
+            {
+                var userIdentifiers = memberIds.Select(id => id.ToString()).ToList();
+                await _hubContext.Clients.Users(userIdentifiers).MessageDeleted(roomId, messageId);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error sending direct delete notification for room {RoomId}", roomId);
         }
     }
 }

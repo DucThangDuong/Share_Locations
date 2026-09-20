@@ -6,7 +6,6 @@ import {
   Clock,
   DollarSign,
   RotateCcw,
-  Sparkles
 } from 'lucide-react'
 import type { ItineraryDto } from '@/types/models/itinerary.model'
 import type { ProvinceDto } from '@/types/models/geography.model'
@@ -397,10 +396,6 @@ export const ItineraryCatalogView: React.FC<ItineraryCatalogViewProps> = ({
                               className="text-emerald-500 fill-emerald-100 shrink-0"
                             />
                           </div>
-
-                          <span className="text-[11px] text-slate-400 font-medium block truncate">
-                            {itinerary.style || 'Khám phá'}
-                          </span>
                         </div>
                       </div>
                     </div>
@@ -458,7 +453,6 @@ export const ItineraryCatalogView: React.FC<ItineraryCatalogViewProps> = ({
                           : 'bg-emerald-800 hover:bg-emerald-900 text-white'
                           }`}
                       >
-                        <Sparkles size={13} />
                         <span>Áp dụng</span>
                       </button>
                     </div>

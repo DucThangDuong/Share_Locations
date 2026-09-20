@@ -111,14 +111,6 @@ export const ItineraryPlannerView: React.FC<ItineraryPlannerViewProps> = ({
     return [...fromDays, ...fromWishlist]
   }, [itinerary])
 
-  const availableAreas = useMemo(() => {
-    const areas = new Set<string>()
-    allStops.forEach((s) => {
-      if (s.area) areas.add(s.area)
-    })
-    return Array.from(areas)
-  }, [allStops])
-
   const totalStopsCount = allStops.length
   const totalTripCost = itinerary.days.reduce(
     (sum, d) =>
@@ -286,9 +278,8 @@ export const ItineraryPlannerView: React.FC<ItineraryPlannerViewProps> = ({
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           <div
-            className={`space-y-6 transition-all duration-300 ${
-              selectedStopInfo ? 'lg:col-span-8' : 'lg:col-span-12'
-            }`}
+            className={`space-y-6 transition-all duration-300 ${selectedStopInfo ? 'lg:col-span-8' : 'lg:col-span-12'
+              }`}
           >
             <div className="space-y-4">
               {filteredDays.map((day, dIdx) => (
@@ -351,7 +342,6 @@ export const ItineraryPlannerView: React.FC<ItineraryPlannerViewProps> = ({
                 dayIndex={selectedStopInfo.dayIndex}
                 isWishlist={selectedStopInfo.isWishlist}
                 currentUserRole={currentUserRole}
-                availableAreas={availableAreas}
                 onClose={onCloseDetailPanel}
                 onUpdateStop={onUpdateStop}
                 onViewPlaceDetails={onViewPlaceDetails}

@@ -4,6 +4,7 @@ import { CheckCircle2, AlertCircle } from 'lucide-react'
 import { placeService } from '@/services/placeService'
 import { userService } from '@/services/userService'
 import { ReportModal } from '@/components/common/ReportModal'
+import { SharePlaceModal } from '@/components/place/SharePlaceModal'
 import { useAuth } from '@/context/AuthContext'
 import { PlaceDetailGallery } from '@/components/place/PlaceDetailGallery'
 import { PlaceDetailOverview } from '@/components/place/PlaceDetailOverview'
@@ -19,7 +20,8 @@ export const PlaceDetailPage = () => {
   const [error, setError] = useState<string | null>(null)
   const [isSaved, setIsSaved] = useState(false)
   const [isReportOpen, setIsReportOpen] = useState(false)
-  const [showShareToast, setShowShareToast] = useState(false)
+  const [isShareOpen, setIsShareOpen] = useState(false)
+  const [shareToastMsg, setShareToastMsg] = useState<string | null>(null)
   const [reviewsList, setReviewsList] = useState<ReviewItemDto[]>([])
   const [ratingBreakdown, setRatingBreakdown] = useState<Record<string, number>>({
     '5': 0,
@@ -87,9 +89,7 @@ export const PlaceDetailPage = () => {
   }, [id, isAuthenticated])
 
   const handleShare = () => {
-    navigator.clipboard.writeText(window.location.href)
-    setShowShareToast(true)
-    setTimeout(() => setShowShareToast(false), 2500)
+    setIsShareOpen(true)
   }
 
   const handleToggleSave = async () => {
@@ -189,10 +189,10 @@ export const PlaceDetailPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50/50 pb-20">
-      {showShareToast && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 bg-gray-900 text-white text-sm font-medium rounded-lg shadow-xl animate-in slide-in-from-bottom-5">
+      {shareToastMsg && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 bg-gray-900 text-white text-sm font-medium rounded-xl shadow-xl animate-in slide-in-from-bottom-5">
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-          <span>Đã sao chép liên kết vào bộ nhớ tạm!</span>
+          <span>{shareToastMsg}</span>
         </div>
       )}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
@@ -230,6 +230,16 @@ export const PlaceDetailPage = () => {
         onClose={() => setIsReportOpen(false)}
         placeId={place.id}
         placeName={place.name}
+      />
+
+      <SharePlaceModal
+        isOpen={isShareOpen}
+        onClose={() => setIsShareOpen(false)}
+        place={place}
+        onToast={(msg) => {
+          setShareToastMsg(msg)
+          setTimeout(() => setShareToastMsg(null), 3000)
+        }}
       />
     </div>
   )

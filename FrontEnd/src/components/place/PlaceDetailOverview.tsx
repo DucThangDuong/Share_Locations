@@ -1,11 +1,5 @@
 import {
   CheckCircle2,
-  Wifi,
-  Car,
-  CreditCard,
-  Wind,
-  Users,
-  Compass,
   Star,
   Share2,
   Bookmark,
@@ -110,33 +104,6 @@ export const PlaceDetailOverview = ({
           </div>
         )}
       </div>
-
-      {place.amenities && place.amenities.length > 0 && (
-        <div className="bg-white p-6 sm:p-7 rounded-lg border border-gray-200/80 shadow-2xs">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Tiện ích & Dịch vụ có sẵn</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5">
-            {place.amenities.map((amenity) => {
-              let IconComp = CheckCircle2
-              if (amenity.icon === 'wifi') IconComp = Wifi
-              else if (amenity.icon === 'car') IconComp = Car
-              else if (amenity.icon === 'credit-card') IconComp = CreditCard
-              else if (amenity.icon === 'wind') IconComp = Wind
-              else if (amenity.icon === 'users') IconComp = Users
-              else if (amenity.icon === 'compass') IconComp = Compass
-
-              return (
-                <div
-                  key={amenity.id}
-                  className="flex items-center gap-2.5 p-3 rounded-lg border border-gray-100 bg-gray-50/60 text-gray-700 text-sm font-medium"
-                >
-                  <IconComp className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>{amenity.name}</span>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
     </div>
   )
 }

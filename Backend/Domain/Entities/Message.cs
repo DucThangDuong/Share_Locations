@@ -39,4 +39,9 @@ public class Message
     {
         _attachments.Add(attachment);
     }
+
+    public void UpdateContent(string? content)
+    {
+        Content = content?.Trim();
+    }
 }

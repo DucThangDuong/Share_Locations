@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom'
 import {
   ArrowRight,
   CheckCircle2,
-  Sparkles
 } from 'lucide-react'
 import type { ProvinceItinerary } from '@/types/models/province.model'
 import type { ItineraryDto, DetailedItineraryItem, ItineraryDayData } from '@/types/models/itinerary.model'
@@ -270,7 +269,6 @@ export const ProvinceItinerarySection: React.FC<ProvinceItinerarySectionProps> =
                         : 'bg-emerald-800 hover:bg-emerald-900 text-white'
                         }`}
                     >
-                      <Sparkles size={13} />
                       <span>Áp dụng</span>
                     </button>
                   </div>

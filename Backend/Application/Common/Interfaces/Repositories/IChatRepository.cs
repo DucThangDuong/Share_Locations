@@ -1,4 +1,4 @@
-﻿using Application.DTOs;
+using Application.DTOs;
 using Domain.Entities;
 
 namespace Application.Common.Interfaces.Repositories;
@@ -28,4 +28,6 @@ public interface IChatRepository
         CancellationToken ct = default);
     Task<bool> MarkRoomAsReadAsync(long roomId, long userId, CancellationToken ct = default);
     Task<bool> AddReactionAsync(long messageId, long userId, string emoji, CancellationToken ct = default);
+    Task<bool> UpdateMessageContentAsync(long messageId, long senderId, string newContent, CancellationToken ct = default);
+    Task<bool> DeleteMessageAsync(long messageId, long senderId, CancellationToken ct = default);
 }

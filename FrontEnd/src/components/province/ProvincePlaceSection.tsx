@@ -43,7 +43,6 @@ export const ProvincePlaceSection: React.FC<ProvincePlaceSectionProps> = ({
               className="bg-transparent text-xs font-bold text-stone-700 focus:outline-hidden pr-2 cursor-pointer"
             >
               <option value="rating">Đánh giá cao nhất</option>
-              <option value="newest">Mới nhất</option>
               <option value="price_asc">Giá: Thấp đến cao</option>
               <option value="price_desc">Giá: Cao đến thấp</option>
             </select>
@@ -54,8 +53,8 @@ export const ProvincePlaceSection: React.FC<ProvincePlaceSectionProps> = ({
               type="button"
               onClick={() => setViewMode('grid')}
               className={`p-1.5 rounded-lg transition-all cursor-pointer ${viewMode === 'grid'
-                  ? 'bg-white text-stone-900 shadow-xs'
-                  : 'text-stone-500 hover:text-stone-900'
+                ? 'bg-white text-stone-900 shadow-xs'
+                : 'text-stone-500 hover:text-stone-900'
                 }`}
               title="Xem dạng lưới"
             >
@@ -65,8 +64,8 @@ export const ProvincePlaceSection: React.FC<ProvincePlaceSectionProps> = ({
               type="button"
               onClick={() => setViewMode('list')}
               className={`p-1.5 rounded-lg transition-all cursor-pointer ${viewMode === 'list'
-                  ? 'bg-white text-stone-900 shadow-xs'
-                  : 'text-stone-500 hover:text-stone-900'
+                ? 'bg-white text-stone-900 shadow-xs'
+                : 'text-stone-500 hover:text-stone-900'
                 }`}
               title="Xem dạng danh sách"
             >
@@ -82,8 +81,8 @@ export const ProvincePlaceSection: React.FC<ProvincePlaceSectionProps> = ({
             type="button"
             onClick={() => onSelectCategory(null)}
             className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border shrink-0 ${selectedCategoryId === null
-                ? 'bg-emerald-800 text-white border-emerald-800 shadow-xs'
-                : 'bg-white hover:bg-stone-100 text-stone-700 border-stone-200'
+              ? 'bg-emerald-800 text-white border-emerald-800 shadow-xs'
+              : 'bg-white hover:bg-stone-100 text-stone-700 border-stone-200'
               }`}
           >
             Tất cả danh mục
@@ -96,8 +95,8 @@ export const ProvincePlaceSection: React.FC<ProvincePlaceSectionProps> = ({
                 type="button"
                 onClick={() => onSelectCategory(isSelected ? null : cat.id)}
                 className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer border shrink-0 ${isSelected
-                    ? 'bg-emerald-800 text-white border-emerald-800 shadow-xs'
-                    : 'bg-white hover:bg-stone-100 hover:border-stone-300 text-stone-700 border-stone-200'
+                  ? 'bg-emerald-800 text-white border-emerald-800 shadow-xs'
+                  : 'bg-white hover:bg-stone-100 hover:border-stone-300 text-stone-700 border-stone-200'
                   }`}
               >
                 {cat.name}

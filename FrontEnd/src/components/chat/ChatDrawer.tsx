@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  FileText,
   UserPlus,
   Users,
   ChevronDown,
@@ -33,7 +32,6 @@ interface ChatDrawerProps {
   isGroup?: boolean
   roomId?: number | null
   images: MessageAttachmentDto[]
-  files: MessageAttachmentDto[]
   onPreviewImage: (url: string) => void
 }
 
@@ -44,7 +42,6 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
   isGroup = false,
   roomId = null,
   images,
-  files,
   onPreviewImage,
 }) => {
   const { user } = useAuth()
@@ -64,7 +61,6 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
   const [isCustomizationOpen, setIsCustomizationOpen] = useState(true)
   const [isMembersOpen, setIsMembersOpen] = useState(true)
   const [isPhotosOpen, setIsPhotosOpen] = useState(true)
-  const [isFilesOpen, setIsFilesOpen] = useState(true)
 
   // Modals state
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false)
@@ -334,11 +330,10 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
                             e.stopPropagation()
                             setActiveMenuUserId(isMenuOpen ? null : member.userId)
                           }}
-                          className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors cursor-pointer ${
-                            isMenuOpen
-                              ? 'bg-slate-200 text-slate-900'
-                              : 'text-slate-400 hover:text-slate-700 hover:bg-slate-200'
-                          }`}
+                          className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors cursor-pointer ${isMenuOpen
+                            ? 'bg-slate-200 text-slate-900'
+                            : 'text-slate-400 hover:text-slate-700 hover:bg-slate-200'
+                            }`}
                           title="Tùy chọn thành viên"
                         >
                           <MoreHorizontal size={18} />
@@ -411,7 +406,7 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
             className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-[#F0F2F5] transition-colors cursor-pointer text-left group"
           >
             <span className="font-bold text-[14px] text-slate-900 group-hover:text-[#0084FF] transition-colors">
-              Ảnh đã chia sẻ ({images.length})
+              Ảnh đã chia sẻ
             </span>
             <div className="text-slate-500 group-hover:text-slate-800 transition-colors">
               {isPhotosOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
@@ -434,45 +429,6 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
                     />
                   ))}
                 </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* ═══════════════════════════════════════════════════════════════
-            ACCORDION 4: TỆP ĐÍNH KÈM
-        ═══════════════════════════════════════════════════════════════ */}
-        <div className="border-b border-slate-100 pb-2">
-          <button
-            type="button"
-            onClick={() => setIsFilesOpen((prev) => !prev)}
-            className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-[#F0F2F5] transition-colors cursor-pointer text-left group"
-          >
-            <span className="font-bold text-[14px] text-slate-900 group-hover:text-[#0084FF] transition-colors">
-              Tệp đính kèm ({files.length})
-            </span>
-            <div className="text-slate-500 group-hover:text-slate-800 transition-colors">
-              {isFilesOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-            </div>
-          </button>
-
-          {isFilesOpen && (
-            <div className="px-3 pt-1 pb-2 space-y-1">
-              {files.length === 0 ? (
-                <p className="text-xs text-slate-400 italic py-1">Chưa có tệp nào được gửi</p>
-              ) : (
-                files.slice(0, 5).map((att) => (
-                  <a
-                    key={att.id}
-                    href={att.mediaUrl || ''}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center gap-2.5 p-2 rounded-xl bg-slate-50 hover:bg-[#F0F2F5] text-xs text-slate-700 truncate transition-colors animate-in slide-in-from-top-1 fade-in duration-150"
-                  >
-                    <FileText size={15} className="text-[#0084FF] shrink-0" />
-                    <span className="truncate font-medium">{att.fileName || 'Tệp đính kèm'}</span>
-                  </a>
-                ))
               )}
             </div>
           )}

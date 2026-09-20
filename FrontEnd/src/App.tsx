@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react'
-import { BrowserRouter, Routes, Route, useNavigate, useSearchParams } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import { AuthProvider } from '@/context/AuthContext'
 import { ChatProvider } from '@/context/ChatContext'
@@ -14,7 +14,6 @@ const ItineraryPage = lazy(() => import('@/pages/ItineraryPage').then((m) => ({ 
 const BlogPage = lazy(() => import('@/pages/BlogPage').then((m) => ({ default: m.BlogPage })))
 const LoginPage = lazy(() => import('@/pages/LoginPage').then((m) => ({ default: m.LoginPage })))
 const RegisterPage = lazy(() => import('@/pages/RegisterPage').then((m) => ({ default: m.RegisterPage })))
-const ProfilePage = lazy(() => import('@/pages/ProfilePage').then((m) => ({ default: m.ProfilePage })))
 const SettingsPage = lazy(() => import('@/pages/SettingsPage').then((m) => ({ default: m.SettingsPage })))
 const ProposePlacePage = lazy(() => import('@/pages/ProposePlacePage').then((m) => ({ default: m.ProposePlacePage })))
 const RegionPage = lazy(() => import('@/pages/RegionPage').then((m) => ({ default: m.RegionPage })))
@@ -84,7 +83,7 @@ export const App: React.FC = () => {
                 <Route path="propose-place" element={<ProposePlacePage />} />
                 <Route path="de-xuat" element={<ProposePlacePage />} />
                 <Route path="de-xuat-dia-diem" element={<ProposePlacePage />} />
-                <Route path="profile" element={<ProfilePage />} />
+                <Route path="profile" element={<Navigate to="/settings" replace />} />
                 <Route path="settings" element={<SettingsPage />} />
                 <Route path="cai-dat" element={<SettingsPage />} />
                 <Route path="*" element={<NotFoundPage />} />

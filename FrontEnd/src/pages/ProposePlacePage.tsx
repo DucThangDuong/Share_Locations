@@ -8,7 +8,6 @@ import {
   Trash2,
   AlertCircle,
   Navigation,
-  Sparkles,
   Check,
   ShieldCheck,
   Eye,
@@ -300,7 +299,6 @@ export const ProposePlacePage: React.FC = () => {
           </div>
 
           <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200/70 text-left flex items-start gap-2.5 text-xs text-emerald-900">
-            <Sparkles className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
             <div>
               <span className="font-bold">+100 điểm uy tín</span> sẽ được tự động cộng vào tài khoản khi địa điểm của bạn được duyệt.
             </div>
@@ -346,7 +344,6 @@ export const ProposePlacePage: React.FC = () => {
           </div>
 
           <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200/80 text-left flex items-start gap-2.5 text-xs text-amber-900">
-            <Sparkles className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
             <div>
               <span className="font-bold">+100 điểm cống hiến</span> sẽ được cộng vào hồ sơ cá nhân ngay khi đề xuất được duyệt.
             </div>
@@ -355,10 +352,10 @@ export const ProposePlacePage: React.FC = () => {
           <div className="flex flex-col sm:flex-row gap-2.5 pt-2">
             <button
               type="button"
-              onClick={() => navigate('/profile?tab=proposals')}
+              onClick={() => navigate('/')}
               className="flex-1 py-2.5 px-4 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs"
             >
-              Xem trong Hồ sơ
+              Về trang chủ
             </button>
             <button
               type="button"
@@ -404,7 +401,7 @@ export const ProposePlacePage: React.FC = () => {
                 <div className="space-y-4">
                   <div className="relative">
                     <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                      Tên địa điểm / Quán ăn / Thắng cảnh <span className="text-rose-500">*</span>
+                      Tên địa điểm <span className="text-rose-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -418,7 +415,7 @@ export const ProposePlacePage: React.FC = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                        Danh mục chính <span className="text-rose-500">*</span>
+                        Danh mục <span className="text-rose-500">*</span>
                       </label>
                       <select
                         value={categoryId}
@@ -467,7 +464,7 @@ export const ProposePlacePage: React.FC = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                        Số điện thoại liên hệ (tùy chọn)
+                        Số điện thoại liên hệ
                       </label>
                       <input
                         type="text"
@@ -480,7 +477,7 @@ export const ProposePlacePage: React.FC = () => {
 
                     <div>
                       <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                        Website / Fanpage (tùy chọn)
+                        Website / Fanpage
                       </label>
                       <input
                         type="text"
@@ -498,7 +495,7 @@ export const ProposePlacePage: React.FC = () => {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
                   <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-emerald-700" />
-                    <span>2. Chọn vị trí chính xác trên Bản đồ tương tác</span>
+                    <span>2. Chọn vị trí trên bản đồ</span>
                   </h3>
 
                   <button
@@ -655,7 +652,7 @@ export const ProposePlacePage: React.FC = () => {
 
                 <div>
                   <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                    Mô tả đặc sắc & Kinh nghiệm tham quan <span className="text-rose-500">*</span>
+                    Mô tả <span className="text-rose-500">*</span>
                   </label>
                   <textarea
                     rows={4}
@@ -767,7 +764,6 @@ export const ProposePlacePage: React.FC = () => {
                     </>
                   ) : (
                     <>
-                      <Sparkles className="w-4 h-4" />
                       <span>Gửi đề xuất địa điểm mới</span>
                     </>
                   )}
