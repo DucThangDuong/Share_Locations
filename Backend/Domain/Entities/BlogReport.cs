@@ -19,4 +19,23 @@ public class BlogReport
     public virtual Blog Blog { get; private set; } = null!;
     public virtual ReportType ReportType { get; private set; } = null!;
     public virtual User? Resolver { get; private set; }
+
+    protected BlogReport() { }
+
+    public BlogReport(long reporterId, long blogId, int reportTypeId, string? reason)
+    {
+        ReporterId = reporterId;
+        BlogId = blogId;
+        ReportTypeId = reportTypeId;
+        Reason = reason;
+        Status = ReportStatus.Pending;
+        CreatedAt = DateTime.UtcNow;
+    }
+
+    public void Resolve(long adminId, ReportStatus status)
+    {
+        ResolvedBy = adminId;
+        Status = status;
+        ResolvedAt = DateTime.UtcNow;
+    }
 }

@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { Reply, Send, Loader2, Pencil, Trash2, Check, X } from 'lucide-react'
+import { Reply, Send, Loader2, Pencil, Trash2, Check, X, Flag } from 'lucide-react'
+import { ReportModal } from '@/components/report/ReportModal'
 import type { CommentDto } from '@/types/models/place.model'
 
 interface ReviewCommentItemProps {
@@ -53,6 +54,8 @@ export const ReviewCommentItem: React.FC<ReviewCommentItemProps> = ({
   const [editingReplyId, setEditingReplyId] = useState<number | null>(null)
   const [editReplyText, setEditReplyText] = useState('')
   const [isSubmittingReplyEdit, setIsSubmittingReplyEdit] = useState(false)
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false)
+  const [reportTarget, setReportTarget] = useState<{ id: number; author: string; content: string } | null>(null)
 
   const isParentOwner = Boolean(currentUserId && String(currentUserId) === String(comment.userId))
 
@@ -191,6 +194,23 @@ export const ReviewCommentItem: React.FC<ReviewCommentItemProps> = ({
               >
                 <Reply className="w-3 h-3" />
                 <span>Phản hồi</span>
+              </button>
+
+              <span>•</span>
+              <button type="button"
+                onClick={() => {
+                  setReportTarget({
+                    id: comment.id,
+                    author: comment.userName,
+                    content: comment.content
+                  })
+                  setIsReportModalOpen(true)
+                }}
+                className="hover:text-rose-600 flex items-center gap-1 cursor-pointer transition-colors text-slate-400"
+                title="Báo cáo bình luận vi phạm"
+              >
+                <Flag className="w-3 h-3" />
+                <span>Báo cáo</span>
               </button>
 
               {isParentOwner && (
@@ -351,6 +371,23 @@ export const ReviewCommentItem: React.FC<ReviewCommentItemProps> = ({
                         <span>Phản hồi</span>
                       </button>
 
+                      <span>•</span>
+                      <button type="button"
+                        onClick={() => {
+                          setReportTarget({
+                            id: reply.id,
+                            author: reply.userName,
+                            content: reply.content
+                          })
+                          setIsReportModalOpen(true)
+                        }}
+                        className="hover:text-rose-600 flex items-center gap-1 cursor-pointer transition-colors text-slate-400"
+                        title="Báo cáo phản hồi vi phạm"
+                      >
+                        <Flag className="w-3 h-3" />
+                        <span>Báo cáo</span>
+                      </button>
+
                       {isReplyOwner && (
                         <>
                           <span>•</span>
@@ -378,6 +415,23 @@ export const ReviewCommentItem: React.FC<ReviewCommentItemProps> = ({
             )
           })}
         </div>
+      )}
+
+      {isReportModalOpen && reportTarget && (
+        <ReportModal
+          isOpen={isReportModalOpen}
+          onClose={() => {
+            setIsReportModalOpen(false)
+            setReportTarget(null)
+          }}
+          initialTarget={{
+            targetType: 'comment',
+            targetId: reportTarget.id,
+            targetTitle: `Bình luận của ${reportTarget.author}`,
+            targetContent: reportTarget.content,
+            targetAuthor: reportTarget.author,
+          }}
+        />
       )}
     </div>
   )

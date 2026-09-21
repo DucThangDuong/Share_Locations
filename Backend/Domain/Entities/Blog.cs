@@ -78,4 +78,10 @@ public class Blog
     {
         ViewCount++;
     }
+
+    public void UpdateStatus(BlogStatus status)
+    {
+        Status = status;
+        UpdatedAt = DateTime.UtcNow;
+    }
 }

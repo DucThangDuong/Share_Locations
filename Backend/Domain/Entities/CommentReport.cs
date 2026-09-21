@@ -19,4 +19,23 @@ public class CommentReport
     public virtual Comment Comment { get; private set; } = null!;
     public virtual ReportType ReportType { get; private set; } = null!;
     public virtual User? Resolver { get; private set; }
+
+    protected CommentReport() { }
+
+    public CommentReport(long reporterId, long commentId, int reportTypeId, string? reason)
+    {
+        ReporterId = reporterId;
+        CommentId = commentId;
+        ReportTypeId = reportTypeId;
+        Reason = reason;
+        Status = ReportStatus.Pending;
+        CreatedAt = DateTime.UtcNow;
+    }
+
+    public void Resolve(long adminId, ReportStatus status)
+    {
+        ResolvedBy = adminId;
+        Status = status;
+        ResolvedAt = DateTime.UtcNow;
+    }
 }

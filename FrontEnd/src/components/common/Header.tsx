@@ -15,7 +15,8 @@ import {
   X,
   ChevronDown,
   Plus,
-  MessageCircle
+  MessageCircle,
+  Shield
 } from 'lucide-react'
 
 export const Header: React.FC = () => {
@@ -204,68 +205,95 @@ export const Header: React.FC = () => {
         </div>
       </div>
 
-      {isNavDrawerOpen &&
-        createPortal(
-          <div className="fixed inset-0 z-[9999] flex">
-            <div
-              className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs transition-opacity duration-200 animate-in fade-in"
-              onClick={() => setIsNavDrawerOpen(false)}
-            />
+      {createPortal(
+        <div
+          className={`fixed inset-0 z-[9999] flex transition-all duration-300 ${
+            isNavDrawerOpen
+              ? 'opacity-100 pointer-events-auto visible'
+              : 'opacity-0 pointer-events-none invisible'
+          }`}
+        >
+          {/* Backdrop with smooth fade */}
+          <div
+            className={`fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity duration-300 ease-in-out ${
+              isNavDrawerOpen ? 'opacity-100' : 'opacity-0'
+            }`}
+            onClick={() => setIsNavDrawerOpen(false)}
+          />
 
-            <aside
-              ref={drawerRef}
-              className="relative w-80 max-w-[85vw] bg-white h-screen shadow-2xl flex flex-col z-10 animate-in slide-in-from-left duration-200 border-r border-slate-200 overflow-y-auto"
-            >
-              <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-                <Link
-                  to="/"
-                  onClick={() => setIsNavDrawerOpen(false)}
-                  className="flex items-center gap-2 group"
-                >
-                  <span className="text-2xl font-extrabold tracking-tight text-slate-900">
-                    LangThang<span className="text-emerald-600">.</span>
-                  </span>
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => setIsNavDrawerOpen(false)}
-                  className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
-                  aria-label="Đóng menu"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+          {/* Sidebar Drawer with smooth slide in/out */}
+          <aside
+            ref={drawerRef}
+            className={`${
+              isNavDrawerOpen ? 'translate-x-0' : '-translate-x-full'
+            } relative w-80 max-w-[85vw] bg-white h-screen shadow-2xl flex flex-col z-10 transition-transform duration-300 ease-in-out border-r border-slate-200 overflow-y-auto`}
+          >
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+              <Link
+                to="/"
+                onClick={() => setIsNavDrawerOpen(false)}
+                className="flex items-center gap-2 group"
+              >
+                <span className="text-2xl font-extrabold tracking-tight text-slate-900">
+                  LangThang<span className="text-emerald-600">.</span>
+                </span>
+              </Link>
+              <button
+                type="button"
+                onClick={() => setIsNavDrawerOpen(false)}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                aria-label="Đóng menu"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-4 space-y-1 flex-1">
+              <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">
+                Khám phá hệ thống
               </div>
 
-              <div className="p-4 space-y-1 flex-1">
-                <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">
-                  Khám phá hệ thống
-                </div>
+              {navLinks.map((item) => {
+                const isActive = item.exact
+                  ? location.pathname === item.href
+                  : location.pathname.startsWith(item.href)
 
-                {navLinks.map((item) => {
-                  const isActive = item.exact
-                    ? location.pathname === item.href
-                    : location.pathname.startsWith(item.href)
-
-                  return (
-                    <Link
-                      key={item.label}
-                      to={item.href}
-                      onClick={() => setIsNavDrawerOpen(false)}
-                      className={`flex items-center gap-3 px-3.5 py-3 rounded-2xl text-xs font-bold transition-colors ${isActive
+                return (
+                  <Link
+                    key={item.label}
+                    to={item.href}
+                    onClick={() => setIsNavDrawerOpen(false)}
+                    className={`flex items-center gap-3 px-3.5 py-3 rounded-2xl text-xs font-bold transition-colors ${
+                      isActive
                         ? 'bg-emerald-50 text-emerald-900 border border-emerald-200/80'
                         : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
-                        }`}
-                    >
-                      <item.icon className={`w-4 h-4 ${isActive ? 'text-emerald-800' : 'text-slate-500'}`} />
-                      <span className="flex-1">{item.label}</span>
-                    </Link>
-                  )
-                })}
+                    }`}
+                  >
+                    <item.icon className={`w-4 h-4 ${isActive ? 'text-emerald-800' : 'text-slate-500'}`} />
+                    <span className="flex-1">{item.label}</span>
+                  </Link>
+                )
+              })}
+
+              <div className="pt-3 border-t border-slate-100 mt-3">
+                <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">
+                  Quản trị &amp; Điều hành
+                </div>
+                <Link
+                  to="/admin"
+                  onClick={() => setIsNavDrawerOpen(false)}
+                  className="flex items-center gap-3 px-3.5 py-3 rounded-2xl text-xs font-bold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+                >
+                  <Shield className="w-4 h-4 text-emerald-700" />
+                  <span className="flex-1">Trang quản trị (Admin)</span>
+                  <span className="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-full font-bold">Portal</span>
+                </Link>
               </div>
-            </aside>
-          </div>,
-          document.body
-        )}
+            </div>
+          </aside>
+        </div>,
+        document.body
+      )}
     </header>
   )
 }

@@ -31,4 +31,11 @@ public class PlaceReport
         Status = ReportStatus.Pending;
         CreatedAt = DateTime.UtcNow;
     }
+
+    public void Resolve(long adminId, ReportStatus status)
+    {
+        ResolvedBy = adminId;
+        Status = status;
+        ResolvedAt = DateTime.UtcNow;
+    }
 }

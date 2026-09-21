@@ -55,4 +55,9 @@ public class Comment
     {
         Status = CommentStatus.Active;
     }
+
+    public void UpdateStatus(CommentStatus status)
+    {
+        Status = status;
+    }
 }

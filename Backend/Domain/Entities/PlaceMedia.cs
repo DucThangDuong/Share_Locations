@@ -16,4 +16,17 @@ public class PlaceMedia
     // Navigation
     public virtual Place Place { get; private set; } = null!;
     public virtual User? Uploader { get; private set; }
+
+    protected PlaceMedia() { }
+
+    public PlaceMedia(long placeId, string url, MediaType mediaType = MediaType.Image, int displayOrder = 0, long? uploadedBy = null)
+    {
+        PlaceId = placeId;
+        Url = url;
+        MediaType = mediaType;
+        DisplayOrder = displayOrder;
+        UploadedBy = uploadedBy;
+        IsVerified = true;
+        CreatedAt = DateTime.UtcNow;
+    }
 }

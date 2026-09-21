@@ -159,6 +159,20 @@ public class Place
         UpdatedAt = DateTime.UtcNow;
     }
 
+    public void UpdateStatus(PlaceStatus status)
+    {
+        Status = status;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void AddMedia(string url, MediaType mediaType = MediaType.Image, bool isPrimary = false)
+    {
+        if (!string.IsNullOrWhiteSpace(url))
+        {
+            _media.Add(new PlaceMedia(Id, url.Trim(), mediaType, _media.Count, CreatedBy));
+        }
+    }
+
     public void UpdateRating(decimal avgRating, int reviewCount)
     {
         if (avgRating < 0 || avgRating > 5)
@@ -168,6 +182,13 @@ public class Place
 
         AvgRating = avgRating;
         ReviewCount = reviewCount;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void UpdateCoordinates(decimal? latitude, decimal? longitude)
+    {
+        Latitude = latitude;
+        Longitude = longitude;
         UpdatedAt = DateTime.UtcNow;
     }
 

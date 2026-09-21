@@ -71,6 +71,12 @@ public class Review
         UpdatedAt = DateTime.UtcNow;
     }
 
+    public void UpdateStatus(ReviewStatus status)
+    {
+        Status = status;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
     public void AddMedia(string url, FoodMediaType mediaType = FoodMediaType.Image)
     {
         if (!string.IsNullOrWhiteSpace(url))

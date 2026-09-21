@@ -56,4 +56,17 @@ public class Food
         MinPrice = minPrice;
         MaxPrice = maxPrice;
     }
+
+    public void UpdateDetails(string name, string? description, string? historyInfo, string? coverImageUrl)
+    {
+        Name = name.Trim();
+        Description = description?.Trim();
+        HistoryInfo = historyInfo?.Trim();
+        CoverImageUrl = coverImageUrl?.Trim();
+    }
+
+    public void UpdateStatus(RecordStatus status)
+    {
+        Status = status;
+    }
 }

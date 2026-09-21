@@ -42,6 +42,13 @@ public static class DependencyInjection
         services.AddScoped<IBlogRepository, BlogRepository>();
         services.AddScoped<IUserPersonalizationRepository, UserPersonalizationRepository>();
         services.AddScoped<IChatRepository, ChatRepository>();
+        services.AddScoped<IAdminReportRepository, AdminReportRepository>();
+        services.AddScoped<IAdminProposalRepository, AdminProposalRepository>();
+        services.AddScoped<IAdminPlaceRepository, AdminPlaceRepository>();
+        services.AddScoped<IAdminReviewRepository, AdminReviewRepository>();
+        services.AddScoped<IAdminFoodRepository, AdminFoodRepository>();
+        services.AddScoped<IAdminBlogRepository, AdminBlogRepository>();
+        services.AddScoped<IAdminDashboardRepository, AdminDashboardRepository>();
 
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();

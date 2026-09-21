@@ -19,4 +19,23 @@ public class ReviewReport
     public virtual Review Review { get; private set; } = null!;
     public virtual ReportType ReportType { get; private set; } = null!;
     public virtual User? Resolver { get; private set; }
+
+    protected ReviewReport() { }
+
+    public ReviewReport(long reporterId, long reviewId, int reportTypeId, string? reason)
+    {
+        ReporterId = reporterId;
+        ReviewId = reviewId;
+        ReportTypeId = reportTypeId;
+        Reason = reason;
+        Status = ReportStatus.Pending;
+        CreatedAt = DateTime.UtcNow;
+    }
+
+    public void Resolve(long adminId, ReportStatus status)
+    {
+        ResolvedBy = adminId;
+        Status = status;
+        ResolvedAt = DateTime.UtcNow;
+    }
 }

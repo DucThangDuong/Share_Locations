@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react'
-import { Star, ThumbsUp, MessageSquare, Share2, Play, Pencil, Trash2 } from 'lucide-react'
+import { Star, ThumbsUp, MessageSquare, Share2, Play, Pencil, Trash2, Flag } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { placeService } from '@/services/placeService'
 import { ReviewCommentThread } from './ReviewCommentThread'
 import { MediaLightboxModal } from './MediaLightboxModal'
 import { EditReviewModal } from './EditReviewModal'
+import { ReportModal } from '@/components/report/ReportModal'
 import type { ReviewItemDto, UpdateReviewRequest } from '@/types/models/place.model'
 
 interface ReviewItemCardProps {
@@ -28,6 +29,7 @@ export const ReviewItemCard: React.FC<ReviewItemCardProps> = ({
   const [commentsCount, setCommentsCount] = useState(review.commentsCount || 0)
   const [activeMedia, setActiveMedia] = useState<{ url: string; type: 'image' | 'video' } | null>(null)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
   const isOwner = Boolean(isAuthenticated && user && String(user.id) === String(review.userId))
@@ -273,14 +275,25 @@ export const ReviewItemCard: React.FC<ReviewItemCardProps> = ({
           </button>
         </div>
 
-        <button type="button"
-          onClick={handleShare}
-          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-          title="Chia sẻ đánh giá"
-        >
-          <Share2 className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Chia sẻ</span>
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button type="button"
+            onClick={handleShare}
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+            title="Chia sẻ đánh giá"
+          >
+            <Share2 className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Chia sẻ</span>
+          </button>
+
+          <button type="button"
+            onClick={() => setIsReportModalOpen(true)}
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+            title="Báo cáo đánh giá vi phạm"
+          >
+            <Flag className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Báo cáo</span>
+          </button>
+        </div>
       </div>
 
       {isCommentsOpen && (
@@ -296,6 +309,22 @@ export const ReviewItemCard: React.FC<ReviewItemCardProps> = ({
           onClose={() => setIsEditModalOpen(false)}
           review={review}
           onUpdateReview={handleUpdateReview}
+        />
+      )}
+
+      {isReportModalOpen && (
+        <ReportModal
+          isOpen={isReportModalOpen}
+          onClose={() => setIsReportModalOpen(false)}
+          initialTarget={{
+            targetType: 'review',
+            targetId: review.id,
+            targetTitle: `Đánh giá của ${review.userName || 'Thành viên'}`,
+            targetSubtitle: `Đánh giá ${review.rating} sao`,
+            targetContent: review.content || undefined,
+            targetRating: review.rating,
+            targetAuthor: review.userName || undefined,
+          }}
         />
       )}
 

@@ -19,6 +19,7 @@ const ProposePlacePage = lazy(() => import('@/pages/ProposePlacePage').then((m) 
 const RegionPage = lazy(() => import('@/pages/RegionPage').then((m) => ({ default: m.RegionPage })))
 const ProvincePage = lazy(() => import('@/pages/ProvincePage').then((m) => ({ default: m.ProvincePage })))
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })))
+const AdminPage = lazy(() => import('@/pages/AdminPage').then((m) => ({ default: m.AdminPage })))
 const ChatPage = lazy(() => import('@/pages/ChatPage'))
 
 const ChatRoute: React.FC = () => {
@@ -96,6 +97,8 @@ export const App: React.FC = () => {
 
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
+              <Route path="/admin" element={<AdminPage />} />
+              <Route path="/admin/*" element={<AdminPage />} />
             </Routes>
           </Suspense>
         </BrowserRouter>

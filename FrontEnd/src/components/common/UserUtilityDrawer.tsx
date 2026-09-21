@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
@@ -9,10 +9,10 @@ import {
   Bookmark,
   Luggage,
   CalendarCheck,
-  Users,
-  MessageCircle,
-  BookOpen,
-  MapPin,
+  UserPlus,
+  MessageSquare,
+  Newspaper,
+  PlusCircle,
   Sliders,
   LogOut,
   Star,
@@ -99,13 +99,13 @@ export const UserUtilityDrawer: React.FC<UserUtilityDrawerProps> = ({
     }
   }, [isOpen])
 
+  const drawerRef = useRef<HTMLDivElement>(null)
+
   const handleLogout = async () => {
     await logout()
     onClose()
     navigate('/login')
   }
-
-  if (!isOpen) return null
 
   const utilityMenuItems: Array<{
     key: UtilityType
@@ -142,41 +142,41 @@ export const UserUtilityDrawer: React.FC<UserUtilityDrawerProps> = ({
       {
         key: 'friends',
         title: 'Bạn bè',
-        subtitle: 'Danh sách bạn bè & nhắn tin trò chuyện',
-        icon: Users,
+        subtitle: 'Kết nối du lịch, lời mời kết bạn & gợi ý',
+        icon: UserPlus,
         iconColor: 'text-indigo-800',
         bgColor: 'bg-indigo-50 group-hover:bg-indigo-100'
       },
       {
         key: 'reviews',
-        title: 'Bài đánh giá',
-        subtitle: 'Các đánh giá địa điểm của bạn',
+        title: 'Đánh giá',
+        subtitle: 'Nhận xét và hình ảnh địa điểm bạn đã chia sẻ',
         icon: Star,
-        iconColor: 'text-amber-600',
-        bgColor: 'bg-amber-50 group-hover:bg-amber-100'
+        iconColor: 'text-yellow-700',
+        bgColor: 'bg-yellow-50 group-hover:bg-yellow-100'
       },
       {
         key: 'comments',
         title: 'Bình luận',
-        subtitle: 'Các bình luận về địa điểm đã chia sẻ',
-        icon: MessageCircle,
-        iconColor: 'text-cyan-800',
-        bgColor: 'bg-cyan-50 group-hover:bg-cyan-100'
-      },
-      {
-        key: 'blogs',
-        title: 'Bài viết',
-        subtitle: 'Cẩm nang & bài viết kinh nghiệm du lịch',
-        icon: BookOpen,
+        subtitle: 'Tất cả tương tác & phản hồi của bạn',
+        icon: MessageSquare,
         iconColor: 'text-violet-800',
         bgColor: 'bg-violet-50 group-hover:bg-violet-100'
       },
       {
+        key: 'blogs',
+        title: 'Bài viết',
+        subtitle: 'Cẩm nang du lịch và kinh nghiệm khám phá',
+        icon: Newspaper,
+        iconColor: 'text-teal-800',
+        bgColor: 'bg-teal-50 group-hover:bg-teal-100'
+      },
+      {
         key: 'proposals',
-        title: 'Đóng góp',
-        subtitle: 'Địa điểm bạn đã đề xuất lên hệ thống',
-        icon: MapPin,
-        iconColor: 'text-rose-700',
+        title: 'Đề xuất',
+        subtitle: 'Địa điểm và cập nhật bạn đã gửi duyệt',
+        icon: PlusCircle,
+        iconColor: 'text-rose-800',
         bgColor: 'bg-rose-50 group-hover:bg-rose-100'
       }
     ]
@@ -184,15 +184,28 @@ export const UserUtilityDrawer: React.FC<UserUtilityDrawerProps> = ({
   const activeTitle = utilityMenuItems.find((i) => i.key === activeUtility)?.title || 'Tiện ích'
 
   const drawerPortal = (
-    <div className="fixed inset-0 z-[9999] flex justify-end font-sans">
+    <div
+      className={`fixed inset-0 z-[9999] flex justify-end font-sans transition-all duration-300 ${
+        isOpen
+          ? 'opacity-100 pointer-events-auto visible'
+          : 'opacity-0 pointer-events-none invisible'
+      }`}
+    >
       {/* Backdrop overlay */}
       <div
-        className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs transition-opacity duration-200 animate-in fade-in"
+        className={`fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity duration-300 ease-in-out ${
+          isOpen ? 'opacity-100' : 'opacity-0'
+        }`}
         onClick={onClose}
       />
 
-      {/* Main Drawer Shell */}
-      <div className="relative w-full max-w-md sm:max-w-lg bg-white h-screen shadow-2xl flex flex-col z-10 animate-in slide-in-from-right duration-250 border-l border-slate-200 overflow-hidden">
+      {/* Main Drawer Shell with smooth slide in/out */}
+      <div
+        ref={drawerRef}
+        className={`${
+          isOpen ? 'translate-x-0' : 'translate-x-full'
+        } relative w-full max-w-md sm:max-w-lg bg-white h-screen shadow-2xl flex flex-col z-10 transition-transform duration-300 ease-in-out border-l border-slate-200 overflow-hidden`}
+      >
         {/* Toast Alert */}
         {toastMsg && (
           <div className="absolute top-4 left-4 right-4 z-50 p-3 bg-slate-900 text-white text-xs font-semibold rounded-xl shadow-xl flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-150">

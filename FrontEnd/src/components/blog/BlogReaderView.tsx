@@ -1,8 +1,10 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import {
   Clock,
-  BookOpen
+  BookOpen,
+  Flag
 } from 'lucide-react'
+import { ReportModal } from '@/components/report/ReportModal'
 import type { BlogDetailDto, BlogListItemDto } from '@/types/models/blogArticle.model'
 import { BlogTableOfContents } from './BlogTableOfContents'
 import { convertRawContentToHtml, extractHeadingsAndProcessHtml } from '@/utils/contentConverter'
@@ -24,6 +26,7 @@ export const BlogReaderView: React.FC<BlogReaderViewProps> = ({
   article
 }) => {
   const [readProgress, setReadProgress] = useState(0)
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -106,10 +109,20 @@ export const BlogReaderView: React.FC<BlogReaderViewProps> = ({
                 </div>
               </div>
 
-              <div className="flex items-center gap-4 text-xs font-semibold text-slate-500">
+              <div className="flex items-center gap-3 text-xs font-semibold text-slate-500">
                 <span className="flex items-center gap-1">
                   <Clock size={14} /> {article.readTime || '5 phút đọc'}
                 </span>
+                <span>•</span>
+                <button
+                  type="button"
+                  onClick={() => setIsReportModalOpen(true)}
+                  className="flex items-center gap-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 px-2 py-1 rounded-lg transition-colors cursor-pointer"
+                  title="Báo cáo bài viết vi phạm"
+                >
+                  <Flag size={13} />
+                  <span>Báo cáo</span>
+                </button>
               </div>
             </div>
 
@@ -174,6 +187,21 @@ export const BlogReaderView: React.FC<BlogReaderViewProps> = ({
           </aside>
         </div>
       </main>
+
+      {isReportModalOpen && (
+        <ReportModal
+          isOpen={isReportModalOpen}
+          onClose={() => setIsReportModalOpen(false)}
+          initialTarget={{
+            targetType: 'blog',
+            targetId: article.id,
+            targetTitle: article.title,
+            targetSubtitle: `Tác giả: ${article.author?.name || 'Ẩn danh'} • ${article.category || 'Cẩm nang'}`,
+            targetContent: article.excerpt || article.content?.slice(0, 200),
+            targetAuthor: article.author?.name,
+          }}
+        />
+      )}
     </div>
   )
 }
