@@ -7,9 +7,13 @@ public class SearchPlacesRequest
 {
     public string? Keyword { get; set; }
     public int? RegionId { get; set; }
+    public List<int>? RegionIds { get; set; }
     public int? ProvinceId { get; set; }
+    public List<int>? ProvinceIds { get; set; }
     public int? CategoryId { get; set; }
+    public List<int>? CategoryIds { get; set; }
     public int? PlaceTypeId { get; set; }
+    public List<int>? PlaceTypeIds { get; set; }
     public decimal? MinPrice { get; set; }
     public decimal? MaxPrice { get; set; }
     public decimal? MinRating { get; set; }

@@ -30,6 +30,10 @@ public class ChatRoomMemberConfiguration : IEntityTypeConfiguration<ChatRoomMemb
 
         builder.HasIndex(e => e.UserId, "IX_ChatRoomMembers_UserId");
 
+        builder.Property(e => e.Role)
+            .HasConversion<byte>()
+            .HasDefaultValue(ChatMemberRole.Member);
+
         builder.Property(e => e.JoinedAt)
             .HasDefaultValueSql("SYSUTCDATETIME()");
 
@@ -55,6 +59,11 @@ public class MessageConfiguration : IEntityTypeConfiguration<Message>
         builder.Property(e => e.Id).ValueGeneratedOnAdd();
 
         builder.HasIndex(e => new { e.ChatRoomId, e.CreatedAt }, "IX_Messages_ChatRoomId_CreatedAt");
+
+        builder.Property(e => e.IsDeleted)
+            .HasDefaultValue(false);
+
+        builder.HasQueryFilter(e => !e.IsDeleted);
 
         builder.Property(e => e.CreatedAt)
             .HasDefaultValueSql("SYSUTCDATETIME()");

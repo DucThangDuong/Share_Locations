@@ -8,6 +8,7 @@ public class Collection
     public int? ProvinceId { get; private set; }
     public string Title { get; private set; } = string.Empty;
     public string? Description { get; private set; }
+    public string? CoverImageUrl { get; private set; }
     public bool IsFeatured { get; private set; }
     public int DisplayOrder { get; private set; }
     public RecordStatus Status { get; private set; } = RecordStatus.Active;

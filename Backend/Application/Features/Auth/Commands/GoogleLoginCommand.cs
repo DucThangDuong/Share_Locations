@@ -49,7 +49,7 @@ public class GoogleLoginCommandHandler : IRequestHandler<GoogleLoginCommand, Res
             else
             {
                 var randomPasswordHash = Guid.NewGuid().ToString("N");
-                user = new User(googleUser.Email, randomPasswordHash, UserRole.User);
+                user = new User(googleUser.Email, randomPasswordHash, UserRoleType.User);
                 var profile = new UserProfile(
                     0,
                     googleUser.FullName,

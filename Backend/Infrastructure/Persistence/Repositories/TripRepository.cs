@@ -18,12 +18,24 @@ public class TripRepository : ITripRepository
         _dbContext = dbContext;
     }
 
-    public async Task<IReadOnlyList<ItineraryDto>> GetItinerariesAsync(
+    public Task<IReadOnlyList<ItineraryDto>> GetItinerariesAsync(
         string? duration,
-        string? region,
         string? keyword,
         int page,
         int pageSize,
+        CancellationToken ct = default)
+    {
+        return GetItinerariesAsync(new ItineraryFilterParams
+        {
+            Duration = duration,
+            Keyword = keyword,
+            Page = page,
+            PageSize = pageSize
+        }, ct);
+    }
+
+    public async Task<IReadOnlyList<ItineraryDto>> GetItinerariesAsync(
+        ItineraryFilterParams p,
         CancellationToken ct = default)
     {
         var connection = _dbContext.Database.GetDbConnection();
@@ -31,46 +43,29 @@ public class TripRepository : ITripRepository
         var conditions = new List<string> { "t.Privacy = 0" };
         var parameters = new DynamicParameters();
 
-        if (!string.IsNullOrWhiteSpace(keyword))
+        if (!string.IsNullOrWhiteSpace(p.Keyword))
         {
             conditions.Add("(t.Title LIKE @Keyword OR t.Description LIKE @Keyword)");
-            parameters.Add("Keyword", $"%{keyword.Trim()}%");
+            parameters.Add("Keyword", $"%{p.Keyword.Trim()}%");
         }
 
-        if (!string.IsNullOrWhiteSpace(duration) && duration != "all")
+        if (!string.IsNullOrWhiteSpace(p.Duration) && p.Duration != "all")
         {
-            if (int.TryParse(duration, out var durationDays))
+            if (int.TryParse(p.Duration, out var durationDays))
             {
                 conditions.Add("(SELECT COUNT(1) FROM dbo.TripDays td WHERE td.TripId = t.Id) = @DaysFilter");
                 parameters.Add("DaysFilter", durationDays);
             }
-            else if (duration.Contains("4"))
+            else if (p.Duration.Contains("4"))
             {
                 conditions.Add("(SELECT COUNT(1) FROM dbo.TripDays td WHERE td.TripId = t.Id) >= 4");
             }
         }
 
-        if (!string.IsNullOrWhiteSpace(region))
-        {
-            var reg = region.Trim().ToLowerInvariant();
-            if (reg.Contains("north") || reg.Contains("bắc") || reg.Contains("bac"))
-            {
-                conditions.Add("(t.Title LIKE N'%Bắc%' OR t.Description LIKE N'%Bắc%')");
-            }
-            else if (reg.Contains("central") || reg.Contains("trung"))
-            {
-                conditions.Add("(t.Title LIKE N'%Trung%' OR t.Title LIKE N'%Đà Nẵng%' OR t.Title LIKE N'%Huế%' OR t.Title LIKE N'%Hội An%' OR t.Description LIKE N'%Trung%')");
-            }
-            else if (reg.Contains("south") || reg.Contains("nam"))
-            {
-                conditions.Add("(t.Title LIKE N'%Nam%' OR t.Title LIKE N'%Sài Gòn%' OR t.Title LIKE N'%Phú Quốc%' OR t.Description LIKE N'%Nam%')");
-            }
-        }
-
         var whereClause = string.Join(" AND ", conditions);
-        var offset = Math.Max(0, (page - 1) * pageSize);
+        var offset = Math.Max(0, (p.Page - 1) * p.PageSize);
         parameters.Add("Offset", offset);
-        parameters.Add("PageSize", Math.Max(1, pageSize));
+        parameters.Add("PageSize", Math.Max(1, p.PageSize));
 
         var sql = $@"
             SELECT 

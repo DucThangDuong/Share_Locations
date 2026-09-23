@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Star, MessageSquare, Plus, X } from 'lucide-react'
+import { Star, MessageSquare, Plus, X, ChevronDown, Loader2 } from 'lucide-react'
 import { placeService } from '@/services/placeService'
 import { ReviewItemCard } from './ReviewItemCard'
 import { CreateReviewForm } from './CreateReviewForm'
@@ -8,9 +8,13 @@ import type { ReviewItemDto, CreateReviewRequest } from '@/types/models/place.mo
 interface PlaceDetailReviewsProps {
   placeId: number
   reviews: ReviewItemDto[]
+  totalReviews?: number
   ratingBreakdown: Record<string, number>
   avgRating: number
   isAuthenticated: boolean
+  hasMore?: boolean
+  isLoadingMore?: boolean
+  onLoadMore?: () => void
   onReviewAdded: (newReview: ReviewItemDto) => void
   onReviewUpdated?: (updatedReview: ReviewItemDto) => void
   onReviewDeleted?: (reviewId: number) => void
@@ -19,16 +23,21 @@ interface PlaceDetailReviewsProps {
 export const PlaceDetailReviews: React.FC<PlaceDetailReviewsProps> = ({
   placeId,
   reviews,
+  totalReviews,
   ratingBreakdown,
   avgRating,
   isAuthenticated,
+  hasMore,
+  isLoadingMore = false,
+  onLoadMore,
   onReviewAdded,
   onReviewUpdated,
   onReviewDeleted
 }) => {
   const [isFormOpen, setIsFormOpen] = useState(false)
 
-  const totalReviews = reviews.length
+  const effectiveTotalReviews = totalReviews !== undefined ? totalReviews : reviews.length
+  const shouldShowLoadMore = hasMore !== undefined ? hasMore : reviews.length < effectiveTotalReviews
 
   const handleToggleWriteReview = () => {
     if (!isAuthenticated) {
@@ -99,13 +108,13 @@ export const PlaceDetailReviews: React.FC<PlaceDetailReviewsProps> = ({
               />
             ))}
           </div>
-          <span className="text-xs text-slate-500 font-medium">Dựa trên {totalReviews} lượt đánh giá</span>
+          <span className="text-xs text-slate-500 font-medium">Dựa trên {effectiveTotalReviews} lượt đánh giá</span>
         </div>
 
         <div className="md:col-span-2 space-y-2 justify-center flex flex-col">
           {[5, 4, 3, 2, 1].map((star) => {
             const count = ratingBreakdown[star.toString()] || 0
-            const pct = totalReviews > 0 ? (count / totalReviews) * 100 : 0
+            const pct = effectiveTotalReviews > 0 ? (count / effectiveTotalReviews) * 100 : 0
             return (
               <div key={star} className="flex items-center gap-2.5 text-xs">
                 <span className="w-12 text-slate-600 font-semibold shrink-0">{star} sao</span>
@@ -137,15 +146,40 @@ export const PlaceDetailReviews: React.FC<PlaceDetailReviewsProps> = ({
             <p>Chưa có đánh giá nào cho địa điểm này. Hãy là người đầu tiên chia sẻ cảm nhận!</p>
           </div>
         ) : (
-          reviews.map((r) => (
-            <ReviewItemCard
-              key={r.id}
-              review={r}
-              isAuthenticated={isAuthenticated}
-              onReviewUpdated={onReviewUpdated}
-              onReviewDeleted={onReviewDeleted}
-            />
-          ))
+          <>
+            {reviews.map((r) => (
+              <ReviewItemCard
+                key={r.id}
+                review={r}
+                isAuthenticated={isAuthenticated}
+                onReviewUpdated={onReviewUpdated}
+                onReviewDeleted={onReviewDeleted}
+              />
+            ))}
+
+            {shouldShowLoadMore && (
+              <div className="pt-4 flex flex-col items-center justify-center">
+                <button
+                  type="button"
+                  onClick={onLoadMore}
+                  disabled={isLoadingMore}
+                  className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-800 font-semibold text-xs sm:text-sm shadow-xs hover:border-slate-300 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed group"
+                >
+                  {isLoadingMore ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
+                      <span>Đang tải thêm đánh giá...</span>
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="w-4 h-4 text-slate-400 group-hover:text-emerald-600 transition-colors" />
+                      <span>Xem thêm đánh giá ({reviews.length}/{effectiveTotalReviews})</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

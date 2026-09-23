@@ -43,7 +43,6 @@ export interface SaveItineraryResponseDto {
 
 export interface ItineraryFilterParams {
   duration?: string
-  region?: string
   keyword?: string
   page?: number
   pageSize?: number

@@ -31,9 +31,13 @@ export const placeService = {
 
     if (params.keyword?.trim()) cleanParams.keyword = params.keyword.trim()
     if (params.regionId && params.regionId > 0) cleanParams.regionId = params.regionId
+    if (params.regionIds && params.regionIds.length > 0) cleanParams.regionIds = params.regionIds
     if (params.provinceId && params.provinceId > 0) cleanParams.provinceId = params.provinceId
+    if (params.provinceIds && params.provinceIds.length > 0) cleanParams.provinceIds = params.provinceIds
     if (params.categoryId && params.categoryId > 0) cleanParams.categoryId = params.categoryId
+    if (params.categoryIds && params.categoryIds.length > 0) cleanParams.categoryIds = params.categoryIds
     if (params.placeTypeId && params.placeTypeId > 0) cleanParams.placeTypeId = params.placeTypeId
+    if (params.placeTypeIds && params.placeTypeIds.length > 0) cleanParams.placeTypeIds = params.placeTypeIds
     if (params.minPrice !== undefined && params.minPrice > 0) cleanParams.minPrice = params.minPrice
     if (params.maxPrice !== undefined && params.maxPrice > 0) cleanParams.maxPrice = params.maxPrice
     if (params.minRating !== undefined && params.minRating > 0) cleanParams.minRating = params.minRating

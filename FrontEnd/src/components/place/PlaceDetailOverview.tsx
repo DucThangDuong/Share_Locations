@@ -1,5 +1,4 @@
 import {
-  CheckCircle2,
   Star,
   Share2,
   Bookmark,
@@ -89,20 +88,6 @@ export const PlaceDetailOverview = ({
         <div className="prose max-w-none text-gray-700 text-sm sm:text-base leading-relaxed whitespace-pre-line">
           {place.detailedDescription || place.description}
         </div>
-
-        {place.highlights && place.highlights.length > 0 && (
-          <div className="mt-6 pt-6 border-t border-gray-100">
-            <h3 className="text-base font-bold text-gray-900 mb-3">Điểm nổi bật thu hút</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {place.highlights.map((h, i) => (
-                <div key={i} className="flex items-start gap-2 text-sm text-gray-700">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span>{h}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   )

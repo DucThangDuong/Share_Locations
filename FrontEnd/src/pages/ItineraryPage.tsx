@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react'
-import { useNavigate, useLocation, useParams } from 'react-router-dom'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import { useNavigate, useLocation, useParams, useSearchParams } from 'react-router-dom'
 import { CheckCircle2 } from 'lucide-react'
 import type {
   DetailedItineraryItem,
@@ -22,16 +22,12 @@ export const ItineraryPage: React.FC = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const params = useParams<{ id?: string }>()
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const [catalogItineraries, setCatalogItineraries] = useState<ItineraryDto[]>([])
   const [plannerTrip, setPlannerTrip] = useState<DetailedItineraryItem | null>(null)
   const [viewMode, setViewMode] = useState<'catalog' | 'planner'>('catalog')
 
-  const [searchQuery, setSearchQuery] = useState('')
-  const [selectedRegion, setSelectedRegion] = useState<string | null>(null)
-  const [selectedProvince, setSelectedProvince] = useState<string | null>(null)
-  const [selectedDuration, setSelectedDuration] = useState('all')
-  const [selectedBudget, setSelectedBudget] = useState('all')
   const [appliedItineraryIds, setAppliedItineraryIds] = useState<Set<number>>(new Set())
 
   const [expandedDayIndices, setExpandedDayIndices] = useState<Set<number>>(new Set([0, 1, 2]))
@@ -168,12 +164,65 @@ export const ItineraryPage: React.FC = () => {
     }
   }
 
+  const appliedFilters = useMemo(() => {
+    const q = searchParams.get('q') || searchParams.get('keyword') || ''
+    const duration = searchParams.get('duration') || 'all'
+    const budget = searchParams.get('budget') || 'all'
+
+    return {
+      search: q,
+      duration,
+      budget
+    }
+  }, [searchParams])
+
+  const handleSearchChange = (q: string) => {
+    const p = new URLSearchParams(searchParams)
+    if (q.trim()) {
+      p.set('q', q.trim())
+    } else {
+      p.delete('q')
+      p.delete('keyword')
+    }
+    setSearchParams(p)
+  }
+
+  const handleClearSearch = () => {
+    const p = new URLSearchParams(searchParams)
+    p.delete('q')
+    p.delete('keyword')
+    setSearchParams(p)
+  }
+
+  const handleSelectDuration = (dur: string) => {
+    const p = new URLSearchParams(searchParams)
+    if (dur && dur !== 'all') {
+      p.set('duration', dur)
+    } else {
+      p.delete('duration')
+    }
+    setSearchParams(p)
+  }
+
+  const handleSelectBudget = (bg: string) => {
+    const p = new URLSearchParams(searchParams)
+    if (bg && bg !== 'all') {
+      p.set('budget', bg)
+    } else {
+      p.delete('budget')
+    }
+    setSearchParams(p)
+  }
+
+  const handleResetFilters = () => {
+    setSearchParams({})
+  }
+
   const fetchCatalog = useCallback(async () => {
     try {
       const res = await itineraryService.getItineraries({
-        region: selectedRegion || undefined,
-        duration: selectedDuration === 'all' ? undefined : selectedDuration,
-        keyword: searchQuery || undefined,
+        duration: appliedFilters.duration === 'all' ? undefined : appliedFilters.duration,
+        keyword: appliedFilters.search.trim() || undefined,
         page: 1,
         pageSize: 50
       })
@@ -185,7 +234,7 @@ export const ItineraryPage: React.FC = () => {
     } catch {
       setCatalogItineraries([])
     }
-  }, [selectedRegion, selectedDuration, searchQuery])
+  }, [appliedFilters])
 
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -1104,23 +1153,15 @@ export const ItineraryPage: React.FC = () => {
       ) : (
         <ItineraryCatalogView
           itineraries={catalogItineraries}
-          searchQuery={searchQuery}
-          selectedRegion={selectedRegion}
-          selectedProvince={selectedProvince}
-          selectedDuration={selectedDuration}
-          selectedBudget={selectedBudget}
+          searchQuery={appliedFilters.search}
+          selectedDuration={appliedFilters.duration}
+          selectedBudget={appliedFilters.budget}
           appliedItineraryIds={appliedItineraryIds}
-          onSelectRegion={setSelectedRegion}
-          onSelectProvince={setSelectedProvince}
-          onSelectDuration={setSelectedDuration}
-          onSelectBudget={setSelectedBudget}
-          onResetFilters={() => {
-            setSearchQuery('')
-            setSelectedRegion(null)
-            setSelectedProvince(null)
-            setSelectedDuration('all')
-            setSelectedBudget('all')
-          }}
+          onSearchChange={handleSearchChange}
+          onClearSearch={handleClearSearch}
+          onSelectDuration={handleSelectDuration}
+          onSelectBudget={handleSelectBudget}
+          onResetFilters={handleResetFilters}
           onApplyItinerary={handleApplyItinerary}
         />
       )}

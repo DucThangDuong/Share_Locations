@@ -8,6 +8,7 @@ import type { ProvinceItinerary } from '@/types/models/province.model'
 import type { ItineraryDto, DetailedItineraryItem, ItineraryDayData } from '@/types/models/itinerary.model'
 import { ItineraryQuickPreviewModal } from '@/components/itinerary/ItineraryQuickPreviewModal'
 import { itineraryService } from '@/services/itineraryService'
+import { tripService } from '@/services/tripService'
 
 interface ProvinceItinerarySectionProps {
   provinceName: string
@@ -15,7 +16,11 @@ interface ProvinceItinerarySectionProps {
   initialItineraries?: ProvinceItinerary[]
 }
 
-type ItineraryItemType = ItineraryDto | ProvinceItinerary
+const cleanName = (name: string) =>
+  (name || '')
+    .toLowerCase()
+    .replace(/^(tp|thành phố|tỉnh)\.?\s+/i, '')
+    .trim()
 
 export const ProvinceItinerarySection: React.FC<ProvinceItinerarySectionProps> = ({
   provinceName,
@@ -23,10 +28,73 @@ export const ProvinceItinerarySection: React.FC<ProvinceItinerarySectionProps> =
   initialItineraries
 }) => {
   const navigate = useNavigate()
-  const [itineraryList, setItineraryList] = useState<ItineraryItemType[]>(itineraries || initialItineraries || [])
+  const [itineraryList, setItineraryList] = useState<ItineraryDto[]>([])
   const [loading, setLoading] = useState(false)
   const [previewItem, setPreviewItem] = useState<DetailedItineraryItem | null>(null)
   const [appliedItineraryIds, setAppliedItineraryIds] = useState<Set<number>>(new Set())
+
+  const mapCatalogDtoToDetailed = (dto: ItineraryDto): DetailedItineraryItem => {
+    const totalCostNumber = parseInt(dto.estimatedCost?.replace(/[^0-9]/g, '') || '0', 10)
+    const days: ItineraryDayData[] = (dto.days || []).map((d, dIdx) => {
+      const cleanDayTitle =
+        (d.title || `Ngày ${dIdx + 1}`).replace(/^Ngày\s*\d+\s*:\s*/i, '').trim() ||
+        `Lộ trình ngày ${dIdx + 1}`
+      return {
+        dayNumber: d.dayNumber || dIdx + 1,
+        title: cleanDayTitle,
+        description: 'Lộ trình tham quan',
+        stops: (d.stops || []).map((s, sIdx) => {
+          const placeName = s.placeName || s.activity || s.location || `Điểm dừng chân ${sIdx + 1}`
+          return {
+            id: `catalog-stop-${dto.id}-${dIdx}-${sIdx}`,
+            time: s.time || '08:00',
+            startTime: s.time || '08:00',
+            endTime: '09:30',
+            name: placeName,
+            category: 'Điểm tham quan',
+            address: s.location || placeName,
+            note: s.note || s.description || s.tips || '',
+            costEstimate: parseInt(s.costEstimate?.replace(/[^0-9]/g, '') || '0', 10),
+            duration: '1.5 giờ',
+            transportMode: 'Xe máy',
+            visitOrder: sIdx + 1,
+            img: ''
+          }
+        })
+      }
+    })
+
+    return {
+      id: dto.id,
+      title: dto.title,
+      slug: `itinerary-${dto.id}`,
+      province: dto.destination || provinceName,
+      region: (dto.region as DetailedItineraryItem['region']) || 'Miền Trung',
+      durationDays: dto.daysCount || 1,
+      nightsCount: Math.max(0, (dto.daysCount || 1) - 1),
+      estimatedBudget: totalCostNumber,
+      privacy: 0,
+      coverImg: dto.coverUrl || '',
+      authorName: dto.author?.name || 'Cộng đồng',
+      authorAvatar: dto.author?.avatar || '',
+      tags: [],
+      description: dto.overview || '',
+      days,
+      backlogStops: [],
+      members: dto.author?.name
+        ? [
+            {
+              id: 1,
+              name: dto.author.name,
+              avatar: dto.author.avatar || '',
+              email: '',
+              role: 'Owner'
+            }
+          ]
+        : [],
+      createdAt: new Date().toISOString().split('T')[0]
+    }
+  }
 
   useEffect(() => {
     let isMounted = true
@@ -35,32 +103,90 @@ export const ProvinceItinerarySection: React.FC<ProvinceItinerarySectionProps> =
       setLoading(true)
       try {
         const res = await itineraryService.getItineraries({
-          keyword: provinceName,
           page: 1,
-          pageSize: 20
+          pageSize: 50
         })
 
         if (!isMounted) return
 
-        if (res.success && res.data && res.data.length > 0) {
-          const normName = provinceName.toLowerCase()
-          const matched = res.data.filter((item) => {
-            const dest = (item.destination || '').toLowerCase()
-            const tit = (item.title || '').toLowerCase()
-            return dest.includes(normName) || tit.includes(normName) || normName.includes(dest)
+        if (res.success && Array.isArray(res.data)) {
+          const allDtos = res.data
+          const target = cleanName(provinceName)
+
+          // 1. First priority: match by destination or title with province name
+          let matched = allDtos.filter((item) => {
+            const dest = cleanName(item.destination || '')
+            const tit = cleanName(item.title || '')
+            return dest.includes(target) || tit.includes(target) || target.includes(dest)
           })
 
-          if (matched.length > 0) {
-            setItineraryList(matched)
-          } else {
-            setItineraryList(res.data)
+          // 2. Second priority: match with initialItineraries IDs if present
+          if (matched.length === 0 && (initialItineraries || itineraries)?.length) {
+            const initials = initialItineraries || itineraries || []
+            const initialIds = new Set(initials.map((i) => i.id))
+            const enriched = allDtos.filter((d) => initialIds.has(d.id))
+            if (enriched.length > 0) {
+              matched = enriched
+            } else {
+              matched = initials.map((init) => ({
+                id: init.id,
+                title: init.title,
+                destination: init.destination || provinceName,
+                region: init.region,
+                duration: init.duration,
+                daysCount: init.daysCount,
+                style: init.style,
+                estimatedCost: init.estimatedCost,
+                coverUrl: init.coverUrl,
+                author: init.author,
+                overview: init.overview,
+                isSaved: false,
+                days: []
+              }))
+            }
           }
-        } else if (itineraries || initialItineraries) {
-          setItineraryList(itineraries || initialItineraries || [])
+
+          setItineraryList(matched)
+        } else if (initialItineraries || itineraries) {
+          const initials = initialItineraries || itineraries || []
+          setItineraryList(
+            initials.map((init) => ({
+              id: init.id,
+              title: init.title,
+              destination: init.destination || provinceName,
+              region: init.region,
+              duration: init.duration,
+              daysCount: init.daysCount,
+              style: init.style,
+              estimatedCost: init.estimatedCost,
+              coverUrl: init.coverUrl,
+              author: init.author,
+              overview: init.overview,
+              isSaved: false,
+              days: []
+            }))
+          )
         }
       } catch {
         if (isMounted) {
-          setItineraryList(itineraries || initialItineraries || [])
+          const initials = initialItineraries || itineraries || []
+          setItineraryList(
+            initials.map((init) => ({
+              id: init.id,
+              title: init.title,
+              destination: init.destination || provinceName,
+              region: init.region,
+              duration: init.duration,
+              daysCount: init.daysCount,
+              style: init.style,
+              estimatedCost: init.estimatedCost,
+              coverUrl: init.coverUrl,
+              author: init.author,
+              overview: init.overview,
+              isSaved: false,
+              days: []
+            }))
+          )
         }
       } finally {
         if (isMounted) {
@@ -76,71 +202,35 @@ export const ProvinceItinerarySection: React.FC<ProvinceItinerarySectionProps> =
     }
   }, [provinceName, itineraries, initialItineraries])
 
-  const mapToDetailedItem = (item: ItineraryItemType): DetailedItineraryItem => {
-    const totalCostNumber = parseInt(item.estimatedCost?.replace(/[^0-9]/g, '') || '0', 10)
-    const rawDays = (item as unknown as { days?: Array<{ dayNumber?: number; title?: string; description?: string; stops?: Array<{ placeName?: string; name?: string; activity?: string; location?: string; time?: string; note?: string; description?: string; tips?: string; costEstimate?: string | number }> }> }).days || []
-
-    const days: ItineraryDayData[] = rawDays.map((d, dIdx) => ({
-      dayNumber: d.dayNumber || dIdx + 1,
-      title: d.title || `Ngày ${dIdx + 1}`,
-      description: d.description || 'Lộ trình tham quan',
-      stops: (d.stops || []).map((s, sIdx) => {
-        const placeName = s.placeName || s.name || s.activity || s.location || `Điểm dừng ${sIdx + 1}`
-        return {
-          id: `stop-${item.id}-${dIdx}-${sIdx}`,
-          time: s.time || '08:00',
-          startTime: s.time || '08:00',
-          endTime: '09:30',
-          name: placeName,
-          category: 'Điểm tham quan',
-          address: s.location || placeName,
-          note: s.note || s.description || s.tips || '',
-          costEstimate: parseInt(String(s.costEstimate || '').replace(/[^0-9]/g, '') || '0', 10),
-          duration: '1.5 giờ',
-          transportMode: 'Xe máy' as const,
-          visitOrder: sIdx + 1
-        }
-      })
-    }))
-
-    return {
-      id: item.id,
-      title: item.title,
-      slug: `itinerary-${item.id}`,
-      province: item.destination || provinceName,
-      region: item.region,
-      durationDays: item.daysCount || 1,
-      nightsCount: Math.max(0, (item.daysCount || 1) - 1),
-      estimatedBudget: totalCostNumber,
-      privacy: 0,
-      coverImg: item.coverUrl || undefined,
-      authorName: item.author?.name || 'Cộng đồng',
-      authorAvatar: item.author?.avatar || undefined,
-      description: item.overview || 'Lịch trình du lịch đề xuất tối ưu thời gian và chi phí.',
-      days,
-      createdAt: new Date().toISOString()
-    }
-  }
-
-  const handleOpenPreview = (itinerary: ItineraryItemType, e?: React.MouseEvent) => {
+  const handleOpenPreview = (itinerary: ItineraryDto, e?: React.MouseEvent) => {
     if (e) e.stopPropagation()
-    const detailed = mapToDetailedItem(itinerary)
+    const detailed = mapCatalogDtoToDetailed(itinerary)
     setPreviewItem(detailed)
   }
 
-  const handleApply = async (itinerary: ItineraryItemType, e?: React.MouseEvent) => {
+  const handleApply = async (dto: ItineraryDto, e?: React.MouseEvent) => {
     if (e) e.stopPropagation()
+    const itinerary = mapCatalogDtoToDetailed(dto)
     try {
-      await itineraryService.saveItinerary(itinerary.id)
+      const res = await tripService.createTrip({
+        title: `[Chuyến đi] ${itinerary.title}`,
+        description: itinerary.description,
+        sourceTripId: itinerary.id,
+        privacy: 1
+      })
+      if (res.success && res.data?.id) {
+        setAppliedItineraryIds((prev) => new Set(prev).add(dto.id))
+        navigate(`/itinerary/${res.data.id}`)
+        return
+      }
     } catch { }
-    setAppliedItineraryIds((prev) => new Set(prev).add(itinerary.id))
-    navigate(`/itinerary/${itinerary.id}`)
+    navigate('/itinerary')
   }
 
   if (!loading && itineraryList.length === 0) return null
 
   return (
-    <section className="my-12 space-y-6">
+    <section className="my-12 space-y-6 font-sans">
       <div className="flex items-center justify-between gap-4 border-b border-stone-200/80 pb-4">
         <div>
           <h2 className="text-2xl sm:text-3xl font-black text-stone-900 tracking-tight mt-1">
@@ -156,6 +246,7 @@ export const ProvinceItinerarySection: React.FC<ProvinceItinerarySectionProps> =
           <ArrowRight className="w-4 h-4" />
         </Link>
       </div>
+
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
           {[1, 2, 3].map((i) => (
@@ -179,10 +270,10 @@ export const ProvinceItinerarySection: React.FC<ProvinceItinerarySectionProps> =
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {itineraryList.map((itinerary) => {
-            const totalCostNumber = parseInt(itinerary.estimatedCost?.replace(/[^0-9]/g, '') || '0', 10)
-            const totalStops = (itinerary as unknown as { days?: Array<{ stops?: unknown[] }> }).days
-              ? (itinerary as unknown as { days: Array<{ stops: unknown[] }> }).days.reduce((sum, d) => sum + (d.stops?.length || 0), 0)
-              : 0
+            const totalStops = (itinerary.days || []).reduce(
+              (sum, d) => sum + (d.stops?.length || 0),
+              0
+            )
 
             return (
               <div
@@ -233,16 +324,16 @@ export const ProvinceItinerarySection: React.FC<ProvinceItinerarySectionProps> =
                   <div className="bg-slate-50/80 rounded-xl p-3 sm:p-3.5 border border-slate-200/80 grid grid-cols-2 divide-x divide-slate-200">
                     <div className="pr-3 min-w-0">
                       <span className="text-sm sm:text-base font-extrabold text-slate-900 block truncate">
-                        {itinerary.destination || provinceName}
+                        {itinerary.destination}
                       </span>
                       <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block truncate mt-0.5">
-                        {itinerary.daysCount || 1} NGÀY • {totalStops} ĐIỂM
+                        {itinerary.duration || `${itinerary.daysCount} ngày`} • {totalStops} ĐIỂM
                       </span>
                     </div>
 
                     <div className="pl-3 sm:pl-4 min-w-0">
                       <span className="text-sm sm:text-base font-extrabold text-emerald-800 block truncate">
-                        {totalCostNumber > 0 ? `${totalCostNumber.toLocaleString('vi-VN')} đ` : itinerary.estimatedCost || 'Linh hoạt'}
+                        {itinerary.estimatedCost || 'Linh hoạt'}
                       </span>
                       <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block truncate mt-0.5">
                         CHI PHÍ DỰ TÍNH
@@ -282,6 +373,7 @@ export const ProvinceItinerarySection: React.FC<ProvinceItinerarySectionProps> =
       {previewItem && (
         <ItineraryQuickPreviewModal
           itinerary={previewItem}
+          isApplied={appliedItineraryIds.has(previewItem.id)}
           onClose={() => setPreviewItem(null)}
           onApply={(item) => {
             const origin = itineraryList.find((i) => i.id === item.id)

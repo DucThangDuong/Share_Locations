@@ -7,8 +7,12 @@ public class TravelReviewDbContext : DbContext
     {
     }
 
-    // 1. Identity
+    // 1. Identity & RBAC
     public virtual DbSet<User> Users => Set<User>();
+    public virtual DbSet<Role> Roles => Set<Role>();
+    public virtual DbSet<Permission> Permissions => Set<Permission>();
+    public virtual DbSet<RolePermission> RolePermissions => Set<RolePermission>();
+    public virtual DbSet<UserRole> UserRoles => Set<UserRole>();
     public virtual DbSet<UserProfile> UserProfiles => Set<UserProfile>();
     public virtual DbSet<Friendship> Friendships => Set<Friendship>();
 
@@ -67,6 +71,13 @@ public class TravelReviewDbContext : DbContext
     public virtual DbSet<ReviewReport> ReviewReports => Set<ReviewReport>();
     public virtual DbSet<CommentReport> CommentReports => Set<CommentReport>();
     public virtual DbSet<BlogReport> BlogReports => Set<BlogReport>();
+
+    // 12. Administration & Scopes
+    public virtual DbSet<AdminRegionScope> AdminRegionScopes => Set<AdminRegionScope>();
+    public virtual DbSet<AdminProvinceScope> AdminProvinceScopes => Set<AdminProvinceScope>();
+    public virtual DbSet<AdminCategoryScope> AdminCategoryScopes => Set<AdminCategoryScope>();
+    public virtual DbSet<AdminActionLog> AdminActionLogs => Set<AdminActionLog>();
+    public virtual DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

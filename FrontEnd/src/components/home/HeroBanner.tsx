@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, MapPin, Compass, Navigation, Layers } from 'lucide-react'
+import { Search, Compass, Navigation, Layers } from 'lucide-react'
 import { placeService } from '@/services/placeService'
 import type { LookupItemDto, RegionLookupDto } from '@/types/models/place.model'
 
@@ -36,14 +36,6 @@ export const HeroBanner: React.FC = () => {
 
     navigate(`/explore?${params.toString()}`)
   }
-
-  const quickTags = [
-    { label: 'Hà Giang', region: 'Miền Bắc' },
-    { label: 'Phong Nha', region: 'Miền Trung' },
-    { label: 'Đà Lạt', region: 'Miền Trung' },
-    { label: 'Hội An', region: 'Miền Trung' },
-    { label: 'Phú Quốc', region: 'Miền Nam' }
-  ]
 
   return (
     <header className="relative w-full overflow-hidden mx-auto max-w-7xl md:mt-4 md:rounded-lg border border-slate-200/50">
@@ -121,26 +113,6 @@ export const HeroBanner: React.FC = () => {
                 <span>Khám phá ngay</span>
               </button>
             </form>
-
-            <div className="flex flex-wrap items-center gap-2 mt-4 text-xs">
-              <span className="text-slate-300 font-medium flex items-center gap-1">
-                <MapPin className="w-3 h-3 text-secondary-container" /> Tìm nhanh:
-              </span>
-              {quickTags.map((tag) => (
-                <button
-                  key={tag.label}
-                  type="button"
-                  onClick={() => {
-                    setKeyword(tag.label)
-                    setRegion(tag.region)
-                    navigate(`/explore?q=${encodeURIComponent(tag.label)}&region=${encodeURIComponent(tag.region)}`)
-                  }}
-                  className="px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white transition-all text-[11px] font-medium border border-white/10 cursor-pointer"
-                >
-                  {tag.label}
-                </button>
-              ))}
-            </div>
           </div>
         </div>
       </div>

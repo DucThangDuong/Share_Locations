@@ -6,6 +6,7 @@ public class Region
 {
     public int Id { get; private set; }
     public string Name { get; private set; } = string.Empty;
+    public string? Slug { get; private set; }
     public string? Tagline { get; private set; }
     public string? Description { get; private set; }
     public string? ImageUrl { get; private set; }
@@ -15,4 +16,7 @@ public class Region
     // Navigation
     private readonly List<Province> _provinces = new();
     public virtual IReadOnlyCollection<Province> Provinces => _provinces.AsReadOnly();
+
+    private readonly List<AdminRegionScope> _adminScopes = new();
+    public virtual IReadOnlyCollection<AdminRegionScope> AdminScopes => _adminScopes.AsReadOnly();
 }

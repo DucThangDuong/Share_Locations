@@ -3,5 +3,6 @@ namespace Domain.Enums;
 public enum CommentStatus : byte
 {
     Hidden = 0,
-    Active = 1
+    Active = 1,
+    Reported = 2
 }

@@ -67,9 +67,13 @@ export interface PlaceSummaryDto {
 export interface PlaceFilterParams {
   keyword?: string
   regionId?: number
+  regionIds?: number[]
   provinceId?: number
+  provinceIds?: number[]
   categoryId?: number
+  categoryIds?: number[]
   placeTypeId?: number
+  placeTypeIds?: number[]
   minPrice?: number
   maxPrice?: number
   minRating?: number

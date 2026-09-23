@@ -5,6 +5,10 @@ namespace Application.Common.Interfaces.Repositories;
 public interface IBlogRepository
 {
     Task<IReadOnlyList<BlogListItemDto>> GetBlogsAsync(
+        BlogFilterParams filterParams,
+        CancellationToken ct = default);
+
+    Task<IReadOnlyList<BlogListItemDto>> GetBlogsAsync(
         string? category,
         string? keyword,
         int page,

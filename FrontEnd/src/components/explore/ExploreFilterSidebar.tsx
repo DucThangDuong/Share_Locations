@@ -6,15 +6,16 @@ import { PRICE_TIERS } from './explore.types'
 interface ExploreFilterSidebarProps {
   categories: LookupItemDto[]
   regions: RegionLookupDto[]
-  draftCategoryId?: number
-  draftCategoryName: string
+  draftCategoryIds: number[]
+  draftCategoryNames: string[]
   draftRegionIds: number[]
   draftProvinceIds: number[]
   draftPriceTier: number
   draftMinRating: number
   isOpen: boolean
   onClose: () => void
-  onCategorySelect: (cat?: LookupItemDto) => void
+  onCategoryToggle: (cat: LookupItemDto) => void
+  onClearCategories: () => void
   onRegionCheck: (region: RegionLookupDto) => void
   onProvinceCheck: (province: LookupItemDto) => void
   onPriceTierChange: (tierIdx: number) => void
@@ -24,21 +25,28 @@ interface ExploreFilterSidebarProps {
 export const ExploreFilterSidebar: React.FC<ExploreFilterSidebarProps> = ({
   categories,
   regions,
-  draftCategoryId,
-  draftCategoryName,
+  draftCategoryIds,
+  draftCategoryNames,
   draftRegionIds,
   draftProvinceIds,
   draftPriceTier,
   draftMinRating,
   isOpen,
   onClose,
-  onCategorySelect,
+  onCategoryToggle,
+  onClearCategories,
   onRegionCheck,
   onProvinceCheck,
   onPriceTierChange,
   onMinRatingChange
 }) => {
-  const [openRegionAccordion, setOpenRegionAccordion] = useState<Record<string, boolean>>({})
+  const [openRegionAccordion, setOpenRegionAccordion] = useState<Record<string, boolean>>({
+    'Miền Bắc': true,
+    'Miền Trung': true,
+    'Miền Nam': true
+  })
+
+  const isAllCategories = draftCategoryIds.length === 0 && draftCategoryNames.length === 0
 
   return (
     <aside
@@ -48,8 +56,8 @@ export const ExploreFilterSidebar: React.FC<ExploreFilterSidebarProps> = ({
         }`}
     >
       <div
-        className={`bg-white rounded-lg p-6 border border-slate-200/80 space-y-5 overflow-y-auto max-h-[85vh] ${isOpen
-          ? 'w-full max-w-xs h-full rounded-lg animate-in slide-in-from-right'
+        className={`bg-white rounded-2xl p-6 border border-slate-200/80 space-y-5 overflow-y-auto max-h-[85vh] ${isOpen
+          ? 'w-full max-w-xs h-full rounded-2xl animate-in slide-in-from-right'
           : 'sticky top-24'
           }`}
       >
@@ -59,7 +67,8 @@ export const ExploreFilterSidebar: React.FC<ExploreFilterSidebarProps> = ({
             <span>Bộ lọc tìm kiếm</span>
           </div>
           {isOpen && (
-            <button type="button"
+            <button
+              type="button"
               onClick={onClose}
               aria-label="Đóng bộ lọc"
               className="lg:hidden w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100 cursor-pointer"
@@ -69,46 +78,53 @@ export const ExploreFilterSidebar: React.FC<ExploreFilterSidebarProps> = ({
           )}
         </div>
 
+        {/* Categories Section - Multi-select */}
         <div className="space-y-2.5 pt-2 border-t border-slate-100">
-          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-            Danh mục trải nghiệm
-          </h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+              Danh mục trải nghiệm
+            </h3>
+            {draftCategoryIds.length > 0 && (
+              <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                {draftCategoryIds.length} đã chọn
+              </span>
+            )}
+          </div>
+
           <div className="space-y-1 max-h-60 overflow-y-auto pr-1">
             <label
-              className={`flex items-center justify-between text-xs cursor-pointer min-h-[32px] px-2.5 py-1.5 rounded-lg transition-colors ${!draftCategoryId && !draftCategoryName
+              className={`flex items-center justify-between text-xs cursor-pointer min-h-[32px] px-2.5 py-1.5 rounded-xl transition-colors ${isAllCategories
                 ? 'bg-emerald-50 text-emerald-900 font-bold border border-emerald-200/60'
                 : 'text-slate-700 hover:text-slate-900 hover:bg-slate-50'
                 }`}
             >
               <div className="flex items-center gap-2">
                 <input
-                  type="radio"
-                  name="categoryFilter"
-                  checked={!draftCategoryId && !draftCategoryName}
-                  onChange={() => onCategorySelect(undefined)}
-                  className="w-4 h-4 accent-primary cursor-pointer"
+                  type="checkbox"
+                  checked={isAllCategories}
+                  onChange={onClearCategories}
+                  className="w-4 h-4 accent-primary rounded cursor-pointer"
                 />
                 <span>Tất cả danh mục</span>
               </div>
             </label>
 
             {categories.map((cat) => {
-              const isSelected = draftCategoryId === cat.id || draftCategoryName === cat.name
+              const isSelected = draftCategoryIds.includes(cat.id) || draftCategoryNames.includes(cat.name)
               return (
                 <label
                   key={cat.id}
-                  className={`flex items-center justify-between text-xs cursor-pointer min-h-[32px] px-2.5 py-1.5 rounded-lg transition-colors ${isSelected
+                  className={`flex items-center justify-between text-xs cursor-pointer min-h-[32px] px-2.5 py-1.5 rounded-xl transition-colors ${isSelected
                     ? 'bg-emerald-50 text-emerald-900 font-bold border border-emerald-200/60'
                     : 'text-slate-700 hover:text-slate-900 hover:bg-slate-50'
                     }`}
                 >
                   <div className="flex items-center gap-2 truncate pr-2">
                     <input
-                      type="radio"
-                      name="categoryFilter"
+                      type="checkbox"
                       checked={isSelected}
-                      onChange={() => onCategorySelect(cat)}
-                      className="w-4 h-4 accent-primary cursor-pointer shrink-0"
+                      onChange={() => onCategoryToggle(cat)}
+                      className="w-4 h-4 accent-primary rounded cursor-pointer shrink-0"
                     />
                     <span className="truncate">{cat.name}</span>
                   </div>
@@ -118,22 +134,39 @@ export const ExploreFilterSidebar: React.FC<ExploreFilterSidebarProps> = ({
           </div>
         </div>
 
+        {/* Regions & Provinces Section - Multi-select */}
         <div className="space-y-3 pt-4 border-t border-slate-100">
-          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-            Vùng miền & Tỉnh thành
-          </h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+              Vùng miền & Tỉnh thành
+            </h3>
+            {(draftRegionIds.length > 0 || draftProvinceIds.length > 0) && (
+              <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                {draftProvinceIds.length > 0 ? `${draftProvinceIds.length} tỉnh` : `${draftRegionIds.length} vùng`}
+              </span>
+            )}
+          </div>
+
           {regions.map((region) => {
-            const isRegionSelected = draftRegionIds.includes(region.id)
-            const isOpen = openRegionAccordion[region.name]
             const regionProvinces = region.provinces || []
+            const isAllProvincesSelected =
+              regionProvinces.length > 0 &&
+              regionProvinces.every((p) => draftProvinceIds.includes(p.id))
+            const isSomeProvincesSelected =
+              regionProvinces.some((p) => draftProvinceIds.includes(p.id)) && !isAllProvincesSelected
+
+            const isOpenAccordion = openRegionAccordion[region.name] !== false
 
             return (
-              <div key={region.id} className="rounded-lg border border-slate-100 bg-slate-50/50 p-2.5 space-y-2">
+              <div key={region.id} className="rounded-xl border border-slate-100 bg-slate-50/50 p-2.5 space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="flex items-center gap-2 text-xs font-bold text-slate-800 cursor-pointer min-h-[32px]">
                     <input
                       type="checkbox"
-                      checked={isRegionSelected}
+                      checked={isAllProvincesSelected}
+                      ref={(el) => {
+                        if (el) el.indeterminate = isSomeProvincesSelected
+                      }}
                       onChange={() => onRegionCheck(region)}
                       className="w-4 h-4 accent-primary rounded cursor-pointer"
                     />
@@ -145,18 +178,18 @@ export const ExploreFilterSidebar: React.FC<ExploreFilterSidebarProps> = ({
                     onClick={() =>
                       setOpenRegionAccordion((prev) => ({
                         ...prev,
-                        [region.name]: !prev[region.name]
+                        [region.name]: !isOpenAccordion
                       }))
                     }
                     className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-200/50 cursor-pointer"
                   >
                     <ChevronDown
-                      className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                      className={`w-4 h-4 transition-transform ${isOpenAccordion ? 'rotate-180' : ''}`}
                     />
                   </button>
                 </div>
 
-                {isOpen && regionProvinces.length > 0 && (
+                {isOpenAccordion && regionProvinces.length > 0 && (
                   <div className="grid grid-cols-2 gap-1.5 pt-1 pl-5 border-t border-slate-200/60">
                     {regionProvinces.map((prov) => {
                       const isProvSelected = draftProvinceIds.includes(prov.id)
@@ -182,6 +215,7 @@ export const ExploreFilterSidebar: React.FC<ExploreFilterSidebarProps> = ({
           })}
         </div>
 
+        {/* Price Tier Section */}
         <div className="space-y-2.5 pt-4 border-t border-slate-100">
           <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
             Khoảng giá & Ngân sách
@@ -205,6 +239,7 @@ export const ExploreFilterSidebar: React.FC<ExploreFilterSidebarProps> = ({
           </div>
         </div>
 
+        {/* Rating Section */}
         <div className="space-y-2.5 pt-4 border-t border-slate-100">
           <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
             Đánh giá tối thiểu
@@ -217,8 +252,8 @@ export const ExploreFilterSidebar: React.FC<ExploreFilterSidebarProps> = ({
                   key={rating}
                   type="button"
                   onClick={() => onMinRatingChange(rating)}
-                  className={`px-3.5 py-2 rounded-lg text-xs font-bold flex items-center gap-1 border transition-all cursor-pointer min-h-[36px] ${active
-                    ? 'bg-primary text-white border-primary'
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1 border transition-all cursor-pointer min-h-[36px] ${active
+                    ? 'bg-primary text-white border-primary shadow-xs'
                     : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                     }`}
                 >
@@ -239,3 +274,5 @@ export const ExploreFilterSidebar: React.FC<ExploreFilterSidebarProps> = ({
     </aside>
   )
 }
+
+export default ExploreFilterSidebar

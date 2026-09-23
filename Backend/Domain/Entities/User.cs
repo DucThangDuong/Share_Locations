@@ -7,14 +7,43 @@ public class User
     public long Id { get; private set; }
     public string Email { get; private set; } = string.Empty;
     public string PasswordHash { get; private set; } = string.Empty;
-    public UserRole Role { get; private set; } = UserRole.User;
     public UserStatus Status { get; private set; } = UserStatus.Active;
+    public DateTime? LastLoginAt { get; private set; }
     public DateTime CreatedAt { get; private set; }
     public DateTime UpdatedAt { get; private set; }
     public bool IsDeleted { get; private set; }
 
+    // Legacy role backward compatibility
+    private UserRoleType _legacyRole = UserRoleType.User;
+    public UserRoleType Role
+    {
+        get
+        {
+            var firstRole = _userRoles.FirstOrDefault()?.Role?.Code;
+            if (firstRole != null && Enum.TryParse<UserRoleType>(firstRole, true, out var r))
+                return r;
+            return _legacyRole;
+        }
+        private set => _legacyRole = value;
+    }
+
     // Navigation properties
     public virtual UserProfile? Profile { get; private set; }
+
+    private readonly List<UserRole> _userRoles = new();
+    public virtual IReadOnlyCollection<UserRole> UserRoles => _userRoles.AsReadOnly();
+
+    private readonly List<AdminRegionScope> _adminRegionScopes = new();
+    public virtual IReadOnlyCollection<AdminRegionScope> AdminRegionScopes => _adminRegionScopes.AsReadOnly();
+
+    private readonly List<AdminProvinceScope> _adminProvinceScopes = new();
+    public virtual IReadOnlyCollection<AdminProvinceScope> AdminProvinceScopes => _adminProvinceScopes.AsReadOnly();
+
+    private readonly List<AdminCategoryScope> _adminCategoryScopes = new();
+    public virtual IReadOnlyCollection<AdminCategoryScope> AdminCategoryScopes => _adminCategoryScopes.AsReadOnly();
+
+    private readonly List<AdminActionLog> _adminActionLogs = new();
+    public virtual IReadOnlyCollection<AdminActionLog> AdminActionLogs => _adminActionLogs.AsReadOnly();
 
     private readonly List<Friendship> _friendshipsInitiated = new();
     public virtual IReadOnlyCollection<Friendship> FriendshipsInitiated => _friendshipsInitiated.AsReadOnly();
@@ -69,11 +98,11 @@ public class User
 
     protected User() { }
 
-    public User(string email, string passwordHash, UserRole role = UserRole.User)
+    public User(string email, string passwordHash, UserRoleType role = UserRoleType.User)
     {
         Email = email.Trim().ToLowerInvariant();
         PasswordHash = passwordHash;
-        Role = role;
+        _legacyRole = role;
         Status = UserStatus.Active;
         CreatedAt = DateTime.UtcNow;
         UpdatedAt = DateTime.UtcNow;
@@ -86,9 +115,15 @@ public class User
         UpdatedAt = DateTime.UtcNow;
     }
 
-    public void SetRole(UserRole newRole)
+    public void SetRole(UserRoleType newRole)
     {
-        Role = newRole;
+        _legacyRole = newRole;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void UpdateLastLogin()
+    {
+        LastLoginAt = DateTime.UtcNow;
         UpdatedAt = DateTime.UtcNow;
     }
 

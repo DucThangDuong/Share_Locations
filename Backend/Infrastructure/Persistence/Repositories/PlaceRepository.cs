@@ -60,51 +60,101 @@ public class PlaceRepository : IPlaceRepository
 
     public async Task<(IReadOnlyList<PlaceSummaryDto> Items, long TotalCount)> SearchAndFilterAsync(
         PlaceFilterParams p,
-        CancellationToken ct = default) {
+        CancellationToken ct = default)
+    {
         var connection = _dbContext.Database.GetDbConnection();
 
         var safePageIndex = p.Page < 1 ? 1 : p.Page;
         var safePageSize = p.PageSize is < 1 or > 50 ? 12 : p.PageSize;
         var offset = (safePageIndex - 1) * safePageSize;
 
-        string? keywordPattern = !string.IsNullOrWhiteSpace(p.Keyword) ? $"%{p.Keyword.Trim()}%" : null;
+        var parameters = new DynamicParameters();
+        var whereClauses = new List<string> { "p.Status = 1" };
 
-        var parameters = new
+        if (!string.IsNullOrWhiteSpace(p.Keyword))
         {
-            Keyword = keywordPattern,
-            RegionId = p.RegionId > 0 ? p.RegionId : null,
-            ProvinceId = p.ProvinceId > 0 ? p.ProvinceId : null,
-            CategoryId = p.CategoryId > 0 ? p.CategoryId : null,
-            PlaceTypeId = p.PlaceTypeId > 0 ? p.PlaceTypeId : null,
-            MinPrice = p.MinPrice > 0 ? p.MinPrice : null,
-            MaxPrice = p.MaxPrice > 0 ? p.MaxPrice : null,
-            MinRating = p.MinRating > 0 ? p.MinRating : null,
-            SortBy = p.SortBy?.ToLowerInvariant(),
-            Offset = offset,
-            PageSize = safePageSize
-        };
+            whereClauses.Add(@"(
+                p.Name LIKE @Keyword OR 
+                p.Address LIKE @Keyword OR 
+                p.Description LIKE @Keyword OR 
+                prov.Name LIKE @Keyword OR 
+                cat.Name LIKE @Keyword
+            )");
+            parameters.Add("Keyword", $"%{p.Keyword.Trim()}%");
+        }
 
-        const string sql = @"
+        // Ưu tiên Region hơn Province:
+        // Nếu có Region thì ưu tiên lấy tất cả các Province thuộc các Region đó.
+        var regionIds = p.GetEffectiveRegionIds();
+        var provinceIds = p.GetEffectiveProvinceIds();
+
+        if (regionIds.Count > 0)
+        {
+            whereClauses.Add("prov.RegionId IN @RegionIds");
+            parameters.Add("RegionIds", regionIds);
+        }
+        else if (provinceIds.Count > 0)
+        {
+            whereClauses.Add("p.ProvinceId IN @ProvinceIds");
+            parameters.Add("ProvinceIds", provinceIds);
+        }
+
+        // Lọc danh mục (hỗ trợ nhiều CategoryId)
+        var categoryIds = p.GetEffectiveCategoryIds();
+        if (categoryIds.Count > 0)
+        {
+            whereClauses.Add("p.CategoryId IN @CategoryIds");
+            parameters.Add("CategoryIds", categoryIds);
+        }
+
+        // Lọc loại hình địa điểm (hỗ trợ nhiều PlaceTypeId)
+        var placeTypeIds = p.GetEffectivePlaceTypeIds();
+        if (placeTypeIds.Count > 0)
+        {
+            whereClauses.Add("cat.PlaceTypeId IN @PlaceTypeIds");
+            parameters.Add("PlaceTypeIds", placeTypeIds);
+        }
+
+        // Lọc khoảng giá
+        if (p.MinPrice.HasValue && p.MinPrice.Value > 0)
+        {
+            whereClauses.Add("(p.MaxPrice >= @MinPrice OR p.MinPrice >= @MinPrice)");
+            parameters.Add("MinPrice", p.MinPrice.Value);
+        }
+
+        if (p.MaxPrice.HasValue && p.MaxPrice.Value > 0)
+        {
+            whereClauses.Add("(p.MinPrice <= @MaxPrice OR p.MaxPrice <= @MaxPrice)");
+            parameters.Add("MaxPrice", p.MaxPrice.Value);
+        }
+
+        // Lọc điểm đánh giá
+        if (p.MinRating.HasValue && p.MinRating.Value > 0)
+        {
+            whereClauses.Add("p.AvgRating >= @MinRating");
+            parameters.Add("MinRating", p.MinRating.Value);
+        }
+
+        var whereSql = "WHERE " + string.Join(" AND ", whereClauses);
+
+        var countSql = $@"
             SELECT COUNT(1)
             FROM dbo.Places p
             INNER JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id
             INNER JOIN dbo.Categories cat ON p.CategoryId = cat.Id
-            WHERE p.Status = 1
-              AND (@Keyword IS NULL OR (
-                  p.Name LIKE @Keyword OR 
-                  p.Address LIKE @Keyword OR 
-                  p.Description LIKE @Keyword OR 
-                  prov.Name LIKE @Keyword OR 
-                  cat.Name LIKE @Keyword
-              ))
-              AND (@RegionId IS NULL OR prov.RegionId = @RegionId)
-              AND (@ProvinceId IS NULL OR p.ProvinceId = @ProvinceId)
-              AND (@CategoryId IS NULL OR p.CategoryId = @CategoryId)
-              AND (@PlaceTypeId IS NULL OR cat.PlaceTypeId = @PlaceTypeId)
-              AND (@MinPrice IS NULL OR (p.MaxPrice >= @MinPrice OR p.MinPrice >= @MinPrice))
-              AND (@MaxPrice IS NULL OR (p.MinPrice <= @MaxPrice OR p.MaxPrice <= @MaxPrice))
-              AND (@MinRating IS NULL OR p.AvgRating >= @MinRating);
+            {whereSql};";
 
+        var totalCount = await connection.ExecuteScalarAsync<long>(countSql, parameters);
+        if (totalCount == 0)
+        {
+            return (Array.Empty<PlaceSummaryDto>(), 0);
+        }
+
+        parameters.Add("Offset", offset);
+        parameters.Add("PageSize", safePageSize);
+        parameters.Add("SortBy", p.SortBy?.ToLowerInvariant());
+
+        var dataSql = $@"
             SELECT p.Id, p.Name, p.Description, p.Address, p.ProvinceId, prov.Name AS ProvinceName,
                    prov.RegionId, r.Name AS RegionName, p.CategoryId, cat.Name AS CategoryName,
                    cat.PlaceTypeId, pt.Name AS PlaceTypeName, p.MinPrice, p.MaxPrice, p.OpeningHours,
@@ -115,21 +165,7 @@ public class PlaceRepository : IPlaceRepository
             INNER JOIN dbo.Regions r ON prov.RegionId = r.Id
             INNER JOIN dbo.Categories cat ON p.CategoryId = cat.Id
             INNER JOIN dbo.PlaceTypes pt ON cat.PlaceTypeId = pt.Id
-            WHERE p.Status = 1
-              AND (@Keyword IS NULL OR (
-                  p.Name LIKE @Keyword OR 
-                  p.Address LIKE @Keyword OR 
-                  p.Description LIKE @Keyword OR 
-                  prov.Name LIKE @Keyword OR 
-                  cat.Name LIKE @Keyword
-              ))
-              AND (@RegionId IS NULL OR prov.RegionId = @RegionId)
-              AND (@ProvinceId IS NULL OR p.ProvinceId = @ProvinceId)
-              AND (@CategoryId IS NULL OR p.CategoryId = @CategoryId)
-              AND (@PlaceTypeId IS NULL OR cat.PlaceTypeId = @PlaceTypeId)
-              AND (@MinPrice IS NULL OR (p.MaxPrice >= @MinPrice OR p.MinPrice >= @MinPrice))
-              AND (@MaxPrice IS NULL OR (p.MinPrice <= @MaxPrice OR p.MaxPrice <= @MaxPrice))
-              AND (@MinRating IS NULL OR p.AvgRating >= @MinRating)
+            {whereSql}
             ORDER BY
                 CASE WHEN @SortBy = 'rating_desc' THEN p.AvgRating END DESC,
                 CASE WHEN @SortBy = 'price_asc' THEN p.MinPrice END ASC,
@@ -139,9 +175,7 @@ public class PlaceRepository : IPlaceRepository
                 p.CreatedAt DESC
             OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 
-        using var multi = await connection.QueryMultipleAsync(sql, parameters);
-        var totalCount = await multi.ReadFirstAsync<long>();
-        var items = (await multi.ReadAsync<PlaceSummaryDto>()).ToList();
+        var items = (await connection.QueryAsync<PlaceSummaryDto>(dataSql, parameters)).ToList();
 
         return (items, totalCount);
     }

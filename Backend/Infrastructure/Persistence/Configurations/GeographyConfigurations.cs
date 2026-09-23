@@ -15,6 +15,10 @@ public class RegionConfiguration : IEntityTypeConfiguration<Region>
             .HasMaxLength(50)
             .IsRequired();
 
+        builder.Property(e => e.Slug)
+            .HasMaxLength(100)
+            .IsUnicode(false);
+
         builder.Property(e => e.Tagline)
             .HasMaxLength(200);
 
@@ -46,6 +50,10 @@ public class ProvinceConfiguration : IEntityTypeConfiguration<Province>
         builder.Property(e => e.Name)
             .HasMaxLength(100)
             .IsRequired();
+
+        builder.Property(e => e.Slug)
+            .HasMaxLength(100)
+            .IsUnicode(false);
 
         builder.Property(e => e.Tagline)
             .HasMaxLength(200);

@@ -5,6 +5,7 @@ public class ReportType
     public int Id { get; private set; }
     public string Code { get; private set; } = string.Empty;
     public string Name { get; private set; } = string.Empty;
+    public string TargetScope { get; private set; } = "ALL";
     public bool IsActive { get; private set; } = true;
     public int DisplayOrder { get; private set; }
 
@@ -23,10 +24,11 @@ public class ReportType
 
     protected ReportType() { }
 
-    public ReportType(string code, string name, bool isActive = true, int displayOrder = 0)
+    public ReportType(string code, string name, string targetScope = "ALL", bool isActive = true, int displayOrder = 0)
     {
         Code = code;
         Name = name;
+        TargetScope = string.IsNullOrWhiteSpace(targetScope) ? "ALL" : targetScope.Trim().ToUpperInvariant();
         IsActive = isActive;
         DisplayOrder = displayOrder;
     }

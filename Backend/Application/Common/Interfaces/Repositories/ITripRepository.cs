@@ -7,8 +7,11 @@ namespace Application.Common.Interfaces.Repositories;
 public interface ITripRepository
 {
     Task<IReadOnlyList<ItineraryDto>> GetItinerariesAsync(
+        ItineraryFilterParams filterParams,
+        CancellationToken ct = default);
+
+    Task<IReadOnlyList<ItineraryDto>> GetItinerariesAsync(
         string? duration,
-        string? region,
         string? keyword,
         int page,
         int pageSize,

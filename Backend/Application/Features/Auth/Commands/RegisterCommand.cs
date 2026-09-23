@@ -29,7 +29,7 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, Result<lo
         }
 
         var passwordHash = _passwordHasher.HashPassword(request.Password);
-        var user = new User(request.Email, passwordHash, UserRole.User);
+        var user = new User(request.Email, passwordHash, UserRoleType.User);
         var profile = new UserProfile(0, request.FullName);
         user.SetProfile(profile);
 

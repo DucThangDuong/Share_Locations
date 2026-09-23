@@ -281,7 +281,7 @@ export const SharePlaceModal: React.FC<SharePlaceModalProps> = ({
           {/* Optional Message Note */}
           <div>
             <label className="block text-xs font-bold text-slate-600 mb-1.5">
-              Lời nhắn gửi kèm (tùy chọn)
+              Lời nhắn gửi kèm
             </label>
             <input
               type="text"
@@ -358,15 +358,15 @@ export const SharePlaceModal: React.FC<SharePlaceModalProps> = ({
                               src={contact.avatarUrl}
                               alt={contact.name}
                               className={`w-12 h-12 rounded-full object-cover border-2 transition-all shadow-2xs group-hover:opacity-80 duration-200 ${isSent
-                                  ? 'border-emerald-500 ring-2 ring-emerald-500/20'
-                                  : 'border-white group-hover:border-emerald-500'
+                                ? 'border-emerald-500 ring-2 ring-emerald-500/20'
+                                : 'border-white group-hover:border-emerald-500'
                                 }`}
                             />
                           ) : (
                             <div
                               className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all shadow-2xs ${contact.isGroup
-                                  ? 'bg-blue-100 text-blue-800 border-blue-200'
-                                  : 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                                ? 'bg-blue-100 text-blue-800 border-blue-200'
+                                : 'bg-emerald-100 text-emerald-800 border-emerald-200'
                                 } ${isSent
                                   ? 'border-emerald-500 ring-2 ring-emerald-500/20'
                                   : 'group-hover:border-emerald-500'
@@ -401,8 +401,8 @@ export const SharePlaceModal: React.FC<SharePlaceModalProps> = ({
                             handleSendToChat(contact)
                           }}
                           className={`mt-1 px-2 py-0.5 rounded-md text-[10px] font-bold transition-all ${isSent
-                              ? 'bg-emerald-100 text-emerald-800 font-extrabold cursor-default'
-                              : 'bg-slate-100 text-slate-700 hover:bg-emerald-800 hover:text-white cursor-pointer'
+                            ? 'bg-emerald-100 text-emerald-800 font-extrabold cursor-default'
+                            : 'bg-slate-100 text-slate-700 hover:bg-emerald-800 hover:text-white cursor-pointer'
                             }`}
                         >
                           {isSent ? 'Đã gửi' : isSending ? 'Đang gửi...' : 'Gửi'}
@@ -432,8 +432,8 @@ export const SharePlaceModal: React.FC<SharePlaceModalProps> = ({
               >
                 <div
                   className={`w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-2xs ${isCopied
-                      ? 'bg-emerald-600 text-white ring-4 ring-emerald-500/20'
-                      : 'bg-slate-100 text-slate-700 group-hover:bg-slate-200'
+                    ? 'bg-emerald-600 text-white ring-4 ring-emerald-500/20'
+                    : 'bg-slate-100 text-slate-700 group-hover:bg-slate-200'
                     }`}
                 >
                   {isCopied ? <Check size={20} /> : <Link2 size={20} />}
@@ -523,21 +523,6 @@ export const SharePlaceModal: React.FC<SharePlaceModalProps> = ({
             </div>
           </div>
         </div>
-
-        {/* Footer */}
-        <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-          <span className="text-xs text-slate-500 truncate">
-            Chia sẻ với bạn bè để cùng lên kế hoạch trải nghiệm!
-          </span>
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-1.5 text-xs font-bold text-slate-700 hover:text-slate-900 bg-white border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors shadow-2xs cursor-pointer"
-          >
-            Xong
-          </button>
-        </div>
-
       </div>
     </div>
   )

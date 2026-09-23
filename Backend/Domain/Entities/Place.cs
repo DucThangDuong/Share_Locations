@@ -21,15 +21,22 @@ public class Place
     public decimal? Longitude { get; private set; }
     public decimal AvgRating { get; private set; }
     public int ReviewCount { get; private set; }
+    public int ViewCount { get; private set; }
+    public int FavoriteCount { get; private set; }
     public PlaceStatus Status { get; private set; } = PlaceStatus.Pending;
+    public string? RejectReason { get; private set; }
+    public long? ReviewedBy { get; private set; }
+    public DateTime? ReviewedAt { get; private set; }
     public long? CreatedBy { get; private set; }
     public DateTime CreatedAt { get; private set; }
     public DateTime UpdatedAt { get; private set; }
+    public bool IsDeleted { get; private set; }
 
     // Navigation
     public virtual Province Province { get; private set; } = null!;
     public virtual Category Category { get; private set; } = null!;
     public virtual User? Creator { get; private set; }
+    public virtual User? ReviewerAdmin { get; private set; }
 
     private readonly List<PlaceMedia> _media = new();
     public virtual IReadOnlyCollection<PlaceMedia> Media => _media.AsReadOnly();
@@ -141,15 +148,21 @@ public class Place
         UpdatedAt = DateTime.UtcNow;
     }
 
-    public void Approve()
+    public void Approve(long? reviewerId = null)
     {
         Status = PlaceStatus.Approved;
+        ReviewedBy = reviewerId;
+        ReviewedAt = DateTime.UtcNow;
+        RejectReason = null;
         UpdatedAt = DateTime.UtcNow;
     }
 
-    public void Reject()
+    public void Reject(string? reason = null, long? reviewerId = null)
     {
         Status = PlaceStatus.Rejected;
+        RejectReason = reason;
+        ReviewedBy = reviewerId;
+        ReviewedAt = DateTime.UtcNow;
         UpdatedAt = DateTime.UtcNow;
     }
 
@@ -163,6 +176,34 @@ public class Place
     {
         Status = status;
         UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void SoftDelete()
+    {
+        IsDeleted = true;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void Restore()
+    {
+        IsDeleted = false;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void IncrementViewCount()
+    {
+        ViewCount++;
+    }
+
+    public void IncrementFavoriteCount()
+    {
+        FavoriteCount++;
+    }
+
+    public void DecrementFavoriteCount()
+    {
+        if (FavoriteCount > 0)
+            FavoriteCount--;
     }
 
     public void AddMedia(string url, MediaType mediaType = MediaType.Image, bool isPrimary = false)

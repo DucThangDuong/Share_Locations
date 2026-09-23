@@ -11,7 +11,7 @@ public class UserDto
     public string? CoverUrl { get; set; }
     public string? Bio { get; set; }
     public string? Phone { get; set; }
-    public UserRole Role { get; set; }
+    public UserRoleType Role { get; set; }
     public UserStatus Status { get; set; }
     public string RankLevel { get; set; } = "Tân binh";
     public int ReputationScore { get; set; }

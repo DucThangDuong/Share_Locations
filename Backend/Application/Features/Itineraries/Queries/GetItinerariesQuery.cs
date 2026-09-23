@@ -5,13 +5,24 @@ using MediatR;
 
 namespace Application.Features.Itineraries.Queries;
 
-public record GetItinerariesQuery(
-    string? Duration = null,
-    string? Region = null,
-    string? Keyword = null,
-    int Page = 1,
-    int PageSize = 10,
-    long? UserId = null) : IRequest<Result<IReadOnlyList<ItineraryDto>>>;
+public record GetItinerariesQuery(ItineraryFilterParams FilterParams) : IRequest<Result<IReadOnlyList<ItineraryDto>>>
+{
+    public GetItinerariesQuery(
+        string? duration = null,
+        string? keyword = null,
+        int page = 1,
+        int pageSize = 10,
+        long? userId = null) : this(new ItineraryFilterParams
+        {
+            Duration = duration,
+            Keyword = keyword,
+            Page = page,
+            PageSize = pageSize,
+            UserId = userId
+        })
+    {
+    }
+}
 
 public class GetItinerariesQueryHandler : IRequestHandler<GetItinerariesQuery, Result<IReadOnlyList<ItineraryDto>>>
 {
@@ -24,19 +35,13 @@ public class GetItinerariesQueryHandler : IRequestHandler<GetItinerariesQuery, R
 
     public async Task<Result<IReadOnlyList<ItineraryDto>>> Handle(GetItinerariesQuery request, CancellationToken ct)
     {
-        var itineraries = await _tripRepository.GetItinerariesAsync(
-            request.Duration,
-            request.Region,
-            request.Keyword,
-            request.Page,
-            request.PageSize,
-            ct);
+        var itineraries = await _tripRepository.GetItinerariesAsync(request.FilterParams, ct);
 
-        if (request.UserId.HasValue && itineraries.Count > 0)
+        if (request.FilterParams.UserId.HasValue && itineraries.Count > 0)
         {
             foreach (var item in itineraries)
             {
-                item.IsSaved = await _tripRepository.IsItinerarySavedAsync(request.UserId.Value, item.Id, ct);
+                item.IsSaved = await _tripRepository.IsItinerarySavedAsync(request.FilterParams.UserId.Value, item.Id, ct);
             }
         }
 

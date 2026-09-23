@@ -19,11 +19,12 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .HasMaxLength(255)
             .IsRequired();
 
-        builder.Property(e => e.Role)
-            .HasConversion<byte>();
+        builder.Ignore(e => e.Role);
 
         builder.Property(e => e.Status)
             .HasConversion<byte>();
+
+        builder.Property(e => e.LastLoginAt);
 
         builder.Property(e => e.CreatedAt)
             .HasDefaultValueSql("SYSUTCDATETIME()");
@@ -39,6 +40,112 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .WithOne(p => p.User)
             .HasForeignKey<UserProfile>(p => p.UserId)
             .OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+public class RoleConfiguration : IEntityTypeConfiguration<Role>
+{
+    public void Configure(EntityTypeBuilder<Role> builder)
+    {
+        builder.ToTable("Roles", "dbo");
+
+        builder.HasKey(e => e.Id);
+        builder.Property(e => e.Id).ValueGeneratedOnAdd();
+
+        builder.HasIndex(e => e.Code, "UQ_Roles_Code").IsUnique();
+
+        builder.Property(e => e.Code)
+            .HasMaxLength(50)
+            .IsUnicode(false)
+            .IsRequired();
+
+        builder.Property(e => e.Name)
+            .HasMaxLength(100)
+            .IsRequired();
+
+        builder.Property(e => e.Description)
+            .HasMaxLength(255);
+
+        builder.Property(e => e.IsSystemRole)
+            .HasDefaultValue(false);
+
+        builder.Property(e => e.IsActive)
+            .HasDefaultValue(true);
+    }
+}
+
+public class PermissionConfiguration : IEntityTypeConfiguration<Permission>
+{
+    public void Configure(EntityTypeBuilder<Permission> builder)
+    {
+        builder.ToTable("Permissions", "dbo");
+
+        builder.HasKey(e => e.Id);
+        builder.Property(e => e.Id).ValueGeneratedOnAdd();
+
+        builder.HasIndex(e => e.Code, "UQ_Permissions_Code").IsUnique();
+
+        builder.Property(e => e.Code)
+            .HasMaxLength(100)
+            .IsUnicode(false)
+            .IsRequired();
+
+        builder.Property(e => e.Name)
+            .HasMaxLength(150)
+            .IsRequired();
+
+        builder.Property(e => e.Description)
+            .HasMaxLength(255);
+    }
+}
+
+public class RolePermissionConfiguration : IEntityTypeConfiguration<RolePermission>
+{
+    public void Configure(EntityTypeBuilder<RolePermission> builder)
+    {
+        builder.ToTable("RolePermissions", "dbo");
+
+        builder.HasKey(e => new { e.RoleId, e.PermissionId });
+
+        builder.HasOne(e => e.Role)
+            .WithMany(r => r.RolePermissions)
+            .HasForeignKey(e => e.RoleId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasOne(e => e.Permission)
+            .WithMany(p => p.RolePermissions)
+            .HasForeignKey(e => e.PermissionId)
+            .OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+public class UserRoleConfiguration : IEntityTypeConfiguration<UserRole>
+{
+    public void Configure(EntityTypeBuilder<UserRole> builder)
+    {
+        builder.ToTable("UserRoles", "dbo");
+
+        builder.HasKey(e => new { e.UserId, e.RoleId });
+
+        builder.HasIndex(e => new { e.RoleId, e.UserId }, "IX_UserRoles_Role_User");
+
+        builder.Property(e => e.AssignedAt)
+            .HasDefaultValueSql("SYSUTCDATETIME()");
+
+        builder.HasOne(e => e.User)
+            .WithMany(u => u.UserRoles)
+            .HasForeignKey(e => e.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasOne(e => e.Role)
+            .WithMany(r => r.UserRoles)
+            .HasForeignKey(e => e.RoleId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasOne(e => e.AssignedByUser)
+            .WithMany()
+            .HasForeignKey(e => e.AssignedBy)
+            .OnDelete(DeleteBehavior.ClientSetNull);
     }
 }
 

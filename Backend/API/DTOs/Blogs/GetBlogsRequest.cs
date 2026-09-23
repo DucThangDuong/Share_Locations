@@ -6,6 +6,10 @@ namespace API.DTOs.Blogs;
 public class GetBlogsRequest
 {
     public string? Category { get; set; }
+    public int? CategoryId { get; set; }
+    public List<int>? CategoryIds { get; set; }
+    public int? PlaceTypeId { get; set; }
+    public List<int>? PlaceTypeIds { get; set; }
     public string? Keyword { get; set; }
     public int Page { get; set; } = 1;
     public int PageSize { get; set; } = 9;

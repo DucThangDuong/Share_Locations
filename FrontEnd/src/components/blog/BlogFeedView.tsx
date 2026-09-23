@@ -1,31 +1,27 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Search,
   X,
   PenSquare,
   ArrowUpRight,
   Eye,
-  MapPin,
   Tag,
   RotateCcw,
-  BookOpen
+  BookOpen,
+  Check
 } from 'lucide-react'
 import type { BlogListItemDto } from '@/types/models/blogArticle.model'
-import type { LookupItemDto, RegionLookupDto } from '@/types/models/place.model'
+import type { LookupItemDto } from '@/types/models/place.model'
 
 interface BlogFeedViewProps {
   articles: BlogListItemDto[]
   categories?: LookupItemDto[]
-  regions?: RegionLookupDto[]
   searchQuery: string
-  selectedRegion: string | null
-  selectedProvince: string | null
-  selectedCategory: string | null
+  selectedCategoryIds: number[]
   onSearchChange: (q: string) => void
   onClearSearch: () => void
-  onSelectRegion: (reg: string | null) => void
-  onSelectProvince: (prov: string | null) => void
-  onSelectCategory: (cat: string | null) => void
+  onCategoryToggle: (cat: LookupItemDto) => void
+  onClearCategories: () => void
   onResetFilters: () => void
   onOpenArticle: (article: BlogListItemDto) => void
   onCreateArticle?: () => void
@@ -34,21 +30,34 @@ interface BlogFeedViewProps {
 export const BlogFeedView: React.FC<BlogFeedViewProps> = ({
   articles,
   categories = [],
-  regions = [],
   searchQuery,
-  selectedRegion,
-  selectedProvince,
-  selectedCategory,
+  selectedCategoryIds,
   onSearchChange,
   onClearSearch,
-  onSelectRegion,
-  onSelectProvince,
-  onSelectCategory,
+  onCategoryToggle,
+  onClearCategories,
   onResetFilters,
   onOpenArticle,
   onCreateArticle
 }) => {
   const [displayCount, setDisplayCount] = useState(9)
+  const [localSearch, setLocalSearch] = useState(searchQuery)
+
+  // Sync external search changes into local input value
+  useEffect(() => {
+    setLocalSearch(searchQuery)
+  }, [searchQuery])
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    onSearchChange(localSearch)
+  }
+
+  const handleClear = () => {
+    setLocalSearch('')
+    onClearSearch()
+  }
+
   const visibleArticles = articles.slice(0, displayCount)
   const hasMore = visibleArticles.length < articles.length
 
@@ -56,72 +65,48 @@ export const BlogFeedView: React.FC<BlogFeedViewProps> = ({
     setDisplayCount((prev) => prev + 6)
   }
 
-  const handleToggleRegion = (regionName: string) => {
-    if (selectedRegion === regionName) {
-      onSelectRegion(null)
-      onSelectProvince(null)
-    } else {
-      onSelectRegion(regionName)
-      onSelectProvince(null)
-    }
-  }
-
-  const handleToggleProvince = (provName: string) => {
-    if (selectedProvince === provName) {
-      onSelectProvince(null)
-    } else {
-      onSelectProvince(provName)
-    }
-  }
-
-  const handleToggleCategory = (catName: string) => {
-    if (selectedCategory === catName) {
-      onSelectCategory(null)
-    } else {
-      onSelectCategory(catName)
-    }
-  }
-
-  const activeProvincesList = useMemo(() => {
-    if (!selectedRegion) return []
-    const found = regions.find((r) => r.name === selectedRegion)
-    return found ? found.provinces : []
-  }, [regions, selectedRegion])
-
   const hasActiveFilters = Boolean(
     searchQuery.trim() ||
-    selectedRegion ||
-    selectedProvince ||
-    selectedCategory
+    selectedCategoryIds.length > 0
   )
 
-  const regionNames = regions.length > 0
-    ? regions.map((r) => r.name)
-    : ['Miền Bắc', 'Miền Trung', 'Miền Nam']
+  const totalSelectedCategories = selectedCategoryIds.length
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 font-sans">
+      {/* Header Search & Actions */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-slate-200">
-        <div className="flex items-center gap-3 w-full md:w-auto">
-          <div className="relative flex-1 md:w-80">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
-            <input
-              type="text"
-              placeholder="Tìm kiếm cẩm nang, ẩm thực, địa điểm..."
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              className="w-full pl-9 pr-8 py-2.5 bg-slate-50 focus:bg-white border border-slate-200 focus:border-emerald-600 rounded-xl text-xs text-slate-900 outline-hidden transition-all font-medium"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={onClearSearch}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
-              >
-                <X size={14} />
-              </button>
-            )}
-          </div>
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          <form onSubmit={handleSearchSubmit} className="flex items-center gap-2 flex-1 md:w-auto">
+            <div className="relative flex-1 md:w-80">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
+              <input
+                type="text"
+                placeholder="Tìm kiếm cẩm nang, ẩm thực, địa điểm..."
+                value={localSearch}
+                onChange={(e) => setLocalSearch(e.target.value)}
+                className="w-full pl-9 pr-8 py-2.5 bg-slate-50 focus:bg-white border border-slate-200 focus:border-emerald-600 rounded-xl text-xs text-slate-900 outline-hidden transition-all font-medium"
+              />
+              {localSearch && (
+                <button
+                  type="button"
+                  onClick={handleClear}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+                  title="Xóa tìm kiếm"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+
+            <button
+              type="submit"
+              className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-800 hover:bg-emerald-900 text-white rounded-xl text-xs font-bold transition-all shadow-xs shrink-0 cursor-pointer"
+            >
+              <Search size={14} />
+              <span>Tìm kiếm</span>
+            </button>
+          </form>
 
           {onCreateArticle && (
             <button
@@ -134,143 +119,82 @@ export const BlogFeedView: React.FC<BlogFeedViewProps> = ({
             </button>
           )}
         </div>
+
+        {hasActiveFilters && (
+          <button
+            type="button"
+            onClick={() => {
+              setLocalSearch('')
+              onResetFilters()
+            }}
+            className="px-3 py-1.5 rounded-xl text-xs font-bold text-rose-700 hover:text-rose-900 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-all flex items-center gap-1.5 cursor-pointer w-fit"
+          >
+            <RotateCcw size={12} />
+            <span>Đặt lại bộ lọc</span>
+          </button>
+        )}
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-2xs space-y-4">
-        <div className="space-y-2">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
-            <MapPin size={14} className="text-[#004f32]" />
-            <span>Vùng miền:</span>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            {regionNames.map((reg) => {
-              const isSelected = selectedRegion === reg
-              return (
-                <button
-                  type="button"
-                  key={reg}
-                  onClick={() => handleToggleRegion(reg)}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer border ${isSelected
-                    ? 'bg-[#004f32] text-white border-[#004f32] shadow-xs'
-                    : 'bg-stone-50 hover:bg-stone-100 hover:border-stone-300 text-stone-700 border-stone-200'
-                    }`}
-                >
-                  {reg}
-                </button>
-              )
-            })}
-
-            {hasActiveFilters && (
-              <button
-                type="button"
-                onClick={onResetFilters}
-                className="ml-auto px-3 py-1.5 rounded-xl text-xs font-bold text-rose-700 hover:text-rose-900 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-all flex items-center gap-1.5 cursor-pointer"
-              >
-                <RotateCcw size={12} />
-                <span>Đặt lại</span>
-              </button>
-            )}
-          </div>
-        </div>
-
-        {selectedRegion && activeProvincesList.length > 0 && (
-          <div className="pt-3 border-t border-dashed border-slate-200 space-y-2 animate-fadeIn">
-            <div className="flex items-center justify-between text-[11px] font-bold text-slate-500">
-              <span>Tỉnh thành thuộc {selectedRegion}:</span>
-              <span className="text-[10px] font-normal text-slate-400">
-                {selectedProvince ? `Đang chọn: ${selectedProvince}` : 'Chọn tỉnh thành để lọc chi tiết'}
-              </span>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-1.5 max-h-36 overflow-y-auto pr-1">
-              <button
-                type="button"
-                onClick={() => onSelectProvince(null)}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer border ${selectedProvince === null
-                  ? 'bg-emerald-900 text-white border-emerald-900 shadow-xs'
-                  : 'bg-white hover:bg-slate-100 text-slate-600 border-slate-200'
-                  }`}
-              >
-                Tất cả {selectedRegion}
-              </button>
-
-              {activeProvincesList.map((prov) => {
-                const isProvSelected = selectedProvince === prov.name
-                return (
-                  <button
-                    key={prov.id}
-                    type="button"
-                    onClick={() => handleToggleProvince(prov.name)}
-                    className={`px-3 py-1 rounded-lg text-xs transition-all cursor-pointer border ${isProvSelected
-                      ? 'bg-emerald-800 text-white border-emerald-800 font-bold shadow-xs'
-                      : 'bg-white hover:bg-slate-100 hover:border-slate-300 text-slate-700 border-slate-200 font-medium'
-                      }`}
-                  >
-                    {prov.name}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {categories.length > 0 && (
-          <div className="pt-3 border-t border-slate-100 space-y-2">
-            <div className="flex items-center justify-between text-xs font-bold text-slate-700">
-              <div className="flex items-center gap-1.5">
-                <Tag size={14} className="text-emerald-700" />
-                <span>Chủ đề & Danh mục:</span>
-              </div>
-              {selectedCategory && (
-                <span className="text-[11px] font-normal text-slate-500">
-                  Đang lọc: <strong className="text-emerald-900 font-bold">{selectedCategory}</strong>
+      {/* Categories Filter Card */}
+      {categories.length > 0 && (
+        <div className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-2xs space-y-3">
+          <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+            <div className="flex items-center gap-1.5">
+              <Tag size={14} className="text-emerald-700" />
+              <span>Chủ đề & Danh mục:</span>
+              {totalSelectedCategories > 0 && (
+                <span className="ml-1 text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">
+                  Đã chọn {totalSelectedCategories} danh mục
                 </span>
               )}
             </div>
-
-            <div className="flex flex-wrap items-center gap-1.5 max-h-36 overflow-y-auto pr-1">
-              <button
-                type="button"
-                onClick={() => onSelectCategory(null)}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer border ${selectedCategory === null
-                  ? 'bg-emerald-900 text-white border-emerald-900 shadow-xs'
-                  : 'bg-white hover:bg-slate-100 text-slate-600 border-slate-200'
-                  }`}
-              >
-                Tất cả danh mục
-              </button>
-
-              {categories.map((cat) => {
-                const isCatSelected = selectedCategory === cat.name
-                return (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => handleToggleCategory(cat.name)}
-                    className={`px-3 py-1 rounded-lg text-xs transition-all cursor-pointer border ${isCatSelected
-                      ? 'bg-emerald-800 text-white border-emerald-800 font-bold shadow-xs'
-                      : 'bg-white hover:bg-slate-100 hover:border-slate-300 text-slate-700 border-slate-200 font-medium'
-                      }`}
-                  >
-                    {cat.name}
-                  </button>
-                )
-              })}
-            </div>
           </div>
-        )}
-      </div>
 
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={onClearCategories}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border flex items-center gap-1.5 ${
+                selectedCategoryIds.length === 0
+                  ? 'bg-emerald-900 text-white border-emerald-900 shadow-xs'
+                  : 'bg-stone-50 hover:bg-stone-100 hover:border-stone-300 text-stone-700 border-stone-200'
+              }`}
+            >
+              {selectedCategoryIds.length === 0 && <Check size={13} className="stroke-[3]" />}
+              <span>Tất cả danh mục</span>
+            </button>
+
+            {categories.map((cat) => {
+              const isCatSelected = selectedCategoryIds.includes(cat.id)
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => onCategoryToggle(cat)}
+                  className={`px-3.5 py-2 rounded-xl text-xs transition-all cursor-pointer border flex items-center gap-1.5 ${
+                    isCatSelected
+                      ? 'bg-emerald-800 text-white border-emerald-800 font-bold shadow-xs'
+                      : 'bg-stone-50 hover:bg-stone-100 hover:border-stone-300 text-stone-700 border-stone-200 font-medium'
+                  }`}
+                >
+                  {isCatSelected && <Check size={13} className="stroke-[3]" />}
+                  <span>{cat.name}</span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Result Count */}
       <div className="flex items-center justify-between text-xs text-slate-500 font-medium px-1">
         <span>
           Tìm thấy <strong className="text-slate-900 font-bold">{articles.length}</strong> bài viết cẩm nang
-          {selectedRegion ? ` tại ${selectedRegion}` : ''}
-          {selectedProvince ? ` • ${selectedProvince}` : ''}
-          {selectedCategory ? ` • ${selectedCategory}` : ''}
+          {totalSelectedCategories > 0 && ` • ${totalSelectedCategories} chủ đề`}
         </span>
       </div>
 
+      {/* Articles Grid or Empty State */}
       <div>
         {articles.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-3">
@@ -284,7 +208,10 @@ export const BlogFeedView: React.FC<BlogFeedViewProps> = ({
             {hasActiveFilters && (
               <button
                 type="button"
-                onClick={onResetFilters}
+                onClick={() => {
+                  setLocalSearch('')
+                  onResetFilters()
+                }}
                 className="mt-2 px-4 py-2 bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-bold rounded-xl transition-all cursor-pointer"
               >
                 Đặt lại bộ lọc

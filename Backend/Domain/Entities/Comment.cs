@@ -10,11 +10,15 @@ public class Comment
     public long? ParentId { get; private set; }
     public string Content { get; private set; } = string.Empty;
     public CommentStatus Status { get; private set; } = CommentStatus.Active;
+    public string? HiddenReason { get; private set; }
+    public long? HiddenBy { get; private set; }
+    public DateTime? HiddenAt { get; private set; }
     public DateTime CreatedAt { get; private set; }
 
     // Navigation
     public virtual Review Review { get; private set; } = null!;
     public virtual User User { get; private set; } = null!;
+    public virtual User? HiddenByUser { get; private set; }
     public virtual Comment? ParentComment { get; private set; }
 
     private readonly List<Comment> _replies = new();
@@ -46,14 +50,20 @@ public class Comment
         Content = content.Trim();
     }
 
-    public void Hide()
+    public void Hide(long? hiddenBy = null, string? reason = null)
     {
         Status = CommentStatus.Hidden;
+        HiddenBy = hiddenBy;
+        HiddenReason = reason;
+        HiddenAt = DateTime.UtcNow;
     }
 
     public void Restore()
     {
         Status = CommentStatus.Active;
+        HiddenBy = null;
+        HiddenReason = null;
+        HiddenAt = null;
     }
 
     public void UpdateStatus(CommentStatus status)

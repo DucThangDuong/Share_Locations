@@ -28,6 +28,10 @@ export interface BlogLikeResponseDto {
 
 export interface BlogFilterParams {
   category?: string
+  categoryId?: number
+  categoryIds?: number[]
+  placeTypeId?: number
+  placeTypeIds?: number[]
   keyword?: string
   page?: number
   pageSize?: number

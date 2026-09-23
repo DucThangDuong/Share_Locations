@@ -7,6 +7,7 @@ public class Message
     public long SenderId { get; private set; }
     public string? Content { get; private set; }
     public long? ReplyToMessageId { get; private set; }
+    public bool IsDeleted { get; private set; }
     public DateTime CreatedAt { get; private set; }
 
     // Navigation
@@ -32,6 +33,7 @@ public class Message
         SenderId = senderId;
         Content = content;
         ReplyToMessageId = replyToMessageId;
+        IsDeleted = false;
         CreatedAt = DateTime.UtcNow;
     }
 
@@ -43,5 +45,10 @@ public class Message
     public void UpdateContent(string? content)
     {
         Content = content?.Trim();
+    }
+
+    public void SoftDelete()
+    {
+        IsDeleted = true;
     }
 }

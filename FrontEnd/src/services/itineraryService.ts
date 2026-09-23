@@ -7,7 +7,6 @@ export const itineraryService = {
     const cleanParams: Record<string, unknown> = {}
 
     if (params?.duration && params.duration !== 'all') cleanParams.duration = params.duration
-    if (params?.region && params.region !== 'all') cleanParams.region = params.region
     if (params?.keyword?.trim()) cleanParams.keyword = params.keyword.trim()
     cleanParams.page = params?.page || 1
     cleanParams.pageSize = params?.pageSize || 10

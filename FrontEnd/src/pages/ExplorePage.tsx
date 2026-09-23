@@ -29,15 +29,20 @@ export const ExplorePage: React.FC = () => {
 
   const appliedFilters = useMemo(() => {
     const q = searchParams.get('q') || ''
-    const cat = searchParams.get('cat') || ''
-    const catIdStr = searchParams.get('catId')
-    let catId = catIdStr ? Number(catIdStr) : undefined
-    const placeTypeIdStr = searchParams.get('placeTypeId')
-    const placeTypeId = placeTypeIdStr ? Number(placeTypeIdStr) : undefined
+
+    // Categories: multi-select support (comma-separated or single)
+    const catStr = searchParams.get('cat') || searchParams.get('cats') || ''
+    const catIdStr = searchParams.get('catId') || searchParams.get('catIds') || searchParams.get('categoryIds') || ''
+    const catNames = catStr ? catStr.split(',').map((s) => s.trim()).filter(Boolean) : []
+    const catIds = catIdStr ? catIdStr.split(',').map(Number).filter(Boolean) : []
+
+    const placeTypeIdStr = searchParams.get('placeTypeId') || searchParams.get('placeTypeIds') || ''
+    const placeTypeIds = placeTypeIdStr ? placeTypeIdStr.split(',').map(Number).filter(Boolean) : []
+
     const regionStr = searchParams.get('region') || ''
-    const regionIdStr = searchParams.get('regionId') || ''
+    const regionIdStr = searchParams.get('regionId') || searchParams.get('regionIds') || ''
     const provinceStr = searchParams.get('province') || ''
-    const provinceIdStr = searchParams.get('provinceId') || ''
+    const provinceIdStr = searchParams.get('provinceId') || searchParams.get('provinceIds') || ''
     const priceStr = searchParams.get('priceTier')
     const priceTier = priceStr ? Number(priceStr) : 0
     const ratingStr = searchParams.get('minRating')
@@ -51,9 +56,20 @@ export const ExplorePage: React.FC = () => {
     const provList = provinceStr ? provinceStr.split(',').map((s) => s.trim()).filter(Boolean) : []
     const provIdList = provinceIdStr ? provinceIdStr.split(',').map(Number).filter(Boolean) : []
 
-    if (!catId && cat && categories.length > 0) {
-      const found = categories.find((c) => c.name.toLowerCase() === cat.toLowerCase())
-      if (found) catId = found.id
+    const resolvedCatIds = [...catIds]
+    if (resolvedCatIds.length === 0 && catNames.length > 0 && categories.length > 0) {
+      catNames.forEach((cName) => {
+        const found = categories.find((c) => c.name.toLowerCase() === cName.toLowerCase())
+        if (found && !resolvedCatIds.includes(found.id)) resolvedCatIds.push(found.id)
+      })
+    }
+
+    const resolvedCatNames = [...catNames]
+    if (resolvedCatNames.length === 0 && resolvedCatIds.length > 0 && categories.length > 0) {
+      resolvedCatIds.forEach((id) => {
+        const found = categories.find((c) => c.id === id)
+        if (found && !resolvedCatNames.includes(found.name)) resolvedCatNames.push(found.name)
+      })
     }
 
     const resolvedRegIds = [...regIdList]
@@ -72,14 +88,39 @@ export const ExplorePage: React.FC = () => {
       })
     }
 
+    const resolvedProvs = [...provList]
+    if (resolvedProvs.length === 0 && resolvedProvIds.length > 0 && allProvinces.length > 0) {
+      resolvedProvIds.forEach((id) => {
+        const found = allProvinces.find((p) => p.id === id)
+        if (found && !resolvedProvs.includes(found.name)) resolvedProvs.push(found.name)
+      })
+    }
+
+    // Automatically synchronize region IDs based on whether ALL their provinces are in resolvedProvIds
+    if (regions.length > 0) {
+      regions.forEach((reg) => {
+        const rProvIds = (reg.provinces || []).map((p) => p.id)
+        const isAllSelected = rProvIds.length > 0 && rProvIds.every((id) => resolvedProvIds.includes(id))
+        if (isAllSelected) {
+          if (!resolvedRegIds.includes(reg.id)) resolvedRegIds.push(reg.id)
+          if (!regList.includes(reg.name)) regList.push(reg.name)
+        } else {
+          const idx = resolvedRegIds.indexOf(reg.id)
+          if (idx !== -1) resolvedRegIds.splice(idx, 1)
+          const nameIdx = regList.indexOf(reg.name)
+          if (nameIdx !== -1) regList.splice(nameIdx, 1)
+        }
+      })
+    }
+
     return {
       search: q,
-      categoryName: cat,
-      categoryId: catId,
-      placeTypeId,
+      categoryNames: resolvedCatNames,
+      categoryIds: resolvedCatIds,
+      placeTypeIds,
       regions: regList,
       regionIds: resolvedRegIds,
-      provinces: provList,
+      provinces: resolvedProvs,
       provinceIds: resolvedProvIds,
       priceTier,
       minRating,
@@ -93,8 +134,6 @@ export const ExplorePage: React.FC = () => {
   useEffect(() => {
     setDraftSearch(appliedFilters.search)
   }, [appliedFilters.search])
-
-
 
   useEffect(() => {
     const fetchFilterOptions = async () => {
@@ -116,15 +155,13 @@ export const ExplorePage: React.FC = () => {
     setIsLoading(true)
     try {
       const tier = PRICE_TIERS[appliedFilters.priceTier] || PRICE_TIERS[0]
-      const primaryRegionId = appliedFilters.regionIds.length > 0 ? appliedFilters.regionIds[0] : undefined
-      const primaryProvinceId = appliedFilters.provinceIds.length > 0 ? appliedFilters.provinceIds[0] : undefined
 
       const res = await placeService.searchPlaces({
         keyword: appliedFilters.search.trim() || undefined,
-        regionId: primaryRegionId,
-        provinceId: primaryProvinceId,
-        categoryId: appliedFilters.categoryId,
-        placeTypeId: appliedFilters.placeTypeId,
+        regionIds: appliedFilters.regionIds.length > 0 ? appliedFilters.regionIds : undefined,
+        provinceIds: appliedFilters.provinceIds.length > 0 ? appliedFilters.provinceIds : undefined,
+        categoryIds: appliedFilters.categoryIds.length > 0 ? appliedFilters.categoryIds : undefined,
+        placeTypeIds: appliedFilters.placeTypeIds.length > 0 ? appliedFilters.placeTypeIds : undefined,
         minPrice: tier.min > 0 ? tier.min : undefined,
         maxPrice: tier.max > 0 ? tier.max : undefined,
         minRating: appliedFilters.minRating > 0 ? appliedFilters.minRating : undefined,
@@ -178,37 +215,234 @@ export const ExplorePage: React.FC = () => {
     setIsMobileFilterOpen(false)
   }
 
-  const removeFilterItem = (type: 'search' | 'category' | 'placeType' | 'region' | 'province' | 'price' | 'rating', value?: string | number) => {
+  const handleCategoryToggle = (cat: LookupItemDto) => {
+    const isSelected = appliedFilters.categoryIds.includes(cat.id)
+    let nextCatIds: number[]
+    let nextCatNames: string[]
+
+    if (isSelected) {
+      nextCatIds = appliedFilters.categoryIds.filter((id) => id !== cat.id)
+      nextCatNames = appliedFilters.categoryNames.filter((name) => name !== cat.name)
+    } else {
+      nextCatIds = [...appliedFilters.categoryIds, cat.id]
+      nextCatNames = [...appliedFilters.categoryNames, cat.name]
+    }
+
+    const params = new URLSearchParams(searchParams)
+    if (nextCatIds.length > 0) {
+      params.set('cat', nextCatNames.join(','))
+      params.set('catId', nextCatIds.join(','))
+    } else {
+      params.delete('cat')
+      params.delete('catId')
+      params.delete('cats')
+      params.delete('catIds')
+      params.delete('categoryIds')
+    }
+    params.delete('page')
+    setSearchParams(params)
+  }
+
+  const handleClearCategories = () => {
+    const params = new URLSearchParams(searchParams)
+    params.delete('cat')
+    params.delete('catId')
+    params.delete('cats')
+    params.delete('catIds')
+    params.delete('categoryIds')
+    params.delete('page')
+    setSearchParams(params)
+  }
+
+  const handleRegionCheck = (region: RegionLookupDto) => {
+    const regionProvinces = region.provinces || []
+    const regionProvinceIds = regionProvinces.map((p) => p.id)
+    const regionProvinceNames = regionProvinces.map((p) => p.name)
+
+    const isAllSelected =
+      regionProvinceIds.length > 0 &&
+      regionProvinceIds.every((id) => appliedFilters.provinceIds.includes(id))
+
+    let nextProvIds = [...appliedFilters.provinceIds]
+    let nextProvs = [...appliedFilters.provinces]
+    let nextRegIds = [...appliedFilters.regionIds]
+    let nextRegs = [...appliedFilters.regions]
+
+    if (isAllSelected) {
+      // Uncheck all provinces of this region
+      nextProvIds = nextProvIds.filter((id) => !regionProvinceIds.includes(id))
+      nextProvs = nextProvs.filter((name) => !regionProvinceNames.includes(name))
+      nextRegIds = nextRegIds.filter((id) => id !== region.id)
+      nextRegs = nextRegs.filter((name) => name !== region.name)
+    } else {
+      // Check all provinces of this region
+      regionProvinces.forEach((p) => {
+        if (!nextProvIds.includes(p.id)) nextProvIds.push(p.id)
+        if (!nextProvs.includes(p.name)) nextProvs.push(p.name)
+      })
+      if (!nextRegIds.includes(region.id)) nextRegIds.push(region.id)
+      if (!nextRegs.includes(region.name)) nextRegs.push(region.name)
+    }
+
+    const params = new URLSearchParams(searchParams)
+    if (nextRegIds.length > 0) {
+      params.set('region', nextRegs.join(','))
+      params.set('regionId', nextRegIds.join(','))
+    } else {
+      params.delete('region')
+      params.delete('regionId')
+    }
+    if (nextProvIds.length > 0) {
+      params.set('province', nextProvs.join(','))
+      params.set('provinceId', nextProvIds.join(','))
+    } else {
+      params.delete('province')
+      params.delete('provinceId')
+    }
+    params.delete('page')
+    setSearchParams(params)
+    setIsMobileFilterOpen(false)
+  }
+
+  const handleProvinceCheck = (province: LookupItemDto) => {
+    const isSelected = appliedFilters.provinceIds.includes(province.id)
+    let nextProvIds = [...appliedFilters.provinceIds]
+    let nextProvs = [...appliedFilters.provinces]
+
+    if (isSelected) {
+      nextProvIds = nextProvIds.filter((id) => id !== province.id)
+      nextProvs = nextProvs.filter((p) => p !== province.name)
+    } else {
+      nextProvIds.push(province.id)
+      nextProvs.push(province.name)
+    }
+
+    // Check parent region state: if even 1 province is unselected, region check disappears; if all are selected, region check appears
+    const parentRegion = regions.find((r) =>
+      (r.provinces || []).some((p) => p.id === province.id)
+    )
+
+    let nextRegIds = [...appliedFilters.regionIds]
+    let nextRegs = [...appliedFilters.regions]
+
+    if (parentRegion) {
+      const parentProvIds = (parentRegion.provinces || []).map((p) => p.id)
+      const isAllParentProvsSelected =
+        parentProvIds.length > 0 &&
+        parentProvIds.every((id) => nextProvIds.includes(id))
+
+      if (isAllParentProvsSelected) {
+        if (!nextRegIds.includes(parentRegion.id)) nextRegIds.push(parentRegion.id)
+        if (!nextRegs.includes(parentRegion.name)) nextRegs.push(parentRegion.name)
+      } else {
+        nextRegIds = nextRegIds.filter((id) => id !== parentRegion.id)
+        nextRegs = nextRegs.filter((name) => name !== parentRegion.name)
+      }
+    }
+
+    const params = new URLSearchParams(searchParams)
+    if (nextRegIds.length > 0) {
+      params.set('region', nextRegs.join(','))
+      params.set('regionId', nextRegIds.join(','))
+    } else {
+      params.delete('region')
+      params.delete('regionId')
+    }
+    if (nextProvIds.length > 0) {
+      params.set('province', nextProvs.join(','))
+      params.set('provinceId', nextProvIds.join(','))
+    } else {
+      params.delete('province')
+      params.delete('provinceId')
+    }
+    params.delete('page')
+    setSearchParams(params)
+    setIsMobileFilterOpen(false)
+  }
+
+  const removeFilterItem = (
+    type: 'search' | 'category' | 'placeType' | 'region' | 'province' | 'price' | 'rating',
+    value?: string | number
+  ) => {
     const params = new URLSearchParams(searchParams)
     if (type === 'search') {
       params.delete('q')
       setDraftSearch('')
     } else if (type === 'category') {
-      params.delete('cat')
-      params.delete('catId')
+      if (typeof value === 'string' || typeof value === 'number') {
+        const targetName = typeof value === 'string' ? value : categories.find((c) => c.id === value)?.name
+        const targetId = typeof value === 'number' ? value : categories.find((c) => c.name === value)?.id
+        const nextCatNames = appliedFilters.categoryNames.filter((n) => n !== targetName)
+        const nextCatIds = appliedFilters.categoryIds.filter((id) => id !== targetId)
+        if (nextCatNames.length > 0) {
+          params.set('cat', nextCatNames.join(','))
+          params.set('catId', nextCatIds.join(','))
+        } else {
+          params.delete('cat')
+          params.delete('catId')
+        }
+      } else {
+        params.delete('cat')
+        params.delete('catId')
+      }
     } else if (type === 'placeType') {
       params.delete('placeTypeId')
+      params.delete('placeTypeIds')
     } else if (type === 'region' && typeof value === 'string') {
-      const nextRegs = appliedFilters.regions.filter((r) => r !== value)
       const rObj = regions.find((r) => r.name === value)
+      const regionProvinceIds = rObj ? (rObj.provinces || []).map((p) => p.id) : []
+      const regionProvinceNames = rObj ? (rObj.provinces || []).map((p) => p.name) : []
+
+      const nextRegs = appliedFilters.regions.filter((r) => r !== value)
       const nextRegIds = rObj ? appliedFilters.regionIds.filter((id) => id !== rObj.id) : appliedFilters.regionIds
-      if (nextRegs.length) {
+      const nextProvIds = appliedFilters.provinceIds.filter((id) => !regionProvinceIds.includes(id))
+      const nextProvs = appliedFilters.provinces.filter((name) => !regionProvinceNames.includes(name))
+
+      if (nextRegs.length > 0) {
         params.set('region', nextRegs.join(','))
         params.set('regionId', nextRegIds.join(','))
       } else {
         params.delete('region')
         params.delete('regionId')
       }
-    } else if (type === 'province' && typeof value === 'string') {
-      const nextProvs = appliedFilters.provinces.filter((p) => p !== value)
-      const pObj = allProvinces.find((p) => p.name === value)
-      const nextProvIds = pObj ? appliedFilters.provinceIds.filter((id) => id !== pObj.id) : appliedFilters.provinceIds
-      if (nextProvs.length) {
+
+      if (nextProvIds.length > 0) {
         params.set('province', nextProvs.join(','))
         params.set('provinceId', nextProvIds.join(','))
       } else {
         params.delete('province')
         params.delete('provinceId')
+      }
+    } else if (type === 'province' && typeof value === 'string') {
+      const pObj = allProvinces.find((p) => p.name === value)
+      const nextProvs = appliedFilters.provinces.filter((p) => p !== value)
+      const nextProvIds = pObj ? appliedFilters.provinceIds.filter((id) => id !== pObj.id) : appliedFilters.provinceIds
+
+      let nextRegs = [...appliedFilters.regions]
+      let nextRegIds = [...appliedFilters.regionIds]
+
+      if (pObj) {
+        const parentRegion = regions.find((r) => (r.provinces || []).some((p) => p.id === pObj.id))
+        if (parentRegion) {
+          nextRegIds = nextRegIds.filter((id) => id !== parentRegion.id)
+          nextRegs = nextRegs.filter((name) => name !== parentRegion.name)
+        }
+      }
+
+      if (nextProvs.length > 0) {
+        params.set('province', nextProvs.join(','))
+        params.set('provinceId', nextProvIds.join(','))
+      } else {
+        params.delete('province')
+        params.delete('provinceId')
+      }
+
+      if (nextRegs.length > 0) {
+        params.set('region', nextRegs.join(','))
+        params.set('regionId', nextRegIds.join(','))
+      } else {
+        params.delete('region')
+        params.delete('regionId')
       }
     } else if (type === 'price') {
       params.delete('priceTier')
@@ -240,72 +474,6 @@ export const ExplorePage: React.FC = () => {
     }
     setSearchParams(params)
     window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-
-
-
-  const handleRegionCheck = (region: RegionLookupDto) => {
-    const isSelected = appliedFilters.regionIds.includes(region.id)
-    let nextRegs: string[]
-    let nextRegIds: number[]
-    let nextProvs = [...appliedFilters.provinces]
-    let nextProvIds = [...appliedFilters.provinceIds]
-
-    if (isSelected) {
-      nextRegs = appliedFilters.regions.filter((r) => r !== region.name)
-      nextRegIds = appliedFilters.regionIds.filter((id) => id !== region.id)
-      const regionProvinceIds = (region.provinces || []).map((p) => p.id)
-      nextProvIds = nextProvIds.filter((id) => !regionProvinceIds.includes(id))
-      nextProvs = nextProvs.filter((name) => !(region.provinces || []).some((p) => p.name === name))
-    } else {
-      nextRegs = [...appliedFilters.regions, region.name]
-      nextRegIds = [...appliedFilters.regionIds, region.id]
-    }
-
-    const params = new URLSearchParams(searchParams)
-    if (nextRegs.length > 0) {
-      params.set('region', nextRegs.join(','))
-      params.set('regionId', nextRegIds.join(','))
-    } else {
-      params.delete('region')
-      params.delete('regionId')
-    }
-    if (nextProvs.length > 0) {
-      params.set('province', nextProvs.join(','))
-      params.set('provinceId', nextProvIds.join(','))
-    } else {
-      params.delete('province')
-      params.delete('provinceId')
-    }
-    params.delete('page')
-    setSearchParams(params)
-    setIsMobileFilterOpen(false)
-  }
-
-  const handleProvinceCheck = (province: LookupItemDto) => {
-    const isSelected = appliedFilters.provinceIds.includes(province.id)
-    let nextProvs: string[]
-    let nextProvIds: number[]
-
-    if (isSelected) {
-      nextProvs = appliedFilters.provinces.filter((p) => p !== province.name)
-      nextProvIds = appliedFilters.provinceIds.filter((id) => id !== province.id)
-    } else {
-      nextProvs = [...appliedFilters.provinces, province.name]
-      nextProvIds = [...appliedFilters.provinceIds, province.id]
-    }
-
-    const params = new URLSearchParams(searchParams)
-    if (nextProvs.length > 0) {
-      params.set('province', nextProvs.join(','))
-      params.set('provinceId', nextProvIds.join(','))
-    } else {
-      params.delete('province')
-      params.delete('provinceId')
-    }
-    params.delete('page')
-    setSearchParams(params)
-    setIsMobileFilterOpen(false)
   }
 
   const searchSuggestions = useMemo(() => {
@@ -340,12 +508,15 @@ export const ExplorePage: React.FC = () => {
       })
     }
 
-    if (appliedFilters.categoryName) {
+    appliedFilters.categoryNames.forEach((catName) => {
       chips.push({
-        label: `Danh mục: ${appliedFilters.categoryName}`,
-        onRemove: () => removeFilterItem('category')
+        label: `Danh mục: ${catName}`,
+        onRemove: () => removeFilterItem('category', catName)
       })
-    }
+    })
+
+    // If an entire region is selected, show region chip, else show individual province chips
+    const fullySelectedRegionNames = new Set(appliedFilters.regions)
 
     appliedFilters.regions.forEach((reg) => {
       chips.push({
@@ -355,10 +526,16 @@ export const ExplorePage: React.FC = () => {
     })
 
     appliedFilters.provinces.forEach((prov) => {
-      chips.push({
-        label: `Tỉnh: ${prov}`,
-        onRemove: () => removeFilterItem('province', prov)
-      })
+      const pObj = allProvinces.find((p) => p.name === prov)
+      const parentRegion = pObj ? regions.find((r) => (r.provinces || []).some((p) => p.id === pObj.id)) : null
+
+      // Only show province chip if its entire parent region is not already shown as a region chip
+      if (!parentRegion || !fullySelectedRegionNames.has(parentRegion.name)) {
+        chips.push({
+          label: `Tỉnh: ${prov}`,
+          onRemove: () => removeFilterItem('province', prov)
+        })
+      }
     })
 
     if (appliedFilters.priceTier > 0) {
@@ -379,7 +556,7 @@ export const ExplorePage: React.FC = () => {
   }, [appliedFilters, regions, allProvinces])
 
   return (
-    <div className="min-h-screen bg-slate-50/70 pb-20 pt-6 sm:pt-8">
+    <div className="min-h-screen bg-slate-50/70 pb-20 pt-6 sm:pt-8 font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-6">
         <ExploreSearchBar
           value={draftSearch}
@@ -389,9 +566,10 @@ export const ExplorePage: React.FC = () => {
         />
 
         <div className="flex items-center justify-between gap-4 lg:hidden">
-          <button type="button"
+          <button
+            type="button"
             onClick={() => setIsMobileFilterOpen(!isMobileFilterOpen)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white rounded-lg border border-slate-200 text-xs font-bold text-slate-700 cursor-pointer min-h-[44px]"
+            className="flex items-center gap-2 px-4 py-2.5 bg-white rounded-xl border border-slate-200 text-xs font-bold text-slate-700 cursor-pointer min-h-[44px]"
           >
             <SlidersHorizontal className="w-4 h-4 text-primary" />
             <span>Bộ lọc ({activeChips.length})</span>
@@ -399,7 +577,7 @@ export const ExplorePage: React.FC = () => {
 
           <div className="flex items-center gap-2">
             <span className="text-xs text-slate-500 font-medium">
-              <strong className="text-slate-900">{totalElements}</strong> kết quả
+              <strong className="text-slate-900 font-bold">{totalElements}</strong> kết quả
             </span>
           </div>
         </div>
@@ -408,15 +586,16 @@ export const ExplorePage: React.FC = () => {
           <ExploreFilterSidebar
             categories={categories}
             regions={regions}
-            draftCategoryId={appliedFilters.categoryId}
-            draftCategoryName={appliedFilters.categoryName}
+            draftCategoryIds={appliedFilters.categoryIds}
+            draftCategoryNames={appliedFilters.categoryNames}
             draftRegionIds={appliedFilters.regionIds}
             draftProvinceIds={appliedFilters.provinceIds}
             draftPriceTier={appliedFilters.priceTier}
             draftMinRating={appliedFilters.minRating}
             isOpen={isMobileFilterOpen}
             onClose={() => setIsMobileFilterOpen(false)}
-            onCategorySelect={(cat) => updateFilters({ cat: cat?.name, catId: cat?.id })}
+            onCategoryToggle={handleCategoryToggle}
+            onClearCategories={handleClearCategories}
             onRegionCheck={handleRegionCheck}
             onProvinceCheck={handleProvinceCheck}
             onPriceTierChange={(idx) => updateFilters({ priceTier: idx || undefined })}
@@ -439,15 +618,15 @@ export const ExplorePage: React.FC = () => {
             {isLoading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4.5 animate-pulse">
                 {[1, 2, 3, 4, 5, 6].map((n) => (
-                  <div key={n} className="bg-white rounded-lg p-4 border border-slate-200/60 space-y-3">
-                    <div className="aspect-square rounded-lg skeleton-shimmer"></div>
-                    <div className="h-4 w-3/4 skeleton-shimmer rounded-md"></div>
-                    <div className="h-3 w-1/2 skeleton-shimmer rounded-md"></div>
+                  <div key={n} className="bg-white rounded-2xl p-4 border border-slate-200/60 space-y-3">
+                    <div className="aspect-square rounded-xl bg-slate-200"></div>
+                    <div className="h-4 w-3/4 bg-slate-200 rounded-md"></div>
+                    <div className="h-3 w-1/2 bg-slate-200 rounded-md"></div>
                   </div>
                 ))}
               </div>
             ) : places.length === 0 ? (
-              <div className="text-center py-16 px-6 bg-white rounded-lg border border-dashed border-slate-300 space-y-4">
+              <div className="text-center py-16 px-6 bg-white rounded-3xl border border-dashed border-slate-300 space-y-4 shadow-2xs">
                 <div className="w-16 h-16 rounded-full bg-emerald-50 text-primary flex items-center justify-center mx-auto">
                   <Compass className="w-8 h-8" />
                 </div>
@@ -459,6 +638,13 @@ export const ExplorePage: React.FC = () => {
                     Hệ thống chưa tìm thấy địa điểm nào khớp với tiêu chí tìm kiếm của bạn. Hãy thử thay đổi từ khóa hoặc đặt lại bộ lọc.
                   </p>
                 </div>
+                <button
+                  type="button"
+                  onClick={resetFilters}
+                  className="px-5 py-2.5 bg-emerald-800 hover:bg-emerald-900 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs"
+                >
+                  Đặt lại tất cả bộ lọc
+                </button>
               </div>
             ) : (
               <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4.5' : 'space-y-4'}>
@@ -483,3 +669,5 @@ export const ExplorePage: React.FC = () => {
     </div>
   )
 }
+
+export default ExplorePage

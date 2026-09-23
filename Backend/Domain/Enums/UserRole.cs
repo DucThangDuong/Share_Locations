@@ -1,6 +1,6 @@
 namespace Domain.Enums;
 
-public enum UserRole : byte
+public enum UserRoleType : byte
 {
     User = 1,
     CategoryAdmin = 2,

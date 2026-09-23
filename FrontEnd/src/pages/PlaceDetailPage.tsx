@@ -23,6 +23,9 @@ export const PlaceDetailPage = () => {
   const [isShareOpen, setIsShareOpen] = useState(false)
   const [shareToastMsg, setShareToastMsg] = useState<string | null>(null)
   const [reviewsList, setReviewsList] = useState<ReviewItemDto[]>([])
+  const [reviewPage, setReviewPage] = useState(1)
+  const [totalReviewsCount, setTotalReviewsCount] = useState(0)
+  const [loadingMoreReviews, setLoadingMoreReviews] = useState(false)
   const [ratingBreakdown, setRatingBreakdown] = useState<Record<string, number>>({
     '5': 0,
     '4': 0,
@@ -37,6 +40,7 @@ export const PlaceDetailPage = () => {
       if (!id) return
       setLoading(true)
       setError(null)
+      setReviewPage(1)
       try {
         const placeRes = await placeService.getPlaceById(id)
         if (placeRes.success && placeRes.data) {
@@ -72,9 +76,14 @@ export const PlaceDetailPage = () => {
           setError(placeRes.message || 'Không tìm thấy thông tin địa điểm.')
         }
 
-        const reviewsRes = await placeService.getPlaceReviews(id)
+        const reviewsRes = await placeService.getPlaceReviews(id, { page: 1, pageSize: 10 })
         if (reviewsRes.success && reviewsRes.data) {
           setReviewsList(reviewsRes.data.items || [])
+          setTotalReviewsCount(
+            reviewsRes.data.totalReviews ??
+              placeRes?.data?.reviewCount ??
+              (reviewsRes.data.items || []).length
+          )
           if (reviewsRes.data.ratingBreakdown) {
             setRatingBreakdown(reviewsRes.data.ratingBreakdown)
           }
@@ -87,6 +96,30 @@ export const PlaceDetailPage = () => {
     }
     fetchPlaceData()
   }, [id, isAuthenticated])
+
+  const handleLoadMoreReviews = async () => {
+    if (loadingMoreReviews || !id) return
+    const nextPage = reviewPage + 1
+    setLoadingMoreReviews(true)
+    try {
+      const res = await placeService.getPlaceReviews(id, { page: nextPage, pageSize: 10 })
+      if (res.success && res.data && res.data.items) {
+        setReviewsList((prev) => {
+          const existingIds = new Set(prev.map((r) => r.id))
+          const newItems = (res.data.items || []).filter((r) => !existingIds.has(r.id))
+          return [...prev, ...newItems]
+        })
+        setReviewPage(nextPage)
+        if (res.data.totalReviews !== undefined) {
+          setTotalReviewsCount(res.data.totalReviews)
+        }
+      }
+    } catch (err) {
+      console.error('Lỗi khi tải thêm đánh giá:', err)
+    } finally {
+      setLoadingMoreReviews(false)
+    }
+  }
 
   const handleShare = () => {
     setIsShareOpen(true)
@@ -113,6 +146,7 @@ export const PlaceDetailPage = () => {
 
   const handleReviewAdded = (newReview: ReviewItemDto) => {
     setReviewsList((prev) => [newReview, ...prev])
+    setTotalReviewsCount((prev) => prev + 1)
     setRatingBreakdown((prev) => {
       const starKey = newReview.rating.toString()
       return {
@@ -131,6 +165,7 @@ export const PlaceDetailPage = () => {
   const handleReviewDeleted = (deletedReviewId: number) => {
     const target = reviewsList.find((r) => r.id === deletedReviewId)
     setReviewsList((prev) => prev.filter((r) => r.id !== deletedReviewId))
+    setTotalReviewsCount((prev) => Math.max(0, prev - 1))
     if (target) {
       setRatingBreakdown((prev) => {
         const starKey = target.rating.toString()
@@ -185,7 +220,7 @@ export const PlaceDetailPage = () => {
       ? [place.thumbnailUrl]
       : []
 
-  const totalReviews = place.reviewCount || reviewsList.length || 0
+  const totalReviews = totalReviewsCount || place.reviewCount || reviewsList.length || 0
 
   return (
     <div className="min-h-screen bg-gray-50/50 pb-20">
@@ -212,9 +247,13 @@ export const PlaceDetailPage = () => {
             <PlaceDetailReviews
               placeId={place.id}
               reviews={reviewsList}
+              totalReviews={totalReviews}
               ratingBreakdown={ratingBreakdown}
               avgRating={place.avgRating}
               isAuthenticated={isAuthenticated}
+              hasMore={reviewsList.length < totalReviews}
+              isLoadingMore={loadingMoreReviews}
+              onLoadMore={handleLoadMoreReviews}
               onReviewAdded={handleReviewAdded}
               onReviewUpdated={handleReviewUpdated}
               onReviewDeleted={handleReviewDeleted}

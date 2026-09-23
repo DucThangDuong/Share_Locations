@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { LayoutGrid, List, MapPin } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { LayoutGrid, List, MapPin, ChevronDown } from 'lucide-react'
 import type { PlaceSummaryDto, LookupItemDto } from '@/types/models/place.model'
 import { ExplorePlaceCard } from '@/components/explore/ExplorePlaceCard'
 
@@ -14,6 +14,15 @@ interface ProvincePlaceSectionProps {
   loading?: boolean
 }
 
+const getResponsiveBatchSize = () => {
+  if (typeof window === 'undefined') return 12
+  const width = window.innerWidth
+  if (width >= 1024) return 12 // 4 columns x 3 rows = 12
+  if (width >= 768) return 9   // 3 columns x 3 rows = 9
+  if (width >= 640) return 6   // 2 columns x 3 rows = 6
+  return 6                     // 1 column x 6 rows = 6
+}
+
 export const ProvincePlaceSection: React.FC<ProvincePlaceSectionProps> = ({
   places,
   provinceName,
@@ -25,6 +34,29 @@ export const ProvincePlaceSection: React.FC<ProvincePlaceSectionProps> = ({
   loading = false
 }) => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [batchSize, setBatchSize] = useState<number>(getResponsiveBatchSize)
+  const [visibleCount, setVisibleCount] = useState<number>(getResponsiveBatchSize)
+
+  useEffect(() => {
+    const handleResize = () => {
+      const newBatch = getResponsiveBatchSize()
+      setBatchSize(newBatch)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  // Reset visible count when category, sort, province or batch size changes
+  useEffect(() => {
+    setVisibleCount(batchSize)
+  }, [selectedCategoryId, sortBy, provinceName, batchSize])
+
+  const displayedPlaces = places.slice(0, visibleCount)
+  const hasMore = places.length > visibleCount
+
+  const handleLoadMore = () => {
+    setVisibleCount((prev) => prev + batchSize)
+  }
 
   return (
     <section className="my-10 space-y-6">
@@ -132,17 +164,47 @@ export const ProvincePlaceSection: React.FC<ProvincePlaceSectionProps> = ({
           </button>
         </div>
       ) : viewMode === 'grid' ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-          {places.map((place) => (
-            <ExplorePlaceCard key={place.id} place={place} viewMode="grid" />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+            {displayedPlaces.map((place) => (
+              <ExplorePlaceCard key={place.id} place={place} viewMode="grid" />
+            ))}
+          </div>
+
+          {hasMore && (
+            <div className="pt-6 flex flex-col items-center justify-center">
+              <button
+                type="button"
+                onClick={handleLoadMore}
+                className="inline-flex items-center justify-center gap-2 px-7 py-3 rounded-2xl border border-stone-200 bg-white hover:bg-stone-50 text-stone-800 font-bold text-xs sm:text-sm shadow-xs hover:border-stone-300 hover:shadow-sm transition-all cursor-pointer group"
+              >
+                <ChevronDown className="w-4 h-4 text-stone-400 group-hover:text-emerald-700 transition-colors" />
+                <span>Xem thêm địa điểm ({displayedPlaces.length}/{places.length})</span>
+              </button>
+            </div>
+          )}
+        </>
       ) : (
-        <div className="flex flex-col gap-4">
-          {places.map((place) => (
-            <ExplorePlaceCard key={place.id} place={place} viewMode="list" />
-          ))}
-        </div>
+        <>
+          <div className="flex flex-col gap-4">
+            {displayedPlaces.map((place) => (
+              <ExplorePlaceCard key={place.id} place={place} viewMode="list" />
+            ))}
+          </div>
+
+          {hasMore && (
+            <div className="pt-6 flex flex-col items-center justify-center">
+              <button
+                type="button"
+                onClick={handleLoadMore}
+                className="inline-flex items-center justify-center gap-2 px-7 py-3 rounded-2xl border border-stone-200 bg-white hover:bg-stone-50 text-stone-800 font-bold text-xs sm:text-sm shadow-xs hover:border-stone-300 hover:shadow-sm transition-all cursor-pointer group"
+              >
+                <ChevronDown className="w-4 h-4 text-stone-400 group-hover:text-emerald-700 transition-colors" />
+                <span>Xem thêm địa điểm ({displayedPlaces.length}/{places.length})</span>
+              </button>
+            </div>
+          )}
+        </>
       )}
     </section>
   )

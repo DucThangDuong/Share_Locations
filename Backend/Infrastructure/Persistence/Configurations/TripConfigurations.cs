@@ -9,11 +9,15 @@ public class TripConfiguration : IEntityTypeConfiguration<Trip>
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id).ValueGeneratedOnAdd();
 
-        builder.HasIndex(e => new { e.Privacy, e.Status }, "IX_Trips_Privacy_Status");
+        builder.HasIndex(e => new { e.UserId, e.Privacy, e.Status }, "IX_Trips_UserId_Privacy");
 
         builder.Property(e => e.Title)
             .HasMaxLength(200)
             .IsRequired();
+
+        builder.Property(e => e.Slug)
+            .HasMaxLength(255)
+            .IsUnicode(false);
 
         builder.Property(e => e.Description)
             .HasMaxLength(1000);
@@ -21,11 +25,20 @@ public class TripConfiguration : IEntityTypeConfiguration<Trip>
         builder.Property(e => e.CoverImageUrl)
             .HasMaxLength(500);
 
+        builder.Property(e => e.EstimatedBudget)
+            .HasColumnType("decimal(15, 0)");
+
         builder.Property(e => e.Privacy)
             .HasConversion<byte>();
 
         builder.Property(e => e.Status)
             .HasConversion<byte>();
+
+        builder.Property(e => e.ViewCount)
+            .HasDefaultValue(0);
+
+        builder.Property(e => e.CloneCount)
+            .HasDefaultValue(0);
 
         builder.Property(e => e.CreatedAt)
             .HasDefaultValueSql("SYSUTCDATETIME()");
@@ -76,6 +89,9 @@ public class TripDayConfiguration : IEntityTypeConfiguration<TripDay>
 
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id).ValueGeneratedOnAdd();
+
+        builder.HasIndex(e => new { e.TripId, e.DayNumber }, "UQ_TripDays_DayNumber")
+            .IsUnique();
 
         builder.Property(e => e.DayTitle)
             .HasMaxLength(150);

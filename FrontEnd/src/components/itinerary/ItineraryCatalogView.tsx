@@ -2,27 +2,24 @@ import React, { useState, useEffect, useMemo } from 'react'
 import {
   CheckCircle2,
   Compass,
-  MapPin,
   Clock,
   DollarSign,
   RotateCcw,
+  Search,
+  X
 } from 'lucide-react'
 import type { ItineraryDto } from '@/types/models/itinerary.model'
-import type { ProvinceDto } from '@/types/models/geography.model'
-import { geographyService } from '@/services/geographyService'
 import { ItineraryQuickPreviewModal } from './ItineraryQuickPreviewModal'
 import type { DetailedItineraryItem } from '@/types/models/itinerary.model'
 
 interface ItineraryCatalogViewProps {
   itineraries: ItineraryDto[]
   searchQuery: string
-  selectedRegion: string | null
-  selectedProvince: string | null
   selectedDuration: string
   selectedBudget: string
   appliedItineraryIds?: Set<number>
-  onSelectRegion: (reg: string | null) => void
-  onSelectProvince: (prov: string | null) => void
+  onSearchChange?: (q: string) => void
+  onClearSearch?: () => void
   onSelectDuration: (dur: string) => void
   onSelectBudget: (budget: string) => void
   onResetFilters: () => void
@@ -50,13 +47,11 @@ const BUDGETS = [
 export const ItineraryCatalogView: React.FC<ItineraryCatalogViewProps> = ({
   itineraries,
   searchQuery,
-  selectedRegion,
-  selectedProvince,
   selectedDuration,
   selectedBudget,
   appliedItineraryIds = new Set(),
-  onSelectRegion,
-  onSelectProvince,
+  onSearchChange,
+  onClearSearch,
   onSelectDuration,
   onSelectBudget,
   onResetFilters,
@@ -64,32 +59,25 @@ export const ItineraryCatalogView: React.FC<ItineraryCatalogViewProps> = ({
   onQuickPreview
 }) => {
   const [previewItem, setPreviewItem] = useState<DetailedItineraryItem | null>(null)
-  const [provinces, setProvinces] = useState<ProvinceDto[]>([])
+  const [localSearch, setLocalSearch] = useState(searchQuery)
 
+  // Sync external search updates into local input
   useEffect(() => {
-    let isMounted = true
-    geographyService.getProvinces()
-      .then((res) => {
-        if (isMounted && res.success && res.data) {
-          setProvinces(res.data)
-        }
-      })
-      .catch(() => { })
+    setLocalSearch(searchQuery)
+  }, [searchQuery])
 
-    return () => {
-      isMounted = false
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (onSearchChange) {
+      onSearchChange(localSearch)
     }
-  }, [])
+  }
 
-  const regions = useMemo(() => {
-    const list: string[] = []
-    provinces.forEach((p) => {
-      if (p.regionName && !list.includes(p.regionName)) {
-        list.push(p.regionName)
-      }
-    })
-    return list.length > 0 ? list : ['Miền Bắc', 'Miền Trung', 'Miền Nam']
-  }, [provinces])
+  const handleClear = () => {
+    setLocalSearch('')
+    if (onClearSearch) onClearSearch()
+  }
+
   const mapDtoToDetailed = (itinerary: ItineraryDto): DetailedItineraryItem => {
     const totalCostNumber = parseInt(itinerary.estimatedCost?.replace(/[^0-9]/g, '') || '0', 10)
     return {
@@ -138,53 +126,14 @@ export const ItineraryCatalogView: React.FC<ItineraryCatalogViewProps> = ({
     }
   }
 
-  const handleToggleRegion = (reg: string) => {
-    if (selectedRegion === reg) {
-      onSelectRegion(null)
-      onSelectProvince(null)
-    } else {
-      onSelectRegion(reg)
-      onSelectProvince(null)
-    }
-  }
-
-  const handleToggleProvince = (prov: string) => {
-    if (selectedProvince === prov) {
-      onSelectProvince(null)
-    } else {
-      onSelectProvince(prov)
-    }
-  }
-
-  const activeProvincesList = useMemo(() => {
-    if (!selectedRegion) return []
-    return provinces.filter((p) => p.regionName === selectedRegion)
-  }, [provinces, selectedRegion])
-
   const hasActiveFilters = Boolean(
     searchQuery.trim() ||
-    selectedRegion ||
-    selectedProvince ||
     selectedDuration !== 'all' ||
     selectedBudget !== 'all'
   )
 
   const filteredItineraries = useMemo(() => {
     return itineraries.filter((item) => {
-      if (selectedRegion && item.region !== selectedRegion) {
-        return false
-      }
-      if (selectedProvince && !item.destination.toLowerCase().includes(selectedProvince.toLowerCase())) {
-        return false
-      }
-      if (selectedDuration !== 'all') {
-        const d = item.daysCount || 1
-        if (selectedDuration === '1' && d !== 1) return false
-        if (selectedDuration === '2' && d !== 2) return false
-        if (selectedDuration === '3' && d !== 3) return false
-        if (selectedDuration === '4' && d !== 4) return false
-        if (selectedDuration === '5' && d < 5) return false
-      }
       if (selectedBudget !== 'all') {
         const costNum = parseInt(item.estimatedCost?.replace(/[^0-9]/g, '') || '0', 10)
         if (selectedBudget === 'under1m' && costNum >= 1000000) return false
@@ -192,101 +141,69 @@ export const ItineraryCatalogView: React.FC<ItineraryCatalogViewProps> = ({
         if (selectedBudget === '3m-5m' && (costNum < 3000000 || costNum > 5000000)) return false
         if (selectedBudget === 'above5m' && costNum <= 5000000) return false
       }
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase()
-        const text = `${item.title} ${item.destination} ${item.overview || ''} ${item.style}`.toLowerCase()
-        if (!text.includes(q)) return false
-      }
       return true
     })
-  }, [itineraries, selectedRegion, selectedProvince, selectedDuration, selectedBudget, searchQuery])
+  }, [itineraries, selectedBudget])
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 font-sans">
-      <div className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-2xs space-y-4">
-        <div className="space-y-2">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
-            <MapPin size={14} className="text-emerald-700" />
-            <span>Vùng miền:</span>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            {regions.map((reg) => {
-              const isSelected = selectedRegion === reg
-              return (
+      {/* Search Header */}
+      {onSearchChange && (
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-slate-200">
+          <form onSubmit={handleSearchSubmit} className="flex items-center gap-2 flex-1 md:w-auto">
+            <div className="relative flex-1 md:w-96">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
+              <input
+                type="text"
+                placeholder="Tìm kiếm lịch trình, địa điểm, trải nghiệm..."
+                value={localSearch}
+                onChange={(e) => setLocalSearch(e.target.value)}
+                className="w-full pl-9 pr-8 py-2.5 bg-slate-50 focus:bg-white border border-slate-200 focus:border-emerald-600 rounded-xl text-xs text-slate-900 outline-hidden transition-all font-medium"
+              />
+              {localSearch && onClearSearch && (
                 <button
                   type="button"
-                  key={reg}
-                  onClick={() => handleToggleRegion(reg)}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer border ${isSelected
-                    ? 'bg-emerald-900 text-white border-emerald-900 shadow-xs'
-                    : 'bg-stone-50 hover:bg-stone-100 hover:border-stone-300 text-stone-700 border-stone-200'
-                    }`}
+                  onClick={handleClear}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+                  title="Xóa tìm kiếm"
                 >
-                  {reg}
+                  <X size={14} />
                 </button>
-              )
-            })}
+              )}
+            </div>
 
-            {hasActiveFilters && (
-              <button
-                type="button"
-                onClick={onResetFilters}
-                className="ml-auto px-3 py-1.5 rounded-xl text-xs font-bold text-rose-700 hover:text-rose-900 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-all flex items-center gap-1.5 cursor-pointer"
-              >
-                <RotateCcw size={12} />
-                <span>Đặt lại</span>
-              </button>
-            )}
-          </div>
+            <button
+              type="submit"
+              className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-800 hover:bg-emerald-900 text-white rounded-xl text-xs font-bold transition-all shadow-xs shrink-0 cursor-pointer"
+            >
+              <Search size={14} />
+              <span>Tìm kiếm</span>
+            </button>
+          </form>
+
+          {hasActiveFilters && (
+            <button
+              type="button"
+              onClick={() => {
+                setLocalSearch('')
+                onResetFilters()
+              }}
+              className="px-3 py-1.5 rounded-xl text-xs font-bold text-rose-700 hover:text-rose-900 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-all flex items-center gap-1.5 cursor-pointer w-fit"
+            >
+              <RotateCcw size={12} />
+              <span>Đặt lại bộ lọc</span>
+            </button>
+          )}
         </div>
+      )}
 
-        {selectedRegion && activeProvincesList.length > 0 && (
-          <div className="pt-3 border-t border-dashed border-slate-200 space-y-2 animate-fadeIn">
-            <div className="flex items-center justify-between text-[11px] font-bold text-slate-500">
-              <span>Tỉnh thành thuộc {selectedRegion}:</span>
-              <span className="text-[10px] font-normal text-slate-400">
-                {selectedProvince ? `Đang chọn: ${selectedProvince}` : 'Chọn tỉnh thành để lọc chi tiết'}
-              </span>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-1.5 max-h-36 overflow-y-auto pr-1">
-              <button
-                type="button"
-                onClick={() => onSelectProvince(null)}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer border ${selectedProvince === null
-                  ? 'bg-emerald-900 text-white border-emerald-900 shadow-xs'
-                  : 'bg-white hover:bg-slate-100 text-slate-600 border-slate-200'
-                  }`}
-              >
-                Tất cả {selectedRegion}
-              </button>
-
-              {activeProvincesList.map((prov) => {
-                const isProvSelected = selectedProvince === prov.name
-                return (
-                  <button
-                    key={prov.id}
-                    type="button"
-                    onClick={() => handleToggleProvince(prov.name)}
-                    className={`px-3 py-1 rounded-lg text-xs transition-all cursor-pointer border ${isProvSelected
-                      ? 'bg-emerald-800 text-white border-emerald-800 font-bold shadow-xs'
-                      : 'bg-white hover:bg-slate-100 hover:border-slate-300 text-slate-700 border-slate-200 font-medium'
-                      }`}
-                  >
-                    {prov.name}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        <div className="pt-3 border-t border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-2xs space-y-4">
+        {/* Duration & Budget Filters */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="space-y-1.5">
             <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
               <Clock size={14} className="text-emerald-700" />
-              <span>Thời lượng ngày:</span>
+              <span>Thời lượng chuyến đi:</span>
             </div>
             <div className="flex flex-wrap items-center gap-1.5">
               {DURATIONS.map((dur) => (
@@ -294,9 +211,9 @@ export const ItineraryCatalogView: React.FC<ItineraryCatalogViewProps> = ({
                   type="button"
                   key={dur.id}
                   onClick={() => onSelectDuration(dur.id)}
-                  className={`px-3 py-1.5 rounded-xl text-xs whitespace-nowrap transition-all cursor-pointer border ${selectedDuration === dur.id
+                  className={`px-3.5 py-1.5 rounded-xl text-xs whitespace-nowrap transition-all cursor-pointer border ${selectedDuration === dur.id
                     ? 'bg-emerald-800 text-white border-emerald-800 font-bold shadow-xs'
-                    : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-600 font-medium hover:border-slate-300'
+                    : 'bg-stone-50 hover:bg-stone-100 border-stone-200 text-stone-700 font-medium hover:border-stone-300'
                     }`}
                 >
                   {dur.label}
@@ -316,9 +233,9 @@ export const ItineraryCatalogView: React.FC<ItineraryCatalogViewProps> = ({
                   type="button"
                   key={bg.id}
                   onClick={() => onSelectBudget(bg.id)}
-                  className={`px-3 py-1.5 rounded-xl text-xs whitespace-nowrap transition-all cursor-pointer border ${selectedBudget === bg.id
+                  className={`px-3.5 py-1.5 rounded-xl text-xs whitespace-nowrap transition-all cursor-pointer border ${selectedBudget === bg.id
                     ? 'bg-emerald-800 text-white border-emerald-800 font-bold shadow-xs'
-                    : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-600 font-medium hover:border-slate-300'
+                    : 'bg-stone-50 hover:bg-stone-100 border-stone-200 text-stone-700 font-medium hover:border-stone-300'
                     }`}
                 >
                   {bg.label}
@@ -332,8 +249,8 @@ export const ItineraryCatalogView: React.FC<ItineraryCatalogViewProps> = ({
       <div className="flex items-center justify-between text-xs text-slate-500 font-medium px-1">
         <span>
           Tìm thấy <strong className="text-slate-900 font-bold">{filteredItineraries.length}</strong> chuyến đi
-          {selectedRegion ? ` tại ${selectedRegion}` : ''}
-          {selectedProvince ? ` • ${selectedProvince}` : ''}
+          {selectedDuration !== 'all' && ` • ${DURATIONS.find(d => d.id === selectedDuration)?.label}`}
+          {selectedBudget !== 'all' && ` • ${BUDGETS.find(b => b.id === selectedBudget)?.label}`}
         </span>
       </div>
 
@@ -350,7 +267,10 @@ export const ItineraryCatalogView: React.FC<ItineraryCatalogViewProps> = ({
             {hasActiveFilters && (
               <button
                 type="button"
-                onClick={onResetFilters}
+                onClick={() => {
+                  setLocalSearch('')
+                  onResetFilters()
+                }}
                 className="mt-2 px-4 py-2 bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-bold rounded-xl transition-all cursor-pointer"
               >
                 Đặt lại bộ lọc

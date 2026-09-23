@@ -10,13 +10,16 @@ public class PlaceConfiguration : IEntityTypeConfiguration<Place>
         builder.Property(e => e.Id).ValueGeneratedOnAdd();
 
         builder.HasIndex(e => new { e.ProvinceId, e.CategoryId }, "IX_Places_Province_Category");
+        builder.HasIndex(e => e.Slug, "IX_Places_Slug");
+        builder.HasIndex(e => new { e.Status, e.CategoryId }, "IX_Places_Status_Category")
+            .HasFilter("[Status] = 0");
 
         builder.Property(e => e.Name)
             .HasMaxLength(200)
             .IsRequired();
 
         builder.Property(e => e.Slug)
-            .HasMaxLength(200)
+            .HasMaxLength(255)
             .IsUnicode(false);
 
         builder.Property(e => e.Address)
@@ -54,14 +57,28 @@ public class PlaceConfiguration : IEntityTypeConfiguration<Place>
         builder.Property(e => e.ReviewCount)
             .HasDefaultValue(0);
 
+        builder.Property(e => e.ViewCount)
+            .HasDefaultValue(0);
+
+        builder.Property(e => e.FavoriteCount)
+            .HasDefaultValue(0);
+
         builder.Property(e => e.Status)
             .HasConversion<byte>();
+
+        builder.Property(e => e.RejectReason)
+            .HasMaxLength(500);
 
         builder.Property(e => e.CreatedAt)
             .HasDefaultValueSql("SYSUTCDATETIME()");
 
         builder.Property(e => e.UpdatedAt)
             .HasDefaultValueSql("SYSUTCDATETIME()");
+
+        builder.Property(e => e.IsDeleted)
+            .HasDefaultValue(false);
+
+        builder.HasQueryFilter(e => !e.IsDeleted);
 
         builder.HasOne(e => e.Province)
             .WithMany(p => p.Places)
@@ -77,6 +94,11 @@ public class PlaceConfiguration : IEntityTypeConfiguration<Place>
             .WithMany(u => u.CreatedPlaces)
             .HasForeignKey(e => e.CreatedBy)
             .OnDelete(DeleteBehavior.SetNull);
+
+        builder.HasOne(e => e.ReviewerAdmin)
+            .WithMany()
+            .HasForeignKey(e => e.ReviewedBy)
+            .OnDelete(DeleteBehavior.ClientSetNull);
     }
 }
 
@@ -89,6 +111,9 @@ public class PlaceMediaConfiguration : IEntityTypeConfiguration<PlaceMedia>
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id).ValueGeneratedOnAdd();
 
+        builder.HasIndex(e => new { e.IsVerified, e.PlaceId }, "IX_PlaceMedia_Pending")
+            .HasFilter("[IsVerified] = 0");
+
         builder.Property(e => e.MediaType)
             .HasConversion<byte>();
 
@@ -100,7 +125,7 @@ public class PlaceMediaConfiguration : IEntityTypeConfiguration<PlaceMedia>
             .HasDefaultValue(0);
 
         builder.Property(e => e.IsVerified)
-            .HasDefaultValue(true);
+            .HasDefaultValue(false);
 
         builder.Property(e => e.CreatedAt)
             .HasDefaultValueSql("SYSUTCDATETIME()");
@@ -113,6 +138,11 @@ public class PlaceMediaConfiguration : IEntityTypeConfiguration<PlaceMedia>
         builder.HasOne(e => e.Uploader)
             .WithMany()
             .HasForeignKey(e => e.UploadedBy)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        builder.HasOne(e => e.ReviewerAdmin)
+            .WithMany()
+            .HasForeignKey(e => e.ReviewedBy)
             .OnDelete(DeleteBehavior.ClientSetNull);
     }
 }
@@ -133,6 +163,9 @@ public class CollectionConfiguration : IEntityTypeConfiguration<Collection>
         builder.Property(e => e.Description)
             .HasMaxLength(500);
 
+        builder.Property(e => e.CoverImageUrl)
+            .HasMaxLength(500);
+
         builder.Property(e => e.IsFeatured)
             .HasDefaultValue(false);
 
@@ -148,7 +181,7 @@ public class CollectionConfiguration : IEntityTypeConfiguration<Collection>
         builder.HasOne(e => e.Province)
             .WithMany(p => p.Collections)
             .HasForeignKey(e => e.ProvinceId)
-            .OnDelete(DeleteBehavior.ClientSetNull);
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }
 

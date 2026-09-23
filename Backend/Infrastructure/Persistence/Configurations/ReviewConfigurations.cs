@@ -9,7 +9,15 @@ public class ReviewConfiguration : IEntityTypeConfiguration<Review>
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id).ValueGeneratedOnAdd();
 
-        builder.HasIndex(e => e.PlaceId, "IX_Reviews_PlaceId");
+        builder.HasIndex(e => new { e.PlaceId, e.Status }, "IX_Reviews_PlaceId_Status");
+
+        builder.Property(e => e.Rating)
+            .IsRequired();
+
+        builder.Property(e => e.Title)
+            .HasMaxLength(200);
+
+        builder.Property(e => e.Content);
 
         builder.Property(e => e.VisitDate)
             .HasColumnType("date");
@@ -17,8 +25,14 @@ public class ReviewConfiguration : IEntityTypeConfiguration<Review>
         builder.Property(e => e.LikesCount)
             .HasDefaultValue(0);
 
+        builder.Property(e => e.CommentsCount)
+            .HasDefaultValue(0);
+
         builder.Property(e => e.Status)
             .HasConversion<byte>();
+
+        builder.Property(e => e.HiddenReason)
+            .HasMaxLength(500);
 
         builder.Property(e => e.CreatedAt)
             .HasDefaultValueSql("SYSUTCDATETIME()");
@@ -34,6 +48,11 @@ public class ReviewConfiguration : IEntityTypeConfiguration<Review>
         builder.HasOne(e => e.User)
             .WithMany(u => u.Reviews)
             .HasForeignKey(e => e.UserId)
+            .OnDelete(DeleteBehavior.ClientSetNull);
+
+        builder.HasOne(e => e.HiddenByUser)
+            .WithMany()
+            .HasForeignKey(e => e.HiddenBy)
             .OnDelete(DeleteBehavior.ClientSetNull);
     }
 }
@@ -54,6 +73,9 @@ public class ReviewMediaConfiguration : IEntityTypeConfiguration<ReviewMedia>
             .HasMaxLength(500)
             .IsRequired();
 
+        builder.Property(e => e.DisplayOrder)
+            .HasDefaultValue(0);
+
         builder.Property(e => e.CreatedAt)
             .HasDefaultValueSql("SYSUTCDATETIME()");
 
@@ -73,12 +95,17 @@ public class CommentConfiguration : IEntityTypeConfiguration<Comment>
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id).ValueGeneratedOnAdd();
 
+        builder.HasIndex(e => new { e.ReviewId, e.Status }, "IX_Comments_ReviewId_Status");
+
         builder.Property(e => e.Content)
             .HasMaxLength(1000)
             .IsRequired();
 
         builder.Property(e => e.Status)
             .HasConversion<byte>();
+
+        builder.Property(e => e.HiddenReason)
+            .HasMaxLength(500);
 
         builder.Property(e => e.CreatedAt)
             .HasDefaultValueSql("SYSUTCDATETIME()");
@@ -96,6 +123,11 @@ public class CommentConfiguration : IEntityTypeConfiguration<Comment>
         builder.HasOne(e => e.ParentComment)
             .WithMany(c => c.Replies)
             .HasForeignKey(e => e.ParentId)
+            .OnDelete(DeleteBehavior.ClientSetNull);
+
+        builder.HasOne(e => e.HiddenByUser)
+            .WithMany()
+            .HasForeignKey(e => e.HiddenBy)
             .OnDelete(DeleteBehavior.ClientSetNull);
     }
 }
@@ -122,4 +154,3 @@ public class ReviewLikeConfiguration : IEntityTypeConfiguration<ReviewLike>
             .OnDelete(DeleteBehavior.ClientSetNull);
     }
 }
-

@@ -5,7 +5,7 @@ import type { BlogListItemDto, BlogDetailDto } from '@/types/models/blogArticle.
 import { BlogFeedView, BlogReaderView, ArticleEditorView, type EditorOutputData } from '@/components/blog'
 import { blogService } from '@/services/blogService'
 import { placeService } from '@/services/placeService'
-import type { LookupItemDto, RegionLookupDto } from '@/types/models/place.model'
+import type { LookupItemDto } from '@/types/models/place.model'
 
 interface EditingArticleState {
   id?: number
@@ -21,19 +21,14 @@ export const BlogPage: React.FC = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const params = useParams<{ id?: string }>()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const [articles, setArticles] = useState<BlogListItemDto[]>([])
   const [categories, setCategories] = useState<LookupItemDto[]>([])
-  const [regions, setRegions] = useState<RegionLookupDto[]>([])
   const [detailedArticle, setDetailedArticle] = useState<BlogDetailDto | null>(null)
   const [articleLoading, setArticleLoading] = useState<boolean>(false)
   const [viewMode, setViewMode] = useState<'feed' | 'reader' | 'editor'>('feed')
   const [editingArticleData, setEditingArticleData] = useState<EditingArticleState | null>(null)
-  const [searchQuery, setSearchQuery] = useState<string>('')
-  const [selectedRegion, setSelectedRegion] = useState<string | null>(null)
-  const [selectedProvince, setSelectedProvince] = useState<string | null>(null)
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [likedArticles, setLikedArticles] = useState<Set<number>>(new Set())
   const [savedArticles, setSavedArticles] = useState<Set<number>>(new Set())
   const [toastMsg, setToastMsg] = useState('')
@@ -47,9 +42,8 @@ export const BlogPage: React.FC = () => {
     let isMounted = true
     placeService.getFilterOptions()
       .then((res) => {
-        if (isMounted && res.success && res.data) {
-          if (res.data.categories) setCategories(res.data.categories)
-          if (res.data.regions) setRegions(res.data.regions)
+        if (isMounted && res.success && res.data?.categories) {
+          setCategories(res.data.categories)
         }
       })
       .catch(() => { })
@@ -58,11 +52,24 @@ export const BlogPage: React.FC = () => {
     }
   }, [])
 
+  const appliedFilters = useMemo(() => {
+    const q = searchParams.get('q') || searchParams.get('keyword') || ''
+    const catIdStr = searchParams.get('catId') || searchParams.get('catIds') || searchParams.get('categoryIds') || searchParams.get('categoryId') || ''
+    const catIds = catIdStr ? catIdStr.split(',').map(Number).filter(Boolean) : []
+
+    return {
+      search: q,
+      categoryIds: catIds
+    }
+  }, [searchParams])
+
   const fetchArticles = useCallback(async () => {
     try {
+      const isAllCategoriesSelected = categories.length > 0 && appliedFilters.categoryIds.length === categories.length
+
       const res = await blogService.getBlogs({
-        keyword: searchQuery || undefined,
-        category: selectedCategory || undefined,
+        keyword: appliedFilters.search.trim() || undefined,
+        categoryIds: !isAllCategoriesSelected && appliedFilters.categoryIds.length > 0 ? appliedFilters.categoryIds : undefined,
         page: 1,
         pageSize: 50
       })
@@ -74,7 +81,7 @@ export const BlogPage: React.FC = () => {
     } catch {
       setArticles([])
     }
-  }, [searchQuery, selectedCategory])
+  }, [appliedFilters, categories])
 
   useEffect(() => {
     fetchArticles()
@@ -187,26 +194,54 @@ export const BlogPage: React.FC = () => {
     }
   }, [searchParams, params.id, location.state, articles, categories])
 
-  const filteredArticles = useMemo(() => {
-    return articles.filter((art) => {
-      if (selectedCategory && art.category !== selectedCategory) {
-        return false
-      }
-      if (selectedProvince) {
-        const text = `${art.title} ${art.excerpt || ''} ${art.content || ''}`.toLowerCase()
-        if (!text.includes(selectedProvince.toLowerCase())) {
-          return false
-        }
-      } else if (selectedRegion) {
-        const found = regions.find((r) => r.name === selectedRegion)
-        const provNames = found ? found.provinces.map((p) => p.name.toLowerCase()) : []
-        const text = `${art.title} ${art.excerpt || ''} ${art.content || ''} ${art.category || ''}`.toLowerCase()
-        const matchRegion = text.includes(selectedRegion.toLowerCase()) || provNames.some((p) => text.includes(p))
-        if (!matchRegion) return false
-      }
-      return true
-    })
-  }, [articles, selectedCategory, selectedProvince, selectedRegion, regions])
+  const handleSearchChange = (q: string) => {
+    const p = new URLSearchParams(searchParams)
+    if (q.trim()) {
+      p.set('q', q.trim())
+    } else {
+      p.delete('q')
+      p.delete('keyword')
+    }
+    setSearchParams(p)
+  }
+
+  const handleClearSearch = () => {
+    const p = new URLSearchParams(searchParams)
+    p.delete('q')
+    p.delete('keyword')
+    setSearchParams(p)
+  }
+
+  const handleCategoryToggle = (cat: LookupItemDto) => {
+    const isSelected = appliedFilters.categoryIds.includes(cat.id)
+    const nextCatIds = isSelected
+      ? appliedFilters.categoryIds.filter((id) => id !== cat.id)
+      : [...appliedFilters.categoryIds, cat.id]
+
+    const p = new URLSearchParams(searchParams)
+    if (nextCatIds.length > 0) {
+      p.set('catId', nextCatIds.join(','))
+    } else {
+      p.delete('catId')
+      p.delete('catIds')
+      p.delete('categoryIds')
+      p.delete('categoryId')
+    }
+    setSearchParams(p)
+  }
+
+  const handleClearCategories = () => {
+    const p = new URLSearchParams(searchParams)
+    p.delete('catId')
+    p.delete('catIds')
+    p.delete('categoryIds')
+    p.delete('categoryId')
+    setSearchParams(p)
+  }
+
+  const handleResetFilters = () => {
+    setSearchParams({})
+  }
 
   const handleOpenArticle = (article: BlogListItemDto) => {
     navigate(`/blog/${article.id}`)
@@ -295,13 +330,6 @@ export const BlogPage: React.FC = () => {
     })
   }
 
-  const handleResetFilters = () => {
-    setSearchQuery('')
-    setSelectedRegion(null)
-    setSelectedProvince(null)
-    setSelectedCategory(null)
-  }
-
   return (
     <div className="bg-slate-50 min-h-screen text-slate-900">
       {toastMsg && (
@@ -369,18 +397,14 @@ export const BlogPage: React.FC = () => {
 
       {viewMode === 'feed' && (
         <BlogFeedView
-          articles={filteredArticles}
+          articles={articles}
           categories={categories}
-          regions={regions}
-          searchQuery={searchQuery}
-          selectedRegion={selectedRegion}
-          selectedProvince={selectedProvince}
-          selectedCategory={selectedCategory}
-          onSearchChange={setSearchQuery}
-          onClearSearch={() => setSearchQuery('')}
-          onSelectRegion={setSelectedRegion}
-          onSelectProvince={setSelectedProvince}
-          onSelectCategory={setSelectedCategory}
+          searchQuery={appliedFilters.search}
+          selectedCategoryIds={appliedFilters.categoryIds}
+          onSearchChange={handleSearchChange}
+          onClearSearch={handleClearSearch}
+          onCategoryToggle={handleCategoryToggle}
+          onClearCategories={handleClearCategories}
           onResetFilters={handleResetFilters}
           onOpenArticle={handleOpenArticle}
           onCreateArticle={handleCreateArticle}

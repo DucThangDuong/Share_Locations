@@ -74,17 +74,71 @@ export const ProvincePage: React.FC = () => {
         const res = await placeService.searchPlaces({
           provinceId: landingData.province.id,
           categoryId: selectedCategoryId || undefined,
-          sortBy: sortBy === 'rating' ? 'avgRating_desc' : sortBy === 'newest' ? 'newest' : sortBy === 'price_asc' ? 'price_asc' : 'price_desc',
-          pageSize: 24
+          sortBy: sortBy === 'rating' ? 'rating_desc' : sortBy === 'newest' ? 'newest' : sortBy === 'price_asc' ? 'price_asc' : 'price_desc',
+          pageSize: 48
         })
 
-        if (isMounted && res.success && res.data) {
+        if (isMounted && res.success && res.data && res.data.length > 0) {
           setPlaces(res.data)
         } else if (isMounted) {
-          setPlaces([])
+          if (landingData.landmarks && landingData.landmarks.length > 0) {
+            const mappedLandmarks: PlaceSummaryDto[] = landingData.landmarks.map((lm, idx) => ({
+              id: Number(lm.id) || idx + 1,
+              name: lm.name,
+              description: lm.location,
+              address: lm.location || landingData.province.name,
+              provinceId: landingData.province.id,
+              provinceName: landingData.province.name,
+              regionId: landingData.province.regionId || 2,
+              regionName: landingData.province.regionName || 'Việt Nam',
+              categoryId: 1,
+              categoryName: lm.category || 'Danh lam thắng cảnh',
+              placeTypeId: 1,
+              placeTypeName: 'Địa điểm',
+              avgRating: lm.rating || 4.8,
+              reviewCount: lm.reviewCount || 12,
+              minPrice: lm.price ? parseInt(lm.price.replace(/[^0-9]/g, '') || '0', 10) : 0,
+              maxPrice: lm.price ? parseInt(lm.price.replace(/[^0-9]/g, '') || '0', 10) : 0,
+              thumbnailUrl: lm.imageUrl || null,
+              mediaUrls: lm.mediaUrls && lm.mediaUrls.length > 0 ? lm.mediaUrls : lm.imageUrl ? [lm.imageUrl] : [],
+              status: 1,
+              createdAt: new Date().toISOString()
+            }))
+            setPlaces(mappedLandmarks)
+          } else {
+            setPlaces([])
+          }
         }
       } catch {
-        if (isMounted) setPlaces([])
+        if (isMounted) {
+          if (landingData.landmarks && landingData.landmarks.length > 0) {
+            const mappedLandmarks: PlaceSummaryDto[] = landingData.landmarks.map((lm, idx) => ({
+              id: Number(lm.id) || idx + 1,
+              name: lm.name,
+              description: lm.location,
+              address: lm.location || landingData.province.name,
+              provinceId: landingData.province.id,
+              provinceName: landingData.province.name,
+              regionId: landingData.province.regionId || 2,
+              regionName: landingData.province.regionName || 'Việt Nam',
+              categoryId: 1,
+              categoryName: lm.category || 'Danh lam thắng cảnh',
+              placeTypeId: 1,
+              placeTypeName: 'Địa điểm',
+              avgRating: lm.rating || 4.8,
+              reviewCount: lm.reviewCount || 12,
+              minPrice: lm.price ? parseInt(lm.price.replace(/[^0-9]/g, '') || '0', 10) : 0,
+              maxPrice: lm.price ? parseInt(lm.price.replace(/[^0-9]/g, '') || '0', 10) : 0,
+              thumbnailUrl: lm.imageUrl || null,
+              mediaUrls: lm.mediaUrls && lm.mediaUrls.length > 0 ? lm.mediaUrls : lm.imageUrl ? [lm.imageUrl] : [],
+              status: 1,
+              createdAt: new Date().toISOString()
+            }))
+            setPlaces(mappedLandmarks)
+          } else {
+            setPlaces([])
+          }
+        }
       } finally {
         if (isMounted) setPlacesLoading(false)
       }
@@ -95,7 +149,7 @@ export const ProvincePage: React.FC = () => {
     return () => {
       isMounted = false
     }
-  }, [landingData?.province?.id, selectedCategoryId, sortBy])
+  }, [landingData?.province?.id, landingData?.landmarks, selectedCategoryId, sortBy])
 
   if (initialLoading) {
     return (

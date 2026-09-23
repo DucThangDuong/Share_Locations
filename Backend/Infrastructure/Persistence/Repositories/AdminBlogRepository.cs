@@ -18,15 +18,13 @@ public class AdminBlogRepository : IAdminBlogRepository
     }
 
     public async Task<PagedResult<AdminBlogListItemDto>> GetAdminBlogsAsync(
-        int? categoryId,
-        string? status,
-        string? keyword,
-        int page,
-        int pageSize,
-        CancellationToken ct = default)
+    int? categoryId,
+    string? status,
+    string? keyword,
+    int page,
+    int pageSize,
+    CancellationToken ct = default)
     {
-        var connection = _dbContext.Database.GetDbConnection();
-
         var whereClauses = new List<string>();
         var parameters = new DynamicParameters();
 
@@ -36,7 +34,7 @@ public class AdminBlogRepository : IAdminBlogRepository
             parameters.Add("CategoryId", categoryId.Value);
         }
 
-        if (!string.IsNullOrWhiteSpace(status) && status.ToLowerInvariant() != "all")
+        if (!string.IsNullOrWhiteSpace(status) && !status.Equals("all", StringComparison.OrdinalIgnoreCase))
         {
             if (status.Equals("published", StringComparison.OrdinalIgnoreCase))
                 whereClauses.Add("b.Status = 1");
@@ -53,48 +51,78 @@ public class AdminBlogRepository : IAdminBlogRepository
         }
 
         var whereSql = whereClauses.Count > 0 ? " WHERE " + string.Join(" AND ", whereClauses) : "";
-
-        var countSql = $@"
-            SELECT COUNT(1)
-            FROM dbo.Blogs b
-            LEFT JOIN dbo.Users u ON b.AuthorId = u.Id
-            LEFT JOIN dbo.UserProfiles prof ON u.Id = prof.UserId
-            {whereSql};";
-
-        var totalCount = await connection.ExecuteScalarAsync<int>(countSql, parameters);
-
         var offset = (page - 1) * pageSize;
         parameters.Add("Offset", offset);
         parameters.Add("PageSize", pageSize);
 
-        var dataSql = $@"
-            SELECT 
-                b.Id,
-                b.Title,
-                COALESCE(prof.FullName, u.Email, N'Người dùng') AS AuthorName,
-                prof.AvatarUrl AS AuthorAvatar,
-                cat.Name AS Category,
-                b.CategoryId,
-                b.CreatedAt AS PublishedAt,
-                b.ViewCount AS Views,
-                CASE 
-                    WHEN b.Status = 1 THEN 'published'
-                    WHEN b.Status = 0 THEN 'draft'
-                    ELSE 'hidden'
-                END AS Status,
-                b.CoverImageUrl AS CoverImg,
-                CONCAT(b.ReadTimeMinutes, N' phút đọc') AS ReadTime,
-                b.Excerpt AS Summary
-            FROM dbo.Blogs b
-            LEFT JOIN dbo.Categories cat ON b.CategoryId = cat.Id
-            LEFT JOIN dbo.Users u ON b.AuthorId = u.Id
-            LEFT JOIN dbo.UserProfiles prof ON u.Id = prof.UserId
-            {whereSql}
-            ORDER BY b.CreatedAt DESC
-            OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+        var combinedSql = $@"
+        -- Query 1: Lấy tổng số dòng
+        SELECT COUNT(1)
+        FROM dbo.Blogs b
+        LEFT JOIN dbo.Users u ON b.AuthorId = u.Id
+        LEFT JOIN dbo.UserProfiles prof ON u.Id = prof.UserId
+        {whereSql};
 
-        var items = (await connection.QueryAsync<AdminBlogListItemDto>(dataSql, parameters)).ToList();
-        return new PagedResult<AdminBlogListItemDto>(items, totalCount, page, pageSize);
+        -- Query 2: Lấy dữ liệu phân trang
+        SELECT 
+            b.Id,
+            b.Title,
+            COALESCE(prof.FullName, u.Email, N'Người dùng') AS AuthorName,
+            prof.AvatarUrl AS AuthorAvatar,
+            cat.Name AS Category,
+            b.CategoryId,
+            b.CreatedAt AS PublishedAt,
+            b.ViewCount AS Views,
+            CASE 
+                WHEN b.Status = 1 THEN 'published'
+                WHEN b.Status = 0 THEN 'draft'
+                ELSE 'hidden'
+            END AS Status,
+            b.CoverImageUrl AS CoverImg,
+            CONCAT(b.ReadTimeMinutes, N' phút đọc') AS ReadTime,
+            b.Excerpt AS Summary
+        FROM dbo.Blogs b
+        LEFT JOIN dbo.Categories cat ON b.CategoryId = cat.Id
+        LEFT JOIN dbo.Users u ON b.AuthorId = u.Id
+        LEFT JOIN dbo.UserProfiles prof ON u.Id = prof.UserId
+        {whereSql}
+        ORDER BY b.CreatedAt DESC
+        OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+
+        var strategy = _dbContext.Database.CreateExecutionStrategy();
+
+        return await strategy.ExecuteAsync(async () =>
+        {
+            var connection = _dbContext.Database.GetDbConnection();
+
+            var wasClosed = connection.State == System.Data.ConnectionState.Closed;
+            if (wasClosed)
+            {
+                await connection.OpenAsync(ct);
+            }
+
+            try
+            {
+                var command = new CommandDefinition(
+                    combinedSql,
+                    parameters,
+                    cancellationToken: ct);
+
+                using var multi = await connection.QueryMultipleAsync(command);
+
+                var totalCount = await multi.ReadSingleAsync<int>();
+                var items = (await multi.ReadAsync<AdminBlogListItemDto>()).ToList();
+
+                return new PagedResult<AdminBlogListItemDto>(items, totalCount, page, pageSize);
+            }
+            finally
+            {
+                if (wasClosed)
+                {
+                    await connection.CloseAsync();
+                }
+            }
+        });
     }
 
     public async Task<AdminBlogDetailDto?> GetAdminBlogDetailAsync(long id, CancellationToken ct = default)
@@ -128,8 +156,13 @@ public class AdminBlogRepository : IAdminBlogRepository
             LEFT JOIN dbo.Users u ON b.AuthorId = u.Id
             LEFT JOIN dbo.UserProfiles prof ON u.Id = prof.UserId
             WHERE b.Id = @Id;";
-
-        return await connection.QueryFirstOrDefaultAsync<AdminBlogDetailDto>(sql, new { Id = id });
+        var strategy = _dbContext.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(async () =>
+        {
+            var connection = _dbContext.Database.GetDbConnection();
+            var command=new CommandDefinition(sql,new {Id=id},cancellationToken: ct);
+            return await connection.QueryFirstOrDefaultAsync<AdminBlogDetailDto>(command);
+        });
     }
 
     public async Task<long> CreateAdminBlogAsync(CreateAdminBlogInput input, long authorId, CancellationToken ct = default)

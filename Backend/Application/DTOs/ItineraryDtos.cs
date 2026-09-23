@@ -1,4 +1,4 @@
-﻿namespace Application.DTOs;
+namespace Application.DTOs;
 
 public class ItineraryAuthorDto
 {
@@ -46,4 +46,13 @@ public class SaveItineraryResponseDto
 {
     public bool Saved { get; set; }
     public long ItineraryId { get; set; }
+}
+
+public class ItineraryFilterParams
+{
+    public string? Keyword { get; set; }
+    public string? Duration { get; set; }
+    public int Page { get; set; } = 1;
+    public int PageSize { get; set; } = 10;
+    public long? UserId { get; set; }
 }

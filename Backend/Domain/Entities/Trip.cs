@@ -7,12 +7,16 @@ public class Trip
     public long Id { get; private set; }
     public long UserId { get; private set; }
     public string Title { get; private set; } = string.Empty;
+    public string? Slug { get; private set; }
     public string? Description { get; private set; }
     public string? CoverImageUrl { get; private set; }
     public DateOnly? StartDate { get; private set; }
     public DateOnly? EndDate { get; private set; }
+    public decimal? EstimatedBudget { get; private set; }
     public TripPrivacy Privacy { get; private set; } = TripPrivacy.Private;
     public TripStatus Status { get; private set; } = TripStatus.Planning;
+    public int ViewCount { get; private set; }
+    public int CloneCount { get; private set; }
     public DateTime CreatedAt { get; private set; }
     public DateTime UpdatedAt { get; private set; }
 

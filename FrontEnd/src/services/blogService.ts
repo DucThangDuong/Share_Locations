@@ -15,9 +15,13 @@ export const blogService = {
     const cleanParams: Record<string, unknown> = {}
 
     if (params?.category && params.category !== 'Tất cả') cleanParams.category = params.category
+    if (params?.categoryId && params.categoryId > 0) cleanParams.categoryId = params.categoryId
+    if (params?.categoryIds && params.categoryIds.length > 0) cleanParams.categoryIds = params.categoryIds
+    if (params?.placeTypeId && params.placeTypeId > 0) cleanParams.placeTypeId = params.placeTypeId
+    if (params?.placeTypeIds && params.placeTypeIds.length > 0) cleanParams.placeTypeIds = params.placeTypeIds
     if (params?.keyword?.trim()) cleanParams.keyword = params.keyword.trim()
     cleanParams.page = params?.page || 1
-    cleanParams.pageSize = params?.pageSize || 12
+    cleanParams.pageSize = params?.pageSize || 9
 
     const response = await apiClient.get<ApiSuccessResponse<BlogListItemDto[]>>('/api/blogs', {
       params: cleanParams

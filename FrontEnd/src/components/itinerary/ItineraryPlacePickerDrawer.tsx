@@ -22,7 +22,7 @@ import type {
   LookupItemDto,
   RegionLookupDto
 } from '@/types/models/place.model'
-import { PRICE_TIERS} from '@/components/explore/explore.types'
+import { PRICE_TIERS } from '@/components/explore/explore.types'
 
 export interface PlaceItem {
   id: number
@@ -52,12 +52,12 @@ export const ItineraryPlacePickerDrawer: React.FC<ItineraryPlacePickerDrawerProp
 
   const [searchInput, setSearchInput] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | 'all'>('all')
-  const [selectedProvinceId, setSelectedProvinceId] = useState<number | 'all'>('all')
-  const [selectedRegionId, setSelectedRegionId] = useState<number | 'all'>('all')
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([])
+  const [selectedRegionIds, setSelectedRegionIds] = useState<number[]>([])
+  const [selectedProvinceIds, setSelectedProvinceIds] = useState<number[]>([])
   const [selectedPriceTier, setSelectedPriceTier] = useState<number>(0)
   const [selectedMinRating, setSelectedMinRating] = useState<number>(0)
-  const [selectedSort, setSelectedSort] = useState<string>('popular_desc')
+  const [selectedSort] = useState<string>('popular_desc')
   const [currentPage, setCurrentPage] = useState<number>(1)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
 
@@ -91,9 +91,9 @@ export const ItineraryPlacePickerDrawer: React.FC<ItineraryPlacePickerDrawerProp
       const tier = PRICE_TIERS[selectedPriceTier] || PRICE_TIERS[0]
       const res = await placeService.searchPlaces({
         keyword: searchQuery.trim() || undefined,
-        categoryId: selectedCategoryId !== 'all' ? selectedCategoryId : undefined,
-        regionId: selectedRegionId !== 'all' ? selectedRegionId : undefined,
-        provinceId: selectedProvinceId !== 'all' ? selectedProvinceId : undefined,
+        categoryIds: selectedCategoryIds.length > 0 ? selectedCategoryIds : undefined,
+        regionIds: selectedRegionIds.length > 0 ? selectedRegionIds : undefined,
+        provinceIds: selectedProvinceIds.length > 0 ? selectedProvinceIds : undefined,
         minPrice: tier.min > 0 ? tier.min : undefined,
         maxPrice: tier.max > 0 ? tier.max : undefined,
         minRating: selectedMinRating > 0 ? selectedMinRating : undefined,
@@ -122,9 +122,9 @@ export const ItineraryPlacePickerDrawer: React.FC<ItineraryPlacePickerDrawerProp
     }
   }, [
     searchQuery,
-    selectedCategoryId,
-    selectedRegionId,
-    selectedProvinceId,
+    selectedCategoryIds,
+    selectedRegionIds,
+    selectedProvinceIds,
     selectedPriceTier,
     selectedMinRating,
     selectedSort,
@@ -141,31 +141,103 @@ export const ItineraryPlacePickerDrawer: React.FC<ItineraryPlacePickerDrawerProp
     setCurrentPage(1)
   }
 
+  const handleCategoryToggle = (catId: number) => {
+    setSelectedCategoryIds((prev) => {
+      const next = prev.includes(catId) ? prev.filter((id) => id !== catId) : [...prev, catId]
+      return next
+    })
+    setCurrentPage(1)
+  }
+
+  const handleClearCategories = () => {
+    setSelectedCategoryIds([])
+    setCurrentPage(1)
+  }
+
+  const handleRegionCheck = (region: RegionLookupDto) => {
+    const regionProvinces = region.provinces || []
+    const regionProvinceIds = regionProvinces.map((p) => p.id)
+
+    const isAllSelected =
+      regionProvinceIds.length > 0 &&
+      regionProvinceIds.every((id) => selectedProvinceIds.includes(id))
+
+    let nextProvIds = [...selectedProvinceIds]
+    let nextRegIds = [...selectedRegionIds]
+
+    if (isAllSelected) {
+      // Uncheck all provinces of this region
+      nextProvIds = nextProvIds.filter((id) => !regionProvinceIds.includes(id))
+      nextRegIds = nextRegIds.filter((id) => id !== region.id)
+    } else {
+      // Check all provinces of this region
+      regionProvinces.forEach((p) => {
+        if (!nextProvIds.includes(p.id)) nextProvIds.push(p.id)
+      })
+      if (!nextRegIds.includes(region.id)) nextRegIds.push(region.id)
+    }
+
+    setSelectedProvinceIds(nextProvIds)
+    setSelectedRegionIds(nextRegIds)
+    setCurrentPage(1)
+  }
+
+  const handleProvinceCheck = (province: LookupItemDto) => {
+    const isSelected = selectedProvinceIds.includes(province.id)
+    let nextProvIds = [...selectedProvinceIds]
+
+    if (isSelected) {
+      nextProvIds = nextProvIds.filter((id) => id !== province.id)
+    } else {
+      nextProvIds.push(province.id)
+    }
+
+    const parentRegion = regions.find((r) =>
+      (r.provinces || []).some((p) => p.id === province.id)
+    )
+
+    let nextRegIds = [...selectedRegionIds]
+
+    if (parentRegion) {
+      const parentProvIds = (parentRegion.provinces || []).map((p) => p.id)
+      const isAllParentProvsSelected =
+        parentProvIds.length > 0 &&
+        parentProvIds.every((id) => nextProvIds.includes(id))
+
+      if (isAllParentProvsSelected) {
+        if (!nextRegIds.includes(parentRegion.id)) nextRegIds.push(parentRegion.id)
+      } else {
+        nextRegIds = nextRegIds.filter((id) => id !== parentRegion.id)
+      }
+    }
+
+    setSelectedProvinceIds(nextProvIds)
+    setSelectedRegionIds(nextRegIds)
+    setCurrentPage(1)
+  }
+
   const handleResetFilters = () => {
     setSearchInput('')
     setSearchQuery('')
-    setSelectedCategoryId('all')
-    setSelectedRegionId('all')
-    setSelectedProvinceId('all')
+    setSelectedCategoryIds([])
+    setSelectedRegionIds([])
+    setSelectedProvinceIds([])
     setSelectedPriceTier(0)
     setSelectedMinRating(0)
-    setSelectedSort('popular_desc')
     setCurrentPage(1)
   }
 
   const activeFilterCount = useMemo(() => {
     let count = 0
-    if (selectedCategoryId !== 'all') count++
-    if (selectedRegionId !== 'all') count++
-    if (selectedProvinceId !== 'all') count++
+    if (selectedCategoryIds.length > 0) count += selectedCategoryIds.length
+    if (selectedProvinceIds.length > 0) count += selectedProvinceIds.length
     if (selectedPriceTier > 0) count++
     if (selectedMinRating > 0) count++
     if (searchQuery.trim()) count++
     return count
   }, [
-    selectedCategoryId,
-    selectedRegionId,
-    selectedProvinceId,
+    selectedCategoryIds,
+    selectedProvinceIds,
     selectedPriceTier,
     selectedMinRating,
     searchQuery
@@ -242,7 +314,7 @@ export const ItineraryPlacePickerDrawer: React.FC<ItineraryPlacePickerDrawerProp
             />
             <input
               type="text"
-              placeholder="Tìm kiếm theo tên địa điểm, tỉnh thành, món ăn đặc sản...."
+              placeholder="Tìm kiếm theo tên địa điểm, món ăn, trải nghiệm..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               className="w-full pl-11 pr-10 py-3 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-600/15 transition-all shadow-2xs font-medium"
@@ -263,9 +335,10 @@ export const ItineraryPlacePickerDrawer: React.FC<ItineraryPlacePickerDrawerProp
           </div>
           <button
             type="submit"
-            className="px-5 sm:px-7 py-3 bg-[#064e3b] hover:bg-emerald-950 text-white rounded-xl text-xs sm:text-sm font-bold transition-colors shrink-0 shadow-xs cursor-pointer"
+            className="px-5 sm:px-7 py-3 bg-[#064e3b] hover:bg-emerald-950 text-white rounded-xl text-xs sm:text-sm font-bold transition-colors shrink-0 shadow-xs cursor-pointer flex items-center gap-1.5"
           >
-            Tìm kiếm
+            <Search size={15} />
+            <span>Tìm kiếm</span>
           </button>
         </form>
       </div>
@@ -290,35 +363,40 @@ export const ItineraryPlacePickerDrawer: React.FC<ItineraryPlacePickerDrawerProp
               )}
             </div>
 
+            {/* Danh mục (Multi-select) */}
             <div className="space-y-2">
-              <h4 className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">
-                Danh mục trải nghiệm
-              </h4>
+              <div className="flex items-center justify-between">
+                <h4 className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">
+                  Danh mục trải nghiệm
+                </h4>
+                {selectedCategoryIds.length > 0 && (
+                  <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                    Đã chọn {selectedCategoryIds.length}
+                  </span>
+                )}
+              </div>
+
               <div className="space-y-1 max-h-56 overflow-y-auto pr-1">
                 <label
                   className={`flex items-center justify-between text-xs cursor-pointer min-h-[32px] px-2.5 py-1.5 rounded-xl transition-colors ${
-                    selectedCategoryId === 'all'
+                    selectedCategoryIds.length === 0
                       ? 'bg-emerald-50 text-emerald-900 font-bold border border-emerald-200/70'
                       : 'text-slate-700 hover:text-slate-900 hover:bg-slate-50'
                   }`}
                 >
                   <div className="flex items-center gap-2 truncate">
                     <input
-                      type="radio"
-                      name="itineraryCategoryFilter"
-                      checked={selectedCategoryId === 'all'}
-                      onChange={() => {
-                        setSelectedCategoryId('all')
-                        setCurrentPage(1)
-                      }}
-                      className="w-3.5 h-3.5 accent-emerald-800 cursor-pointer shrink-0"
+                      type="checkbox"
+                      checked={selectedCategoryIds.length === 0}
+                      onChange={handleClearCategories}
+                      className="w-3.5 h-3.5 accent-emerald-800 rounded cursor-pointer shrink-0"
                     />
                     <span className="truncate">Tất cả danh mục</span>
                   </div>
                 </label>
 
                 {categories.map((cat) => {
-                  const isSelected = selectedCategoryId === cat.id
+                  const isSelected = selectedCategoryIds.includes(cat.id)
                   return (
                     <label
                       key={cat.id}
@@ -330,14 +408,10 @@ export const ItineraryPlacePickerDrawer: React.FC<ItineraryPlacePickerDrawerProp
                     >
                       <div className="flex items-center gap-2 truncate">
                         <input
-                          type="radio"
-                          name="itineraryCategoryFilter"
+                          type="checkbox"
                           checked={isSelected}
-                          onChange={() => {
-                            setSelectedCategoryId(cat.id)
-                            setCurrentPage(1)
-                          }}
-                          className="w-3.5 h-3.5 accent-emerald-800 cursor-pointer shrink-0"
+                          onChange={() => handleCategoryToggle(cat.id)}
+                          className="w-3.5 h-3.5 accent-emerald-800 rounded cursor-pointer shrink-0"
                         />
                         <span className="truncate">{cat.name}</span>
                       </div>
@@ -347,15 +421,30 @@ export const ItineraryPlacePickerDrawer: React.FC<ItineraryPlacePickerDrawerProp
               </div>
             </div>
 
+            {/* Vùng miền & Tỉnh thành (Multi-select synced with child provinces) */}
             <div className="space-y-2.5 pt-4 border-t border-slate-100">
-              <h4 className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">
-                Vùng miền & Tỉnh thành
-              </h4>
-              <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <h4 className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">
+                  Vùng miền & Tỉnh thành
+                </h4>
+                {selectedProvinceIds.length > 0 && (
+                  <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                    Đã chọn {selectedProvinceIds.length} tỉnh
+                  </span>
+                )}
+              </div>
+
+              <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
                 {regions.map((region) => {
-                  const isRegionSelected = selectedRegionId === region.id
-                  const isAccordionOpen = openRegionAccordion[region.name]
                   const regionProvinces = region.provinces || []
+                  const regionProvinceIds = regionProvinces.map((p) => p.id)
+                  const isRegionFullySelected =
+                    regionProvinceIds.length > 0 &&
+                    regionProvinceIds.every((id) => selectedProvinceIds.includes(id))
+                  const selectedProvCount = regionProvinceIds.filter((id) =>
+                    selectedProvinceIds.includes(id)
+                  ).length
+                  const isAccordionOpen = openRegionAccordion[region.name]
 
                   return (
                     <div
@@ -366,20 +455,16 @@ export const ItineraryPlacePickerDrawer: React.FC<ItineraryPlacePickerDrawerProp
                         <label className="flex items-center gap-2 text-xs font-bold text-slate-800 cursor-pointer min-h-[28px]">
                           <input
                             type="checkbox"
-                            checked={isRegionSelected}
-                            onChange={() => {
-                              if (isRegionSelected) {
-                                setSelectedRegionId('all')
-                                setSelectedProvinceId('all')
-                              } else {
-                                setSelectedRegionId(region.id)
-                                setSelectedProvinceId('all')
-                              }
-                              setCurrentPage(1)
-                            }}
+                            checked={isRegionFullySelected}
+                            onChange={() => handleRegionCheck(region)}
                             className="w-3.5 h-3.5 accent-emerald-800 rounded cursor-pointer"
                           />
                           <span>{region.name}</span>
+                          {selectedProvCount > 0 && !isRegionFullySelected && (
+                            <span className="text-[10px] px-1.5 py-0.2 bg-emerald-200/80 text-emerald-900 rounded-full font-bold">
+                              {selectedProvCount}/{regionProvinceIds.length}
+                            </span>
+                          )}
                         </label>
                         <button
                           type="button"
@@ -402,7 +487,7 @@ export const ItineraryPlacePickerDrawer: React.FC<ItineraryPlacePickerDrawerProp
                       {isAccordionOpen && regionProvinces.length > 0 && (
                         <div className="grid grid-cols-2 gap-1 pt-1.5 pl-4 border-t border-slate-200/60 max-h-40 overflow-y-auto">
                           {regionProvinces.map((prov) => {
-                            const isProvSelected = selectedProvinceId === prov.id
+                            const isProvSelected = selectedProvinceIds.includes(prov.id)
                             return (
                               <label
                                 key={prov.id}
@@ -413,15 +498,10 @@ export const ItineraryPlacePickerDrawer: React.FC<ItineraryPlacePickerDrawerProp
                                 }`}
                               >
                                 <input
-                                  type="radio"
-                                  name="itineraryProvinceFilter"
+                                  type="checkbox"
                                   checked={isProvSelected}
-                                  onChange={() => {
-                                    setSelectedProvinceId(prov.id)
-                                    setSelectedRegionId(region.id)
-                                    setCurrentPage(1)
-                                  }}
-                                  className="w-3 h-3 accent-emerald-800 cursor-pointer shrink-0"
+                                  onChange={() => handleProvinceCheck(prov)}
+                                  className="w-3 h-3 accent-emerald-800 rounded cursor-pointer shrink-0"
                                 />
                                 <span className="truncate">{prov.name}</span>
                               </label>
@@ -435,6 +515,7 @@ export const ItineraryPlacePickerDrawer: React.FC<ItineraryPlacePickerDrawerProp
               </div>
             </div>
 
+            {/* Khoảng giá & Ngân sách */}
             <div className="space-y-2 pt-4 border-t border-slate-100">
               <h4 className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">
                 Khoảng giá & Ngân sách
@@ -465,6 +546,7 @@ export const ItineraryPlacePickerDrawer: React.FC<ItineraryPlacePickerDrawerProp
               </div>
             </div>
 
+            {/* Đánh giá tối thiểu */}
             <div className="space-y-2 pt-4 border-t border-slate-100">
               <h4 className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">
                 Đánh giá tối thiểu
@@ -503,8 +585,13 @@ export const ItineraryPlacePickerDrawer: React.FC<ItineraryPlacePickerDrawerProp
 
           <main className="lg:col-span-8 xl:col-span-9 space-y-4">
             <div className="bg-white rounded-2xl border border-slate-200 p-3 sm:px-4 flex items-center justify-between gap-3 shadow-2xs flex-wrap">
-              <div className="flex items-center gap-3">
+              <div className="text-xs text-slate-500 font-medium">
+                Tìm thấy <strong className="text-slate-900 font-bold">{totalElements}</strong> địa điểm
+                {selectedCategoryIds.length > 0 && ` • ${selectedCategoryIds.length} danh mục`}
+                {selectedProvinceIds.length > 0 && ` • ${selectedProvinceIds.length} tỉnh thành`}
+              </div>
 
+              <div className="flex items-center gap-3">
                 <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200/80">
                   <button
                     type="button"
@@ -545,7 +632,7 @@ export const ItineraryPlacePickerDrawer: React.FC<ItineraryPlacePickerDrawerProp
                 <div className="space-y-1">
                   <p className="text-sm font-bold text-slate-800">Không tìm thấy địa điểm nào</p>
                   <p className="text-xs text-slate-400 max-w-sm mx-auto">
-                    Hãy thử thay đổi từ khóa tìm kiếm hoặc chọn danh mục khác.
+                    Hãy thử thay đổi từ khóa tìm kiếm hoặc chọn danh mục/tỉnh thành khác.
                   </p>
                 </div>
                 {activeFilterCount > 0 && (

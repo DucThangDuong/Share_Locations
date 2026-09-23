@@ -42,11 +42,24 @@ public class BlogRepository : IBlogRepository
         return clean;
     }
 
-    public async Task<IReadOnlyList<BlogListItemDto>> GetBlogsAsync(
+    public Task<IReadOnlyList<BlogListItemDto>> GetBlogsAsync(
         string? category,
         string? keyword,
         int page,
         int pageSize,
+        CancellationToken ct = default)
+    {
+        return GetBlogsAsync(new BlogFilterParams
+        {
+            Category = category,
+            Keyword = keyword,
+            Page = page,
+            PageSize = pageSize
+        }, ct);
+    }
+
+    public async Task<IReadOnlyList<BlogListItemDto>> GetBlogsAsync(
+        BlogFilterParams p,
         CancellationToken ct = default)
     {
         var connection = _dbContext.Database.GetDbConnection();
@@ -54,22 +67,36 @@ public class BlogRepository : IBlogRepository
         var conditions = new List<string> { "b.Status = 1" };
         var parameters = new DynamicParameters();
 
-        if (!string.IsNullOrWhiteSpace(category))
+        if (!string.IsNullOrWhiteSpace(p.Category))
         {
             conditions.Add("c.Name LIKE @Category");
-            parameters.Add("Category", $"%{category.Trim()}%");
+            parameters.Add("Category", $"%{p.Category.Trim()}%");
         }
 
-        if (!string.IsNullOrWhiteSpace(keyword))
+        var categoryIds = p.GetEffectiveCategoryIds();
+        if (categoryIds.Count > 0)
+        {
+            conditions.Add("b.CategoryId IN @CategoryIds");
+            parameters.Add("CategoryIds", categoryIds);
+        }
+
+        var placeTypeIds = p.GetEffectivePlaceTypeIds();
+        if (placeTypeIds.Count > 0)
+        {
+            conditions.Add("c.PlaceTypeId IN @PlaceTypeIds");
+            parameters.Add("PlaceTypeIds", placeTypeIds);
+        }
+
+        if (!string.IsNullOrWhiteSpace(p.Keyword))
         {
             conditions.Add("(b.Title LIKE @Keyword OR b.Excerpt LIKE @Keyword)");
-            parameters.Add("Keyword", $"%{keyword.Trim()}%");
+            parameters.Add("Keyword", $"%{p.Keyword.Trim()}%");
         }
 
         var whereClause = string.Join(" AND ", conditions);
-        var offset = Math.Max(0, (page - 1) * pageSize);
+        var offset = Math.Max(0, (p.Page - 1) * p.PageSize);
         parameters.Add("Offset", offset);
-        parameters.Add("PageSize", Math.Max(1, pageSize));
+        parameters.Add("PageSize", Math.Max(1, p.PageSize));
 
         var sql = $@"
             SELECT 
