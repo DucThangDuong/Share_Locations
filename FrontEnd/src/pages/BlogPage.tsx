@@ -15,6 +15,7 @@ interface EditingArticleState {
   categoryId?: number
   coverImg: string
   content: string
+  status?: number
 }
 
 export const BlogPage: React.FC = () => {
@@ -119,7 +120,8 @@ export const BlogPage: React.FC = () => {
           category: catName,
           categoryId: passedBlog.categoryId || 1,
           coverImg: passedBlog.coverImageUrl || '',
-          content: passedBlog.contentJSON || passedBlog.content || passedBlog.excerpt || ''
+          content: passedBlog.contentJSON || passedBlog.content || passedBlog.excerpt || '',
+          status: passedBlog.status
         })
         setViewMode('editor')
         setDetailedArticle(null)
@@ -137,7 +139,8 @@ export const BlogPage: React.FC = () => {
           category: matched?.name || found.category,
           categoryId: matched?.id || 1,
           coverImg: found.coverUrl || '',
-          content: found.content || found.excerpt || ''
+          content: found.content || found.excerpt || '',
+          status: 1
         })
         setViewMode('editor')
         setDetailedArticle(null)
@@ -145,24 +148,48 @@ export const BlogPage: React.FC = () => {
         return
       }
 
-      blogService.getBlogDetail(editId).then((res) => {
-        if (res.success && res.data) {
-          const d = res.data
-          const matched = categories.find((c) => c.name === d.category)
-          setEditingArticleData({
-            id: d.id,
-            title: d.title || '',
-            summary: d.excerpt || '',
-            category: matched?.name || d.category || 'Di tích lịch sử - Văn hóa',
-            categoryId: matched?.id || 1,
-            coverImg: d.coverUrl || '',
-            content: d.content || d.excerpt || ''
-          })
-          setViewMode('editor')
-          setDetailedArticle(null)
-          window.scrollTo({ top: 0, behavior: 'smooth' })
-        }
-      }).catch(() => { })
+      blogService.getMyBlogForEdit(editId)
+        .then((res) => {
+          if (res.success && res.data) {
+            const d = res.data
+            const matched = categories.find((c) => c.name === d.categoryName || c.id === d.categoryId)
+            setEditingArticleData({
+              id: d.id,
+              title: d.title || '',
+              summary: d.excerpt || '',
+              category: matched?.name || d.categoryName || 'Di tích lịch sử - Văn hóa',
+              categoryId: matched?.id || d.categoryId || 1,
+              coverImg: d.coverImageUrl || '',
+              content: d.contentJSON || d.excerpt || '',
+              status: d.status
+            })
+            setViewMode('editor')
+            setDetailedArticle(null)
+            window.scrollTo({ top: 0, behavior: 'smooth' })
+          }
+        })
+        .catch(() => {
+          // Fallback to getBlogDetail
+          blogService.getBlogDetail(editId).then((res) => {
+            if (res.success && res.data) {
+              const d = res.data
+              const matched = categories.find((c) => c.name === d.category)
+              setEditingArticleData({
+                id: d.id,
+                title: d.title || '',
+                summary: d.excerpt || '',
+                category: matched?.name || d.category || 'Di tích lịch sử - Văn hóa',
+                categoryId: matched?.id || 1,
+                coverImg: d.coverUrl || '',
+                content: d.content || d.excerpt || '',
+                status: 1
+              })
+              setViewMode('editor')
+              setDetailedArticle(null)
+              window.scrollTo({ top: 0, behavior: 'smooth' })
+            }
+          }).catch(() => { })
+        })
       return
     }
 
@@ -268,11 +295,17 @@ export const BlogPage: React.FC = () => {
           status: output.status
         })
         if (res.success) {
-          showToast('Cập nhật bài viết thành công!')
+          showToast(
+            output.status === 2
+              ? 'Đã gửi bài viết chờ duyệt!'
+              : output.status === 0
+                ? 'Đã lưu bản nháp thành công!'
+                : 'Cập nhật bài viết thành công!'
+          )
           fetchArticles()
           navigate('/blog')
         } else {
-          showToast('Cập nhật thất bại. Vui lòng thử lại.')
+          showToast('Lưu thất bại. Vui lòng thử lại.')
         }
       } else {
         const res = await blogService.createBlog({
@@ -285,7 +318,13 @@ export const BlogPage: React.FC = () => {
           status: output.status
         })
         if (res.success) {
-          showToast('Xuất bản bài viết thành công!')
+          showToast(
+            output.status === 2
+              ? 'Đã gửi bài viết chờ duyệt!'
+              : output.status === 0
+                ? 'Đã lưu bản nháp thành công!'
+                : 'Xuất bản bài viết thành công!'
+          )
           fetchArticles()
           navigate('/blog')
         } else {
@@ -349,8 +388,11 @@ export const BlogPage: React.FC = () => {
           initialCategoryId={editingArticleData?.categoryId}
           initialCoverImg={editingArticleData?.coverImg || ''}
           initialContent={editingArticleData?.content || ''}
+          initialStatus={editingArticleData?.status}
           availableCategories={categories.map((c) => ({ id: c.id, name: c.name }))}
           onSave={handleSaveArticle}
+          onSaveDraft={handleSaveArticle}
+          onPublish={handleSaveArticle}
           onCancel={handleCancelEditor}
         />
       )}

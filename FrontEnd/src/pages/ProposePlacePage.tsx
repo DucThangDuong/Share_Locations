@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import {
   MapPin,
   Clock,
@@ -18,7 +18,8 @@ import {
   LogIn,
   Star,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  ArrowLeft
 } from 'lucide-react'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
@@ -28,11 +29,20 @@ import { geographyService } from '@/services/geographyService'
 import { userService } from '@/services/userService'
 import type { PlaceTypeDto } from '@/types/models/place.model'
 import type { ProvinceDto } from '@/types/models/geography.model'
+import type { ProposalItem, PagedResultDto } from '@/types/models/userProfile.model'
 
 export const ProposePlacePage: React.FC = () => {
   const navigate = useNavigate()
   const location = useLocation()
+  const [searchParams] = useSearchParams()
   const { isAuthenticated, isLoading } = useAuth()
+
+  const viewId = searchParams.get('view') || searchParams.get('id')
+  const passedProposal = (location.state as any)?.proposal as ProposalItem | undefined
+  const isViewMode = Boolean(viewId || passedProposal)
+
+  const [proposalData, setProposalData] = useState<ProposalItem | null>(passedProposal || null)
+  const [isLoadingProposal, setIsLoadingProposal] = useState(Boolean(viewId && !passedProposal))
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSubmittedSuccess, setIsSubmittedSuccess] = useState(false)
@@ -41,15 +51,15 @@ export const ProposePlacePage: React.FC = () => {
   const [categories, setCategories] = useState<PlaceTypeDto[]>([])
   const [provinces, setProvinces] = useState<ProvinceDto[]>([])
 
-  const [name, setName] = useState('')
-  const [categoryId, setCategoryId] = useState<number>(1)
-  const [provinceId, setProvinceId] = useState<number>(1)
-  const [address, setAddress] = useState('')
-  const [phone, setPhone] = useState('')
-  const [website, setWebsite] = useState('')
+  const [name, setName] = useState(passedProposal?.name || '')
+  const [categoryId, setCategoryId] = useState<number>(passedProposal?.categoryId || 1)
+  const [provinceId, setProvinceId] = useState<number>(passedProposal?.provinceId || 1)
+  const [address, setAddress] = useState(passedProposal?.address || '')
+  const [phone, setPhone] = useState(passedProposal?.phone || '')
+  const [website, setWebsite] = useState(passedProposal?.website || '')
 
-  const [lat, setLat] = useState('21.028500')
-  const [lng, setLng] = useState('105.854200')
+  const [lat, setLat] = useState(passedProposal?.latitude ? String(passedProposal.latitude) : '21.028500')
+  const [lng, setLng] = useState(passedProposal?.longitude ? String(passedProposal.longitude) : '105.854200')
   const [isLocating, setIsLocating] = useState(false)
 
   const [openTime, setOpenTime] = useState('07:30')
@@ -58,9 +68,13 @@ export const ProposePlacePage: React.FC = () => {
   const [isFree, setIsFree] = useState(false)
   const [minPrice, setMinPrice] = useState('35000')
   const [maxPrice, setMaxPrice] = useState('120000')
-  const [description, setDescription] = useState('')
+  const [description, setDescription] = useState(passedProposal?.description || '')
 
-  const [images, setImages] = useState<string[]>([])
+  const [images, setImages] = useState<string[]>(() => {
+    if (passedProposal?.mediaUrls && passedProposal.mediaUrls.length > 0) return passedProposal.mediaUrls
+    if (passedProposal?.coverImg) return [passedProposal.coverImg]
+    return []
+  })
   const [activePreviewImgIndex, setActivePreviewImgIndex] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
 
@@ -72,6 +86,51 @@ export const ProposePlacePage: React.FC = () => {
   const mapboxToken = (import.meta.env.VITE_MAPBOX_ACCESS_TOKEN as string | undefined)?.trim() ||
     'pk.eyJ1IjoibGFuZ3RoYW5nLXZuIiwiYSI6ImNtODFhYmNkZTAxMzAya3B0eGZjcHB0ZmoifQ.placeholder'
 
+  const applyProposalToState = (p: ProposalItem, catList: PlaceTypeDto[], provList: ProvinceDto[]) => {
+    setProposalData(p)
+    setName(p.name || '')
+    setAddress(p.address || '')
+    setPhone(p.phone || '')
+    setWebsite(p.website || '')
+    setDescription(p.description || '')
+
+    if (p.categoryId) {
+      setCategoryId(p.categoryId)
+    } else if (p.category || p.categoryName) {
+      const matchCat = catList.find((c) => c.name === p.category || c.name === p.categoryName)
+      if (matchCat) setCategoryId(matchCat.id)
+    }
+
+    if (p.provinceId) {
+      setProvinceId(p.provinceId)
+    } else if (p.province || p.provinceName) {
+      const matchProv = provList.find((pr) => pr.name === p.province || pr.name === p.provinceName)
+      if (matchProv) setProvinceId(matchProv.id)
+    }
+
+    if (p.latitude) setLat(String(p.latitude))
+    if (p.longitude) setLng(String(p.longitude))
+
+    if (p.openingHours) {
+      const is24 = p.openingHours.includes('24/7') || p.openingHours.includes('24h') || p.openingHours.includes('cả ngày')
+      setIs24Hours(is24)
+      const times = p.openingHours.match(/(\d{1,2}:\d{2})/g)
+      if (times && times.length > 0) setOpenTime(times[0])
+      if (times && times.length > 1) setCloseTime(times[1])
+    }
+
+    if (p.minPrice === 0 && p.maxPrice === 0) {
+      setIsFree(true)
+    } else {
+      setIsFree(false)
+      if (p.minPrice !== null && p.minPrice !== undefined) setMinPrice(String(p.minPrice))
+      if (p.maxPrice !== null && p.maxPrice !== undefined) setMaxPrice(String(p.maxPrice))
+    }
+
+    const imgs = (p.mediaUrls && p.mediaUrls.length > 0) ? p.mediaUrls : p.coverImg ? [p.coverImg] : []
+    setImages(imgs)
+  }
+
   useEffect(() => {
     const loadMetadata = async () => {
       try {
@@ -79,20 +138,44 @@ export const ProposePlacePage: React.FC = () => {
           catalogService.getPlaceTypes(),
           geographyService.getProvinces()
         ])
-        if (catRes.success && catRes.data && catRes.data.length > 0) {
-          setCategories(catRes.data)
-          setCategoryId(catRes.data[0].id)
+        const catList = (catRes.success && catRes.data) ? catRes.data : []
+        const provList = (provRes.success && provRes.data) ? provRes.data : []
+
+        if (catList.length > 0) {
+          setCategories(catList)
+          if (!passedProposal) setCategoryId(catList[0].id)
         }
-        if (provRes.success && provRes.data && provRes.data.length > 0) {
-          setProvinces(provRes.data)
-          setProvinceId(provRes.data[0].id)
+        if (provList.length > 0) {
+          setProvinces(provList)
+          if (!passedProposal) setProvinceId(provList[0].id)
+        }
+
+        if (passedProposal) {
+          applyProposalToState(passedProposal, catList, provList)
+        } else if (viewId) {
+          setIsLoadingProposal(true)
+          try {
+            const res = await userService.getMyProposals({ pageSize: 100 })
+            if (res.success && res.data) {
+              const items = Array.isArray(res.data)
+                ? res.data
+                : (res.data as PagedResultDto<ProposalItem>).items || []
+              const found = items.find((item) => String(item.id) === String(viewId))
+              if (found) {
+                applyProposalToState(found, catList, provList)
+              }
+            }
+          } catch {
+          } finally {
+            setIsLoadingProposal(false)
+          }
         }
       } catch {
       }
     }
 
     loadMetadata()
-  }, [])
+  }, [viewId])
 
   useEffect(() => {
     if (!isAuthenticated || !mapContainerRef.current) return
@@ -107,28 +190,30 @@ export const ProposePlacePage: React.FC = () => {
         container: mapContainerRef.current,
         style: 'mapbox://styles/mapbox/streets-v12',
         center: [parsedLng, parsedLat],
-        zoom: 12
+        zoom: 13
       })
 
       map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right')
 
-      const marker = new mapboxgl.Marker({ draggable: true, color: '#047857' })
+      const marker = new mapboxgl.Marker({ draggable: !isViewMode, color: '#047857' })
         .setLngLat([parsedLng, parsedLat])
         .addTo(map)
 
-      marker.on('dragend', () => {
-        const lngLat = marker.getLngLat()
-        setLng(lngLat.lng.toFixed(6))
-        setLat(lngLat.lat.toFixed(6))
-      })
+      if (!isViewMode) {
+        marker.on('dragend', () => {
+          const lngLat = marker.getLngLat()
+          setLng(lngLat.lng.toFixed(6))
+          setLat(lngLat.lat.toFixed(6))
+        })
 
-      map.on('click', (e) => {
-        const newLng = e.lngLat.lng.toFixed(6)
-        const newLat = e.lngLat.lat.toFixed(6)
-        setLng(newLng)
-        setLat(newLat)
-        marker.setLngLat([e.lngLat.lng, e.lngLat.lat])
-      })
+        map.on('click', (e) => {
+          const newLng = e.lngLat.lng.toFixed(6)
+          const newLat = e.lngLat.lat.toFixed(6)
+          setLng(newLng)
+          setLat(newLat)
+          marker.setLngLat([e.lngLat.lng, e.lngLat.lat])
+        })
+      }
 
       mapInstanceRef.current = map
       markerRef.current = marker
@@ -139,7 +224,7 @@ export const ProposePlacePage: React.FC = () => {
       }
     } catch {
     }
-  }, [isAuthenticated])
+  }, [isAuthenticated, isViewMode, lat, lng])
 
   const updateMapPosition = (newLatStr: string, newLngStr: string) => {
     const pLat = parseFloat(newLatStr)
@@ -273,10 +358,44 @@ export const ProposePlacePage: React.FC = () => {
     }
   }
 
-  if (isLoading) {
+  const renderStatusBadge = (status?: number) => {
+    if (status === 1) {
+      return (
+        <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-900 border border-emerald-300 flex items-center gap-1.5 shrink-0 shadow-2xs">
+          <CheckCircle2 size={13} className="text-emerald-700" />
+          <span>Đã duyệt</span>
+        </span>
+      )
+    }
+    if (status === 2) {
+      return (
+        <span className="px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-300 flex items-center gap-1.5 shrink-0 shadow-2xs">
+          <AlertCircle size={13} className="text-rose-600" />
+          <span>Từ chối</span>
+        </span>
+      )
+    }
+    if (status === 3) {
+      return (
+        <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1.5 shrink-0 shadow-2xs">
+          <Clock size={13} className="text-amber-700" />
+          <span>Cần bổ sung</span>
+        </span>
+      )
+    }
     return (
-      <div className="min-h-[65vh] flex items-center justify-center bg-slate-50">
+      <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1.5 shrink-0 shadow-2xs">
+        <Clock size={13} className="text-amber-700" />
+        <span>Chờ duyệt</span>
+      </span>
+    )
+  }
+
+  if (isLoading || isLoadingProposal) {
+    return (
+      <div className="min-h-[65vh] flex flex-col items-center justify-center bg-slate-50 gap-2 font-sans">
         <div className="w-8 h-8 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
+        {isLoadingProposal && <span className="text-xs text-slate-500">Đang tải thông tin đề xuất địa điểm...</span>}
       </div>
     )
   }
@@ -382,6 +501,64 @@ export const ProposePlacePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50/70 pb-20 pt-6 font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+        {/* Header Bar for View Mode */}
+        {isViewMode && (
+          <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => navigate(-1)}
+                className="p-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
+                title="Quay lại"
+              >
+                <ArrowLeft size={18} />
+              </button>
+              <div>
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <h1 className="text-lg sm:text-xl font-black text-slate-900">
+                    Chi tiết địa điểm đề xuất
+                  </h1>
+                  {renderStatusBadge(proposalData?.status ?? 0)}
+                </div>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Mã đề xuất #{proposalData?.id || viewId} • Ngày gửi: {new Date(proposalData?.createdAt || Date.now()).toLocaleDateString('vi-VN')}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => navigate(-1)}
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
+              >
+                <span>Quay lại danh sách</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Rejection / Note Callouts */}
+        {isViewMode && proposalData?.status === 2 && proposalData?.rejectReason && (
+          <div className="p-4.5 rounded-3xl bg-rose-50 border border-rose-200 text-rose-800 text-xs space-y-1 shadow-2xs animate-in fade-in">
+            <p className="font-bold flex items-center gap-2 text-rose-900 text-sm">
+              <AlertCircle size={16} className="text-rose-600 shrink-0" />
+              <span>Lý do từ chối từ Ban Quản trị:</span>
+            </p>
+            <p className="pl-6 text-slate-700 leading-relaxed">{proposalData.rejectReason}</p>
+          </div>
+        )}
+
+        {isViewMode && proposalData?.adminNote && (
+          <div className="p-4.5 rounded-3xl bg-amber-50 border border-amber-200 text-amber-900 text-xs space-y-1 shadow-2xs animate-in fade-in">
+            <p className="font-bold flex items-center gap-2 text-amber-900 text-sm">
+              <Clock size={16} className="text-amber-700 shrink-0" />
+              <span>Ghi chú từ Quản trị viên:</span>
+            </p>
+            <p className="pl-6 text-slate-700 leading-relaxed">{proposalData.adminNote}</p>
+          </div>
+        )}
+
         {errorMsg && (
           <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium flex items-center gap-2 animate-in fade-in">
             <AlertCircle className="w-4 h-4 shrink-0" />
@@ -401,26 +578,28 @@ export const ProposePlacePage: React.FC = () => {
                 <div className="space-y-4">
                   <div className="relative">
                     <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                      Tên địa điểm <span className="text-rose-500">*</span>
+                      Tên địa điểm {!isViewMode && <span className="text-rose-500">*</span>}
                     </label>
                     <input
                       type="text"
+                      disabled={isViewMode}
                       placeholder="Ví dụ: Đồi Chè Cầu Đất, Cà phê Mây Lang Thang, Bánh Mì Phượng..."
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="w-full px-4 py-3 rounded-2xl bg-slate-50/80 border border-slate-200 text-xs sm:text-sm text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-700 transition-all font-medium"
+                      className="w-full px-4 py-3 rounded-2xl bg-slate-50/80 border border-slate-200 text-xs sm:text-sm text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-700 transition-all font-medium disabled:bg-slate-100/80 disabled:cursor-default disabled:text-slate-800"
                     />
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                        Danh mục <span className="text-rose-500">*</span>
+                        Danh mục {!isViewMode && <span className="text-rose-500">*</span>}
                       </label>
                       <select
                         value={categoryId}
+                        disabled={isViewMode}
                         onChange={(e) => setCategoryId(Number(e.target.value))}
-                        className="w-full px-3.5 py-3 rounded-2xl bg-slate-50/80 border border-slate-200 text-xs font-medium text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-700 cursor-pointer"
+                        className="w-full px-3.5 py-3 rounded-2xl bg-slate-50/80 border border-slate-200 text-xs font-medium text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-700 cursor-pointer disabled:bg-slate-100/80 disabled:cursor-default disabled:text-slate-800"
                       >
                         {categories.map((cat) => (
                           <option key={cat.id} value={cat.id}>
@@ -432,12 +611,13 @@ export const ProposePlacePage: React.FC = () => {
 
                     <div>
                       <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                        Tỉnh / Thành phố <span className="text-rose-500">*</span>
+                        Tỉnh / Thành phố {!isViewMode && <span className="text-rose-500">*</span>}
                       </label>
                       <select
                         value={provinceId}
+                        disabled={isViewMode}
                         onChange={(e) => setProvinceId(Number(e.target.value))}
-                        className="w-full px-3.5 py-3 rounded-2xl bg-slate-50/80 border border-slate-200 text-xs font-medium text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-700 cursor-pointer"
+                        className="w-full px-3.5 py-3 rounded-2xl bg-slate-50/80 border border-slate-200 text-xs font-medium text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-700 cursor-pointer disabled:bg-slate-100/80 disabled:cursor-default disabled:text-slate-800"
                       >
                         {provinces.map((prov) => (
                           <option key={prov.id} value={prov.id}>
@@ -450,14 +630,15 @@ export const ProposePlacePage: React.FC = () => {
 
                   <div>
                     <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                      Địa chỉ chi tiết <span className="text-rose-500">*</span>
+                      Địa chỉ chi tiết {!isViewMode && <span className="text-rose-500">*</span>}
                     </label>
                     <input
                       type="text"
+                      disabled={isViewMode}
                       placeholder="Số nhà, tên đường, phường/xã, quận/huyện..."
                       value={address}
                       onChange={(e) => setAddress(e.target.value)}
-                      className="w-full px-4 py-3 rounded-2xl bg-slate-50/80 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-700"
+                      className="w-full px-4 py-3 rounded-2xl bg-slate-50/80 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-700 disabled:bg-slate-100/80 disabled:cursor-default disabled:text-slate-800"
                     />
                   </div>
 
@@ -468,10 +649,11 @@ export const ProposePlacePage: React.FC = () => {
                       </label>
                       <input
                         type="text"
+                        disabled={isViewMode}
                         placeholder="Ví dụ: 0263 3838 123"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
-                        className="w-full px-4 py-3 rounded-2xl bg-slate-50/80 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-700"
+                        className="w-full px-4 py-3 rounded-2xl bg-slate-50/80 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-700 disabled:bg-slate-100/80 disabled:cursor-default disabled:text-slate-800"
                       />
                     </div>
 
@@ -481,10 +663,11 @@ export const ProposePlacePage: React.FC = () => {
                       </label>
                       <input
                         type="text"
+                        disabled={isViewMode}
                         placeholder="https://facebook.com/..."
                         value={website}
                         onChange={(e) => setWebsite(e.target.value)}
-                        className="w-full px-4 py-3 rounded-2xl bg-slate-50/80 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-700"
+                        className="w-full px-4 py-3 rounded-2xl bg-slate-50/80 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-700 disabled:bg-slate-100/80 disabled:cursor-default disabled:text-slate-800"
                       />
                     </div>
                   </div>
@@ -495,23 +678,27 @@ export const ProposePlacePage: React.FC = () => {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
                   <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-emerald-700" />
-                    <span>2. Chọn vị trí trên bản đồ</span>
+                    <span>2. Vị trí trên bản đồ</span>
                   </h3>
 
-                  <button
-                    type="button"
-                    onClick={handleGetGPSLocation}
-                    disabled={isLocating}
-                    className="text-xs font-bold text-emerald-700 hover:text-emerald-800 transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50 self-start sm:self-auto bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200/70"
-                  >
-                    <Navigation className="w-3.5 h-3.5" />
-                    <span>{isLocating ? 'Đang lấy tọa độ GPS...' : 'Lấy vị trí GPS hiện tại của tôi'}</span>
-                  </button>
+                  {!isViewMode && (
+                    <button
+                      type="button"
+                      onClick={handleGetGPSLocation}
+                      disabled={isLocating}
+                      className="text-xs font-bold text-emerald-700 hover:text-emerald-800 transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50 self-start sm:self-auto bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200/70"
+                    >
+                      <Navigation className="w-3.5 h-3.5" />
+                      <span>{isLocating ? 'Đang lấy tọa độ GPS...' : 'Lấy vị trí GPS hiện tại của tôi'}</span>
+                    </button>
+                  )}
                 </div>
 
-                <p className="text-xs text-slate-500">
-                  Click chuột vào bất kỳ điểm nào trên bản đồ hoặc kéo thả ghim màu xanh lá để cập nhật tọa độ chính xác.
-                </p>
+                {!isViewMode && (
+                  <p className="text-xs text-slate-500">
+                    Click chuột vào bất kỳ điểm nào trên bản đồ hoặc kéo thả ghim màu xanh lá để cập nhật tọa độ chính xác.
+                  </p>
+                )}
 
                 <div className="relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 h-72 sm:h-80 w-full shadow-inner">
                   <div ref={mapContainerRef} className="w-full h-full" />
@@ -527,24 +714,26 @@ export const ProposePlacePage: React.FC = () => {
                     <label className="block text-[11px] text-slate-500 mb-1 font-medium">Vĩ độ (Latitude)</label>
                     <input
                       type="text"
+                      disabled={isViewMode}
                       value={lat}
                       onChange={(e) => {
                         setLat(e.target.value)
                         updateMapPosition(e.target.value, lng)
                       }}
-                      className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-slate-800 focus:outline-none focus:bg-white focus:border-emerald-700"
+                      className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-slate-800 focus:outline-none focus:bg-white focus:border-emerald-700 disabled:bg-slate-100/80 disabled:cursor-default"
                     />
                   </div>
                   <div>
                     <label className="block text-[11px] text-slate-500 mb-1 font-medium">Kinh độ (Longitude)</label>
                     <input
                       type="text"
+                      disabled={isViewMode}
                       value={lng}
                       onChange={(e) => {
                         setLng(e.target.value)
                         updateMapPosition(lat, e.target.value)
                       }}
-                      className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-slate-800 focus:outline-none focus:bg-white focus:border-emerald-700"
+                      className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-slate-800 focus:outline-none focus:bg-white focus:border-emerald-700 disabled:bg-slate-100/80 disabled:cursor-default"
                     />
                   </div>
                 </div>
@@ -563,12 +752,13 @@ export const ProposePlacePage: React.FC = () => {
                         <Clock className="w-3.5 h-3.5 text-emerald-700" />
                         Giờ mở cửa
                       </span>
-                      <label className="flex items-center gap-1.5 cursor-pointer">
+                      <label className={`flex items-center gap-1.5 ${isViewMode ? 'cursor-default' : 'cursor-pointer'}`}>
                         <input
                           type="checkbox"
+                          disabled={isViewMode}
                           checked={is24Hours}
                           onChange={(e) => setIs24Hours(e.target.checked)}
-                          className="rounded text-emerald-700 focus:ring-emerald-700"
+                          className="rounded text-emerald-700 focus:ring-emerald-700 disabled:opacity-60"
                         />
                         <span className="text-xs text-slate-700 font-semibold">Mở 24/7</span>
                       </label>
@@ -580,18 +770,20 @@ export const ProposePlacePage: React.FC = () => {
                           <span className="text-[10px] text-slate-500 font-medium">Mở cửa</span>
                           <input
                             type="time"
+                            disabled={isViewMode}
                             value={openTime}
                             onChange={(e) => setOpenTime(e.target.value)}
-                            className="w-full p-2 mt-1 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-emerald-700 cursor-pointer"
+                            className="w-full p-2 mt-1 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-emerald-700 disabled:bg-slate-100/80 disabled:cursor-default"
                           />
                         </div>
                         <div>
                           <span className="text-[10px] text-slate-500 font-medium">Đóng cửa</span>
                           <input
                             type="time"
+                            disabled={isViewMode}
                             value={closeTime}
                             onChange={(e) => setCloseTime(e.target.value)}
-                            className="w-full p-2 mt-1 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-emerald-700 cursor-pointer"
+                            className="w-full p-2 mt-1 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-emerald-700 disabled:bg-slate-100/80 disabled:cursor-default"
                           />
                         </div>
                       </div>
@@ -608,12 +800,13 @@ export const ProposePlacePage: React.FC = () => {
                         <DollarSign className="w-3.5 h-3.5 text-emerald-700" />
                         Giá vé / Chi phí (VNĐ)
                       </span>
-                      <label className="flex items-center gap-1.5 cursor-pointer">
+                      <label className={`flex items-center gap-1.5 ${isViewMode ? 'cursor-default' : 'cursor-pointer'}`}>
                         <input
                           type="checkbox"
+                          disabled={isViewMode}
                           checked={isFree}
                           onChange={(e) => setIsFree(e.target.checked)}
-                          className="rounded text-emerald-700 focus:ring-emerald-700"
+                          className="rounded text-emerald-700 focus:ring-emerald-700 disabled:opacity-60"
                         />
                         <span className="text-xs text-slate-700 font-semibold">Miễn phí vé</span>
                       </label>
@@ -625,20 +818,22 @@ export const ProposePlacePage: React.FC = () => {
                           <span className="text-[10px] text-slate-500 font-medium">Giá tối thiểu</span>
                           <input
                             type="number"
+                            disabled={isViewMode}
                             value={minPrice}
                             onChange={(e) => setMinPrice(e.target.value)}
                             placeholder="35000"
-                            className="w-full p-2 mt-1 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-emerald-700"
+                            className="w-full p-2 mt-1 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-emerald-700 disabled:bg-slate-100/80 disabled:cursor-default"
                           />
                         </div>
                         <div>
                           <span className="text-[10px] text-slate-500 font-medium">Giá tối đa</span>
                           <input
                             type="number"
+                            disabled={isViewMode}
                             value={maxPrice}
                             onChange={(e) => setMaxPrice(e.target.value)}
                             placeholder="120000"
-                            className="w-full p-2 mt-1 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-emerald-700"
+                            className="w-full p-2 mt-1 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-emerald-700 disabled:bg-slate-100/80 disabled:cursor-default"
                           />
                         </div>
                       </div>
@@ -652,14 +847,15 @@ export const ProposePlacePage: React.FC = () => {
 
                 <div>
                   <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                    Mô tả <span className="text-rose-500">*</span>
+                    Mô tả {!isViewMode && <span className="text-rose-500">*</span>}
                   </label>
                   <textarea
                     rows={4}
+                    disabled={isViewMode}
                     placeholder="Chia sẻ lý do nơi này đặc biệt, món ăn nên thử, góc chụp ảnh đẹp hoặc thời điểm lý tưởng để ghé thăm..."
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    className="w-full p-3.5 rounded-2xl bg-slate-50/80 border border-slate-200 text-xs sm:text-sm text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-700 leading-relaxed"
+                    className="w-full p-3.5 rounded-2xl bg-slate-50/80 border border-slate-200 text-xs sm:text-sm text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-700 leading-relaxed disabled:bg-slate-100/80 disabled:cursor-default disabled:text-slate-800"
                   />
                 </div>
               </div>
@@ -679,36 +875,38 @@ export const ProposePlacePage: React.FC = () => {
                   className="hidden"
                 />
 
-                <div
-                  onClick={() => fileInputRef.current?.click()}
-                  onDragOver={(e) => {
-                    e.preventDefault()
-                    setIsDragging(true)
-                  }}
-                  onDragLeave={() => setIsDragging(false)}
-                  onDrop={handleDropFiles}
-                  className={`p-6 border-2 border-dashed rounded-2xl text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2.5 ${isDragging
-                    ? 'border-emerald-600 bg-emerald-50/80 text-emerald-800 ring-2 ring-emerald-500/30'
-                    : 'border-slate-300 hover:border-emerald-600 hover:bg-slate-50 text-slate-600'
-                    }`}
-                >
-                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center shadow-xs">
-                    <UploadCloud className="w-6 h-6" />
+                {!isViewMode && (
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    onDragOver={(e) => {
+                      e.preventDefault()
+                      setIsDragging(true)
+                    }}
+                    onDragLeave={() => setIsDragging(false)}
+                    onDrop={handleDropFiles}
+                    className={`p-6 border-2 border-dashed rounded-2xl text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2.5 ${isDragging
+                      ? 'border-emerald-600 bg-emerald-50/80 text-emerald-800 ring-2 ring-emerald-500/30'
+                      : 'border-slate-300 hover:border-emerald-600 hover:bg-slate-50 text-slate-600'
+                      }`}
+                  >
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center shadow-xs">
+                      <UploadCloud className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <p className="text-xs sm:text-sm font-bold text-slate-800">
+                        Tải ảnh từ thiết bị (Click hoặc kéo thả ảnh vào đây)
+                      </p>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        Hỗ trợ định dạng JPG, PNG, WEBP, JPEG
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs sm:text-sm font-bold text-slate-800">
-                      Tải ảnh từ thiết bị (Click hoặc kéo thả ảnh vào đây)
-                    </p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
-                      Hỗ trợ định dạng JPG, PNG, WEBP, JPEG
-                    </p>
-                  </div>
-                </div>
+                )}
 
                 <div className="space-y-4 pt-2">
                   <div>
                     <span className="text-xs font-bold text-slate-700 mb-2 block">
-                      Danh sách ảnh đã thêm ({images.length})
+                      Danh sách ảnh ({images.length})
                     </span>
                     {images.length > 0 ? (
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -727,48 +925,67 @@ export const ProposePlacePage: React.FC = () => {
                                 Ảnh bìa chính
                               </span>
                             )}
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveImage(idx)}
-                              className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 hover:bg-rose-600 text-white transition-colors cursor-pointer opacity-0 group-hover:opacity-100"
-                              title="Xóa ảnh này"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                            {!isViewMode && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveImage(idx)}
+                                className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 hover:bg-rose-600 text-white transition-colors cursor-pointer opacity-0 group-hover:opacity-100"
+                                title="Xóa ảnh này"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
                           </div>
                         ))}
                       </div>
                     ) : (
                       <div className="p-4 rounded-2xl bg-slate-50 border border-dashed border-slate-200 text-center text-xs text-slate-400">
-                        Chưa có ảnh nào được thêm. Hãy chọn hoặc kéo thả ảnh vào khung phía trên.
+                        Chưa có ảnh nào được thêm.
                       </div>
                     )}
                   </div>
                 </div>
               </div>
 
-              <div className="p-6 bg-white rounded-3xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="text-xs text-slate-500">
-                  Bằng việc gửi đề xuất, bạn xác nhận thông tin địa điểm là chính xác và tuân thủ tiêu chuẩn cộng đồng LangThang.
-                </div>
+              {isViewMode ? (
+                <div className="p-6 bg-white rounded-3xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="text-xs text-slate-500 flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0" />
+                    <span>Đề xuất này đang ở chế độ xem thông tin và không thể chỉnh sửa.</span>
+                  </div>
 
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 cursor-pointer transition-all shadow-md active-press disabled:opacity-50 shrink-0"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Đang gửi đề xuất...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Gửi đề xuất địa điểm mới</span>
-                    </>
-                  )}
-                </button>
-              </div>
+                  <button
+                    type="button"
+                    onClick={() => navigate(-1)}
+                    className="w-full sm:w-auto px-8 py-3 rounded-2xl bg-slate-800 hover:bg-slate-900 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 cursor-pointer transition-all shadow-md shrink-0"
+                  >
+                    <span>Quay lại</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="p-6 bg-white rounded-3xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="text-xs text-slate-500">
+                    Bằng việc gửi đề xuất, bạn xác nhận thông tin địa điểm là chính xác và tuân thủ tiêu chuẩn cộng đồng LangThang.
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 cursor-pointer transition-all shadow-md active-press disabled:opacity-50 shrink-0"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Đang gửi đề xuất...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Gửi đề xuất địa điểm mới</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="lg:col-span-4 space-y-6 sticky top-20">

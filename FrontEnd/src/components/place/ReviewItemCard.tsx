@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Star, ThumbsUp, MessageSquare, Share2, Play, Pencil, Trash2, Flag } from 'lucide-react'
+import { Star, ThumbsUp, MessageSquare, Play, Pencil, Trash2, Flag } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { placeService } from '@/services/placeService'
 import { ReviewCommentThread } from './ReviewCommentThread'
@@ -96,10 +96,6 @@ export const ReviewItemCard: React.FC<ReviewItemCardProps> = ({
     }
   }
 
-  const handleShare = () => {
-    navigator.clipboard.writeText(window.location.href)
-    alert('Đã sao chép liên kết đánh giá vào bộ nhớ tạm!')
-  }
 
   const handleUpdateReview = async (data: UpdateReviewRequest) => {
     try {
@@ -250,11 +246,10 @@ export const ReviewItemCard: React.FC<ReviewItemCardProps> = ({
             type="button"
             disabled={isLiking}
             onClick={handleLikeToggle}
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer disabled:opacity-60 ${
-              isLiked
-                ? 'text-emerald-700 bg-emerald-50 font-bold'
-                : 'hover:bg-slate-100 text-slate-600'
-            }`}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer disabled:opacity-60 ${isLiked
+              ? 'text-emerald-700 bg-emerald-50 font-bold'
+              : 'hover:bg-slate-100 text-slate-600'
+              }`}
           >
             <ThumbsUp className={`w-3.5 h-3.5 ${isLiked ? 'fill-emerald-600' : ''}`} />
             <span>{likesCount > 0 ? likesCount : 'Hữu ích'}</span>
@@ -262,11 +257,10 @@ export const ReviewItemCard: React.FC<ReviewItemCardProps> = ({
 
           <button type="button"
             onClick={() => setIsCommentsOpen(!isCommentsOpen)}
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer ${
-              isCommentsOpen
-                ? 'text-emerald-700 bg-emerald-50 font-bold'
-                : 'hover:bg-slate-100 text-slate-600'
-            }`}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer ${isCommentsOpen
+              ? 'text-emerald-700 bg-emerald-50 font-bold'
+              : 'hover:bg-slate-100 text-slate-600'
+              }`}
           >
             <MessageSquare className="w-3.5 h-3.5" />
             <span>
@@ -276,23 +270,17 @@ export const ReviewItemCard: React.FC<ReviewItemCardProps> = ({
         </div>
 
         <div className="flex items-center gap-1.5">
-          <button type="button"
-            onClick={handleShare}
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-            title="Chia sẻ đánh giá"
-          >
-            <Share2 className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Chia sẻ</span>
-          </button>
 
-          <button type="button"
-            onClick={() => setIsReportModalOpen(true)}
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-            title="Báo cáo đánh giá vi phạm"
-          >
-            <Flag className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Báo cáo</span>
-          </button>
+          {!isOwner && (
+            <button type="button"
+              onClick={() => setIsReportModalOpen(true)}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+              title="Báo cáo đánh giá vi phạm"
+            >
+              <Flag className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Báo cáo</span>
+            </button>
+          )}
         </div>
       </div>
 

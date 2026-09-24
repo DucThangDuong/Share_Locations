@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { Star, X, ImageIcon, Video, Trash2, Calendar, AlertCircle, Loader2, Send } from 'lucide-react'
+import { Star, X, ImageIcon, Video, Trash2, AlertCircle, Loader2, Send } from 'lucide-react'
 import type { CreateReviewRequest, ReviewItemDto } from '@/types/models/place.model'
 
 interface CreateReviewFormProps {
@@ -212,9 +212,8 @@ export const CreateReviewForm: React.FC<CreateReviewFormProps> = ({
                     className="p-1 hover:brightness-125 transition-all cursor-pointer"
                   >
                     <Star
-                      className={`w-6 h-6 ${
-                        s <= activeVal ? 'fill-amber-400 text-amber-400' : 'text-slate-300'
-                      }`}
+                      className={`w-6 h-6 ${s <= activeVal ? 'fill-amber-400 text-amber-400' : 'text-slate-300'
+                        }`}
                     />
                   </button>
                 )
@@ -222,22 +221,6 @@ export const CreateReviewForm: React.FC<CreateReviewFormProps> = ({
               <span className="text-xs font-bold text-slate-800 ml-1.5">
                 {getRatingLabel(hoverRating || rating)}
               </span>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
-              Thời gian ghé thăm
-            </label>
-            <div className="relative">
-              <input
-                type="date"
-                max={new Date().toISOString().split('T')[0]}
-                value={visitDate}
-                onChange={(e) => setVisitDate(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
-              />
-              <Calendar className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
             </div>
           </div>
         </div>

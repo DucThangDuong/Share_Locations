@@ -42,18 +42,31 @@ export interface UpdateVisitLogRequest {
 export interface ProposalItem {
   id: number
   name: string
+  categoryId?: number | null
   category?: string | null
+  categoryName?: string | null
+  provinceId?: number | null
   province?: string | null
+  provinceName?: string | null
   address?: string | null
+  phone?: string | null
+  website?: string | null
   openingHours?: string | null
   minPrice?: number | null
   maxPrice?: number | null
+  latitude?: number | null
+  longitude?: number | null
   description?: string | null
   coverImg?: string | null
-  mediaUrls: string[]
+  mediaUrls?: string[]
+  proposalType?: number
+  targetPlaceId?: number | null
   status: number
+  statusText?: string | null
+  adminNote?: string | null
   rejectReason?: string | null
   createdAt: string
+  updatedAt?: string
 }
 
 export interface CreateProposalRequest {

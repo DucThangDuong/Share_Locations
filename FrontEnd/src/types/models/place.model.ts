@@ -112,6 +112,9 @@ export interface PlaceDetailDto {
   highlights: string[]
   status: number
   createdAt: string
+  isSaved?: boolean
+  isVisited?: boolean
+  isCheckedIn?: boolean
 }
 
 export interface ReviewItemDto {

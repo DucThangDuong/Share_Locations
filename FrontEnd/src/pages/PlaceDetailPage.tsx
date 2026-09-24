@@ -19,6 +19,7 @@ export const PlaceDetailPage = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isSaved, setIsSaved] = useState(false)
+  const [isVisited, setIsVisited] = useState(false)
   const [isReportOpen, setIsReportOpen] = useState(false)
   const [isShareOpen, setIsShareOpen] = useState(false)
   const [shareToastMsg, setShareToastMsg] = useState<string | null>(null)
@@ -45,15 +46,10 @@ export const PlaceDetailPage = () => {
         const placeRes = await placeService.getPlaceById(id)
         if (placeRes.success && placeRes.data) {
           setPlace(placeRes.data)
+          setIsSaved(Boolean(placeRes.data.isSaved))
+          setIsVisited(Boolean(placeRes.data.isVisited ?? placeRes.data.isCheckedIn))
           if (isAuthenticated) {
             userService.recordAccessHistory(Number(id)).catch(() => {})
-            userService.getMyFavorites({ targetType: 1, pageSize: 100 }).then((favRes) => {
-              if (favRes.success && favRes.data) {
-                const items = Array.isArray(favRes.data) ? favRes.data : (favRes.data.items || [])
-                const isFav = items.some((f) => f.targetId === Number(id))
-                setIsSaved(isFav)
-              }
-            }).catch(() => {})
           }
           try {
             const stored = JSON.parse(localStorage.getItem('langthang_recent_visited') || '[]')
@@ -141,6 +137,33 @@ export const PlaceDetailPage = () => {
       }
     } catch {
       setIsSaved(!isSaved)
+    }
+  }
+
+  const handleToggleVisit = async () => {
+    if (!id || !isAuthenticated) {
+      alert('Vui lòng đăng nhập để ghi nhận điểm đến.')
+      return
+    }
+    const targetId = Number(id)
+    try {
+      const todayStr = new Date().toISOString().split('T')[0]
+      const res = await userService.createVisitLog({
+        placeId: targetId,
+        visitedDate: todayStr,
+        privacy: 1 // Private
+      })
+      if (res.success) {
+        setIsVisited(true)
+        setShareToastMsg('Đã ghi nhận điểm đến vào nhật ký hành trình!')
+        setTimeout(() => setShareToastMsg(null), 3000)
+      } else {
+        setShareToastMsg(res.message || 'Không thể ghi nhận điểm đến.')
+        setTimeout(() => setShareToastMsg(null), 3000)
+      }
+    } catch {
+      setShareToastMsg('Có lỗi xảy ra khi ghi nhận điểm đến.')
+      setTimeout(() => setShareToastMsg(null), 3000)
     }
   }
 
@@ -239,7 +262,9 @@ export const PlaceDetailPage = () => {
               place={place}
               totalReviews={totalReviews}
               isSaved={isSaved}
+              isVisited={isVisited}
               onToggleSave={handleToggleSave}
+              onToggleVisit={handleToggleVisit}
               onShare={handleShare}
               onOpenReport={() => setIsReportOpen(true)}
             />

@@ -32,7 +32,13 @@ public class CreateProposalCommandHandler : IRequestHandler<CreateProposalComman
         }
 
         var json = JsonSerializer.Serialize(dto);
-        var proposal = new Proposal(request.UserId, json);
+        var proposal = new Proposal(
+            request.UserId,
+            json,
+            null,
+            dto.CategoryId > 0 ? dto.CategoryId : null,
+            dto.ProvinceId > 0 ? dto.ProvinceId : null,
+            ProposalType.NewPlace);
 
         await _unitOfWork.Proposals.AddAsync(proposal, ct);
         await _unitOfWork.SaveChangesAsync(ct);
@@ -41,15 +47,26 @@ public class CreateProposalCommandHandler : IRequestHandler<CreateProposalComman
         {
             Id = proposal.Id,
             Name = dto.Name,
+            CategoryId = dto.CategoryId > 0 ? dto.CategoryId : null,
+            ProvinceId = dto.ProvinceId > 0 ? dto.ProvinceId : null,
             Address = dto.Address,
+            Phone = dto.Phone,
+            Website = dto.Website,
             OpeningHours = dto.OpeningHours,
             MinPrice = dto.MinPrice,
             MaxPrice = dto.MaxPrice,
+            Latitude = dto.Latitude,
+            Longitude = dto.Longitude,
             Description = dto.Description,
             CoverImg = dto.CoverImg,
             MediaUrls = dto.MediaUrls ?? new List<string>(),
+            ProposalType = (int)proposal.ProposalType,
+            TargetPlaceId = proposal.TargetPlaceId,
             Status = (int)proposal.Status,
-            CreatedAt = proposal.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
+            AdminNote = proposal.AdminNote,
+            RejectReason = proposal.RejectReason,
+            CreatedAt = proposal.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+            UpdatedAt = proposal.UpdatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
         };
 
         return Result<UserProposalItemDto>.Created(

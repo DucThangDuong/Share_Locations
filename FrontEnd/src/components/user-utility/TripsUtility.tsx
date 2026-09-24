@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import {
   Luggage,
   Search,
@@ -92,6 +92,35 @@ export const TripsUtility: React.FC<TripsUtilityProps> = ({
     )
   }, [trips, searchQuery])
 
+  const [isCreating, setIsCreating] = useState(false)
+
+  const handleCreateNewTrip = async () => {
+    setIsCreating(true)
+    try {
+      const res = await tripService.createTrip({
+        title: 'Chuyến đi mới của tôi',
+        description: 'Lên kế hoạch chuyến đi mới',
+        privacy: 1,
+        days: [
+          {
+            dayNumber: 1,
+            dayTitle: 'Ngày 1: Bắt đầu hành trình'
+          }
+        ]
+      })
+      if (res.success && res.data?.id) {
+        onClose?.()
+        navigate(`/itinerary/${res.data.id}`)
+        return
+      }
+    } catch {
+    } finally {
+      setIsCreating(false)
+    }
+    onClose?.()
+    navigate('/itinerary?mode=create')
+  }
+
   return (
     <div className={`flex flex-col ${isDrawer ? 'flex-1 overflow-hidden' : 'space-y-5'}`}>
       {/* Top Search and Create Action */}
@@ -116,21 +145,22 @@ export const TripsUtility: React.FC<TripsUtilityProps> = ({
           )}
         </div>
 
-        <Link
-          to="/itinerary"
-          onClick={onClose}
-          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-bold transition-all shadow-xs shrink-0 cursor-pointer"
+        <button
+          type="button"
+          disabled={isCreating}
+          onClick={handleCreateNewTrip}
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-bold transition-all shadow-xs shrink-0 cursor-pointer disabled:opacity-50"
         >
-          <Plus size={14} />
-          <span>Tạo chuyến</span>
-        </Link>
+          {isCreating ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+          <span>{isCreating ? 'Đang tạo...' : 'Tạo chuyến'}</span>
+        </button>
       </div>
 
       {/* Main Content */}
       <div className={isDrawer ? 'p-4 flex-1 overflow-y-auto space-y-2.5' : ''}>
         {isLoading ? (
           <div className="py-20 flex flex-col items-center justify-center text-slate-400 gap-2">
-            <Loader2 size={26} className="animate-spin text-blue-800" />
+            <Loader2 size={26} className="animate-spin text-emerald-800" />
             <span className="text-xs">Đang tải danh sách chuyến đi...</span>
           </div>
         ) : filteredTrips.length === 0 ? (
@@ -140,14 +170,15 @@ export const TripsUtility: React.FC<TripsUtilityProps> = ({
             <p className="text-xs text-slate-500 max-w-sm">
               Lên kế hoạch cho chuyến hành trình khám phá các điểm đến tuyệt đẹp của Việt Nam ngay!
             </p>
-            <Link
-              to="/itinerary"
-              onClick={onClose}
-              className="mt-3 px-4 py-2 text-xs font-bold text-white bg-emerald-800 rounded-xl hover:bg-emerald-900 transition-colors shadow-xs inline-flex items-center gap-1.5"
+            <button
+              type="button"
+              disabled={isCreating}
+              onClick={handleCreateNewTrip}
+              className="mt-3 px-4 py-2 text-xs font-bold text-white bg-emerald-800 rounded-xl hover:bg-emerald-900 transition-colors shadow-xs inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
             >
-              <Plus size={14} />
-              <span>Lên lịch trình ngay</span>
-            </Link>
+              {isCreating ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+              <span>{isCreating ? 'Đang tạo...' : 'Lên lịch trình ngay'}</span>
+            </button>
           </div>
         ) : isDrawer ? (
           /* Drawer Compact Clean Layout (No Fake Cover Photos) */

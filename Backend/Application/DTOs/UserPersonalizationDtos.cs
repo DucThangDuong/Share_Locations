@@ -166,14 +166,32 @@ public class UserProposalItemDto
     [JsonPropertyName("name")]
     public string Name { get; set; } = string.Empty;
 
+    [JsonPropertyName("categoryId")]
+    public int? CategoryId { get; set; }
+
     [JsonPropertyName("category")]
     public string? Category { get; set; }
+
+    [JsonPropertyName("categoryName")]
+    public string? CategoryName { get; set; }
+
+    [JsonPropertyName("provinceId")]
+    public int? ProvinceId { get; set; }
 
     [JsonPropertyName("province")]
     public string? Province { get; set; }
 
+    [JsonPropertyName("provinceName")]
+    public string? ProvinceName { get; set; }
+
     [JsonPropertyName("address")]
     public string? Address { get; set; }
+
+    [JsonPropertyName("phone")]
+    public string? Phone { get; set; }
+
+    [JsonPropertyName("website")]
+    public string? Website { get; set; }
 
     [JsonPropertyName("openingHours")]
     public string? OpeningHours { get; set; }
@@ -184,6 +202,12 @@ public class UserProposalItemDto
     [JsonPropertyName("maxPrice")]
     public decimal? MaxPrice { get; set; }
 
+    [JsonPropertyName("latitude")]
+    public decimal? Latitude { get; set; }
+
+    [JsonPropertyName("longitude")]
+    public decimal? Longitude { get; set; }
+
     [JsonPropertyName("description")]
     public string? Description { get; set; }
 
@@ -193,14 +217,36 @@ public class UserProposalItemDto
     [JsonPropertyName("mediaUrls")]
     public List<string> MediaUrls { get; set; } = new();
 
+    [JsonPropertyName("proposalType")]
+    public int ProposalType { get; set; }
+
+    [JsonPropertyName("targetPlaceId")]
+    public long? TargetPlaceId { get; set; }
+
     [JsonPropertyName("status")]
     public int Status { get; set; }
+
+    [JsonPropertyName("statusText")]
+    public string StatusText => Status switch
+    {
+        0 => "Chờ duyệt",
+        1 => "Đã duyệt",
+        2 => "Đã từ chối",
+        3 => "Yêu cầu bổ sung",
+        _ => "Không xác định"
+    };
+
+    [JsonPropertyName("adminNote")]
+    public string? AdminNote { get; set; }
 
     [JsonPropertyName("rejectReason")]
     public string? RejectReason { get; set; }
 
     [JsonPropertyName("createdAt")]
     public string CreatedAt { get; set; } = string.Empty;
+
+    [JsonPropertyName("updatedAt")]
+    public string? UpdatedAt { get; set; }
 }
 
 public class UserProposalPagedResultDto

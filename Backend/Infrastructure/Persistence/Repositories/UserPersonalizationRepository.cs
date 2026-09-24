@@ -267,12 +267,25 @@ public class UserPersonalizationRepository : IUserPersonalizationRepository
         const string sql = @"
             SELECT
                 pr.Id,
+                pr.UserId,
+                CAST(pr.ProposalType AS INT) AS ProposalType,
+                pr.TargetPlaceId,
+                pr.CategoryId,
+                cat.Name AS CategoryName,
+                pr.ProvinceId,
+                prov.Name AS ProvinceName,
                 pr.ProposedDataJSON,
                 CAST(pr.Status AS INT) AS Status,
+                pr.AdminNote,
                 pr.RejectReason,
                 pr.CreatedAt,
+                pr.UpdatedAt,
                 COUNT(1) OVER() AS TotalCount
             FROM dbo.Proposals pr
+            LEFT JOIN dbo.Categories cat ON (pr.CategoryId IS NOT NULL AND pr.CategoryId = cat.Id) 
+                OR (pr.CategoryId IS NULL AND JSON_VALUE(pr.ProposedDataJSON, '$.categoryId') = CAST(cat.Id AS NVARCHAR(10)))
+            LEFT JOIN dbo.Provinces prov ON (pr.ProvinceId IS NOT NULL AND pr.ProvinceId = prov.Id) 
+                OR (pr.ProvinceId IS NULL AND JSON_VALUE(pr.ProposedDataJSON, '$.provinceId') = CAST(prov.Id AS NVARCHAR(10)))
             WHERE pr.UserId = @UserId
               AND (@Status IS NULL OR pr.Status = @Status)
             ORDER BY pr.CreatedAt DESC
@@ -292,15 +305,22 @@ public class UserPersonalizationRepository : IUserPersonalizationRepository
         foreach (var r in rows)
         {
             DateTime created = (DateTime)r.CreatedAt;
+            DateTime? updated = r.UpdatedAt != null ? (DateTime)r.UpdatedAt : null;
             string rawJson = (string)(r.ProposedDataJSON ?? "{}");
 
+            int? categoryId = (int?)r.CategoryId;
+            string? categoryName = (string?)r.CategoryName;
+            int? provinceId = (int?)r.ProvinceId;
+            string? provinceName = (string?)r.ProvinceName;
             string name = string.Empty;
             string address = string.Empty;
-            string? category = null;
-            string? province = null;
+            string? phone = null;
+            string? website = null;
             string? openingHours = null;
             decimal? minPrice = null;
             decimal? maxPrice = null;
+            decimal? latitude = null;
+            decimal? longitude = null;
             string? description = null;
             string? coverImg = null;
             var mediaUrls = new List<string>();
@@ -311,13 +331,19 @@ public class UserPersonalizationRepository : IUserPersonalizationRepository
                 var root = doc.RootElement;
 
                 if (root.TryGetProperty("name", out var pName)) name = pName.GetString() ?? string.Empty;
+                if (root.TryGetProperty("categoryId", out var pCatId) && pCatId.TryGetInt32(out var cId)) categoryId ??= cId;
+                if (root.TryGetProperty("provinceId", out var pProvId) && pProvId.TryGetInt32(out var pvId)) provinceId ??= pvId;
                 if (root.TryGetProperty("address", out var pAddr)) address = pAddr.GetString() ?? string.Empty;
+                if (root.TryGetProperty("phone", out var pPhone)) phone = pPhone.GetString();
+                if (root.TryGetProperty("website", out var pWeb)) website = pWeb.GetString();
                 if (root.TryGetProperty("openingHours", out var pOpen)) openingHours = pOpen.GetString();
                 if (root.TryGetProperty("description", out var pDesc)) description = pDesc.GetString();
                 if (root.TryGetProperty("coverImg", out var pCover)) coverImg = pCover.GetString();
 
                 if (root.TryGetProperty("minPrice", out var pMin) && pMin.TryGetDecimal(out var dMin)) minPrice = dMin;
                 if (root.TryGetProperty("maxPrice", out var pMax) && pMax.TryGetDecimal(out var dMax)) maxPrice = dMax;
+                if (root.TryGetProperty("latitude", out var pLat) && pLat.TryGetDecimal(out var dLat)) latitude = dLat;
+                if (root.TryGetProperty("longitude", out var pLng) && pLng.TryGetDecimal(out var dLng)) longitude = dLng;
 
                 if (root.TryGetProperty("mediaUrls", out var pMedias) && pMedias.ValueKind == JsonValueKind.Array)
                 {
@@ -337,18 +363,30 @@ public class UserPersonalizationRepository : IUserPersonalizationRepository
             {
                 Id = (long)r.Id,
                 Name = !string.IsNullOrWhiteSpace(name) ? name : $"Đề xuất #{r.Id}",
-                Category = category,
-                Province = province,
+                CategoryId = categoryId,
+                Category = categoryName,
+                CategoryName = categoryName,
+                ProvinceId = provinceId,
+                Province = provinceName,
+                ProvinceName = provinceName,
                 Address = address,
+                Phone = phone,
+                Website = website,
                 OpeningHours = openingHours,
                 MinPrice = minPrice,
                 MaxPrice = maxPrice,
+                Latitude = latitude,
+                Longitude = longitude,
                 Description = description,
                 CoverImg = coverImg,
                 MediaUrls = mediaUrls,
+                ProposalType = r.ProposalType != null ? (int)r.ProposalType : 0,
+                TargetPlaceId = (long?)r.TargetPlaceId,
                 Status = (int)r.Status,
+                AdminNote = (string?)r.AdminNote,
                 RejectReason = (string?)r.RejectReason,
-                CreatedAt = created.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
+                CreatedAt = created.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                UpdatedAt = updated?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
             });
         }
 

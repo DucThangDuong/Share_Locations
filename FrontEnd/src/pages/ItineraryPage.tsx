@@ -248,6 +248,47 @@ export const ItineraryPage: React.FC = () => {
   }, [hasUnsavedChanges])
 
   useEffect(() => {
+    const mode = searchParams.get('mode')
+
+    if (mode === 'create' || params.id === 'new') {
+      const blankTrip: DetailedItineraryItem = {
+        id: Date.now(),
+        title: 'Chuyến đi của tôi',
+        slug: 'chuyen-di-moi',
+        province: 'Việt Nam',
+        region: 'Miền Bắc',
+        durationDays: 1,
+        nightsCount: 0,
+        estimatedBudget: 0,
+        privacy: 1,
+        coverImg: '',
+        authorName: 'Bạn',
+        authorAvatar: '',
+        tags: [],
+        description: 'Lên kế hoạch và lưu lại các địa điểm yêu thích.',
+        days: [
+          {
+            dayNumber: 1,
+            title: 'Ngày 1: Bắt đầu hành trình',
+            description: 'Lộ trình tham quan',
+            stops: []
+          }
+        ],
+        backlogStops: [],
+        members: [],
+        createdAt: new Date().toISOString().split('T')[0]
+      }
+      setPlannerTrip(blankTrip)
+      setCurrentUserRole('Owner')
+      setExpandedDayIndices(new Set([0]))
+      setIsWishlistExpanded(true)
+      setSelectedStopInfo(null)
+      setViewMode('planner')
+      setHasUnsavedChanges(true)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
+
     if (params.id) {
       const parsedId = Number(params.id)
       if (parsedId) {
@@ -277,7 +318,7 @@ export const ItineraryPage: React.FC = () => {
       setViewMode('catalog')
       fetchCatalog()
     }
-  }, [location.pathname, params.id, fetchCatalog])
+  }, [location.pathname, params.id, searchParams, fetchCatalog])
 
   const handleSaveTrip = async () => {
     if (!plannerTrip) return
@@ -1163,6 +1204,7 @@ export const ItineraryPage: React.FC = () => {
           onSelectBudget={handleSelectBudget}
           onResetFilters={handleResetFilters}
           onApplyItinerary={handleApplyItinerary}
+          onCreateTrip={() => navigate('/itinerary?mode=create')}
         />
       )}
 

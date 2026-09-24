@@ -196,22 +196,26 @@ export const ReviewCommentItem: React.FC<ReviewCommentItemProps> = ({
                 <span>Phản hồi</span>
               </button>
 
-              <span>•</span>
-              <button type="button"
-                onClick={() => {
-                  setReportTarget({
-                    id: comment.id,
-                    author: comment.userName,
-                    content: comment.content
-                  })
-                  setIsReportModalOpen(true)
-                }}
-                className="hover:text-rose-600 flex items-center gap-1 cursor-pointer transition-colors text-slate-400"
-                title="Báo cáo bình luận vi phạm"
-              >
-                <Flag className="w-3 h-3" />
-                <span>Báo cáo</span>
-              </button>
+              {!isParentOwner && (
+                <>
+                  <span>•</span>
+                  <button type="button"
+                    onClick={() => {
+                      setReportTarget({
+                        id: comment.id,
+                        author: comment.userName,
+                        content: comment.content
+                      })
+                      setIsReportModalOpen(true)
+                    }}
+                    className="hover:text-rose-600 flex items-center gap-1 cursor-pointer transition-colors text-slate-400"
+                    title="Báo cáo bình luận vi phạm"
+                  >
+                    <Flag className="w-3 h-3" />
+                    <span>Báo cáo</span>
+                  </button>
+                </>
+              )}
 
               {isParentOwner && (
                 <>
@@ -371,22 +375,26 @@ export const ReviewCommentItem: React.FC<ReviewCommentItemProps> = ({
                         <span>Phản hồi</span>
                       </button>
 
-                      <span>•</span>
-                      <button type="button"
-                        onClick={() => {
-                          setReportTarget({
-                            id: reply.id,
-                            author: reply.userName,
-                            content: reply.content
-                          })
-                          setIsReportModalOpen(true)
-                        }}
-                        className="hover:text-rose-600 flex items-center gap-1 cursor-pointer transition-colors text-slate-400"
-                        title="Báo cáo phản hồi vi phạm"
-                      >
-                        <Flag className="w-3 h-3" />
-                        <span>Báo cáo</span>
-                      </button>
+                      {!isReplyOwner && (
+                        <>
+                          <span>•</span>
+                          <button type="button"
+                            onClick={() => {
+                              setReportTarget({
+                                id: reply.id,
+                                author: reply.userName,
+                                content: reply.content
+                              })
+                              setIsReportModalOpen(true)
+                            }}
+                            className="hover:text-rose-600 flex items-center gap-1 cursor-pointer transition-colors text-slate-400"
+                            title="Báo cáo phản hồi vi phạm"
+                          >
+                            <Flag className="w-3 h-3" />
+                            <span>Báo cáo</span>
+                          </button>
+                        </>
+                      )}
 
                       {isReplyOwner && (
                         <>

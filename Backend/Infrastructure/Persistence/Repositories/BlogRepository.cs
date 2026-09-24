@@ -228,4 +228,32 @@ public class BlogRepository : IBlogRepository
             Featured = baseDto.Featured
         };
     }
+
+    public async Task<BlogForEditDto?> GetBlogForEditAsync(long blogId, long userId, CancellationToken ct = default)
+    {
+        var connection = _dbContext.Database.GetDbConnection();
+
+        const string sql = @"
+            SELECT 
+                b.Id,
+                b.AuthorId,
+                b.Title,
+                b.Slug,
+                b.Excerpt,
+                b.ContentJSON,
+                b.CoverImageUrl,
+                b.CategoryId,
+                c.Name AS CategoryName,
+                b.ReadTimeMinutes,
+                b.ViewCount,
+                CAST(b.Status AS INT) AS Status,
+                b.CreatedAt,
+                b.UpdatedAt
+            FROM dbo.Blogs b
+            LEFT JOIN dbo.Categories c ON b.CategoryId = c.Id
+            WHERE b.Id = @Id AND b.AuthorId = @UserId;";
+
+        return await connection.QueryFirstOrDefaultAsync<BlogForEditDto>(sql, new { Id = blogId, UserId = userId });
+    }
 }
+

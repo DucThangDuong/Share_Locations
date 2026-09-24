@@ -6,9 +6,12 @@ import type {
   BlogFilterParams,
   BlogLikeResponseDto,
   CreateBlogRequest,
-  UpdateBlogRequest
+  UpdateBlogRequest,
+  UserBlogItemDto,
+  BlogForEditDto,
+  MyBlogFilterParams
 } from '@/types/models/blogArticle.model'
-import type { UserBlogItem } from '@/types/models/userProfile.model'
+import type { UserBlogItem, PagedResultDto } from '@/types/models/userProfile.model'
 
 export const blogService = {
   async getBlogs(params?: BlogFilterParams): Promise<ApiSuccessResponse<BlogListItemDto[]>> {
@@ -26,6 +29,26 @@ export const blogService = {
     const response = await apiClient.get<ApiSuccessResponse<BlogListItemDto[]>>('/api/blogs', {
       params: cleanParams
     })
+    return response.data
+  },
+
+  async getMyBlogs(params?: MyBlogFilterParams): Promise<ApiSuccessResponse<PagedResultDto<UserBlogItemDto> | UserBlogItemDto[]>> {
+    const cleanParams: Record<string, unknown> = {}
+    if (params?.status !== undefined && params?.status !== null) {
+      cleanParams.status = params.status
+    }
+    if (params?.page) cleanParams.page = params.page
+    if (params?.pageSize) cleanParams.pageSize = params.pageSize
+
+    const response = await apiClient.get<ApiSuccessResponse<PagedResultDto<UserBlogItemDto> | UserBlogItemDto[]>>(
+      '/api/blogs/my-blogs',
+      { params: cleanParams }
+    )
+    return response.data
+  },
+
+  async getMyBlogForEdit(id: number | string): Promise<ApiSuccessResponse<BlogForEditDto>> {
+    const response = await apiClient.get<ApiSuccessResponse<BlogForEditDto>>(`/api/blogs/my-blogs/${id}`)
     return response.data
   },
 
@@ -59,3 +82,4 @@ export const blogService = {
     return response.data
   }
 }
+

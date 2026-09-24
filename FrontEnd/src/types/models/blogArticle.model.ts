@@ -56,3 +56,39 @@ export interface UpdateBlogRequest {
   readTimeMinutes?: number
   status?: number
 }
+
+export interface UserBlogItemDto {
+  id: number
+  title: string
+  excerpt?: string | null
+  coverImageUrl?: string | null
+  contentJSON: string
+  categoryId?: number | null
+  categoryName?: string | null
+  readTimeMinutes: number
+  status: number
+  viewCount: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface BlogForEditDto {
+  id: number
+  title: string
+  slug: string
+  excerpt?: string | null
+  contentJSON: string
+  coverImageUrl?: string | null
+  categoryId?: number | null
+  categoryName?: string | null
+  readTimeMinutes: number
+  status: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface MyBlogFilterParams {
+  status?: number
+  page?: number
+  pageSize?: number
+}

@@ -127,11 +127,16 @@ export const userService = {
     status?: number
     page?: number
     pageSize?: number
-  }): Promise<ApiSuccessResponse<PagedResultDto<ProposalItem>>> {
-    const response = await apiClient.get<ApiSuccessResponse<PagedResultDto<ProposalItem>>>(
-      '/api/users/me/proposals',
+  }): Promise<ApiSuccessResponse<PagedResultDto<ProposalItem> | ProposalItem[]>> {
+    const response = await apiClient.get<ApiSuccessResponse<PagedResultDto<ProposalItem> | ProposalItem[]>>(
+      '/api/proposals/my-proposals',
       { params }
     )
+    return response.data
+  },
+
+  async getProposalById(id: number | string): Promise<ApiSuccessResponse<ProposalItem>> {
+    const response = await apiClient.get<ApiSuccessResponse<ProposalItem>>(`/api/proposals/${id}`)
     return response.data
   },
 

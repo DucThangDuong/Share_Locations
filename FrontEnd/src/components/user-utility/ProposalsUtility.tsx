@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   MapPin,
   Search,
@@ -10,10 +10,7 @@ import {
   CheckCircle2,
   Clock,
   AlertCircle,
-  Loader2,
-  ChevronLeft,
-  ChevronRight,
-  Building2
+  Loader2
 } from 'lucide-react'
 import { userService } from '@/services/userService'
 import type { ProposalItem, PagedResultDto } from '@/types/models/userProfile.model'
@@ -31,19 +28,20 @@ export const ProposalsUtility: React.FC<ProposalsUtilityProps> = ({
   onClose,
   onToast
 }) => {
+  const navigate = useNavigate()
   const [proposals, setProposals] = useState<ProposalItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<ProposalStatusFilter>('all')
   const [searchQuery, setSearchQuery] = useState('')
 
-  // View Details Modal
-  const [selectedProposal, setSelectedProposal] = useState<ProposalItem | null>(null)
-  const [activeImgIndex, setActiveImgIndex] = useState(0)
-
   const fetchProposals = useCallback(async () => {
     setIsLoading(true)
     try {
-      const res = await userService.getMyProposals({ pageSize: 50 })
+      const res = await userService.getMyProposals({
+        status: statusFilter === 'all' ? undefined : statusFilter,
+        page: 1,
+        pageSize: 50
+      })
       if (res.success && res.data) {
         if (Array.isArray(res.data)) {
           setProposals(res.data)
@@ -60,7 +58,7 @@ export const ProposalsUtility: React.FC<ProposalsUtilityProps> = ({
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [statusFilter])
 
   useEffect(() => {
     fetchProposals()
@@ -75,15 +73,17 @@ export const ProposalsUtility: React.FC<ProposalsUtilityProps> = ({
       if (res.success) {
         setProposals((prev) => prev.filter((p) => p.id !== id))
         onToast?.('Đã thu hồi đề xuất địa điểm.')
-        if (selectedProposal?.id === id) {
-          setSelectedProposal(null)
-        }
       } else {
         onToast?.('Không thể thu hồi đề xuất lúc này.')
       }
     } catch {
       onToast?.('Có lỗi xảy ra khi thu hồi đề xuất.')
     }
+  }
+
+  const handleSelectProposal = (p: ProposalItem) => {
+    onClose?.()
+    navigate(`/propose-place?view=${p.id}`, { state: { proposal: p } })
   }
 
   const filteredProposals = useMemo(() => {
@@ -94,7 +94,10 @@ export const ProposalsUtility: React.FC<ProposalsUtilityProps> = ({
         return (
           p.name?.toLowerCase().includes(q) ||
           p.address?.toLowerCase().includes(q) ||
-          p.province?.toLowerCase().includes(q)
+          p.province?.toLowerCase().includes(q) ||
+          p.provinceName?.toLowerCase().includes(q) ||
+          p.category?.toLowerCase().includes(q) ||
+          p.categoryName?.toLowerCase().includes(q)
         )
       }
       return true
@@ -125,6 +128,14 @@ export const ProposalsUtility: React.FC<ProposalsUtilityProps> = ({
         </span>
       )
     }
+    if (status === 3) {
+      return (
+        <span className="px-2.5 py-0.8 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-300 flex items-center gap-1 shrink-0">
+          <Clock size={11} className="text-amber-600" />
+          <span>Cần bổ sung</span>
+        </span>
+      )
+    }
     return (
       <span className="px-2.5 py-0.8 rounded-full text-[11px] font-bold bg-amber-50 text-amber-900 border border-amber-200 flex items-center gap-1 shrink-0">
         <Clock size={11} className="text-amber-700" />
@@ -137,48 +148,26 @@ export const ProposalsUtility: React.FC<ProposalsUtilityProps> = ({
     <div className={`flex flex-col ${isDrawer ? 'flex-1 overflow-hidden' : 'space-y-5'}`}>
       {/* Top Filter Chips and Actions */}
       <div className={`flex flex-col gap-2.5 ${isDrawer ? 'px-4 py-3 border-b border-slate-200 bg-white' : 'pb-3 border-b border-slate-200'}`}>
-        <div className="flex flex-wrap items-center gap-1.5">
-          {filterTabs.map((tab) => (
-            <button
-              key={String(tab.id)}
-              type="button"
-              onClick={() => setStatusFilter(tab.id)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${
-                statusFilter === tab.id
-                  ? 'bg-rose-700 text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              <span>{tab.label}</span>
-              <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${statusFilter === tab.id ? 'bg-rose-900 text-rose-100' : 'bg-slate-200 text-slate-600'}`}>
-                {tab.count}
-              </span>
-            </button>
-          ))}
-        </div>
-
-        <div className="flex items-center gap-2">
-          {!isDrawer && (
-            <div className="relative w-full sm:w-60">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Tìm kiếm đề xuất..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-8 pr-7 py-1.5 bg-slate-50 focus:bg-white border border-slate-200 focus:border-rose-600 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 outline-none transition-all"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                >
-                  <X size={13} />
-                </button>
-              )}
-            </div>
-          )}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-1.5">
+            {filterTabs.map((tab) => (
+              <button
+                key={String(tab.id)}
+                type="button"
+                onClick={() => setStatusFilter(tab.id)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${
+                  statusFilter === tab.id
+                    ? 'bg-rose-700 text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                <span>{tab.label}</span>
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${statusFilter === tab.id ? 'bg-rose-900 text-rose-100' : 'bg-slate-200 text-slate-600'}`}>
+                  {tab.count}
+                </span>
+              </button>
+            ))}
+          </div>
 
           <Link
             to="/propose-place"
@@ -188,6 +177,26 @@ export const ProposalsUtility: React.FC<ProposalsUtilityProps> = ({
             <Plus size={14} />
             <span>Đề xuất địa điểm</span>
           </Link>
+        </div>
+
+        <div className="relative w-full sm:w-72">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Tìm kiếm theo tên, địa chỉ, tỉnh thành..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-8 pr-7 py-1.5 bg-slate-50 focus:bg-white border border-slate-200 focus:border-rose-600 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 outline-none transition-all"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+            >
+              <X size={13} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -220,24 +229,21 @@ export const ProposalsUtility: React.FC<ProposalsUtilityProps> = ({
             {filteredProposals.map((p) => (
               <div
                 key={p.id}
-                onClick={() => {
-                  setSelectedProposal(p)
-                  setActiveImgIndex(0)
-                }}
+                onClick={() => handleSelectProposal(p)}
                 className="group relative p-3 rounded-2xl border border-slate-100 hover:border-slate-200 hover:bg-slate-50 transition-all cursor-pointer shadow-2xs bg-white"
               >
                 <div className="flex items-center justify-between mb-1 pr-6">
-                  <h4 className="text-xs font-bold text-slate-900 truncate flex-1">
+                  <h4 className="text-xs font-bold text-slate-900 truncate flex-1 group-hover:text-emerald-800 transition-colors">
                     {p.name}
                   </h4>
                   {renderStatusBadge(p.status)}
                 </div>
                 <p className="text-[11px] text-slate-400 truncate mt-0.5">
-                  {p.address || p.province || 'Địa điểm mới'}
+                  {p.address || p.provinceName || p.province || 'Địa điểm mới'}
                 </p>
                 <p className="text-[10px] text-slate-400 mt-1 flex items-center justify-between">
                   <span>{new Date(p.createdAt).toLocaleDateString('vi-VN')}</span>
-                  <span className="text-rose-700 font-bold">Xem chi tiết →</span>
+                  <span className="text-emerald-800 font-bold group-hover:underline">Xem chi tiết →</span>
                 </p>
 
                 <button
@@ -263,22 +269,19 @@ export const ProposalsUtility: React.FC<ProposalsUtilityProps> = ({
               return (
                 <div
                   key={p.id}
-                  onClick={() => {
-                    setSelectedProposal(p)
-                    setActiveImgIndex(0)
-                  }}
-                  className="group bg-white rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md hover:border-rose-300 transition-all overflow-hidden flex flex-col cursor-pointer"
+                  onClick={() => handleSelectProposal(p)}
+                  className="group bg-white rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md hover:border-emerald-300 transition-all overflow-hidden flex flex-col cursor-pointer"
                 >
                   <div className="relative aspect-16/10 w-full bg-slate-100 overflow-hidden">
                     <img
                       src={media}
                       alt={p.name}
-                      className="w-full h-full object-cover group-hover:opacity-80 transition-opacity duration-300"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       loading="lazy"
                     />
                     <div className="absolute top-3 left-3">
                       <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-900/70 text-white backdrop-blur-xs">
-                        {p.category || 'Địa điểm'}
+                        {p.categoryName || p.category || 'Địa điểm'}
                       </span>
                     </div>
 
@@ -300,12 +303,12 @@ export const ProposalsUtility: React.FC<ProposalsUtilityProps> = ({
 
                   <div className="p-4 flex flex-col flex-1 justify-between gap-3">
                     <div>
-                      <h4 className="text-base font-bold text-slate-900 group-hover:text-rose-700 transition-colors line-clamp-1">
+                      <h4 className="text-base font-bold text-slate-900 group-hover:text-emerald-800 transition-colors line-clamp-1">
                         {p.name}
                       </h4>
                       <p className="text-xs text-slate-500 line-clamp-1 mt-0.5 flex items-center gap-1">
                         <MapPin size={12} className="text-slate-400 shrink-0" />
-                        <span>{p.address || p.province || 'Việt Nam'}</span>
+                        <span>{p.address || p.provinceName || p.province || 'Việt Nam'}</span>
                       </p>
                       {p.description && (
                         <p className="text-xs text-slate-600 line-clamp-2 mt-2">
@@ -319,7 +322,7 @@ export const ProposalsUtility: React.FC<ProposalsUtilityProps> = ({
                         <Calendar size={12} />
                         <span>{new Date(p.createdAt).toLocaleDateString('vi-VN')}</span>
                       </span>
-                      <span className="text-rose-700 font-bold group-hover:underline text-[11px]">
+                      <span className="text-emerald-800 font-bold group-hover:underline text-[11px]">
                         Xem chi tiết →
                       </span>
                     </div>
@@ -330,124 +333,6 @@ export const ProposalsUtility: React.FC<ProposalsUtilityProps> = ({
           </div>
         )}
       </div>
-
-      {/* ══════════════════════════════════════════════════════════════════
-          MODAL: XEM CHI TIẾT ĐỀ XUẤT ĐỊA ĐIỂM
-      ══════════════════════════════════════════════════════════════════ */}
-      {selectedProposal && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 space-y-4 animate-in zoom-in-95 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2">
-                <Building2 className="w-5 h-5 text-rose-700" />
-                <h3 className="text-base font-extrabold text-slate-900">Chi tiết địa điểm đề xuất</h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedProposal(null)}
-                className="p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* Media Gallery / Carousel */}
-            {selectedProposal.mediaUrls && selectedProposal.mediaUrls.length > 0 ? (
-              <div className="relative aspect-16/9 w-full rounded-2xl overflow-hidden bg-slate-100">
-                <img
-                  src={selectedProposal.mediaUrls[activeImgIndex]}
-                  alt={selectedProposal.name}
-                  className="w-full h-full object-cover"
-                />
-                {selectedProposal.mediaUrls.length > 1 && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setActiveImgIndex((prev) =>
-                          prev === 0 ? selectedProposal.mediaUrls!.length - 1 : prev - 1
-                        )
-                      }
-                      className="absolute left-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-slate-900/60 text-white hover:bg-slate-900 cursor-pointer"
-                    >
-                      <ChevronLeft size={16} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setActiveImgIndex((prev) =>
-                          prev === selectedProposal.mediaUrls!.length - 1 ? 0 : prev + 1
-                        )
-                      }
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-slate-900/60 text-white hover:bg-slate-900 cursor-pointer"
-                    >
-                      <ChevronRight size={16} />
-                    </button>
-                  </>
-                )}
-              </div>
-            ) : selectedProposal.coverImg ? (
-              <div className="aspect-16/9 w-full rounded-2xl overflow-hidden bg-slate-100">
-                <img
-                  src={selectedProposal.coverImg}
-                  alt={selectedProposal.name}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            ) : null}
-
-            {/* Info details */}
-            <div className="space-y-3">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h4 className="text-base font-extrabold text-slate-900">{selectedProposal.name}</h4>
-                  <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
-                    <MapPin size={12} className="text-slate-400 shrink-0" />
-                    <span>{selectedProposal.address || selectedProposal.province || 'Việt Nam'}</span>
-                  </p>
-                </div>
-                {renderStatusBadge(selectedProposal.status)}
-              </div>
-
-              {selectedProposal.description && (
-                <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-100 text-xs text-slate-700 leading-relaxed">
-                  <p className="font-bold text-slate-800 mb-1">Mô tả địa điểm:</p>
-                  <p>{selectedProposal.description}</p>
-                </div>
-              )}
-
-              {selectedProposal.status === 2 && selectedProposal.rejectReason && (
-                <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-800 text-xs rounded-2xl space-y-1">
-                  <p className="font-bold flex items-center gap-1">
-                    <AlertCircle size={13} className="text-rose-600" />
-                    <span>Lý do từ chối từ Ban Quản trị:</span>
-                  </p>
-                  <p>{selectedProposal.rejectReason}</p>
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={(e) => handleDeleteProposal(e, selectedProposal.id)}
-                className="px-3.5 py-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors flex items-center gap-1.5 cursor-pointer"
-              >
-                <Trash2 size={13} />
-                <span>Thu hồi đề xuất</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setSelectedProposal(null)}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
-              >
-                Đóng
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

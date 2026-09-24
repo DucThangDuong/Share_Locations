@@ -1,4 +1,4 @@
-﻿using API.DTOs;
+using API.DTOs;
 using API.Extensions;
 using Application.DTOs;
 using Application.Features.Places.Queries;
@@ -31,7 +31,8 @@ public class GetPlaceDetailEndpoint : Endpoint<GetPlaceDetailRequest, ApiSuccess
 
     public override async Task HandleAsync(GetPlaceDetailRequest req, CancellationToken ct)
     {
-        var result = await Mediator.Send(new GetPlaceDetailQuery(req.Id), ct);
+        var userId = this.GetUserId();
+        var result = await Mediator.Send(new GetPlaceDetailQuery(req.Id, userId), ct);
         await this.SendApiResponseAsync(result, ct);
     }
 }

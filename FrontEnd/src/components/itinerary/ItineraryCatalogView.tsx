@@ -6,7 +6,8 @@ import {
   DollarSign,
   RotateCcw,
   Search,
-  X
+  X,
+  Plus
 } from 'lucide-react'
 import type { ItineraryDto } from '@/types/models/itinerary.model'
 import { ItineraryQuickPreviewModal } from './ItineraryQuickPreviewModal'
@@ -25,6 +26,7 @@ interface ItineraryCatalogViewProps {
   onResetFilters: () => void
   onApplyItinerary?: (itinerary: ItineraryDto) => void
   onQuickPreview?: (itinerary: ItineraryDto) => void
+  onCreateTrip?: () => void
 }
 
 const DURATIONS = [
@@ -56,7 +58,8 @@ export const ItineraryCatalogView: React.FC<ItineraryCatalogViewProps> = ({
   onSelectBudget,
   onResetFilters,
   onApplyItinerary,
-  onQuickPreview
+  onQuickPreview,
+  onCreateTrip
 }) => {
   const [previewItem, setPreviewItem] = useState<DetailedItineraryItem | null>(null)
   const [localSearch, setLocalSearch] = useState(searchQuery)
@@ -148,54 +151,67 @@ export const ItineraryCatalogView: React.FC<ItineraryCatalogViewProps> = ({
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 font-sans">
       {/* Search Header */}
-      {onSearchChange && (
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-slate-200">
-          <form onSubmit={handleSearchSubmit} className="flex items-center gap-2 flex-1 md:w-auto">
-            <div className="relative flex-1 md:w-96">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
-              <input
-                type="text"
-                placeholder="Tìm kiếm lịch trình, địa điểm, trải nghiệm..."
-                value={localSearch}
-                onChange={(e) => setLocalSearch(e.target.value)}
-                className="w-full pl-9 pr-8 py-2.5 bg-slate-50 focus:bg-white border border-slate-200 focus:border-emerald-600 rounded-xl text-xs text-slate-900 outline-hidden transition-all font-medium"
-              />
-              {localSearch && onClearSearch && (
-                <button
-                  type="button"
-                  onClick={handleClear}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
-                  title="Xóa tìm kiếm"
-                >
-                  <X size={14} />
-                </button>
-              )}
-            </div>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-slate-200">
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          {onSearchChange && (
+            <form onSubmit={handleSearchSubmit} className="flex items-center gap-2 flex-1 md:w-auto">
+              <div className="relative flex-1 md:w-96">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm lịch trình, địa điểm, trải nghiệm..."
+                  value={localSearch}
+                  onChange={(e) => setLocalSearch(e.target.value)}
+                  className="w-full pl-9 pr-8 py-2.5 bg-slate-50 focus:bg-white border border-slate-200 focus:border-emerald-600 rounded-xl text-xs text-slate-900 outline-hidden transition-all font-medium"
+                />
+                {localSearch && onClearSearch && (
+                  <button
+                    type="button"
+                    onClick={handleClear}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+                    title="Xóa tìm kiếm"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
 
-            <button
-              type="submit"
-              className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-800 hover:bg-emerald-900 text-white rounded-xl text-xs font-bold transition-all shadow-xs shrink-0 cursor-pointer"
-            >
-              <Search size={14} />
-              <span>Tìm kiếm</span>
-            </button>
-          </form>
+              <button
+                type="submit"
+                className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-800 hover:bg-emerald-900 text-white rounded-xl text-xs font-bold transition-all shadow-xs shrink-0 cursor-pointer"
+              >
+                <Search size={14} />
+                <span>Tìm kiếm</span>
+              </button>
+            </form>
+          )}
 
-          {hasActiveFilters && (
+          {onCreateTrip && (
             <button
               type="button"
-              onClick={() => {
-                setLocalSearch('')
-                onResetFilters()
-              }}
-              className="px-3 py-1.5 rounded-xl text-xs font-bold text-rose-700 hover:text-rose-900 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-all flex items-center gap-1.5 cursor-pointer w-fit"
+              onClick={onCreateTrip}
+              className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-800 hover:bg-emerald-900 text-white rounded-xl text-xs font-bold transition-all shadow-xs shrink-0 cursor-pointer"
             >
-              <RotateCcw size={12} />
-              <span>Đặt lại bộ lọc</span>
+              <Plus size={14} />
+              <span>Tạo chuyến đi mới</span>
             </button>
           )}
         </div>
-      )}
+
+        {hasActiveFilters && (
+          <button
+            type="button"
+            onClick={() => {
+              setLocalSearch('')
+              onResetFilters()
+            }}
+            className="px-3 py-1.5 rounded-xl text-xs font-bold text-rose-700 hover:text-rose-900 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-all flex items-center gap-1.5 cursor-pointer w-fit"
+          >
+            <RotateCcw size={12} />
+            <span>Đặt lại bộ lọc</span>
+          </button>
+        )}
+      </div>
 
       <div className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-2xs space-y-4">
         {/* Duration & Budget Filters */}

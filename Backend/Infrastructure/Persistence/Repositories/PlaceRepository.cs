@@ -180,7 +180,7 @@ public class PlaceRepository : IPlaceRepository
         return (items, totalCount);
     }
 
-    public async Task<PlaceDetailDto?> GetPlaceDetailAsync(long id, CancellationToken ct = default) {
+    public async Task<PlaceDetailDto?> GetPlaceDetailAsync(long id, long? userId = null, CancellationToken ct = default) {
         var connection = _dbContext.Database.GetDbConnection();
 
         const string sql = @"
@@ -233,6 +233,12 @@ public class PlaceRepository : IPlaceRepository
             $"Thuộc danh mục {place.CategoryName} hấp dẫn",
             $"Được đánh giá {place.AvgRating:F1} sao từ {place.ReviewCount} lượt du khách"
         ];
+
+        if (userId.HasValue && userId.Value > 0)
+        {
+            place.IsSaved = await IsPlaceSavedAsync(userId.Value, id, ct);
+            place.IsVisited = await IsPlaceVisitedAsync(userId.Value, id, ct);
+        }
 
         return place;
     }
@@ -447,5 +453,12 @@ public class PlaceRepository : IPlaceRepository
         return await _dbContext.Favorites
             .AsNoTracking()
             .AnyAsync(f => f.UserId == userId && f.TargetId == placeId && f.TargetType == FavoriteTargetType.Place, ct);
+    }
+
+    public async Task<bool> IsPlaceVisitedAsync(long userId, long placeId, CancellationToken ct = default)
+    {
+        return await _dbContext.VisitLogs
+            .AsNoTracking()
+            .AnyAsync(v => v.UserId == userId && v.PlaceId == placeId, ct);
     }
 }

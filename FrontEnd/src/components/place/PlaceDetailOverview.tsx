@@ -2,7 +2,8 @@ import {
   Star,
   Share2,
   Bookmark,
-  Flag
+  Flag,
+  CalendarCheck
 } from 'lucide-react'
 import type { PlaceDetailDto } from '@/types/models/place.model'
 
@@ -10,7 +11,9 @@ interface PlaceDetailOverviewProps {
   place: PlaceDetailDto
   totalReviews: number
   isSaved: boolean
+  isVisited: boolean
   onToggleSave: () => void
+  onToggleVisit: () => void
   onShare: () => void
   onOpenReport: () => void
 }
@@ -19,7 +22,9 @@ export const PlaceDetailOverview = ({
   place,
   totalReviews,
   isSaved,
+  isVisited,
   onToggleSave,
+  onToggleVisit,
   onShare,
   onOpenReport
 }: PlaceDetailOverviewProps) => {
@@ -53,17 +58,30 @@ export const PlaceDetailOverview = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0">
+        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
           <button type="button"
             onClick={onShare}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors shadow-2xs"
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors shadow-2xs cursor-pointer"
           >
             <Share2 className="w-4 h-4" />
             <span>Chia sẻ</span>
           </button>
+
+          <button type="button"
+            onClick={onToggleVisit}
+            className={`inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-lg transition-colors shadow-2xs cursor-pointer ${isVisited
+              ? 'bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100 font-bold'
+              : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+              }`}
+            title={isVisited ? 'Đã ghi nhận vào nhật ký hành trình' : 'Ghi nhận điểm đến vào nhật ký hành trình'}
+          >
+            <CalendarCheck className={`w-4 h-4 ${isVisited ? 'text-emerald-700' : 'text-gray-500'}`} />
+            <span>{isVisited ? 'Đã ghi nhận' : 'Ghi nhận điểm đến'}</span>
+          </button>
+
           <button type="button"
             onClick={onToggleSave}
-            className={`inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-lg transition-colors shadow-2xs ${isSaved
+            className={`inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-lg transition-colors shadow-2xs cursor-pointer ${isSaved
               ? 'bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100'
               : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
               }`}
@@ -71,9 +89,10 @@ export const PlaceDetailOverview = ({
             <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-rose-600' : ''}`} />
             <span>{isSaved ? 'Đã lưu' : 'Lưu'}</span>
           </button>
+
           <button type="button"
             onClick={onOpenReport}
-            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-200 rounded-lg hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50/50 transition-colors shadow-2xs"
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-200 rounded-lg hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50/50 transition-colors shadow-2xs cursor-pointer"
             title="Báo cáo sai phạm"
           >
             <Flag className="w-4 h-4" />
@@ -92,3 +111,4 @@ export const PlaceDetailOverview = ({
     </div>
   )
 }
+

@@ -18,4 +18,6 @@ public interface IBlogRepository
     Task<BlogListItemDto?> GetFeaturedBlogAsync(CancellationToken ct = default);
 
     Task<BlogDetailDto?> GetBlogDetailAsync(string idOrSlug, CancellationToken ct = default);
+
+    Task<BlogForEditDto?> GetBlogForEditAsync(long blogId, long userId, CancellationToken ct = default);
 }

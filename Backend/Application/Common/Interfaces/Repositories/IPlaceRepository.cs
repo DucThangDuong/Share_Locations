@@ -10,7 +10,7 @@ public interface IPlaceRepository
         PlaceFilterParams filterParams,
         CancellationToken ct = default);
 
-    Task<PlaceDetailDto?> GetPlaceDetailAsync(long id, CancellationToken ct = default);
+    Task<PlaceDetailDto?> GetPlaceDetailAsync(long id, long? userId = null, CancellationToken ct = default);
 
     Task<IReadOnlyList<PlaceMapItemDto>> GetPlacesMapAsync(
         string? keyword,
@@ -32,6 +32,11 @@ public interface IPlaceRepository
         CancellationToken ct = default);
 
     Task<bool> IsPlaceSavedAsync(
+        long userId,
+        long placeId,
+        CancellationToken ct = default);
+
+    Task<bool> IsPlaceVisitedAsync(
         long userId,
         long placeId,
         CancellationToken ct = default);

@@ -72,3 +72,22 @@ public class BlogFilterParams
         return result.ToList();
     }
 }
+
+public class BlogForEditDto
+{
+    public long Id { get; set; }
+    public long AuthorId { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string? Slug { get; set; }
+    public string? Excerpt { get; set; }
+    public string ContentJSON { get; set; } = "{}";
+    public string? CoverImageUrl { get; set; }
+    public int? CategoryId { get; set; }
+    public string? CategoryName { get; set; }
+    public int ReadTimeMinutes { get; set; } = 5;
+    public int ViewCount { get; set; }
+    public int Status { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+}
+

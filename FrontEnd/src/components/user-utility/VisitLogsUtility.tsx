@@ -12,16 +12,13 @@ import {
   Trash2,
   Edit3,
   Loader2,
-  Check,
   Compass
 } from 'lucide-react'
 import { userService } from '@/services/userService'
-import { placeService } from '@/services/placeService'
 import type {
   VisitLogItem,
   PagedResultDto
 } from '@/types/models/userProfile.model'
-import type { PlaceSummaryDto } from '@/types/models/place.model'
 
 interface VisitLogsUtilityProps {
   isDrawer?: boolean
@@ -42,21 +39,23 @@ export const VisitLogsUtility: React.FC<VisitLogsUtilityProps> = ({
   const [privacyFilter, setPrivacyFilter] = useState<PrivacyFilter>('all')
   const [searchQuery, setSearchQuery] = useState('')
 
-  // Add Log Modal State
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
-  const [searchPlaceQuery, setSearchPlaceQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<PlaceSummaryDto[]>([])
-  const [isSearchingPlaces, setIsSearchingPlaces] = useState(false)
-  const [selectedPlace, setSelectedPlace] = useState<PlaceSummaryDto | null>(null)
-  const [visitedDate, setVisitedDate] = useState(new Date().toISOString().split('T')[0])
-  const [privacy, setPrivacy] = useState<0 | 1>(0)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [modalError, setModalError] = useState('')
-
   // Edit Log Modal State
   const [editingLog, setEditingLog] = useState<VisitLogItem | null>(null)
   const [editVisitedDate, setEditVisitedDate] = useState('')
   const [editPrivacy, setEditPrivacy] = useState<0 | 1>(0)
+  const [editModalError, setEditModalError] = useState('')
+
+  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], [])
+
+  const formatVisitedDate = (dateStr?: string | null) => {
+    if (!dateStr) return ''
+    const clean = dateStr.split('T')[0]
+    const parts = clean.split('-')
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`
+    }
+    return dateStr
+  }
 
   const fetchLogs = useCallback(async () => {
     setIsLoading(true)
@@ -84,58 +83,9 @@ export const VisitLogsUtility: React.FC<VisitLogsUtilityProps> = ({
     fetchLogs()
   }, [fetchLogs])
 
-  // Debounced search places for Add Modal
-  useEffect(() => {
-    if (!searchPlaceQuery.trim()) {
-      setSearchResults([])
-      return
-    }
-    const timer = setTimeout(async () => {
-      setIsSearchingPlaces(true)
-      try {
-        const res = await placeService.searchPlaces({ keyword: searchPlaceQuery.trim(), pageSize: 6 })
-        if (res.success && res.data) {
-          setSearchResults(res.data)
-        }
-      } catch {
-        setSearchResults([])
-      } finally {
-        setIsSearchingPlaces(false)
-      }
-    }, 300)
-
-    return () => clearTimeout(timer)
-  }, [searchPlaceQuery])
-
-  // Add Visit Log Submit
-  const handleAddSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!selectedPlace) {
-      setModalError('Vui lòng tìm kiếm và chọn một địa điểm cụ thể.')
-      return
-    }
-    setIsSubmitting(true)
-    setModalError('')
-    try {
-      const res = await userService.createVisitLog({
-        placeId: selectedPlace.id,
-        visitedDate: visitedDate || new Date().toISOString().split('T')[0],
-        privacy
-      })
-      if (res.success && res.data) {
-        setLogs((prev) => [res.data, ...prev])
-        setIsAddModalOpen(false)
-        setSelectedPlace(null)
-        setSearchPlaceQuery('')
-        onToast?.('Đã thêm nhật ký hành trình mới.')
-      } else {
-        setModalError(res.message || 'Không thể lưu nhật ký.')
-      }
-    } catch {
-      setModalError('Có lỗi xảy ra khi lưu nhật ký. Vui lòng thử lại.')
-    } finally {
-      setIsSubmitting(false)
-    }
+  const handleGoToExplore = () => {
+    onClose?.()
+    navigate('/explore')
   }
 
   // Edit Visit Log Submit
@@ -143,30 +93,34 @@ export const VisitLogsUtility: React.FC<VisitLogsUtilityProps> = ({
     e.preventDefault()
     if (!editingLog) return
     setIsSubmitting(true)
+    setEditModalError('')
     try {
+      const targetDate = editVisitedDate || editingLog.visitedDate.split('T')[0] || todayStr
       const res = await userService.updateVisitLog(editingLog.id, {
-        visitedDate: editVisitedDate || editingLog.visitedDate,
+        visitedDate: targetDate,
         privacy: editPrivacy
       })
       if (res.success) {
         setLogs((prev) =>
           prev.map((item) =>
             item.id === editingLog.id
-              ? { ...item, visitedDate: editVisitedDate || item.visitedDate, privacy: editPrivacy }
+              ? { ...item, visitedDate: targetDate, privacy: editPrivacy }
               : item
           )
         )
         setEditingLog(null)
         onToast?.('Đã cập nhật nhật ký chuyến đi.')
       } else {
-        onToast?.('Không thể cập nhật nhật ký.')
+        setEditModalError(res.message || 'Không thể cập nhật nhật ký.')
       }
     } catch {
-      onToast?.('Có lỗi xảy ra khi cập nhật.')
+      setEditModalError('Có lỗi xảy ra khi cập nhật. Vui lòng thử lại.')
     } finally {
       setIsSubmitting(false)
     }
   }
+
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Quick Toggle Privacy
   const handleTogglePrivacy = async (e: React.MouseEvent, id: number, currentPrivacy: number) => {
@@ -306,12 +260,7 @@ export const VisitLogsUtility: React.FC<VisitLogsUtilityProps> = ({
 
           <button
             type="button"
-            onClick={() => {
-              setModalError('')
-              setSelectedPlace(null)
-              setSearchPlaceQuery('')
-              setIsAddModalOpen(true)
-            }}
+            onClick={handleGoToExplore}
             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-bold transition-all shadow-xs shrink-0 cursor-pointer"
           >
             <Plus size={14} />
@@ -336,7 +285,7 @@ export const VisitLogsUtility: React.FC<VisitLogsUtilityProps> = ({
             </p>
             <button
               type="button"
-              onClick={() => setIsAddModalOpen(true)}
+              onClick={handleGoToExplore}
               className="mt-3 px-4 py-2 text-xs font-bold text-white bg-emerald-800 rounded-xl hover:bg-emerald-900 transition-colors shadow-xs inline-flex items-center gap-1.5 cursor-pointer"
             >
               <Plus size={14} />
@@ -372,7 +321,7 @@ export const VisitLogsUtility: React.FC<VisitLogsUtilityProps> = ({
                       <MapPin size={11} />
                       <span>{log.province || 'Việt Nam'}</span>
                       <span className="mx-1">·</span>
-                      <span>{new Date(log.visitedDate).toLocaleDateString('vi-VN')}</span>
+                      <span>{formatVisitedDate(log.visitedDate)}</span>
                     </p>
                   </div>
 
@@ -481,7 +430,7 @@ export const VisitLogsUtility: React.FC<VisitLogsUtilityProps> = ({
                     <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs text-slate-500">
                       <span className="flex items-center gap-1 text-[11px]">
                         <Calendar size={11} />
-                        <span>{new Date(log.visitedDate).toLocaleDateString('vi-VN')}</span>
+                        <span>{formatVisitedDate(log.visitedDate)}</span>
                       </span>
                       <span className="text-emerald-800 font-bold group-hover:underline text-[11px]">
                         Xem địa điểm →
@@ -494,163 +443,6 @@ export const VisitLogsUtility: React.FC<VisitLogsUtilityProps> = ({
           </div>
         )}
       </div>
-
-      {/* ══════════════════════════════════════════════════════════════════
-          MODAL: THÊM NHẬT KÝ HÀNH TRÌNH
-      ══════════════════════════════════════════════════════════════════ */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4 animate-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
-                <CalendarCheck className="w-5 h-5 text-emerald-800" />
-                <span>Ghi nhận điểm đến</span>
-              </h3>
-              <button
-                type="button"
-                onClick={() => setIsAddModalOpen(false)}
-                className="p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {modalError && (
-              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl font-medium">
-                {modalError}
-              </div>
-            )}
-
-            <form onSubmit={handleAddSubmit} className="space-y-4">
-              {/* Search & Select Place */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Chọn địa điểm đã ghé <span className="text-rose-500">*</span>
-                </label>
-                {selectedPlace ? (
-                  <div className="flex items-center justify-between p-3 rounded-2xl bg-emerald-50/70 border border-emerald-200">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <MapPin className="w-4 h-4 text-emerald-800 shrink-0" />
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold text-slate-900 truncate">{selectedPlace.name}</p>
-                        <p className="text-[11px] text-slate-500 truncate">{selectedPlace.provinceName || selectedPlace.address}</p>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedPlace(null)}
-                      className="text-xs text-rose-600 font-bold hover:underline shrink-0 ml-2"
-                    >
-                      Đổi
-                    </button>
-                  </div>
-                ) : (
-                  <div className="relative">
-                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                      type="text"
-                      placeholder="Gõ tên địa điểm để tìm kiếm..."
-                      value={searchPlaceQuery}
-                      onChange={(e) => setSearchPlaceQuery(e.target.value)}
-                      className="w-full pl-8 pr-3 py-2 bg-slate-50 focus:bg-white border border-slate-200 focus:border-emerald-600 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 outline-none"
-                    />
-                    {isSearchingPlaces && (
-                      <Loader2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-emerald-800" />
-                    )}
-
-                    {searchResults.length > 0 && (
-                      <div className="absolute top-full mt-1 left-0 right-0 bg-white rounded-2xl shadow-xl border border-slate-100 max-h-48 overflow-y-auto z-20 p-1.5 space-y-1">
-                        {searchResults.map((p) => (
-                          <div
-                            key={p.id}
-                            onClick={() => {
-                              setSelectedPlace(p)
-                              setSearchResults([])
-                              setSearchPlaceQuery('')
-                            }}
-                            className="p-2 hover:bg-slate-50 rounded-xl cursor-pointer flex items-center justify-between text-xs"
-                          >
-                            <div className="min-w-0">
-                              <p className="font-bold text-slate-900 truncate">{p.name}</p>
-                              <p className="text-[10px] text-slate-400 truncate">{p.provinceName || p.address}</p>
-                            </div>
-                            <Check size={14} className="text-emerald-800 shrink-0 opacity-0 group-hover:opacity-100" />
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Visited Date */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Ngày ghé thăm
-                </label>
-                <input
-                  type="date"
-                  value={visitedDate}
-                  onChange={(e) => setVisitedDate(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:border-emerald-600"
-                />
-              </div>
-
-              {/* Privacy */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Quyền riêng tư
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setPrivacy(0)}
-                    className={`p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                      privacy === 0
-                        ? 'border-emerald-600 bg-emerald-50 text-emerald-900'
-                        : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                    }`}
-                  >
-                    <Globe size={14} />
-                    <span>Công khai</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPrivacy(1)}
-                    className={`p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                      privacy === 1
-                        ? 'border-emerald-600 bg-emerald-50 text-emerald-900'
-                        : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                    }`}
-                  >
-                    <Lock size={14} />
-                    <span>Chỉ mình tôi</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Submit Buttons */}
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting || !selectedPlace}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-emerald-800 hover:bg-emerald-900 disabled:opacity-50 transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
-                >
-                  {isSubmitting && <Loader2 size={13} className="animate-spin" />}
-                  <span>Lưu nhật ký</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* ══════════════════════════════════════════════════════════════════
           MODAL: SỬA NHẬT KÝ HÀNH TRÌNH
@@ -680,6 +472,12 @@ export const VisitLogsUtility: React.FC<VisitLogsUtilityProps> = ({
               </div>
             </div>
 
+            {editModalError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl font-medium">
+                {editModalError}
+              </div>
+            )}
+
             <form onSubmit={handleEditSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
@@ -687,6 +485,7 @@ export const VisitLogsUtility: React.FC<VisitLogsUtilityProps> = ({
                 </label>
                 <input
                   type="date"
+                  max={todayStr}
                   value={editVisitedDate}
                   onChange={(e) => setEditVisitedDate(e.target.value)}
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 outline-none focus:border-emerald-600"

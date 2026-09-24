@@ -5,7 +5,7 @@ using MediatR;
 
 namespace Application.Features.Places.Queries;
 
-public record GetPlaceDetailQuery(long Id) : IRequest<Result<PlaceDetailDto>>;
+public record GetPlaceDetailQuery(long Id, long? UserId = null) : IRequest<Result<PlaceDetailDto>>;
 
 public class GetPlaceDetailQueryHandler : IRequestHandler<GetPlaceDetailQuery, Result<PlaceDetailDto>>
 {
@@ -18,7 +18,7 @@ public class GetPlaceDetailQueryHandler : IRequestHandler<GetPlaceDetailQuery, R
 
     public async Task<Result<PlaceDetailDto>> Handle(GetPlaceDetailQuery request, CancellationToken ct)
     {
-        var place = await _placeRepository.GetPlaceDetailAsync(request.Id, ct);
+        var place = await _placeRepository.GetPlaceDetailAsync(request.Id, request.UserId, ct);
         if (place == null)
         {
             return Result<PlaceDetailDto>.NotFound($"Không tìm thấy thông tin địa điểm với mã #{request.Id}");

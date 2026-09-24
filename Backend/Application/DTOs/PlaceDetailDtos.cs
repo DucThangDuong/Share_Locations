@@ -29,4 +29,7 @@ public class PlaceDetailDto
     public IReadOnlyList<string> Highlights { get; set; } = [];
     public int Status { get; set; } = 1;
     public DateTime CreatedAt { get; set; }
+    public bool IsSaved { get; set; }
+    public bool IsVisited { get; set; }
+    public bool IsCheckedIn => IsVisited;
 }
