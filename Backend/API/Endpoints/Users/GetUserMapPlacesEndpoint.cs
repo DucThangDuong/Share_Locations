@@ -8,37 +8,28 @@ using MediatR;
 
 namespace API.Endpoints.Users;
 
-public class GetUserVisitLogsRequest
+public class GetUserMapPlacesRequest
 {
     public string? UserId { get; set; }
-
-    [QueryParam]
-    public int? Privacy { get; set; }
-
-    [QueryParam]
-    public int Page { get; set; } = 1;
-
-    [QueryParam]
-    public int PageSize { get; set; } = 15;
 }
 
-public class GetUserVisitLogsEndpoint : Endpoint<GetUserVisitLogsRequest, ApiSuccessResponse<UserVisitLogPagedResultDto>>
+public class GetUserMapPlacesEndpoint : Endpoint<GetUserMapPlacesRequest, ApiSuccessResponse<IReadOnlyList<UserMapPlaceDto>>>
 {
     public IMediator Mediator { get; set; } = null!;
 
     public override void Configure()
     {
-        Get("/api/users/{UserId}/visit-logs");
+        Get("/api/users/{UserId}/map-places");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
         Summary(s =>
         {
-            s.Summary = "Lấy danh sách nhật ký hành trình";
-            s.Description = "Lấy danh sách các địa điểm người dùng đã check-in ghi nhớ trong nhật ký hành trình (hỗ trợ xem của chính mình hoặc người khác).";
+            s.Summary = "Lấy tọa độ bản đồ dấu chân du lịch của người dùng";
+            s.Description = "Tổng hợp tọa độ các điểm đến từ bài đánh giá, nhật ký ghé thăm và địa điểm đề xuất đã duyệt.";
         });
     }
 
-    public override async Task HandleAsync(GetUserVisitLogsRequest req, CancellationToken ct)
+    public override async Task HandleAsync(GetUserMapPlacesRequest req, CancellationToken ct)
     {
         var currentUserId = this.GetUserId();
         long targetUserId;
@@ -48,7 +39,7 @@ public class GetUserVisitLogsEndpoint : Endpoint<GetUserVisitLogsRequest, ApiSuc
             if (!currentUserId.HasValue)
             {
                 await this.SendApiResponseAsync(
-                    Result<UserVisitLogPagedResultDto>.Unauthorized("Bạn cần đăng nhập để xem nhật ký của mình."),
+                    Result<IReadOnlyList<UserMapPlaceDto>>.Unauthorized("Bạn cần đăng nhập để xem bản đồ của mình."),
                     ct);
                 return;
             }
@@ -61,15 +52,12 @@ public class GetUserVisitLogsEndpoint : Endpoint<GetUserVisitLogsRequest, ApiSuc
         else
         {
             await this.SendApiResponseAsync(
-                Result<UserVisitLogPagedResultDto>.Failure("Mã người dùng không hợp lệ."),
+                Result<IReadOnlyList<UserMapPlaceDto>>.Failure("Mã người dùng không hợp lệ."),
                 ct);
             return;
         }
 
-        var result = await Mediator.Send(
-            new GetUserVisitLogsQuery(targetUserId, currentUserId, req.Privacy, req.Page, req.PageSize),
-            ct);
-
+        var result = await Mediator.Send(new GetUserMapPlacesQuery(targetUserId, currentUserId), ct);
         await this.SendApiResponseAsync(result, ct);
     }
 }

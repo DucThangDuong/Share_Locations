@@ -33,8 +33,20 @@ public interface IUserPersonalizationRepository
         int limit,
         CancellationToken ct = default);
 
+    Task<UserProfileDetailDto?> GetUserProfileAsync(
+        long targetUserId,
+        long? currentUserId,
+        CancellationToken ct = default);
+
+    Task<IReadOnlyList<UserMapPlaceDto>> GetMapPlacesAsync(
+        long targetUserId,
+        bool isCurrentUser,
+        CancellationToken ct = default);
+
     Task<PagedResult<UserReviewItemDto>> GetReviewsAsync(
         long userId,
+        long? currentUserId,
+        string? sortBy,
         int page,
         int pageSize,
         CancellationToken ct = default);

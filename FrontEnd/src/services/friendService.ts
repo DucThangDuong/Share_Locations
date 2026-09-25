@@ -16,8 +16,30 @@ export const friendService = {
   },
 
   async sendFriendRequest(targetUserId: number | string): Promise<ApiSuccessResponse<unknown>> {
-    const response = await apiClient.post<ApiSuccessResponse<unknown>>(`/api/friends/request/${targetUserId}`, {})
-    return response.data
+    try {
+      const response = await apiClient.post<ApiSuccessResponse<unknown>>(
+        `/api/friends/request/${targetUserId}`,
+        {
+          targetUserId: Number(targetUserId),
+          receiverId: Number(targetUserId),
+          friendId: Number(targetUserId)
+        }
+      )
+      return response.data
+    } catch (err: any) {
+      if (err?.response?.status === 404 || err?.response?.status === 405) {
+        const fallbackRes = await apiClient.post<ApiSuccessResponse<unknown>>(
+          '/api/friends/request',
+          {
+            targetUserId: Number(targetUserId),
+            receiverId: Number(targetUserId),
+            friendId: Number(targetUserId)
+          }
+        )
+        return fallbackRes.data
+      }
+      throw err
+    }
   },
 
   async respondFriendRequest(

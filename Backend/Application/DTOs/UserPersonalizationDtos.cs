@@ -434,8 +434,20 @@ public class UserReviewItemDto
     [JsonPropertyName("placeName")]
     public string PlaceName { get; set; } = string.Empty;
 
+    [JsonPropertyName("category")]
+    public string? Category { get; set; }
+
+    [JsonPropertyName("address")]
+    public string? Address { get; set; }
+
+    [JsonPropertyName("province")]
+    public string? Province { get; set; }
+
     [JsonPropertyName("rating")]
     public int Rating { get; set; }
+
+    [JsonPropertyName("title")]
+    public string? Title { get; set; }
 
     [JsonPropertyName("content")]
     public string? Content { get; set; }
@@ -448,6 +460,18 @@ public class UserReviewItemDto
 
     [JsonPropertyName("images")]
     public List<string> Images { get; set; } = new();
+
+    [JsonPropertyName("placeRating")]
+    public double PlaceRating { get; set; }
+
+    [JsonPropertyName("placeReviewCount")]
+    public int PlaceReviewCount { get; set; }
+
+    [JsonPropertyName("likeCount")]
+    public int LikeCount { get; set; }
+
+    [JsonPropertyName("isLiked")]
+    public bool IsLiked { get; set; }
 
     [JsonPropertyName("createdAt")]
     public string CreatedAt { get; set; } = string.Empty;
@@ -479,3 +503,94 @@ public class UserCommentItemDto
     [JsonPropertyName("createdAt")]
     public string CreatedAt { get; set; } = string.Empty;
 }
+
+public class UserProfileDetailDto
+{
+    [JsonPropertyName("id")]
+    public long Id { get; set; }
+
+    [JsonPropertyName("fullName")]
+    public string FullName { get; set; } = string.Empty;
+
+    [JsonPropertyName("avatarUrl")]
+    public string? AvatarUrl { get; set; }
+
+    [JsonPropertyName("coverUrl")]
+    public string? CoverUrl { get; set; }
+
+    [JsonPropertyName("bio")]
+    public string? Bio { get; set; }
+
+    [JsonPropertyName("joinedDate")]
+    public string? JoinedDate { get; set; }
+
+    [JsonPropertyName("rankLevel")]
+    public string RankLevel { get; set; } = "Tân binh";
+
+    [JsonPropertyName("reputationScore")]
+    public int ReputationScore { get; set; }
+
+    [JsonPropertyName("isCurrentUser")]
+    public bool IsCurrentUser { get; set; }
+
+    [JsonPropertyName("isFriend")]
+    public bool IsFriend { get; set; }
+
+    [JsonPropertyName("friendStatus")]
+    public string FriendStatus { get; set; } = "none";
+
+    [JsonPropertyName("reviewCount")]
+    public int ReviewCount { get; set; }
+
+    [JsonPropertyName("visitLogCount")]
+    public int VisitLogCount { get; set; }
+
+    [JsonPropertyName("tripCount")]
+    public int TripCount { get; set; }
+
+    [JsonPropertyName("blogCount")]
+    public int BlogCount { get; set; }
+
+    [JsonPropertyName("proposalCount")]
+    public int ProposalCount { get; set; }
+
+    [JsonPropertyName("contributionsCount")]
+    public int ContributionsCount { get; set; }
+}
+
+public class UserMapPlaceDto
+{
+    [JsonPropertyName("id")]
+    public long Id { get; set; }
+
+    [JsonPropertyName("placeId")]
+    public long PlaceId { get; set; }
+
+    [JsonPropertyName("title")]
+    public string Title { get; set; } = string.Empty;
+
+    [JsonPropertyName("coverImg")]
+    public string? CoverImg { get; set; }
+
+    [JsonPropertyName("category")]
+    public string? Category { get; set; }
+
+    [JsonPropertyName("province")]
+    public string? Province { get; set; }
+
+    [JsonPropertyName("coordinates")]
+    public double[] Coordinates { get; set; } = Array.Empty<double>();
+
+    [JsonPropertyName("interactionType")]
+    public string InteractionType { get; set; } = string.Empty;
+
+    [JsonPropertyName("interactionLabel")]
+    public string InteractionLabel { get; set; } = string.Empty;
+
+    [JsonPropertyName("rating")]
+    public double? Rating { get; set; }
+
+    [JsonPropertyName("date")]
+    public string Date { get; set; } = string.Empty;
+}
+

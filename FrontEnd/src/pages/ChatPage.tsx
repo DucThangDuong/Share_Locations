@@ -166,74 +166,78 @@ export default function ChatPage({
     'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop'
 
   return (
-    <div className="flex h-full w-full bg-[#F0F2F5] text-[#050505] antialiased font-sans overflow-hidden">
-      {/* Hidden File Inputs */}
-      <input
-        type="file"
-        ref={imageInputRef}
-        accept="image/*"
-        className="hidden"
-        onChange={handleFileUpload}
-      />
-      <input
-        type="file"
-        ref={fileInputRef}
-        accept=".pdf,.doc,.docx,.xls,.xlsx,.zip,.txt"
-        className="hidden"
-        onChange={handleFileUpload}
-      />
+    <div className="h-full w-full bg-slate-50 overflow-hidden flex flex-col">
+      <div className="w-full max-w-[1440px] mx-auto px-3 sm:px-4 lg:px-6 h-full flex flex-col py-2.5">
+        <div className="flex-1 flex bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden relative">
+          {/* Hidden File Inputs */}
+          <input
+            type="file"
+            ref={imageInputRef}
+            accept="image/*"
+            className="hidden"
+            onChange={handleFileUpload}
+          />
+          <input
+            type="file"
+            ref={fileInputRef}
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.zip,.txt"
+            className="hidden"
+            onChange={handleFileUpload}
+          />
 
-      {/* CỘT 1: SIDEBAR HỘP THƯ (CỐ ĐỊNH, CUỘN DANH SÁCH RIÊNG) */}
-      <ChatSidebar
-        inbox={inbox}
-        isLoading={isLoadingInbox}
-        activeRoomId={activeRoomId}
-        onSelectRoom={(roomId) => selectRoom(roomId)}
-        onBack={onBack}
-      />
+          {/* CỘT 1: SIDEBAR HỘP THƯ (CỐ ĐỊNH, CUỘN DANH SÁCH RIÊNG) */}
+          <ChatSidebar
+            inbox={inbox}
+            isLoading={isLoadingInbox}
+            activeRoomId={activeRoomId}
+            onSelectRoom={(roomId) => selectRoom(roomId)}
+            onBack={onBack}
+          />
 
-      {/* CỘT 2: KHUNG CHAT CHÍNH (CUỘN FEED TIN NHẮN RIÊNG) */}
-      <main className="flex-1 min-w-0 h-full flex flex-col bg-white relative overflow-hidden">
-        <ChatMessageFeed
-          roomTitle={roomTitle}
-          roomAvatar={roomAvatar}
-          isGroup={activeRoom?.isGroup}
-          partnerTyping={partnerTyping}
-          messages={messages}
-          isLoadingMessages={isLoadingMessages}
-          hasMoreMessages={hasMoreMessages}
-          isLoadingMoreMessages={isLoadingMoreMessages}
-          onLoadMoreMessages={() => loadMoreMessages(activeRoomId || undefined)}
-          currentUserId={currentUserId}
-          showRightDrawer={showRightDrawer}
-          onToggleRightDrawer={() => setShowRightDrawer((prev) => !prev)}
-          onReplyToMessage={(reply) => setReplyingTo(reply)}
-          onSelectPlace={onSelectPlace}
-          onPreviewImage={(url) => setLightboxImage(url)}
-          messagesEndRef={messagesEndRef}
-        />
+          {/* CỘT 2: KHUNG CHAT CHÍNH (CUỘN FEED TIN NHẮN RIÊNG) */}
+          <main className="flex-1 min-w-0 h-full flex flex-col bg-white relative overflow-hidden">
+            <ChatMessageFeed
+              roomTitle={roomTitle}
+              roomAvatar={roomAvatar}
+              isGroup={activeRoom?.isGroup}
+              partnerTyping={partnerTyping}
+              messages={messages}
+              isLoadingMessages={isLoadingMessages}
+              hasMoreMessages={hasMoreMessages}
+              isLoadingMoreMessages={isLoadingMoreMessages}
+              onLoadMoreMessages={() => loadMoreMessages(activeRoomId || undefined)}
+              currentUserId={currentUserId}
+              showRightDrawer={showRightDrawer}
+              onToggleRightDrawer={() => setShowRightDrawer((prev) => !prev)}
+              onReplyToMessage={(reply) => setReplyingTo(reply)}
+              onSelectPlace={onSelectPlace}
+              onPreviewImage={(url) => setLightboxImage(url)}
+              messagesEndRef={messagesEndRef}
+            />
 
-        <ChatInputBar
-          inputText={inputText}
-          onInputChange={handleInputChange}
-          onSendMessage={handleSendMessage}
-          isSending={isSending}
-          replyingTo={replyingTo}
-          onCancelReply={() => setReplyingTo(null)}
-          onTriggerImageUpload={() => imageInputRef.current?.click()}
-        />
-      </main>
+            <ChatInputBar
+              inputText={inputText}
+              onInputChange={handleInputChange}
+              onSendMessage={handleSendMessage}
+              isSending={isSending}
+              replyingTo={replyingTo}
+              onCancelReply={() => setReplyingTo(null)}
+              onTriggerImageUpload={() => imageInputRef.current?.click()}
+            />
+          </main>
 
-      {/* CỘT 3: DRAWER THÔNG TIN ĐOẠN CHAT (PHẢI) */}
-      <ChatDrawer
-        isOpen={showRightDrawer}
-        roomTitle={roomTitle}
-        roomAvatar={roomAvatar}
-        isGroup={activeRoom?.isGroup}
-        roomId={activeRoomId}
-        images={allMediaAttachments}
-        onPreviewImage={(url) => setLightboxImage(url)}
-      />
+          {/* CỘT 3: DRAWER THÔNG TIN ĐOẠN CHAT (PHẢI) */}
+          <ChatDrawer
+            isOpen={showRightDrawer}
+            roomTitle={roomTitle}
+            roomAvatar={roomAvatar}
+            isGroup={activeRoom?.isGroup}
+            roomId={activeRoomId}
+            images={allMediaAttachments}
+            onPreviewImage={(url) => setLightboxImage(url)}
+          />
+        </div>
+      </div>
 
       {/* MODAL CHỌN ĐỊA ĐIỂM */}
       <ChatPlacePickerModal

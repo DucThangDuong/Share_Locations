@@ -477,13 +477,22 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [isAuthenticated, user?.id, fetchInbox])
 
   // Select room & join SignalR group
+  // Select room & join SignalR group
   const selectRoom = useCallback(
     async (roomId: number) => {
       setActiveRoomId(roomId)
-      await chatSignalR.joinRoom(roomId)
+      try {
+        await chatSignalR.joinRoom(roomId)
+      } catch (err) {
+        console.warn(`[ChatContext] joinRoom failed for ${roomId}:`, err)
+      }
 
       // Always fetch latest room message history from backend API
-      await fetchMessages(roomId)
+      try {
+        await fetchMessages(roomId)
+      } catch (err) {
+        console.warn(`[ChatContext] fetchMessages failed for ${roomId}:`, err)
+      }
 
       // Mark room as read
       try {
@@ -502,8 +511,14 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const openDirectChatWithUser = useCallback(
     async (targetUserId: number): Promise<number | null> => {
       try {
+        setIsFloatingChatOpen(true)
+        setIsFloatingChatMinimized(false)
         const roomId = await chatService.getOrCreateDirectRoom(targetUserId)
         if (roomId) {
+          setFloatingRoomIds((prev) => {
+            const filtered = prev.filter((id) => id !== roomId)
+            return [roomId, ...filtered].slice(0, 5)
+          })
           await selectRoom(roomId)
           await fetchInbox()
           return roomId
@@ -522,12 +537,14 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const roomId = await chatService.createGroupRoom({ name, memberIds })
         if (roomId) {
-          await fetchInbox()
-          await selectRoom(roomId)
+          setIsFloatingChatOpen(true)
+          setIsFloatingChatMinimized(false)
           setFloatingRoomIds((prev) => {
             const filtered = prev.filter((id) => id !== roomId)
             return [roomId, ...filtered].slice(0, 5)
           })
+          await fetchInbox()
+          await selectRoom(roomId)
           return roomId
         }
       } catch (err) {
@@ -588,9 +605,18 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const created = await openDirectChatWithUser(targetUserId)
         if (created) targetRoomId = created
       } else if (roomId) {
+        targetRoomId = roomId
+        setFloatingRoomIds((prev) => {
+          const filtered = prev.filter((id) => id !== roomId)
+          return [roomId, ...filtered].slice(0, 5)
+        })
         await selectRoom(roomId)
       } else if (!activeRoomId && inbox.length > 0) {
         targetRoomId = inbox[0].roomId
+        setFloatingRoomIds((prev) => {
+          const filtered = prev.filter((id) => id !== targetRoomId)
+          return [targetRoomId!, ...filtered].slice(0, 5)
+        })
         await selectRoom(targetRoomId)
       } else if (activeRoomId) {
         targetRoomId = activeRoomId

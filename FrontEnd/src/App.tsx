@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react'
-import { BrowserRouter, Routes, Route, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useNavigate, useSearchParams } from 'react-router-dom'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import { AuthProvider } from '@/context/AuthContext'
 import { ChatProvider } from '@/context/ChatContext'
@@ -20,6 +20,7 @@ const RegionPage = lazy(() => import('@/pages/RegionPage').then((m) => ({ defaul
 const ProvincePage = lazy(() => import('@/pages/ProvincePage').then((m) => ({ default: m.ProvincePage })))
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })))
 const AdminPage = lazy(() => import('@/pages/AdminPage').then((m) => ({ default: m.AdminPage })))
+const UserProfilePage = lazy(() => import('@/pages/UserProfilePage').then((m) => ({ default: m.UserProfilePage })))
 const ChatPage = lazy(() => import('@/pages/ChatPage'))
 
 const ChatRoute: React.FC = () => {
@@ -84,7 +85,13 @@ export const App: React.FC = () => {
                 <Route path="propose-place" element={<ProposePlacePage />} />
                 <Route path="de-xuat" element={<ProposePlacePage />} />
                 <Route path="de-xuat-dia-diem" element={<ProposePlacePage />} />
-                <Route path="profile" element={<Navigate to="/settings" replace />} />
+                <Route path="profile" element={<UserProfilePage />} />
+                <Route path="profile/:id" element={<UserProfilePage />} />
+                <Route path="user/:id" element={<UserProfilePage />} />
+                <Route path="users/:id" element={<UserProfilePage />} />
+                <Route path="u/:id" element={<UserProfilePage />} />
+                <Route path="trang-ca-nhan" element={<UserProfilePage />} />
+                <Route path="trang-ca-nhan/:id" element={<UserProfilePage />} />
                 <Route path="settings" element={<SettingsPage />} />
                 <Route path="cai-dat" element={<SettingsPage />} />
                 <Route path="*" element={<NotFoundPage />} />

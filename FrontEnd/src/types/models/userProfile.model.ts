@@ -94,6 +94,7 @@ export interface UserReviewItem {
   address?: string | null
   province?: string | null
   rating: number
+  title?: string | null
   content?: string | null
   visitDate?: string | null
   coverImg?: string | null
@@ -135,6 +136,40 @@ export interface UserAccessHistoryItem {
   province?: string | null
   avgRating: number
   viewedAt: string
+}
+
+export interface UserMapPlaceDto {
+  id: number
+  placeId: number
+  title: string
+  coverImg?: string | null
+  category?: string | null
+  province?: string | null
+  coordinates: [number, number] // [lng, lat]
+  interactionType: 'review' | 'visit_log' | 'proposal'
+  interactionLabel: string
+  rating?: number | null
+  date?: string | null
+}
+
+export interface PublicUserProfileDto {
+  id: number
+  fullName: string
+  avatarUrl?: string | null
+  coverUrl?: string | null
+  bio?: string | null
+  joinedDate?: string | null
+  rankLevel?: string | null
+  reputationScore?: number
+  isCurrentUser?: boolean
+  isFriend?: boolean
+  friendStatus?: 'none' | 'pending_sent' | 'pending_received' | 'accepted'
+  reviewCount?: number
+  visitLogCount?: number
+  tripCount?: number
+  blogCount?: number
+  proposalCount?: number
+  contributionsCount?: number
 }
 
 export interface PagedResultDto<T> {

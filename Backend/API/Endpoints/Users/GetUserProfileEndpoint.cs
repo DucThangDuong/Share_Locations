@@ -8,37 +8,28 @@ using MediatR;
 
 namespace API.Endpoints.Users;
 
-public class GetUserVisitLogsRequest
+public class GetUserProfileRequest
 {
     public string? UserId { get; set; }
-
-    [QueryParam]
-    public int? Privacy { get; set; }
-
-    [QueryParam]
-    public int Page { get; set; } = 1;
-
-    [QueryParam]
-    public int PageSize { get; set; } = 15;
 }
 
-public class GetUserVisitLogsEndpoint : Endpoint<GetUserVisitLogsRequest, ApiSuccessResponse<UserVisitLogPagedResultDto>>
+public class GetUserProfileEndpoint : Endpoint<GetUserProfileRequest, ApiSuccessResponse<UserProfileDetailDto>>
 {
     public IMediator Mediator { get; set; } = null!;
 
     public override void Configure()
     {
-        Get("/api/users/{UserId}/visit-logs");
+        Get("/api/users/{UserId}/profile");
         AllowAnonymous();
         Options(x => x.RequireRateLimiting("general_api"));
         Summary(s =>
         {
-            s.Summary = "Lấy danh sách nhật ký hành trình";
-            s.Description = "Lấy danh sách các địa điểm người dùng đã check-in ghi nhớ trong nhật ký hành trình (hỗ trợ xem của chính mình hoặc người khác).";
+            s.Summary = "Lấy thông tin hồ sơ người dùng";
+            s.Description = "Lấy thông tin cá nhân, tiểu sử, điểm uy tín, trạng thái bạn bè và số lượng thống kê theo từng tab.";
         });
     }
 
-    public override async Task HandleAsync(GetUserVisitLogsRequest req, CancellationToken ct)
+    public override async Task HandleAsync(GetUserProfileRequest req, CancellationToken ct)
     {
         var currentUserId = this.GetUserId();
         long targetUserId;
@@ -48,7 +39,7 @@ public class GetUserVisitLogsEndpoint : Endpoint<GetUserVisitLogsRequest, ApiSuc
             if (!currentUserId.HasValue)
             {
                 await this.SendApiResponseAsync(
-                    Result<UserVisitLogPagedResultDto>.Unauthorized("Bạn cần đăng nhập để xem nhật ký của mình."),
+                    Result<UserProfileDetailDto>.Unauthorized("Bạn cần đăng nhập để xem hồ sơ của mình."),
                     ct);
                 return;
             }
@@ -61,15 +52,12 @@ public class GetUserVisitLogsEndpoint : Endpoint<GetUserVisitLogsRequest, ApiSuc
         else
         {
             await this.SendApiResponseAsync(
-                Result<UserVisitLogPagedResultDto>.Failure("Mã người dùng không hợp lệ."),
+                Result<UserProfileDetailDto>.Failure("Mã người dùng không hợp lệ."),
                 ct);
             return;
         }
 
-        var result = await Mediator.Send(
-            new GetUserVisitLogsQuery(targetUserId, currentUserId, req.Privacy, req.Page, req.PageSize),
-            ct);
-
+        var result = await Mediator.Send(new GetUserProfileQuery(targetUserId, currentUserId), ct);
         await this.SendApiResponseAsync(result, ct);
     }
 }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { Star, ThumbsUp, MessageSquare, Play, Pencil, Trash2, Flag } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { placeService } from '@/services/placeService'
@@ -138,26 +139,31 @@ export const ReviewItemCard: React.FC<ReviewItemCardProps> = ({
   return (
     <div className="p-4 sm:p-5 rounded-xl border border-slate-200/80 bg-white hover:border-slate-300/80 transition-all space-y-3.5 shadow-2xs">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+        <Link
+          to={`/user/${review.userId}`}
+          className="flex items-center gap-3 group/user hover:opacity-90 transition-opacity"
+        >
           {review.userAvatar ? (
             <img
               src={review.userAvatar}
               alt={review.userName}
-              className="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0"
+              className="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0 group-hover/user:ring-2 group-hover/user:ring-emerald-500/30 transition-all"
             />
           ) : (
-            <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-sm border border-emerald-200 shrink-0">
+            <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-sm border border-emerald-200 shrink-0 group-hover/user:ring-2 group-hover/user:ring-emerald-500/30 transition-all">
               {(review.userName || 'U').charAt(0).toUpperCase()}
             </div>
           )}
 
           <div>
-            <div className="font-bold text-slate-900 text-sm">{review.userName}</div>
+            <div className="font-bold text-slate-900 text-sm group-hover/user:text-emerald-700 transition-colors">
+              {review.userName}
+            </div>
             <div className="text-[11px] text-slate-400">
               {review.createdAt ? new Date(review.createdAt).toLocaleDateString('vi-VN') : 'Vừa xong'}
             </div>
           </div>
-        </div>
+        </Link>
 
         <div className="flex items-center gap-2">
           {isOwner && (

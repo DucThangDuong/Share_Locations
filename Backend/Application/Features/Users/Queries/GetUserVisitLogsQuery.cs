@@ -6,10 +6,11 @@ using MediatR;
 namespace Application.Features.Users.Queries;
 
 public record GetUserVisitLogsQuery(
-    long UserId,
-    int? Privacy,
-    int Page,
-    int PageSize) : IRequest<Result<UserVisitLogPagedResultDto>>;
+    long TargetUserId,
+    long? CurrentUserId = null,
+    int? Privacy = null,
+    int Page = 1,
+    int PageSize = 15) : IRequest<Result<UserVisitLogPagedResultDto>>;
 
 public class GetUserVisitLogsQueryHandler : IRequestHandler<GetUserVisitLogsQuery, Result<UserVisitLogPagedResultDto>>
 {
@@ -22,11 +23,14 @@ public class GetUserVisitLogsQueryHandler : IRequestHandler<GetUserVisitLogsQuer
 
     public async Task<Result<UserVisitLogPagedResultDto>> Handle(GetUserVisitLogsQuery request, CancellationToken ct)
     {
+        bool isCurrentUser = request.CurrentUserId.HasValue && request.CurrentUserId.Value == request.TargetUserId;
+        int? effectivePrivacy = !isCurrentUser ? 0 : request.Privacy;
+
         var result = await _repo.GetVisitLogsAsync(
-            request.UserId,
-            request.Privacy,
+            request.TargetUserId,
+            effectivePrivacy,
             request.Page > 0 ? request.Page : 1,
-            request.PageSize > 0 ? request.PageSize : 12,
+            request.PageSize > 0 ? request.PageSize : 15,
             ct);
 
         return Result<UserVisitLogPagedResultDto>.Success(result, "Lấy danh sách nhật ký hành trình thành công.");

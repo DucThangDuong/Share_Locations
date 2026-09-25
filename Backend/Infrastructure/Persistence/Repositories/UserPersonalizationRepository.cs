@@ -442,8 +442,230 @@ public class UserPersonalizationRepository : IUserPersonalizationRepository
         return list;
     }
 
+    public async Task<UserProfileDetailDto?> GetUserProfileAsync(
+        long targetUserId,
+        long? currentUserId,
+        CancellationToken ct = default)
+    {
+        using var connection = CreateConnection();
+
+        const string userSql = @"
+            SELECT 
+                u.Id,
+                u.CreatedAt,
+                p.FullName,
+                p.AvatarUrl,
+                p.CoverUrl,
+                p.Bio,
+                p.ReputationScore,
+                p.RankLevel
+            FROM dbo.Users u
+            LEFT JOIN dbo.UserProfiles p ON u.Id = p.UserId
+            WHERE u.Id = @TargetUserId AND u.IsDeleted = 0;";
+
+        var userRow = await connection.QuerySingleOrDefaultAsync(userSql, new { TargetUserId = targetUserId });
+        if (userRow == null)
+            return null;
+
+        bool isCurrentUser = currentUserId.HasValue && currentUserId.Value == targetUserId;
+        bool isFriend = false;
+        string friendStatus = "none";
+
+        if (isCurrentUser)
+        {
+            friendStatus = "none";
+            isFriend = false;
+        }
+        else if (currentUserId.HasValue)
+        {
+            long u1 = Math.Min(currentUserId.Value, targetUserId);
+            long u2 = Math.Max(currentUserId.Value, targetUserId);
+
+            const string friendSql = @"
+                SELECT Status, ActionUserId 
+                FROM dbo.Friendships 
+                WHERE User1Id = @U1 AND User2Id = @U2;";
+
+            var friendRow = await connection.QuerySingleOrDefaultAsync(friendSql, new { U1 = u1, U2 = u2 });
+            if (friendRow != null)
+            {
+                int status = (int)friendRow.Status;
+                long actionUserId = (long)friendRow.ActionUserId;
+
+                if (status == 1) // Accepted
+                {
+                    isFriend = true;
+                    friendStatus = "accepted";
+                }
+                else if (status == 0) // Pending
+                {
+                    isFriend = false;
+                    friendStatus = (actionUserId == currentUserId.Value) ? "pending_sent" : "pending_received";
+                }
+            }
+        }
+
+        const string countsSql = @"
+            SELECT
+                (SELECT COUNT(1) FROM dbo.Reviews WHERE UserId = @TargetUserId AND Status = 1) AS ReviewCount,
+                (SELECT COUNT(1) FROM dbo.VisitLogs WHERE UserId = @TargetUserId AND (@IsCurrentUser = 1 OR Privacy = 0)) AS VisitLogCount,
+                (SELECT COUNT(1) FROM dbo.Trips t WHERE (t.UserId = @TargetUserId OR EXISTS (SELECT 1 FROM dbo.TripMembers tm WHERE tm.TripId = t.Id AND tm.UserId = @TargetUserId)) AND (@IsCurrentUser = 1 OR t.Privacy = 0)) AS TripCount,
+                (SELECT COUNT(1) FROM dbo.Blogs WHERE AuthorId = @TargetUserId AND (@IsCurrentUser = 1 OR Status = 1)) AS BlogCount,
+                (SELECT COUNT(1) FROM dbo.Proposals WHERE UserId = @TargetUserId AND (@IsCurrentUser = 1 OR Status = 1)) AS ProposalCount;";
+
+        var counts = await connection.QuerySingleAsync(countsSql, new
+        {
+            TargetUserId = targetUserId,
+            IsCurrentUser = isCurrentUser ? 1 : 0
+        });
+
+        int reviewCount = (int)counts.ReviewCount;
+        int visitLogCount = (int)counts.VisitLogCount;
+        int tripCount = (int)counts.TripCount;
+        int blogCount = (int)counts.BlogCount;
+        int proposalCount = (int)counts.ProposalCount;
+        int contributionsCount = reviewCount + visitLogCount + tripCount + blogCount + proposalCount;
+
+        DateTime createdAt = (DateTime)userRow.CreatedAt;
+        string joinedDate = $"Tháng {createdAt.Month}, {createdAt.Year}";
+
+        return new UserProfileDetailDto
+        {
+            Id = (long)userRow.Id,
+            FullName = (string?)userRow.FullName ?? $"Thành viên #{targetUserId}",
+            AvatarUrl = (string?)userRow.AvatarUrl,
+            CoverUrl = (string?)userRow.CoverUrl,
+            Bio = (string?)userRow.Bio,
+            JoinedDate = joinedDate,
+            RankLevel = (string?)userRow.RankLevel ?? "Tân binh",
+            ReputationScore = userRow.ReputationScore != null ? (int)userRow.ReputationScore : 0,
+            IsCurrentUser = isCurrentUser,
+            IsFriend = isFriend,
+            FriendStatus = friendStatus,
+            ReviewCount = reviewCount,
+            VisitLogCount = visitLogCount,
+            TripCount = tripCount,
+            BlogCount = blogCount,
+            ProposalCount = proposalCount,
+            ContributionsCount = contributionsCount
+        };
+    }
+
+    public async Task<IReadOnlyList<UserMapPlaceDto>> GetMapPlacesAsync(
+        long targetUserId,
+        bool isCurrentUser,
+        CancellationToken ct = default)
+    {
+        using var connection = CreateConnection();
+
+        const string sql = @"
+            SELECT 
+                r.Id,
+                r.PlaceId,
+                p.Name AS Title,
+                COALESCE(p.CoverImageUrl, (SELECT TOP 1 pm.Url FROM dbo.PlaceMedia pm WHERE pm.PlaceId = p.Id ORDER BY pm.DisplayOrder)) AS CoverImg,
+                cat.Name AS Category,
+                prov.Name AS Province,
+                CAST(p.Longitude AS FLOAT) AS Lng,
+                CAST(p.Latitude AS FLOAT) AS Lat,
+                'review' AS InteractionType,
+                CONCAT(N'Đã đánh giá ', CAST(r.Rating AS NVARCHAR(10)), N'★') AS InteractionLabel,
+                CAST(r.Rating AS FLOAT) AS Rating,
+                CONVERT(NVARCHAR(10), ISNULL(r.VisitDate, r.CreatedAt), 23) AS [Date]
+            FROM dbo.Reviews r
+            INNER JOIN dbo.Places p ON r.PlaceId = p.Id
+            LEFT JOIN dbo.Categories cat ON p.CategoryId = cat.Id
+            LEFT JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id
+            WHERE r.UserId = @TargetUserId 
+              AND r.Status = 1 
+              AND p.Latitude IS NOT NULL 
+              AND p.Longitude IS NOT NULL
+
+            UNION ALL
+
+            SELECT 
+                v.Id,
+                v.PlaceId,
+                p.Name AS Title,
+                COALESCE(p.CoverImageUrl, (SELECT TOP 1 pm.Url FROM dbo.PlaceMedia pm WHERE pm.PlaceId = p.Id ORDER BY pm.DisplayOrder)) AS CoverImg,
+                cat.Name AS Category,
+                prov.Name AS Province,
+                CAST(p.Longitude AS FLOAT) AS Lng,
+                CAST(p.Latitude AS FLOAT) AS Lat,
+                'visit_log' AS InteractionType,
+                CONCAT(N'Đã ghé thăm ', FORMAT(v.VisitedDate, 'dd/MM/yyyy')) AS InteractionLabel,
+                NULL AS Rating,
+                CONVERT(NVARCHAR(10), v.VisitedDate, 23) AS [Date]
+            FROM dbo.VisitLogs v
+            INNER JOIN dbo.Places p ON v.PlaceId = p.Id
+            LEFT JOIN dbo.Categories cat ON p.CategoryId = cat.Id
+            LEFT JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id
+            WHERE v.UserId = @TargetUserId
+              AND (@IsCurrentUser = 1 OR v.Privacy = 0)
+              AND p.Latitude IS NOT NULL 
+              AND p.Longitude IS NOT NULL
+
+            UNION ALL
+
+            SELECT 
+                pr.Id,
+                ISNULL(pr.TargetPlaceId, 0) AS PlaceId,
+                ISNULL(p.Name, JSON_VALUE(pr.ProposedDataJSON, '$.name')) AS Title,
+                COALESCE(p.CoverImageUrl, JSON_VALUE(pr.ProposedDataJSON, '$.coverImg')) AS CoverImg,
+                ISNULL(cat.Name, N'Địa điểm đề xuất') AS Category,
+                ISNULL(prov.Name, N'Việt Nam') AS Province,
+                CAST(COALESCE(p.Longitude, pr.Longitude, TRY_CAST(JSON_VALUE(pr.ProposedDataJSON, '$.longitude') AS FLOAT)) AS FLOAT) AS Lng,
+                CAST(COALESCE(p.Latitude, pr.Latitude, TRY_CAST(JSON_VALUE(pr.ProposedDataJSON, '$.latitude') AS FLOAT)) AS FLOAT) AS Lat,
+                'proposal' AS InteractionType,
+                N'Địa điểm đề xuất thành công' AS InteractionLabel,
+                NULL AS Rating,
+                CONVERT(NVARCHAR(10), pr.CreatedAt, 23) AS [Date]
+            FROM dbo.Proposals pr
+            LEFT JOIN dbo.Places p ON pr.TargetPlaceId = p.Id
+            LEFT JOIN dbo.Categories cat ON pr.CategoryId = cat.Id
+            LEFT JOIN dbo.Provinces prov ON pr.ProvinceId = prov.Id
+            WHERE pr.UserId = @TargetUserId
+              AND (@IsCurrentUser = 1 OR pr.Status = 1)
+              AND (COALESCE(p.Latitude, pr.Latitude, TRY_CAST(JSON_VALUE(pr.ProposedDataJSON, '$.latitude') AS FLOAT)) IS NOT NULL)
+
+            ORDER BY [Date] DESC;";
+
+        var rows = (await connection.QueryAsync(sql, new
+        {
+            TargetUserId = targetUserId,
+            IsCurrentUser = isCurrentUser ? 1 : 0
+        })).ToList();
+
+        var list = new List<UserMapPlaceDto>();
+        foreach (var r in rows)
+        {
+            if (r.Lng == null || r.Lat == null) continue;
+            double lng = (double)r.Lng;
+            double lat = (double)r.Lat;
+
+            list.Add(new UserMapPlaceDto
+            {
+                Id = (long)r.Id,
+                PlaceId = (long)r.PlaceId,
+                Title = (string?)r.Title ?? "Địa điểm",
+                CoverImg = (string?)r.CoverImg,
+                Category = (string?)r.Category,
+                Province = (string?)r.Province,
+                Coordinates = new double[] { lng, lat },
+                InteractionType = (string)r.InteractionType,
+                InteractionLabel = (string)r.InteractionLabel,
+                Rating = r.Rating != null ? (double)r.Rating : null,
+                Date = (string)r.Date
+            });
+        }
+
+        return list;
+    }
+
     public async Task<PagedResult<UserReviewItemDto>> GetReviewsAsync(
         long userId,
+        long? currentUserId,
+        string? sortBy,
         int page,
         int pageSize,
         CancellationToken ct = default)
@@ -451,26 +673,48 @@ public class UserPersonalizationRepository : IUserPersonalizationRepository
         using var connection = CreateConnection();
         int offset = (page - 1) * pageSize;
 
-        const string sql = @"
+        string orderByClause = sortBy?.ToLowerInvariant() switch
+        {
+            "rating_desc" => "ORDER BY r.Rating DESC, r.CreatedAt DESC",
+            "rating_asc" => "ORDER BY r.Rating ASC, r.CreatedAt DESC",
+            _ => "ORDER BY r.CreatedAt DESC"
+        };
+
+        string sql = $@"
             SELECT
                 r.Id,
                 r.PlaceId,
                 p.Name AS PlaceName,
+                cat.Name AS Category,
+                p.Address,
+                prov.Name AS Province,
                 CAST(r.Rating AS INT) AS Rating,
+                r.Title,
                 r.Content,
                 r.VisitDate,
                 COALESCE(p.CoverImageUrl, (SELECT TOP 1 pm.Url FROM dbo.PlaceMedia pm WHERE pm.PlaceId = p.Id ORDER BY pm.DisplayOrder)) AS CoverImg,
+                CAST(p.AvgRating AS FLOAT) AS PlaceRating,
+                p.ReviewCount AS PlaceReviewCount,
+                r.LikesCount AS LikeCount,
+                CASE 
+                    WHEN @CurrentUserId IS NOT NULL AND EXISTS (SELECT 1 FROM dbo.ReviewLikes rl WHERE rl.ReviewId = r.Id AND rl.UserId = @CurrentUserId) 
+                    THEN CAST(1 AS BIT) 
+                    ELSE CAST(0 AS BIT) 
+                END AS IsLiked,
                 r.CreatedAt,
                 COUNT(1) OVER() AS TotalCount
             FROM dbo.Reviews r
             INNER JOIN dbo.Places p ON r.PlaceId = p.Id
+            LEFT JOIN dbo.Categories cat ON p.CategoryId = cat.Id
+            LEFT JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id
             WHERE r.UserId = @UserId AND r.Status = 1
-            ORDER BY r.CreatedAt DESC
+            {orderByClause}
             OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 
         var rows = (await connection.QueryAsync(sql, new
         {
             UserId = userId,
+            CurrentUserId = currentUserId,
             Offset = offset,
             PageSize = pageSize
         })).ToList();
@@ -505,11 +749,19 @@ public class UserPersonalizationRepository : IUserPersonalizationRepository
                     Id = rid,
                     PlaceId = (long)r.PlaceId,
                     PlaceName = (string)r.PlaceName,
+                    Category = (string?)r.Category,
+                    Address = (string?)r.Address,
+                    Province = (string?)r.Province,
                     Rating = (int)r.Rating,
+                    Title = (string?)r.Title,
                     Content = (string?)r.Content,
                     VisitDate = vDate,
                     CoverImg = (string?)r.CoverImg,
                     Images = mediaLookup[rid].Distinct().ToList(),
+                    PlaceRating = r.PlaceRating != null ? Math.Round((double)r.PlaceRating, 1) : 5.0,
+                    PlaceReviewCount = (int)(r.PlaceReviewCount ?? 0),
+                    LikeCount = (int)(r.LikeCount ?? 0),
+                    IsLiked = (bool)(r.IsLiked ?? false),
                     CreatedAt = created.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
                 });
             }

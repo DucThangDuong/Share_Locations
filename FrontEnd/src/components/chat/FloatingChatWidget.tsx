@@ -153,10 +153,6 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
     return () => clearTimeout(timer)
   }, [incomingToast, dismissIncomingToast])
 
-  if (!isFloatingChatOpen) {
-    return null
-  }
-
   // Close menus when clicking outside
   useEffect(() => {
     const handleClickOutside = () => {
@@ -165,6 +161,10 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
     window.addEventListener('click', handleClickOutside)
     return () => window.removeEventListener('click', handleClickOutside)
   }, [])
+
+  if (!isFloatingChatOpen) {
+    return null
+  }
 
   // Handle Copy Message
   const handleCopy = (messageId: number, text: string) => {
@@ -265,7 +265,7 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
       <Draggable handle=".chat-draggable-handle" bounds="body" nodeRef={dragRef}>
         <div
           ref={dragRef}
-          className="fixed bottom-4 right-4 sm:bottom-5 sm:right-5 z-50 font-sans flex flex-col items-end select-none"
+          className="fixed bottom-4 right-4 sm:bottom-5 sm:right-5 z-[999] font-sans flex flex-col items-end select-none"
         >
           {/* ═══════════════════════════════════════════════════════════════
               TRƯỜNG HỢP 1: THU NHỎ THÀNH BONG BÓNG CHAT TRÒN (NHIỀU LIGHTICONS)

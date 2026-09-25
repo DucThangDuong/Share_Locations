@@ -25,6 +25,7 @@ public interface ITripRepository
     Task<PagedResult<UserTripSummaryDto>> GetUserTripsAsync(
         long userId,
         string? status,
+        byte? privacy,
         int page,
         int pageSize,
         CancellationToken ct = default);

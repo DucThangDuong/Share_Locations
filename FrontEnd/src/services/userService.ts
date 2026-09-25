@@ -11,8 +11,11 @@ import type {
   PagedResultDto,
   CreateVisitLogRequest,
   UpdateVisitLogRequest,
-  CreateProposalRequest
+  CreateProposalRequest,
+  PublicUserProfileDto,
+  UserMapPlaceDto
 } from '@/types/models/userProfile.model'
+import type { UserTripSummaryDto } from '@/types/models/trip.model'
 
 export const userService = {
   async getMyFavorites(params?: {
@@ -169,6 +172,90 @@ export const userService = {
   async recordAccessHistory(placeId: number): Promise<ApiSuccessResponse<boolean>> {
     const response = await apiClient.post<ApiSuccessResponse<boolean>>(
       `/api/places/${placeId}/access-history`
+    )
+    return response.data
+  },
+
+  async getUserPublicProfile(userId: number | string): Promise<ApiSuccessResponse<PublicUserProfileDto>> {
+    const response = await apiClient.get<ApiSuccessResponse<PublicUserProfileDto>>(
+      `/api/users/${userId}/profile`
+    )
+    return response.data
+  },
+
+  async getUserMapPlaces(userId: number | string): Promise<ApiSuccessResponse<UserMapPlaceDto[]>> {
+    const response = await apiClient.get<ApiSuccessResponse<UserMapPlaceDto[]>>(
+      `/api/users/${userId}/map-places`
+    )
+    return response.data
+  },
+
+  async getUserPublicReviews(
+    userId: number | string,
+    params?: { page?: number; pageSize?: number; sortBy?: string }
+  ): Promise<ApiSuccessResponse<UserReviewItem[] | PagedResultDto<UserReviewItem>>> {
+    const response = await apiClient.get<ApiSuccessResponse<UserReviewItem[] | PagedResultDto<UserReviewItem>>>(
+      `/api/users/${userId}/reviews`,
+      { params }
+    )
+    return response.data
+  },
+
+  async getUserPublicTrips(
+    userId: number | string,
+    params?: { page?: number; pageSize?: number; status?: string; privacy?: number }
+  ): Promise<ApiSuccessResponse<PagedResultDto<UserTripSummaryDto> | UserTripSummaryDto[]>> {
+    const response = await apiClient.get<ApiSuccessResponse<PagedResultDto<UserTripSummaryDto> | UserTripSummaryDto[]>>(
+      `/api/users/${userId}/trips`,
+      { params }
+    )
+    return response.data
+  },
+
+  async getUserPublicVisitLogs(
+    userId: number | string,
+    params?: { page?: number; pageSize?: number; privacy?: number }
+  ): Promise<ApiSuccessResponse<PagedResultDto<VisitLogItem>>> {
+    const response = await apiClient.get<ApiSuccessResponse<PagedResultDto<VisitLogItem>>>(
+      `/api/users/${userId}/visit-logs`,
+      { params }
+    )
+    return response.data
+  },
+
+  async getUserPublicBlogs(
+    userId: number | string,
+    params?: { page?: number; pageSize?: number; status?: number }
+  ): Promise<ApiSuccessResponse<UserBlogItem[] | PagedResultDto<UserBlogItem>>> {
+    const response = await apiClient.get<ApiSuccessResponse<UserBlogItem[] | PagedResultDto<UserBlogItem>>>(
+      `/api/users/${userId}/blogs`,
+      { params }
+    )
+    return response.data
+  },
+
+  async getUserPublicProposals(
+    userId: number | string,
+    params?: { page?: number; pageSize?: number; status?: number }
+  ): Promise<ApiSuccessResponse<ProposalItem[] | PagedResultDto<ProposalItem>>> {
+    const response = await apiClient.get<ApiSuccessResponse<ProposalItem[] | PagedResultDto<ProposalItem>>>(
+      `/api/users/${userId}/proposals`,
+      { params }
+    )
+    return response.data
+  },
+
+  async toggleReviewLike(reviewId: number | string): Promise<ApiSuccessResponse<{ isLiked: boolean; likeCount: number }>> {
+    const response = await apiClient.post<ApiSuccessResponse<{ isLiked: boolean; likeCount: number }>>(
+      `/api/reviews/${reviewId}/toggle-like`
+    )
+    return response.data
+  },
+
+  async sendFriendRequest(targetUserId: number): Promise<ApiSuccessResponse<boolean>> {
+    const response = await apiClient.post<ApiSuccessResponse<boolean>>(
+      '/api/friends/request',
+      { targetUserId }
     )
     return response.data
   }

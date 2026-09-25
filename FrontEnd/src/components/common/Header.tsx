@@ -82,9 +82,15 @@ export const Header: React.FC = () => {
     { label: 'Cẩm nang', href: '/blog', icon: BookOpen }
   ]
 
+  const isFullWidthRoute = location.pathname.startsWith('/admin')
+
   return (
     <header className="sticky top-0 z-40 w-full border-b border-slate-200/80 bg-white/95 backdrop-blur-md shadow-2xs">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex justify-between items-center gap-4">
+      <div
+        className={`${
+          isFullWidthRoute ? 'w-full px-4 sm:px-6' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'
+        } h-16 flex justify-between items-center gap-4 transition-all duration-150`}
+      >
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <button
             type="button"

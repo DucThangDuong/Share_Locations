@@ -204,6 +204,7 @@ public class TripRepository : ITripRepository
     public async Task<PagedResult<UserTripSummaryDto>> GetUserTripsAsync(
         long userId,
         string? status,
+        byte? privacy,
         int page,
         int pageSize,
         CancellationToken ct = default)
@@ -226,6 +227,12 @@ public class TripRepository : ITripRepository
                 conditions.Add("t.Status = 1");
             else if (st == "completed" || st == "2")
                 conditions.Add("t.Status = 2");
+        }
+
+        if (privacy.HasValue)
+        {
+            conditions.Add("t.Privacy = @Privacy");
+            parameters.Add("Privacy", privacy.Value);
         }
 
         var whereClause = string.Join(" AND ", conditions);

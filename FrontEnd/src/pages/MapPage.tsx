@@ -1,20 +1,33 @@
-import { useState, useEffect, useRef } from 'react'
-import { Compass, Layers, Info } from 'lucide-react'
+import { useState, useEffect, useRef, useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { Info, SlidersHorizontal, ChevronRight } from 'lucide-react'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { placeService } from '@/services/placeService'
 import { MapSidebar } from '@/components/map/MapSidebar'
-import { MapPlaceDrawer } from '@/components/map/MapPlaceDrawer'
-import type { PlaceMapItemDto } from '@/types/models/place.model'
+import type { PlaceMapItemDto, LookupItemDto, RegionLookupDto } from '@/types/models/place.model'
 
 export const MapPage = () => {
+  const [searchParams, setSearchParams] = useSearchParams()
+
   const [places, setPlaces] = useState<PlaceMapItemDto[]>([])
+  const [categories, setCategories] = useState<LookupItemDto[]>([])
+  const [regions, setRegions] = useState<RegionLookupDto[]>([])
   const [loading, setLoading] = useState(true)
-  const [searchKeyword, setSearchKeyword] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState<number>(0)
-  const [selectedRegion, setSelectedRegion] = useState<string>('all')
+
+  // Sync state with URL params
+  const searchKeyword = searchParams.get('q') || searchParams.get('keyword') || searchParams.get('search') || ''
+  const selectedCategoryId = useMemo(() => {
+    const raw = searchParams.get('catId') || searchParams.get('categoryId') || searchParams.get('cat')
+    return raw ? Number(raw) || 0 : 0
+  }, [searchParams])
+  const selectedProvinceId = useMemo(() => {
+    const raw = searchParams.get('provinceId') || searchParams.get('provId') || searchParams.get('province')
+    return raw ? Number(raw) || 0 : 0
+  }, [searchParams])
+
   const [activePlace, setActivePlace] = useState<PlaceMapItemDto | null>(null)
-  const [mobileView, setMobileView] = useState<'map' | 'list'>('map')
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
 
   const mapContainerRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<mapboxgl.Map | null>(null)
@@ -23,19 +36,85 @@ export const MapPage = () => {
 
   const token = (import.meta.env.VITE_MAPBOX_ACCESS_TOKEN as string | undefined)?.trim()
 
+  const activeFilterCount = (selectedCategoryId > 0 ? 1 : 0) + (selectedProvinceId > 0 ? 1 : 0)
+
+  const updateUrlParams = (updates: { q?: string; catId?: number; provinceId?: number }) => {
+    const params = new URLSearchParams(searchParams)
+    if (updates.q !== undefined) {
+      if (updates.q.trim()) params.set('q', updates.q.trim())
+      else params.delete('q')
+    }
+    if (updates.catId !== undefined) {
+      if (updates.catId > 0) params.set('catId', String(updates.catId))
+      else {
+        params.delete('catId')
+        params.delete('categoryId')
+        params.delete('cat')
+      }
+    }
+    if (updates.provinceId !== undefined) {
+      if (updates.provinceId > 0) params.set('provinceId', String(updates.provinceId))
+      else {
+        params.delete('provinceId')
+        params.delete('provId')
+        params.delete('province')
+      }
+    }
+    setSearchParams(params, { replace: true })
+  }
+
+  const handleSearchChange = (keyword: string) => {
+    updateUrlParams({ q: keyword })
+  }
+
+  const handleCategoryChange = (catId: number) => {
+    updateUrlParams({ catId })
+  }
+
+  const handleProvinceChange = (provinceId: number) => {
+    updateUrlParams({ provinceId })
+  }
+
+  const handleResetFilters = () => {
+    const params = new URLSearchParams()
+    setSearchParams(params, { replace: true })
+  }
+
+  useEffect(() => {
+    const fetchOptions = async () => {
+      try {
+        const res = await placeService.getFilterOptions()
+        if (res.success && res.data) {
+          setCategories(res.data.categories || [])
+          setRegions(res.data.regions || [])
+        }
+      } catch (err) {
+        console.error('Error fetching filter options:', err)
+      }
+    }
+    fetchOptions()
+  }, [])
+
   useEffect(() => {
     const fetchMapPlaces = async () => {
       setLoading(true)
       try {
         const res = await placeService.getPlacesMap({
-          keyword: searchKeyword,
-          categoryId: selectedCategory > 0 ? selectedCategory : undefined,
-          region: selectedRegion !== 'all' ? selectedRegion : undefined
+          keyword: searchKeyword.trim() || undefined,
+          categoryId: selectedCategoryId > 0 ? selectedCategoryId : undefined,
+          provinceId: selectedProvinceId > 0 ? selectedProvinceId : undefined
         })
         if (res.success && res.data) {
           setPlaces(res.data)
           if (res.data.length > 0) {
             setActivePlace(res.data[0])
+            if (selectedProvinceId > 0 && mapInstanceRef.current && res.data[0].coordinates) {
+              mapInstanceRef.current.flyTo({
+                center: [res.data[0].coordinates[0], res.data[0].coordinates[1]],
+                zoom: 10,
+                essential: true
+              })
+            }
           }
         }
       } catch {
@@ -47,7 +126,7 @@ export const MapPage = () => {
 
     const timeoutId = setTimeout(fetchMapPlaces, 300)
     return () => clearTimeout(timeoutId)
-  }, [searchKeyword, selectedCategory, selectedRegion])
+  }, [searchKeyword, selectedCategoryId, selectedProvinceId])
 
   useEffect(() => {
     if (!token || !mapContainerRef.current) {
@@ -77,6 +156,14 @@ export const MapPage = () => {
       setHasMapboxToken(false)
     }
   }, [token])
+
+  // Trigger Mapbox resize when sidebar opens/collapses
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      mapInstanceRef.current?.resize()
+    }, 150)
+    return () => clearTimeout(timer)
+  }, [isSidebarOpen])
 
   useEffect(() => {
     const map = mapInstanceRef.current
@@ -129,85 +216,64 @@ export const MapPage = () => {
   }
 
   return (
-    <div className="h-[calc(100vh-64px)] flex flex-col bg-gray-50 overflow-hidden">
-      <div className="bg-white border-b border-gray-200 px-4 py-3 shrink-0 flex flex-wrap items-center justify-between gap-3 shadow-2xs">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
-            <Compass className="w-5 h-5" />
-          </div>
-          <div>
-            <h1 className="text-base sm:text-lg font-bold text-gray-900 leading-tight">
-              Bản Đồ Du Lịch Việt Nam
-            </h1>
-            <p className="text-xs text-gray-500">
-              Khám phá hơn 63 tỉnh thành & tọa độ nổi tiếng theo thời gian thực
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <div className="md:hidden flex bg-gray-100 p-0.5 rounded-lg border border-gray-200 text-xs font-semibold">
-            <button type="button"
-              onClick={() => setMobileView('map')}
-              className={`px-3 py-1.5 rounded-lg transition-colors ${
-                mobileView === 'map' ? 'bg-white text-emerald-700 shadow-xs' : 'text-gray-600'
-              }`}
-            >
-              Bản đồ
-            </button>
-            <button type="button"
-              onClick={() => setMobileView('list')}
-              className={`px-3 py-1.5 rounded-lg transition-colors ${
-                mobileView === 'list' ? 'bg-white text-emerald-700 shadow-xs' : 'text-gray-600'
-              }`}
-            >
-              Danh sách ({places.length})
-            </button>
-          </div>
-
-          <div className="hidden sm:flex items-center gap-1.5 text-xs text-gray-600 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200">
-            <Layers className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Hiển thị: <strong className="text-gray-900">{places.length}</strong> địa điểm</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex-1 flex overflow-hidden relative">
-        <MapSidebar
-          places={places}
-          loading={loading}
-          searchKeyword={searchKeyword}
-          selectedCategory={selectedCategory}
-          selectedRegion={selectedRegion}
-          activePlace={activePlace}
-          mobileView={mobileView}
-          onSearchChange={setSearchKeyword}
-          onCategoryChange={setSelectedCategory}
-          onRegionChange={setSelectedRegion}
-          onSelectPlace={handleSelectPlace}
-        />
-
-        <div className="flex-1 h-full relative bg-slate-900">
-          <div ref={mapContainerRef} className="w-full h-full" />
-
-          {!hasMapboxToken && (
-            <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-xs flex flex-col items-center justify-center p-6 text-center text-white z-20">
-              <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mb-4">
-                <Info className="w-8 h-8" />
-              </div>
-              <h3 className="text-xl font-bold mb-2">Chưa cấu hình Mapbox Token</h3>
-              <p className="text-xs sm:text-sm text-slate-300 max-w-md mb-6 leading-relaxed">
-                Để trải nghiệm bản đồ 3D vệ tinh mượt mà, vui lòng cấu hình <code className="bg-slate-900 px-1.5 py-0.5 rounded text-emerald-400 font-mono text-xs">VITE_MAPBOX_ACCESS_TOKEN</code> trong tệp <code className="bg-slate-900 px-1.5 py-0.5 rounded text-emerald-400 font-mono text-xs">.env</code>.
-              </p>
-            </div>
-          )}
-
-          <MapPlaceDrawer
-            place={activePlace}
-            onClose={() => setActivePlace(null)}
+    <div className="h-[calc(100vh-64px)] flex flex-col bg-slate-50 overflow-hidden">
+      <div className="w-full max-w-[1440px] mx-auto px-3 sm:px-4 lg:px-6 h-full flex flex-col py-2.5">
+        <div className="flex-1 flex overflow-hidden relative rounded-2xl border border-slate-200/90 shadow-2xs bg-white">
+          <MapSidebar
+            places={places}
+            loading={loading}
+            searchKeyword={searchKeyword}
+            categories={categories}
+            regions={regions}
+            selectedCategoryId={selectedCategoryId}
+            selectedProvinceId={selectedProvinceId}
+            activePlace={activePlace}
+            isOpen={isSidebarOpen}
+            onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
+            onSearchChange={handleSearchChange}
+            onCategoryChange={handleCategoryChange}
+            onProvinceChange={handleProvinceChange}
+            onResetFilters={handleResetFilters}
+            onSelectPlace={handleSelectPlace}
           />
+
+          <div className="flex-1 h-full relative bg-slate-900">
+            {/* Floating Expand Sidebar Button when collapsed */}
+            {!isSidebarOpen && (
+              <button
+                type="button"
+                onClick={() => setIsSidebarOpen(true)}
+                aria-label="Mở bộ lọc và danh sách địa điểm"
+                className="absolute top-4 left-4 z-20 hidden md:flex items-center gap-2 bg-white/95 backdrop-blur-md px-3.5 py-2.5 rounded-2xl shadow-lg border border-slate-200/80 text-slate-800 hover:bg-emerald-50 hover:text-emerald-900 hover:border-emerald-300 transition-all font-bold text-xs cursor-pointer group"
+              >
+                <SlidersHorizontal className="w-4 h-4 text-emerald-700 group-hover:scale-110 transition-transform" />
+                <span>Bộ lọc</span>
+                {activeFilterCount > 0 && (
+                  <span className="w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center shadow-xs">
+                    {activeFilterCount}
+                  </span>
+                )}
+                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+              </button>
+            )}
+
+            <div ref={mapContainerRef} className="w-full h-full" />
+
+            {!hasMapboxToken && (
+              <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-xs flex flex-col items-center justify-center p-6 text-center text-white z-20">
+                <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mb-4">
+                  <Info className="w-8 h-8" />
+                </div>
+                <h3 className="text-xl font-bold mb-2">Chưa cấu hình Mapbox Token</h3>
+                <p className="text-xs sm:text-sm text-slate-300 max-w-md mb-6 leading-relaxed">
+                  Để trải nghiệm bản đồ 3D vệ tinh mượt mà, vui lòng cấu hình <code className="bg-slate-900 px-1.5 py-0.5 rounded text-emerald-400 font-mono text-xs">VITE_MAPBOX_ACCESS_TOKEN</code> trong tệp <code className="bg-slate-900 px-1.5 py-0.5 rounded text-emerald-400 font-mono text-xs">.env</code>.
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
   )
 }
+
