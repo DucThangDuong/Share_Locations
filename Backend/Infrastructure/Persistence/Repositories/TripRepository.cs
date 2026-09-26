@@ -180,7 +180,7 @@ public class TripRepository : ITripRepository
                 CoverUrl = trip.CoverImageUrl,
                 Author = new ItineraryAuthorDto
                 {
-                    Name = trip.AuthorName ?? "Cộng tác viên Lang Thang",
+                    Name = CleanName(trip.AuthorName),
                     Avatar = trip.AuthorAvatar
                 },
                 Overview = trip.Description,
@@ -338,9 +338,9 @@ public class TripRepository : ITripRepository
             }
         }
 
-        if (trip.Privacy == TripPrivacy.Private)
+        if (trip.Privacy != TripPrivacy.Public)
         {
-            if (!currentUserId.HasValue || currentUserRole == null)
+            if (!currentUserId.HasValue || string.IsNullOrEmpty(currentUserRole))
             {
                 return null;
             }
@@ -364,7 +364,7 @@ public class TripRepository : ITripRepository
             memberDtos.Add(new TripMemberDetailDto
             {
                 UserId = ownerUser.Id,
-                FullName = !string.IsNullOrWhiteSpace(ownerUser.Profile?.FullName) ? ownerUser.Profile.FullName : ownerUser.Email,
+                FullName = CleanName(!string.IsNullOrWhiteSpace(ownerUser.Profile?.FullName) ? ownerUser.Profile.FullName : ownerUser.Email),
                 AvatarUrl = ownerUser.Profile?.AvatarUrl,
                 Email = ownerUser.Email,
                 Role = "Owner"
@@ -376,7 +376,7 @@ public class TripRepository : ITripRepository
             memberDtos.Add(new TripMemberDetailDto
             {
                 UserId = m.UserId,
-                FullName = !string.IsNullOrWhiteSpace(m.User.Profile?.FullName) ? m.User.Profile.FullName : m.User.Email,
+                FullName = CleanName(!string.IsNullOrWhiteSpace(m.User.Profile?.FullName) ? m.User.Profile.FullName : m.User.Email),
                 AvatarUrl = m.User.Profile?.AvatarUrl,
                 Email = m.User.Email,
                 Role = m.Role.ToString()
@@ -533,5 +533,19 @@ public class TripRepository : ITripRepository
         return await _dbContext.TripMembers
             .AsNoTracking()
             .AnyAsync(m => m.TripId == tripId && m.UserId == userId, ct);
+    }
+
+    private static string CleanName(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return string.Empty;
+
+        var idx = name.IndexOf('(');
+        if (idx > 0 && (name.Contains("Admin", StringComparison.OrdinalIgnoreCase) || name.EndsWith(')')))
+        {
+            return name.Substring(0, idx).Trim();
+        }
+
+        return name.Trim();
     }
 }

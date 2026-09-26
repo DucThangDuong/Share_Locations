@@ -153,6 +153,21 @@ export interface InviteTripMemberRequestDto {
   role: string
 }
 
+export interface PublishTripRequestDto {
+  description: string
+  title?: string
+  coverImageFile?: File | null
+}
+
+export interface PublishTripResponseDto {
+  tripId: number
+  title: string
+  description: string
+  privacy: string | number
+  publishedAt: string
+  message?: string
+}
+
 export interface PublicTripSummaryDto {
   id: number
   title: string

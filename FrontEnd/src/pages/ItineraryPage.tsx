@@ -12,17 +12,20 @@ import type {
 import {
   ItineraryCatalogView,
   ItineraryPlannerView,
-  ItineraryMemberModal
+  ItineraryMemberModal,
+  ItineraryPublishModal
 } from '@/components/itinerary'
 import { itineraryService } from '@/services/itineraryService'
 import { tripService } from '@/services/tripService'
-import type { TripDetailDto } from '@/types/models/trip.model'
+import { useAuth } from '@/context/AuthContext'
+import type { TripDetailDto, PublishTripRequestDto } from '@/types/models/trip.model'
 
 export const ItineraryPage: React.FC = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const params = useParams<{ id?: string }>()
   const [searchParams, setSearchParams] = useSearchParams()
+  const { user: currentUser } = useAuth()
 
   const [catalogItineraries, setCatalogItineraries] = useState<ItineraryDto[]>([])
   const [plannerTrip, setPlannerTrip] = useState<DetailedItineraryItem | null>(null)
@@ -42,7 +45,13 @@ export const ItineraryPage: React.FC = () => {
   } | null>(null)
 
   const [isMemberModalOpen, setIsMemberModalOpen] = useState(false)
+  const [isPublishModalOpen, setIsPublishModalOpen] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
+
+  const isPublished = plannerTrip?.privacy === 0 || String(plannerTrip?.privacy).toLowerCase() === 'public'
+  const roleLower = (currentUserRole || '').toLowerCase()
+  const isOwner = !isPublished && roleLower === 'owner'
+  const canEdit = !isPublished && (roleLower === 'owner' || roleLower === 'editor')
 
   const showToast = (msg: string) => {
     setToastMessage(msg)
@@ -88,7 +97,7 @@ export const ItineraryPage: React.FC = () => {
       nightsCount: Math.max(0, (dto.daysCount || 1) - 1),
       estimatedBudget: totalCostNumber,
       privacy: 0,
-      coverImg: dto.coverUrl || '',
+      coverImg: dto.coverUrl || dto.coverImageUrl || '',
       authorName: dto.author?.name || 'Cộng đồng',
       authorAvatar: dto.author?.avatar || '',
       tags: [],
@@ -297,7 +306,15 @@ export const ItineraryPage: React.FC = () => {
             if (res.success && res.data) {
               const mapped = mapTripDetailDtoToDetailed(res.data)
               setPlannerTrip(mapped)
-              setCurrentUserRole((res.data.currentUserRole as TripRole) || 'Owner')
+              let detectedRole: TripRole = (res.data.currentUserRole as TripRole) || 'Member'
+              if (!res.data.currentUserRole && currentUser?.id) {
+                const curUserId = Number(currentUser.id)
+                const myMember = res.data.members?.find((m) => Number(m.userId) === curUserId)
+                if (myMember?.role) {
+                  detectedRole = myMember.role as TripRole
+                }
+              }
+              setCurrentUserRole(detectedRole)
               setExpandedDayIndices(new Set(mapped.days.map((_, idx) => idx)))
               setIsWishlistExpanded(true)
               setSelectedStopInfo(null)
@@ -318,10 +335,13 @@ export const ItineraryPage: React.FC = () => {
       setViewMode('catalog')
       fetchCatalog()
     }
-  }, [location.pathname, params.id, searchParams, fetchCatalog])
+  }, [location.pathname, params.id, searchParams, fetchCatalog, currentUser?.id])
 
   const handleSaveTrip = async () => {
-    if (!plannerTrip) return
+    if (!canEdit || !plannerTrip) {
+      showToast('Bạn chỉ có quyền xem lịch trình (Member).')
+      return
+    }
     setIsSavingTrip(true)
 
     try {
@@ -470,29 +490,49 @@ export const ItineraryPage: React.FC = () => {
     navigate(`/itinerary/${newTripId}`)
   }
 
-  const handlePublishTrip = async () => {
+  const handlePublishTrip = () => {
     if (!plannerTrip) return
-    const nextPrivacy = plannerTrip.privacy === 0 ? 1 : 0
-    setPlannerTrip((prev) => prev ? { ...prev, privacy: nextPrivacy } : null)
-    setHasUnsavedChanges(true)
-
-    try {
-      await tripService.updateTrip(plannerTrip.id, {
-        title: plannerTrip.title,
-        privacy: nextPrivacy
-      })
-    } catch {
+    if (roleLower !== 'owner') {
+      showToast('Chỉ có Trưởng đoàn (Owner) mới có quyền xuất bản chuyến đi.')
+      return
     }
+    setIsPublishModalOpen(true)
+  }
 
-    if (nextPrivacy === 1) {
-      showToast('Đã chuyển chuyến đi về chế độ riêng tư (Hủy xuất bản).')
-    } else {
-      showToast('Đã xuất bản chuyến đi công khai!')
+  const handleConfirmPublishTrip = async (data: PublishTripRequestDto) => {
+    if (!plannerTrip) return
+    try {
+      const res = await tripService.publishTrip(plannerTrip.id, data)
+      if (res.success) {
+        showToast(res.message || 'Chuyến đi đã được xuất bản công khai thành công!')
+        setPlannerTrip((prev) =>
+          prev
+            ? {
+                ...prev,
+                title: data.title || prev.title,
+                description: data.description || prev.description,
+                privacy: 0
+              }
+            : null
+        )
+        setHasUnsavedChanges(false)
+        setIsPublishModalOpen(false)
+      } else {
+        showToast(res.message || 'Không thể xuất bản chuyến đi lúc này.')
+      }
+    } catch (err: any) {
+      console.error('Failed to publish trip:', err)
+      const errorMsg =
+        err?.response?.data?.message ||
+        err?.response?.data?.errors?.Description?.[0] ||
+        err?.message ||
+        'Có lỗi xảy ra khi xuất bản chuyến đi.'
+      showToast(errorMsg)
     }
   }
 
   const handleUpdateTripTitle = async (title: string) => {
-    if (!plannerTrip) return
+    if (!plannerTrip || !canEdit) return
     setPlannerTrip((prev) => prev ? { ...prev, title } : null)
     setHasUnsavedChanges(true)
     try {
@@ -502,7 +542,7 @@ export const ItineraryPage: React.FC = () => {
   }
 
   const handleUpdateTripProvince = async (province: string) => {
-    if (!plannerTrip) return
+    if (!plannerTrip || !canEdit) return
     setPlannerTrip((prev) => prev ? { ...prev, province } : null)
     setHasUnsavedChanges(true)
   }
@@ -549,9 +589,12 @@ export const ItineraryPage: React.FC = () => {
     updatedStop: ItineraryStop,
     isWishlist?: boolean
   ) => {
+    if (!canEdit || !plannerTrip) {
+      showToast('Bạn chỉ có quyền xem lịch trình (Member).')
+      return
+    }
     setSelectedStopInfo({ dayIndex: dayIdx, stop: updatedStop, isWishlist })
     setHasUnsavedChanges(true)
-    if (!plannerTrip) return
 
     if (!isWishlist && dayIdx !== -1) {
       const stopNumId = Number(updatedStop.id)
@@ -597,8 +640,8 @@ export const ItineraryPage: React.FC = () => {
   }
 
   const handleDeleteStop = async (stopId: string, name: string) => {
-    if (currentUserRole === 'Viewer') {
-      showToast('Bạn chỉ có quyền xem (Viewer).')
+    if (!canEdit) {
+      showToast('Bạn chỉ có quyền xem lịch trình (Member).')
       return
     }
 
@@ -642,7 +685,7 @@ export const ItineraryPage: React.FC = () => {
     toDayIdx: number,
     stop: ItineraryStop
   ) => {
-    if (fromDayIdx === toDayIdx || !plannerTrip) return
+    if (!canEdit || fromDayIdx === toDayIdx || !plannerTrip) return
     setPlannerTrip((prev) => {
       if (!prev) return null
       const updatedDays = prev.days.map((day, dIdx) => {
@@ -667,7 +710,7 @@ export const ItineraryPage: React.FC = () => {
   }
 
   const handleMoveStopToWishlist = (fromDayIdx: number, stop: ItineraryStop) => {
-    if (!plannerTrip) return
+    if (!canEdit || !plannerTrip) return
     setPlannerTrip((prev) => {
       if (!prev) return null
       const updatedDays = prev.days.map((day, dIdx) => {
@@ -687,7 +730,7 @@ export const ItineraryPage: React.FC = () => {
   }
 
   const handleMoveWishlistToDay = (toDayIdx: number, stop: ItineraryStop) => {
-    if (!plannerTrip) return
+    if (!canEdit || !plannerTrip) return
     setPlannerTrip((prev) => {
       if (!prev) return null
       const updatedWishlist = (prev.backlogStops || []).filter((s) => s.id !== stop.id)
@@ -710,7 +753,7 @@ export const ItineraryPage: React.FC = () => {
   }
 
   const handleBatchMoveToDay = (targetDayIdx: number, stopIds: string[]) => {
-    if (stopIds.length === 0 || !plannerTrip) return
+    if (!canEdit || stopIds.length === 0 || !plannerTrip) return
     const idSet = new Set(stopIds)
     setPlannerTrip((prev) => {
       if (!prev) return null
@@ -751,7 +794,7 @@ export const ItineraryPage: React.FC = () => {
   }
 
   const handleBatchMoveToWishlist = (stopIds: string[]) => {
-    if (stopIds.length === 0 || !plannerTrip) return
+    if (!canEdit || stopIds.length === 0 || !plannerTrip) return
     const idSet = new Set(stopIds)
     setPlannerTrip((prev) => {
       if (!prev) return null
@@ -774,7 +817,7 @@ export const ItineraryPage: React.FC = () => {
   }
 
   const handleBatchDeleteStops = (stopIds: string[]) => {
-    if (stopIds.length === 0 || !plannerTrip) return
+    if (!canEdit || stopIds.length === 0 || !plannerTrip) return
     const idSet = new Set(stopIds)
     setPlannerTrip((prev) => {
       if (!prev) return null
@@ -800,7 +843,7 @@ export const ItineraryPage: React.FC = () => {
   }
 
   const handleQuickAddWishlistStop = (name: string) => {
-    if (!plannerTrip) return
+    if (!canEdit || !plannerTrip) return
     const wishlistCount = plannerTrip.backlogStops?.length || 0
 
     const newStop: ItineraryStop = {
@@ -815,7 +858,7 @@ export const ItineraryPage: React.FC = () => {
       duration: '1.5 giờ',
       transportMode: 'Xe máy',
       visitOrder: wishlistCount + 1,
-      note: 'Lưu vào kho chờ xếp lịch',
+      note: '',
       img: ''
     }
 
@@ -829,26 +872,102 @@ export const ItineraryPage: React.FC = () => {
     showToast(`Đã lưu "${name}" vào Kho lưu trữ`)
   }
 
+  const handleUpdateTripDates = async (newStartDate?: string, newEndDate?: string) => {
+    if (!plannerTrip || !canEdit) return
+
+    const startDate = newStartDate
+    let endDate = newEndDate
+
+    if (startDate && plannerTrip.days.length > 0) {
+      try {
+        const d = new Date(startDate)
+        d.setDate(d.getDate() + (plannerTrip.days.length - 1))
+        endDate = d.toISOString().split('T')[0]
+      } catch {
+      }
+    }
+
+    const updatedDays = plannerTrip.days.map((day, idx) => {
+      let dayDate = day.date
+      if (startDate) {
+        try {
+          const d = new Date(startDate)
+          d.setDate(d.getDate() + idx)
+          dayDate = d.toISOString().split('T')[0]
+        } catch {
+        }
+      } else {
+        dayDate = undefined
+      }
+      return {
+        ...day,
+        date: dayDate
+      }
+    })
+
+    setPlannerTrip((prev) =>
+      prev
+        ? {
+            ...prev,
+            startDate: startDate || undefined,
+            endDate: endDate || undefined,
+            days: updatedDays
+          }
+        : null
+    )
+    setHasUnsavedChanges(true)
+
+    if (plannerTrip.id && plannerTrip.id < 1000000000000) {
+      try {
+        await tripService.updateTrip(plannerTrip.id, {
+          startDate: startDate || undefined,
+          endDate: endDate || undefined
+        })
+        if (startDate) {
+          await Promise.all(
+            updatedDays.map((d) =>
+              tripService.updateTripDay(plannerTrip.id, d.dayNumber, {
+                dayTitle: d.title,
+                date: d.date
+              }).catch(() => {})
+            )
+          )
+        }
+      } catch {
+      }
+    }
+
+    showToast(
+      startDate && endDate
+        ? `Đã cập nhật thời gian: ${startDate} đến ${endDate}`
+        : 'Đã cập nhật thời gian chuyến đi.'
+    )
+  }
+
   const handleAddNewDay = async () => {
-    if (currentUserRole === 'Viewer' || !plannerTrip) {
-      showToast('Bạn chỉ có quyền xem (Viewer).')
+    if (!canEdit || !plannerTrip) {
+      showToast('Bạn chỉ có quyền xem lịch trình (Member).')
       return
     }
     const nextDayNum = plannerTrip.days.length + 1
     const lastDay = plannerTrip.days[plannerTrip.days.length - 1]
     let nextDate: string | undefined = undefined
-    if (lastDay?.date) {
-      try {
-        const d = new Date(lastDay.date)
-        d.setDate(d.getDate() + 1)
-        nextDate = d.toISOString().split('T')[0]
-      } catch {
-      }
-    } else if (plannerTrip.startDate) {
+    let newEndDate = plannerTrip.endDate
+
+    if (plannerTrip.startDate) {
       try {
         const d = new Date(plannerTrip.startDate)
         d.setDate(d.getDate() + (nextDayNum - 1))
         nextDate = d.toISOString().split('T')[0]
+        newEndDate = nextDate
+      } catch {
+      }
+    } else if (lastDay?.date) {
+      try {
+        const d = new Date(lastDay.date)
+        d.setDate(d.getDate() + 1)
+        nextDate = d.toISOString().split('T')[0]
+        newEndDate = nextDate
       } catch {
       }
     }
@@ -867,6 +986,7 @@ export const ItineraryPage: React.FC = () => {
         ...prev,
         durationDays: nextDayNum,
         nightsCount: Math.max(0, nextDayNum - 1),
+        endDate: newEndDate,
         days: [...prev.days, newDay]
       }
     })
@@ -880,6 +1000,12 @@ export const ItineraryPage: React.FC = () => {
           dayTitle,
           date: nextDate
         })
+        if (newEndDate !== plannerTrip.endDate) {
+          await tripService.updateTrip(plannerTrip.id, {
+            startDate: plannerTrip.startDate,
+            endDate: newEndDate
+          })
+        }
       } catch {
       }
     }
@@ -892,27 +1018,57 @@ export const ItineraryPage: React.FC = () => {
     title: string,
     date?: string
   ) => {
-    if (currentUserRole === 'Viewer' || !plannerTrip) {
-      showToast('Bạn chỉ có quyền xem (Viewer).')
+    if (!canEdit || !plannerTrip) {
+      showToast('Bạn chỉ có quyền xem lịch trình (Member).')
       return
     }
 
     const targetDay = plannerTrip.days[dayIndex]
     if (!targetDay) return
 
-    setPlannerTrip((prev) => {
-      if (!prev) return null
-      const updatedDays = prev.days.map((day, idx) => {
-        if (idx === dayIndex) {
+    let newStartDate = plannerTrip.startDate
+    let newEndDate = plannerTrip.endDate
+    let updatedDays = plannerTrip.days.map((day, idx) => {
+      if (idx === dayIndex) {
+        return {
+          ...day,
+          title: title.trim(),
+          date: date || undefined
+        }
+      }
+      return day
+    })
+
+    if (dayIndex === 0 && date && date !== plannerTrip.startDate) {
+      newStartDate = date
+      try {
+        const d = new Date(date)
+        d.setDate(d.getDate() + (plannerTrip.days.length - 1))
+        newEndDate = d.toISOString().split('T')[0]
+      } catch {
+      }
+      updatedDays = updatedDays.map((day, idx) => {
+        try {
+          const d = new Date(date)
+          d.setDate(d.getDate() + idx)
           return {
             ...day,
-            title: title.trim(),
-            date: date || undefined
+            date: d.toISOString().split('T')[0]
           }
+        } catch {
+          return day
         }
-        return day
       })
-      return { ...prev, days: updatedDays }
+    }
+
+    setPlannerTrip((prev) => {
+      if (!prev) return null
+      return {
+        ...prev,
+        startDate: newStartDate,
+        endDate: newEndDate,
+        days: updatedDays
+      }
     })
     setHasUnsavedChanges(true)
 
@@ -922,6 +1078,12 @@ export const ItineraryPage: React.FC = () => {
           dayTitle: title.trim(),
           date: date || undefined
         })
+        if (newStartDate !== plannerTrip.startDate || newEndDate !== plannerTrip.endDate) {
+          await tripService.updateTrip(plannerTrip.id, {
+            startDate: newStartDate,
+            endDate: newEndDate
+          })
+        }
       } catch {
       }
     }
@@ -930,8 +1092,8 @@ export const ItineraryPage: React.FC = () => {
   }
 
   const handleDeleteDay = async (dayIdx: number) => {
-    if (currentUserRole !== 'Owner' || !plannerTrip) {
-      showToast('Chỉ Owner mới có quyền xóa ngày.')
+    if (!canEdit || !plannerTrip) {
+      showToast('Bạn chỉ có quyền xem lịch trình (Member).')
       return
     }
     if (plannerTrip.days.length <= 1) {
@@ -941,7 +1103,6 @@ export const ItineraryPage: React.FC = () => {
 
     const targetDay = plannerTrip.days[dayIdx]
     const targetDayNumber = targetDay?.dayNumber ?? dayIdx + 1
-    const targetDate = targetDay?.date
 
     if (plannerTrip.id && plannerTrip.id < 1000000000000) {
       try {
@@ -950,43 +1111,68 @@ export const ItineraryPage: React.FC = () => {
       }
     }
 
+    const filtered = plannerTrip.days.filter((_, idx) => idx !== dayIdx)
+    const newDaysCount = filtered.length
+    let newEndDate = plannerTrip.endDate
+
+    if (plannerTrip.startDate && newDaysCount > 0) {
+      try {
+        const d = new Date(plannerTrip.startDate)
+        d.setDate(d.getDate() + (newDaysCount - 1))
+        newEndDate = d.toISOString().split('T')[0]
+      } catch {
+      }
+    }
+
+    const renumbered = filtered.map((d, idx) => {
+      const newDayNum = idx + 1
+      let updatedTitle = d.title
+      if (updatedTitle) {
+        updatedTitle = updatedTitle.replace(/^Ngày\s*\d+/, `Ngày ${newDayNum}`)
+      } else {
+        updatedTitle = `Ngày ${newDayNum}`
+      }
+      let updatedDate = d.date
+      if (plannerTrip.startDate) {
+        try {
+          const startD = new Date(plannerTrip.startDate)
+          startD.setDate(startD.getDate() + idx)
+          updatedDate = startD.toISOString().split('T')[0]
+        } catch {
+        }
+      }
+      return {
+        ...d,
+        dayNumber: newDayNum,
+        title: updatedTitle,
+        date: updatedDate
+      }
+    })
+
     setPlannerTrip((prev) => {
       if (!prev) return null
-      const filtered = prev.days.filter((_, idx) => idx !== dayIdx)
-      const renumbered = filtered.map((d, idx) => {
-        const newDayNum = idx + 1
-        let updatedTitle = d.title
-        if (updatedTitle) {
-          updatedTitle = updatedTitle.replace(/^Ngày\s*\d+/, `Ngày ${newDayNum}`)
-        } else {
-          updatedTitle = `Ngày ${newDayNum}`
-        }
-        let updatedDate = d.date
-        if (idx >= dayIdx && d.date && targetDate) {
-          try {
-            const prevD = new Date(d.date)
-            prevD.setDate(prevD.getDate() - 1)
-            updatedDate = prevD.toISOString().split('T')[0]
-          } catch {
-          }
-        }
-        return {
-          ...d,
-          dayNumber: newDayNum,
-          title: updatedTitle,
-          date: updatedDate
-        }
-      })
       return {
         ...prev,
         durationDays: renumbered.length,
         nightsCount: Math.max(0, renumbered.length - 1),
+        endDate: newEndDate,
         days: renumbered
       }
     })
     setHasUnsavedChanges(true)
     setSelectedStopInfo(null)
-    showToast('Đã xóa ngày khỏi lịch trình. Các ngày sau đã được tự động đánh số lại.')
+
+    if (plannerTrip.id && plannerTrip.id < 1000000000000) {
+      try {
+        await tripService.updateTrip(plannerTrip.id, {
+          startDate: plannerTrip.startDate,
+          endDate: newEndDate
+        })
+      } catch {
+      }
+    }
+
+    showToast('Đã xóa ngày khỏi lịch trình. Thời gian kết thúc và các ngày sau đã được tự động cập nhật.')
   }
 
   const handleAddPlaceFromLibrary = async (
@@ -1002,7 +1188,7 @@ export const ItineraryPage: React.FC = () => {
     },
     targetDayIdx: number = -1
   ) => {
-    if (!plannerTrip) return
+    if (!canEdit || !plannerTrip) return
     const isWishlist = targetDayIdx === -1
     const dayNumber = targetDayIdx + 1
     const nextVisitOrder = targetDayIdx >= 0 ? (plannerTrip.days[targetDayIdx]?.stops?.length || 0) + 1 : 1
@@ -1018,7 +1204,7 @@ export const ItineraryPage: React.FC = () => {
           endTime: '10:30',
           estimatedCost: place.priceMax || 50000,
           transportMode: 'Xe máy',
-          note: place.desc
+          note: ''
         })
         if (res.success && res.data?.id) {
           createdId = String(res.data.id)
@@ -1037,7 +1223,7 @@ export const ItineraryPage: React.FC = () => {
       category: place.category || 'Tham quan di tích',
       area: 'Khu Trung tâm',
       address: place.location,
-      note: place.desc || 'Trải nghiệm điểm đến',
+      note: '',
       costEstimate: place.priceMax || 50000,
       duration: '1.5 giờ',
       transportMode: 'Xe máy',
@@ -1078,59 +1264,81 @@ export const ItineraryPage: React.FC = () => {
     )
   }
 
-  const handleInviteMember = async (email: string, role: TripRole) => {
+  const handleInviteMember = async (email: string, role: string) => {
     if (!plannerTrip) return
-    try {
-      await tripService.inviteMember(plannerTrip.id, { email, role })
-    } catch {
-    }
-
-    const newMember = {
-      id: Date.now(),
-      name: email.split('@')[0] || 'Thành viên',
-      avatar: '',
-      role,
-      email
-    }
-
-    setPlannerTrip((prev) => {
-      if (!prev) return null
-      return {
-        ...prev,
-        members: [...(prev.members || []), newMember]
-      }
-    })
-    setHasUnsavedChanges(true)
-    showToast(`Đã thêm thành viên: ${email}`)
-  }
-
-  const handleRemoveMember = async (memberId: number) => {
-    if (!plannerTrip) return
-    if (currentUserRole !== 'Owner') {
-      showToast('Chỉ Owner mới có quyền xóa thành viên.')
+    if (!isOwner) {
+      showToast('Chỉ có Trưởng đoàn (Owner) mới có quyền mời thành viên.')
       return
     }
-
-    if (plannerTrip.id && plannerTrip.id < 1000000000000) {
-      try {
-        await tripService.removeMember(plannerTrip.id, memberId)
-      } catch {
+    try {
+      const res = await tripService.inviteMember(plannerTrip.id, { email, role })
+      if (res.success) {
+        showToast(res.message || `Đã thêm thành viên: ${email}`)
+        // Refresh trip detail to obtain full updated members list from backend
+        try {
+          const detailRes = await tripService.getTripDetail(plannerTrip.id)
+          if (detailRes.success && detailRes.data?.members) {
+            setPlannerTrip((prev) => prev ? {
+              ...prev,
+              members: detailRes.data.members.map((m) => ({
+                id: m.userId,
+                userId: m.userId,
+                name: m.fullName,
+                fullName: m.fullName,
+                avatar: m.avatarUrl,
+                avatarUrl: m.avatarUrl,
+                email: m.email,
+                role: m.role as TripRole
+              }))
+            } : null)
+          }
+        } catch {
+        }
+      } else {
+        showToast(res.message || 'Không thể thêm thành viên lúc này.')
       }
+    } catch (err: any) {
+      console.error('Failed to invite member:', err)
+      const errorMsg = err?.response?.data?.message || err?.message || 'Có lỗi xảy ra khi mời thành viên.'
+      showToast(errorMsg)
     }
+  }
 
-    setPlannerTrip((prev) => {
-      if (!prev) return null
-      return {
-        ...prev,
-        members: (prev.members || []).filter((m) => m.id !== memberId)
+  const handleRemoveMember = async (userId: number, isSelf: boolean = false) => {
+    if (!plannerTrip) return
+    if (!isOwner && !isSelf) {
+      showToast('Chỉ có Trưởng đoàn (Owner) mới có quyền xóa thành viên.')
+      return
+    }
+    try {
+      const res = await tripService.removeMember(plannerTrip.id, userId)
+      if (res.success) {
+        if (isSelf) {
+          showToast(res.message || 'Bạn đã rời khỏi chuyến đi.')
+          setIsMemberModalOpen(false)
+          navigate('/itinerary')
+          return
+        }
+        showToast(res.message || 'Đã xóa thành viên khỏi chuyến đi.')
+        setPlannerTrip((prev) => {
+          if (!prev) return null
+          return {
+            ...prev,
+            members: (prev.members || []).filter((m) => (m.userId || m.id) !== userId)
+          }
+        })
+      } else {
+        showToast(res.message || 'Không thể xóa thành viên lúc này.')
       }
-    })
-    setHasUnsavedChanges(true)
-    showToast('Đã xóa thành viên.')
+    } catch (err: any) {
+      console.error('Failed to remove member:', err)
+      const errorMsg = err?.response?.data?.message || err?.message || 'Có lỗi xảy ra khi xóa thành viên.'
+      showToast(errorMsg)
+    }
   }
 
   const handleUpdateBudgetTarget = async (newBudget: number) => {
-    if (!plannerTrip) return
+    if (!canEdit || !plannerTrip) return
     setPlannerTrip((prev) => prev ? { ...prev, budgetTarget: newBudget } : null)
     setHasUnsavedChanges(true)
     if (plannerTrip.id && plannerTrip.id < 1000000000000) {
@@ -1188,6 +1396,7 @@ export const ItineraryPage: React.FC = () => {
           onQuickAddWishlistStop={handleQuickAddWishlistStop}
           onPublishTrip={handlePublishTrip}
           onUpdateBudgetTarget={handleUpdateBudgetTarget}
+          onUpdateTripDates={handleUpdateTripDates}
           onViewPlaceDetails={handleViewPlaceDetails}
           onAddPlaceFromLibrary={handleAddPlaceFromLibrary}
         />
@@ -1210,11 +1419,22 @@ export const ItineraryPage: React.FC = () => {
 
       <ItineraryMemberModal
         isOpen={isMemberModalOpen}
+        tripId={plannerTrip?.id}
+        tripTitle={plannerTrip?.title}
         members={plannerTrip?.members || []}
         currentUserRole={currentUserRole}
+        currentUserId={currentUser?.id ? Number(currentUser.id) : undefined}
+        isPublished={isPublished}
         onClose={() => setIsMemberModalOpen(false)}
         onInviteMember={handleInviteMember}
         onRemoveMember={handleRemoveMember}
+      />
+
+      <ItineraryPublishModal
+        isOpen={isPublishModalOpen}
+        trip={plannerTrip}
+        onClose={() => setIsPublishModalOpen(false)}
+        onPublish={handleConfirmPublishTrip}
       />
     </div>
   )

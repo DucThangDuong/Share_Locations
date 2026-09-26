@@ -69,5 +69,23 @@ export const authService = {
       },
     })
     return response.data
+  },
+
+  async forgotPassword(email: string): Promise<ApiSuccessResponse<boolean>> {
+    const response = await apiClient.post<ApiSuccessResponse<boolean>>('/api/auth/forgot-password', { email })
+    return response.data
+  },
+
+  async verifyResetOtp(email: string, otpCode: string): Promise<ApiSuccessResponse<{ resetToken: string; expiresAt?: string }>> {
+    const response = await apiClient.post<ApiSuccessResponse<{ resetToken: string; expiresAt?: string }>>(
+      '/api/auth/verify-reset-otp',
+      { email, otpCode }
+    )
+    return response.data
+  },
+
+  async resetPassword(payload: { resetToken: string; newPassword: string; confirmPassword: string }): Promise<ApiSuccessResponse<boolean>> {
+    const response = await apiClient.post<ApiSuccessResponse<boolean>>('/api/auth/reset-password', payload)
+    return response.data
   }
 }

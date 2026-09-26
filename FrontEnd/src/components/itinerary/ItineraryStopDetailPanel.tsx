@@ -51,7 +51,10 @@ export const ItineraryStopDetailPanel: React.FC<ItineraryStopDetailPanelProps> =
 
   if (!stop) return null
 
-  const canEdit = currentUserRole !== 'Viewer'
+  const roleLower = (currentUserRole || '').toLowerCase()
+  const isOwner = roleLower === 'owner'
+  const isEditor = roleLower === 'editor'
+  const canEdit = isOwner || isEditor
   const dayTheme = getDayTheme(dayIndex >= 0 ? dayIndex : 0)
 
   const handleChangeField = <K extends keyof ItineraryStop>(

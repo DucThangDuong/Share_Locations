@@ -19,7 +19,9 @@ import {
   Star,
   ChevronLeft,
   ChevronRight,
-  ArrowLeft
+  ArrowLeft,
+  Loader2,
+  X,
 } from 'lucide-react'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
@@ -27,6 +29,7 @@ import { useAuth } from '@/context/AuthContext'
 import { catalogService } from '@/services/catalogService'
 import { geographyService } from '@/services/geographyService'
 import { userService } from '@/services/userService'
+import { mapboxService, type AddressSuggestion } from '@/services/mapboxService'
 import type { PlaceTypeDto } from '@/types/models/place.model'
 import type { ProvinceDto } from '@/types/models/geography.model'
 import type { ProposalItem, PagedResultDto } from '@/types/models/userProfile.model'
@@ -58,6 +61,12 @@ export const ProposePlacePage: React.FC = () => {
   const [phone, setPhone] = useState(passedProposal?.phone || '')
   const [website, setWebsite] = useState(passedProposal?.website || '')
 
+  // Mapbox & OSM address autocomplete & reverse geocoding states
+  const [addressSuggestions, setAddressSuggestions] = useState<AddressSuggestion[]>([])
+  const [isSearchingAddress, setIsSearchingAddress] = useState(false)
+  const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false)
+  const [isReverseGeocoding, setIsReverseGeocoding] = useState(false)
+
   const [lat, setLat] = useState(passedProposal?.latitude ? String(passedProposal.latitude) : '21.028500')
   const [lng, setLng] = useState(passedProposal?.longitude ? String(passedProposal.longitude) : '105.854200')
   const [isLocating, setIsLocating] = useState(false)
@@ -82,6 +91,10 @@ export const ProposePlacePage: React.FC = () => {
   const mapContainerRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<mapboxgl.Map | null>(null)
   const markerRef = useRef<mapboxgl.Marker | null>(null)
+  const addressContainerRef = useRef<HTMLDivElement>(null)
+  const searchDebounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const searchAbortControllerRef = useRef<AbortController | null>(null)
+  const reverseAbortControllerRef = useRef<AbortController | null>(null)
 
   const mapboxToken = (import.meta.env.VITE_MAPBOX_ACCESS_TOKEN as string | undefined)?.trim() ||
     'pk.eyJ1IjoibGFuZ3RoYW5nLXZuIiwiYSI6ImNtODFhYmNkZTAxMzAya3B0eGZjcHB0ZmoifQ.placeholder'
@@ -131,6 +144,22 @@ export const ProposePlacePage: React.FC = () => {
     setImages(imgs)
   }
 
+  // Close address suggestions on click outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        addressContainerRef.current &&
+        !addressContainerRef.current.contains(event.target as Node)
+      ) {
+        setIsSuggestionsOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
+
   useEffect(() => {
     const loadMetadata = async () => {
       try {
@@ -177,6 +206,34 @@ export const ProposePlacePage: React.FC = () => {
     loadMetadata()
   }, [viewId])
 
+  // Reverse geocoding when clicking on map or dragging marker
+  const handleReverseGeocode = async (targetLng: number, targetLat: number) => {
+    if (reverseAbortControllerRef.current) {
+      reverseAbortControllerRef.current.abort()
+    }
+    const controller = new AbortController()
+    reverseAbortControllerRef.current = controller
+
+    setIsReverseGeocoding(true)
+    try {
+      const result = await mapboxService.reverseGeocode(targetLng, targetLat, mapboxToken, {
+        signal: controller.signal
+      })
+      if (result && result.fullAddress) {
+        setAddress(result.fullAddress)
+        const matchedProvId = mapboxService.findMatchingProvinceId(result.fullAddress, provinces)
+        if (matchedProvId) {
+          setProvinceId(matchedProvId)
+        }
+      }
+    } catch {
+      // Ignored
+    } finally {
+      setIsReverseGeocoding(false)
+    }
+  }
+
+  // Initialize Mapbox map instance
   useEffect(() => {
     if (!isAuthenticated || !mapContainerRef.current) return
 
@@ -202,8 +259,11 @@ export const ProposePlacePage: React.FC = () => {
       if (!isViewMode) {
         marker.on('dragend', () => {
           const lngLat = marker.getLngLat()
-          setLng(lngLat.lng.toFixed(6))
-          setLat(lngLat.lat.toFixed(6))
+          const newLng = lngLat.lng.toFixed(6)
+          const newLat = lngLat.lat.toFixed(6)
+          setLng(newLng)
+          setLat(newLat)
+          handleReverseGeocode(lngLat.lng, lngLat.lat)
         })
 
         map.on('click', (e) => {
@@ -212,6 +272,7 @@ export const ProposePlacePage: React.FC = () => {
           setLng(newLng)
           setLat(newLat)
           marker.setLngLat([e.lngLat.lng, e.lngLat.lat])
+          handleReverseGeocode(e.lngLat.lng, e.lngLat.lat)
         })
       }
 
@@ -221,12 +282,14 @@ export const ProposePlacePage: React.FC = () => {
       return () => {
         marker.remove()
         map.remove()
+        mapInstanceRef.current = null
+        markerRef.current = null
       }
     } catch {
     }
-  }, [isAuthenticated, isViewMode, lat, lng])
+  }, [isAuthenticated, isViewMode])
 
-  const updateMapPosition = (newLatStr: string, newLngStr: string) => {
+  const updateMapPosition = (newLatStr: string, newLngStr: string, zoomLevel?: number) => {
     const pLat = parseFloat(newLatStr)
     const pLng = parseFloat(newLngStr)
     if (isNaN(pLat) || isNaN(pLng)) return
@@ -235,10 +298,77 @@ export const ProposePlacePage: React.FC = () => {
       markerRef.current.setLngLat([pLng, pLat])
     }
     if (mapInstanceRef.current) {
-      mapInstanceRef.current.flyTo({ center: [pLng, pLat], zoom: 13, duration: 1000 })
+      mapInstanceRef.current.flyTo({
+        center: [pLng, pLat],
+        zoom: zoomLevel ?? mapInstanceRef.current.getZoom(),
+        duration: 800
+      })
     }
   }
 
+  // Handle typing address with Mapbox Geocoding Autocomplete
+  const handleAddressChange = (newVal: string) => {
+    setAddress(newVal)
+    if (isViewMode) return
+
+    if (searchDebounceTimerRef.current) {
+      clearTimeout(searchDebounceTimerRef.current)
+    }
+
+    const query = newVal.trim()
+    if (query.length < 2) {
+      setAddressSuggestions([])
+      setIsSuggestionsOpen(false)
+      setIsSearchingAddress(false)
+      return
+    }
+
+    searchDebounceTimerRef.current = setTimeout(async () => {
+      if (searchAbortControllerRef.current) {
+        searchAbortControllerRef.current.abort()
+      }
+      const controller = new AbortController()
+      searchAbortControllerRef.current = controller
+
+      setIsSearchingAddress(true)
+      try {
+        const parsedLat = parseFloat(lat)
+        const parsedLng = parseFloat(lng)
+        const proximity = !isNaN(parsedLng) && !isNaN(parsedLat) ? [parsedLng, parsedLat] as [number, number] : undefined
+
+        const results = await mapboxService.searchAddress(query, mapboxToken, {
+          proximity,
+          signal: controller.signal
+        })
+        setAddressSuggestions(results)
+        setIsSuggestionsOpen(results.length > 0)
+      } catch {
+        setAddressSuggestions([])
+      } finally {
+        setIsSearchingAddress(false)
+      }
+    }, 300)
+  }
+
+  // Handle selecting an address suggestion from dropdown
+  const handleSelectAddressSuggestion = (suggestion: AddressSuggestion) => {
+    setAddress(suggestion.fullAddress)
+    setIsSuggestionsOpen(false)
+    setAddressSuggestions([])
+
+    if (suggestion.center && suggestion.center.length >= 2) {
+      const newLng = suggestion.center[0].toFixed(6)
+      const newLat = suggestion.center[1].toFixed(6)
+      setLng(newLng)
+      setLat(newLat)
+      updateMapPosition(newLat, newLng, 14)
+    }
+
+    const matchedProvId = mapboxService.findMatchingProvinceId(suggestion.fullAddress, provinces)
+    if (matchedProvId) {
+      setProvinceId(matchedProvId)
+    }
+  }
 
   const handleGetGPSLocation = () => {
     if (!navigator.geolocation) {
@@ -253,7 +383,8 @@ export const ProposePlacePage: React.FC = () => {
         const currentLng = pos.coords.longitude.toFixed(6)
         setLat(currentLat)
         setLng(currentLng)
-        updateMapPosition(currentLat, currentLng)
+        updateMapPosition(currentLat, currentLng, 14)
+        handleReverseGeocode(pos.coords.longitude, pos.coords.latitude)
         setIsLocating(false)
       },
       () => {
@@ -628,18 +759,80 @@ export const ProposePlacePage: React.FC = () => {
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                      Địa chỉ chi tiết {!isViewMode && <span className="text-rose-500">*</span>}
-                    </label>
-                    <input
-                      type="text"
-                      disabled={isViewMode}
-                      placeholder="Số nhà, tên đường, phường/xã, quận/huyện..."
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
-                      className="w-full px-4 py-3 rounded-2xl bg-slate-50/80 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-700 disabled:bg-slate-100/80 disabled:cursor-default disabled:text-slate-800"
-                    />
+                  <div className="relative" ref={addressContainerRef}>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-xs font-bold text-slate-800">
+                        Địa chỉ chi tiết {!isViewMode && <span className="text-rose-500">*</span>}
+                      </label>
+                      {isReverseGeocoding && (
+                        <span className="text-[11px] font-semibold text-emerald-700 flex items-center gap-1.5 animate-pulse bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                          <span>Đang lấy địa chỉ từ bản đồ...</span>
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="relative">
+                      <input
+                        type="text"
+                        disabled={isViewMode}
+                        placeholder="Nhập tên đường, địa danh để tìm kiếm gợi ý Mapbox..."
+                        value={address}
+                        onChange={(e) => handleAddressChange(e.target.value)}
+                        onFocus={() => {
+                          if (addressSuggestions.length > 0 && !isViewMode) {
+                            setIsSuggestionsOpen(true)
+                          }
+                        }}
+                        className="w-full pl-9 pr-10 py-3 rounded-2xl bg-slate-50/80 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/15 disabled:bg-slate-100/80 disabled:cursor-default disabled:text-slate-800 transition-all font-medium"
+                      />
+                      <MapPin className="w-4 h-4 text-emerald-700 absolute left-3 top-3.5 pointer-events-none" />
+
+                      <div className="absolute right-3 top-3 flex items-center gap-1.5">
+                        {isSearchingAddress ? (
+                          <Loader2 className="w-4 h-4 text-emerald-600 animate-spin" />
+                        ) : address && !isViewMode ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAddress('')
+                              setAddressSuggestions([])
+                              setIsSuggestionsOpen(false)
+                            }}
+                            className="text-slate-400 hover:text-slate-700 p-0.5 rounded-full hover:bg-slate-200/70 transition-colors cursor-pointer"
+                            title="Xóa địa chỉ"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        ) : null}
+                      </div>
+                    </div>
+
+                    {/* Mapbox Autocomplete Suggestions Dropdown */}
+                    {isSuggestionsOpen && addressSuggestions.length > 0 && !isViewMode && (
+                      <div className="absolute top-full left-0 right-0 mt-1.5 z-50 bg-white rounded-2xl shadow-xl border border-slate-200/90 overflow-hidden divide-y divide-slate-100 max-h-72 overflow-y-auto animate-in fade-in zoom-in-95 duration-150">
+                        {addressSuggestions.map((item) => (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => handleSelectAddressSuggestion(item)}
+                            className="w-full px-3.5 py-2.5 text-left hover:bg-emerald-50/80 transition-colors flex items-start gap-2.5 cursor-pointer group"
+                          >
+                            <div className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-emerald-700 group-hover:text-white transition-colors">
+                              <MapPin className="w-3.5 h-3.5" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-xs font-bold text-slate-800 group-hover:text-emerald-950 truncate">
+                                {item.title}
+                              </div>
+                              <div className="text-[11px] text-slate-500 group-hover:text-emerald-800/80 line-clamp-1">
+                                {item.fullAddress}
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -696,12 +889,19 @@ export const ProposePlacePage: React.FC = () => {
 
                 {!isViewMode && (
                   <p className="text-xs text-slate-500">
-                    Click chuột vào bất kỳ điểm nào trên bản đồ hoặc kéo thả ghim màu xanh lá để cập nhật tọa độ chính xác.
+                    Click chuột vào bất kỳ điểm nào trên bản đồ hoặc kéo thả ghim màu xanh lá để tự động cập nhật tọa độ và địa chỉ chi tiết.
                   </p>
                 )}
 
                 <div className="relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 h-72 sm:h-80 w-full shadow-inner">
                   <div ref={mapContainerRef} className="w-full h-full" />
+
+                  {isReverseGeocoding && (
+                    <div className="absolute top-3 left-3 bg-emerald-950/85 backdrop-blur-md text-emerald-200 text-[11px] font-medium px-3 py-1.5 rounded-xl flex items-center gap-2 shadow-lg border border-emerald-800 animate-in fade-in">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-400" />
+                      <span>Đang xác định địa chỉ từ điểm chọn trên bản đồ...</span>
+                    </div>
+                  )}
 
                   <div className="absolute bottom-3 left-3 bg-slate-900/85 backdrop-blur-md text-white text-[11px] font-mono px-3 py-1.5 rounded-xl flex items-center gap-2 shadow-lg border border-slate-700">
                     <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />

@@ -4,6 +4,7 @@ using Domain.Interfaces;
 using Infrastructure.Persistence;
 using Infrastructure.Persistence.Repositories;
 using Infrastructure.Services;
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -56,6 +57,7 @@ public static class DependencyInjection
         services.AddScoped<ITokenCacheService, TokenCacheService>();
         services.AddScoped<ICacheService, CacheService>();
         services.AddScoped<IBlobService, AzureBlobService>();
+        services.AddScoped<IEmailService, EmailService>();
 
         var redisConn = configuration.GetConnectionString("Redis");
         if (!string.IsNullOrWhiteSpace(redisConn))
@@ -70,6 +72,33 @@ public static class DependencyInjection
         {
             services.AddDistributedMemoryCache();
         }
+
+        // Cấu hình MassTransit kết nối RabbitMQ và nạp Consumer gửi email
+        services.AddMassTransit(x =>
+        {
+            x.SetKebabCaseEndpointNameFormatter();
+            x.AddConsumer<Infrastructure.Consumers.SendForgotPasswordEmailConsumer>();
+
+            x.UsingRabbitMq((context, cfg) =>
+            {
+                var host = configuration["RabbitMq:Host"] ?? "localhost";
+                var portStr = configuration["RabbitMq:Port"];
+                var port = ushort.TryParse(portStr, out var p) ? p : (ushort)5672;
+                var username = configuration["RabbitMq:Username"] ?? "guest";
+                var password = configuration["RabbitMq:Password"] ?? "guest";
+
+                cfg.Host(host, port, "/", h =>
+                {
+                    h.Username(username);
+                    h.Password(password);
+                });
+
+                // Tự động retry khi gặp lỗi tạm thời (ví dụ SMTP server bận)
+                cfg.UseMessageRetry(r => r.Exponential(3, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(2)));
+
+                cfg.ConfigureEndpoints(context);
+            });
+        });
 
         return services;
     }

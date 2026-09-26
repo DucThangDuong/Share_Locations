@@ -23,8 +23,9 @@ export const UserProfileBlogCard: React.FC<UserProfileBlogCardProps> = ({ blog }
         <img
           src={coverImage}
           alt={blog.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          className="w-full h-full object-cover"
         />
+        <div className="absolute inset-0 bg-white/0 group-hover:bg-white/15 transition-colors duration-300 pointer-events-none" />
         {blog.categoryName && (
           <div className="absolute top-2.5 left-2.5 bg-black/60 backdrop-blur-md text-white px-2.5 py-1 rounded-full text-xs font-semibold">
             {blog.categoryName}

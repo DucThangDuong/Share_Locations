@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Search,
   X,
@@ -10,6 +11,7 @@ import {
   BookOpen,
   Check
 } from 'lucide-react'
+import { navigateToAuthorProfile } from '@/utils/authorNavigation'
 import type { BlogListItemDto } from '@/types/models/blogArticle.model'
 import type { LookupItemDto } from '@/types/models/place.model'
 
@@ -40,6 +42,7 @@ export const BlogFeedView: React.FC<BlogFeedViewProps> = ({
   onOpenArticle,
   onCreateArticle
 }) => {
+  const navigate = useNavigate()
   const [displayCount, setDisplayCount] = useState(9)
   const [localSearch, setLocalSearch] = useState(searchQuery)
 
@@ -261,19 +264,23 @@ export const BlogFeedView: React.FC<BlogFeedViewProps> = ({
                   </div>
 
                   <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-                    <div className="flex items-center gap-2 min-w-0">
+                    <div
+                      onClick={(e) => navigateToAuthorProfile(navigate, art.author, art, e)}
+                      className="flex items-center gap-2 min-w-0 cursor-pointer group/author hover:opacity-90 transition-opacity"
+                      title="Xem trang cá nhân của tác giả"
+                    >
                       {art.author?.avatar ? (
                         <img
                           src={art.author.avatar}
                           alt={art.author?.name || 'Tác giả'}
-                          className="w-6 h-6 rounded-full object-cover border border-slate-200 shrink-0"
+                          className="w-6 h-6 rounded-full object-cover border border-slate-200 shrink-0 group-hover/author:ring-1 group-hover/author:ring-emerald-500/50"
                         />
                       ) : (
-                        <div className="w-6 h-6 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px] font-bold shrink-0">
+                        <div className="w-6 h-6 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px] font-bold shrink-0 group-hover/author:ring-1 group-hover/author:ring-emerald-500/50">
                           {(art.author?.name || 'T').charAt(0).toUpperCase()}
                         </div>
                       )}
-                      <span className="font-semibold text-xs text-slate-800 truncate">
+                      <span className="font-semibold text-xs text-slate-800 group-hover/author:text-emerald-700 transition-colors truncate">
                         {art.author?.name || 'Tác giả'}
                       </span>
                     </div>

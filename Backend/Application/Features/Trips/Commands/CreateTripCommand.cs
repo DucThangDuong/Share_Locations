@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using Application.Common;
@@ -43,12 +43,12 @@ public class CreateTripCommandHandler : IRequestHandler<CreateTripCommand, Resul
                 return Result<CreateTripResponseDto>.NotFound("Lịch trình mẫu không tồn tại.");
             }
 
-            if (sourceTrip.Privacy == TripPrivacy.Private && sourceTrip.UserId != request.UserId)
+            if (sourceTrip.Privacy != TripPrivacy.Public && sourceTrip.UserId != request.UserId)
             {
                 var isMember = sourceTrip.Members.Any(m => m.UserId == request.UserId);
                 if (!isMember)
                 {
-                    return Result<CreateTripResponseDto>.Forbidden("Bạn không có quyền sao chép lịch trình riêng tư này.");
+                    return Result<CreateTripResponseDto>.Forbidden("Bạn không có quyền sao chép lịch trình chưa công khai này.");
                 }
             }
         }

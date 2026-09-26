@@ -155,16 +155,12 @@ export const LoginPage: React.FC = () => {
               />
               Ghi nhớ đăng nhập
             </label>
-            <a
-              href="#forgot"
-              onClick={(e) => {
-                e.preventDefault()
-                alert('Vui lòng liên hệ quản trị viên để khôi phục mật khẩu.')
-              }}
+            <Link
+              to="/forgot-password"
               className="font-bold text-primary-container hover:text-secondary-container transition-colors"
             >
               Quên mật khẩu?
-            </a>
+            </Link>
           </div>
 
           <button

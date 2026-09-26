@@ -13,7 +13,9 @@ import type {
   AddTripDayRequestDto,
   AddTripPlaceRequestDto,
   UpdateTripPlaceRequestDto,
-  InviteTripMemberRequestDto
+  InviteTripMemberRequestDto,
+  PublishTripRequestDto,
+  PublishTripResponseDto
 } from '@/types/models/trip.model'
 
 export const tripService = {
@@ -119,6 +121,31 @@ export const tripService = {
     userId: number | string
   ): Promise<ApiSuccessResponse<unknown>> {
     const response = await apiClient.delete<ApiSuccessResponse<unknown>>(`/api/trips/${tripId}/members/${userId}`)
+    return response.data
+  },
+
+  async publishTrip(
+    id: number | string,
+    data: PublishTripRequestDto
+  ): Promise<ApiSuccessResponse<PublishTripResponseDto>> {
+    const formData = new FormData()
+    formData.append('Description', data.description)
+    if (data.title?.trim()) {
+      formData.append('Title', data.title.trim())
+    }
+    if (data.coverImageFile) {
+      formData.append('CoverImageFile', data.coverImageFile)
+    }
+
+    const response = await apiClient.post<ApiSuccessResponse<PublishTripResponseDto>>(
+      `/api/trips/${id}/publish`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      }
+    )
     return response.data
   }
 }

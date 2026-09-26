@@ -764,8 +764,9 @@ export const ArticleEditorView = forwardRef<ArticleEditorRef, ArticleEditorViewP
         </div>
       )}
 
-      <header className="sticky top-0 z-40 bg-white border-b border-slate-200 shadow-2xs">
-        <div className="min-h-13 flex flex-wrap items-center px-4 py-2 justify-between gap-3 border-b border-slate-100">
+      <header className="sticky top-16 z-30 bg-white border-b border-slate-200 shadow-2xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="min-h-13 flex flex-wrap items-center py-2 justify-between gap-3 border-b border-slate-100">
           <div className="flex items-center gap-2 flex-wrap">
             <button
               type="button"
@@ -935,7 +936,7 @@ export const ArticleEditorView = forwardRef<ArticleEditorRef, ArticleEditorViewP
             </button>
           </div>
         ) : (
-          <div className="px-4 py-2 bg-slate-50 border-b border-slate-200/80 flex flex-wrap items-center gap-1.5">
+          <div className="py-2 bg-slate-50 border-t border-slate-100 flex flex-wrap items-center gap-1.5">
             <div className="bg-white p-0.5 rounded-xl flex items-center gap-0.5 border border-slate-200/80 shadow-2xs shrink-0">
               <button
                 type="button"
@@ -1073,11 +1074,12 @@ export const ArticleEditorView = forwardRef<ArticleEditorRef, ArticleEditorViewP
             </div>
           </div>
         )}
+        </div>
       </header>
 
-      <div className="flex-1 flex max-w-7xl mx-auto w-full px-4 py-8 gap-6 items-start">
+      <div className="flex-1 flex max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 gap-6 items-start">
         {showTocSidebar && (
-          <aside className="w-72 shrink-0 hidden lg:block sticky top-32 bg-white rounded-2xl border border-slate-200 shadow-2xs p-4 space-y-4 max-h-[calc(100vh-160px)] overflow-y-auto">
+          <aside className="w-64 shrink-0 hidden lg:block sticky top-36 bg-white rounded-2xl border border-slate-200 shadow-2xs p-4 space-y-4 max-h-[calc(100vh-160px)] overflow-y-auto">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100">
               <div className="flex items-center gap-2">
                 <ListTree size={16} className="text-emerald-800" />
@@ -1128,8 +1130,8 @@ export const ArticleEditorView = forwardRef<ArticleEditorRef, ArticleEditorViewP
           </aside>
         )}
 
-        <main className="flex-1 min-w-0 flex justify-center">
-          <div className="w-full max-w-4xl bg-white rounded-2xl border border-slate-200 shadow-2xs p-6 sm:p-10 space-y-6">
+        <main className="flex-1 min-w-0">
+          <div className="w-full bg-white rounded-2xl border border-slate-200 shadow-2xs p-6 sm:p-10 space-y-6">
             {!hideTitleAndSummary && (
               <div className="space-y-4 pb-4 border-b border-slate-100">
                 {coverImg && (

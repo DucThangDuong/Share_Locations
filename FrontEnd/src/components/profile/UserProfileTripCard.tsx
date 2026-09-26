@@ -24,8 +24,9 @@ export const UserProfileTripCard: React.FC<UserProfileTripCardProps> = ({ trip }
         <img
           src={coverImage}
           alt={trip.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          className="w-full h-full object-cover"
         />
+        <div className="absolute inset-0 bg-white/0 group-hover:bg-white/15 transition-colors duration-300 pointer-events-none" />
         <div className="absolute top-2.5 left-2.5 bg-black/60 backdrop-blur-md text-white px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
           <Compass size={12} className="text-amber-400" />
           <span>{trip.durationDays || 1} ngày {trip.nightsCount ? `${trip.nightsCount} đêm` : ''}</span>

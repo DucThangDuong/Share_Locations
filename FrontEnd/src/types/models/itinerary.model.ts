@@ -30,6 +30,7 @@ export interface ItineraryDto {
   style: string
   estimatedCost: string
   coverUrl?: string | null
+  coverImageUrl?: string | null
   author: ItineraryAuthorDto
   overview?: string | null
   isSaved: boolean
@@ -48,7 +49,7 @@ export interface ItineraryFilterParams {
   pageSize?: number
 }
 
-export type TripRole = 'Owner' | 'Editor' | 'Viewer'
+export type TripRole = 'Owner' | 'Editor' | 'Member' | 'Viewer'
 export type TripPrivacy = 0 | 1 | 2
 export type TransportType = 'Xe máy' | 'Ô tô' | 'Đi bộ' | 'Taxi' | 'Xe buýt' | 'Tàu hỏa' | 'Máy bay'
 
@@ -83,10 +84,13 @@ export interface ItineraryDayData {
 
 export interface TripMember {
   id: number
-  name: string
+  userId?: number
+  name?: string
+  fullName?: string
   avatar?: string | null
+  avatarUrl?: string | null
   email?: string
-  role: TripRole
+  role: TripRole | string
 }
 
 export interface DetailedItineraryItem {

@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import {
-  CheckCircle2,
   Compass,
   Clock,
   DollarSign,
@@ -64,7 +63,6 @@ export const ItineraryCatalogView: React.FC<ItineraryCatalogViewProps> = ({
   const [previewItem, setPreviewItem] = useState<DetailedItineraryItem | null>(null)
   const [localSearch, setLocalSearch] = useState(searchQuery)
 
-  // Sync external search updates into local input
   useEffect(() => {
     setLocalSearch(searchQuery)
   }, [searchQuery])
@@ -93,7 +91,7 @@ export const ItineraryCatalogView: React.FC<ItineraryCatalogViewProps> = ({
       nightsCount: Math.max(0, (itinerary.daysCount || 1) - 1),
       estimatedBudget: totalCostNumber,
       privacy: 0,
-      coverImg: itinerary.coverUrl || '',
+      coverImg: itinerary.coverUrl || itinerary.coverImageUrl || '',
       authorName: itinerary.author?.name || 'Cộng đồng',
       authorAvatar: itinerary.author?.avatar,
       description: itinerary.overview || 'Lịch trình du lịch đề xuất tối ưu thời gian và chi phí.',
@@ -300,97 +298,112 @@ export const ItineraryCatalogView: React.FC<ItineraryCatalogViewProps> = ({
                 (sum, d) => sum + (d.stops?.length || 0),
                 0
               )
+              const coverImage = itinerary.coverUrl || itinerary.coverImageUrl || ''
 
               return (
                 <div
                   key={itinerary.id}
                   onClick={() => handleOpenPreview(itinerary)}
-                  className="bg-white rounded-2xl p-5 border border-slate-200/90 hover:border-emerald-600/70 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group shadow-2xs"
+                  className="bg-white rounded-2xl overflow-hidden border border-slate-200/90 hover:border-emerald-600/70 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group shadow-2xs"
                 >
-                  <div className="space-y-3.5">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3 min-w-0">
+                  {/* Trip Cover Image Header */}
+                  <div className="relative w-full h-52 sm:h-56 bg-slate-100 overflow-hidden shrink-0">
+                    {coverImage ? (
+                      <img
+                        src={coverImage}
+                        alt={itinerary.title}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-emerald-900/10 via-slate-100 to-teal-900/10 text-emerald-800">
+                        <Compass size={36} className="opacity-40 mb-1" />
+                        <span className="text-[11px] font-bold text-slate-400">Lịch trình khám phá</span>
+                      </div>
+                    )}
+
+                    {/* Subtle white hover overlay */}
+                    <div className="absolute inset-0 bg-white/0 group-hover:bg-white/15 transition-colors duration-300 pointer-events-none" />
+                  </div>
+
+                  <div className="p-5 flex-1 flex flex-col justify-between space-y-3.5">
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
                         {itinerary.author?.avatar ? (
                           <img
                             src={itinerary.author.avatar}
                             alt={itinerary.author.name}
-                            className="w-11 h-11 rounded-full object-cover border border-slate-200 shrink-0"
+                            className="w-7 h-7 rounded-full object-cover border border-slate-200 shrink-0"
                           />
                         ) : (
-                          <div className="w-11 h-11 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-xs shrink-0">
+                          <div className="w-7 h-7 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-[10px] shrink-0">
                             {(itinerary.author?.name || 'C').charAt(0).toUpperCase()}
                           </div>
                         )}
 
                         <div className="min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-sm font-bold text-slate-900 truncate">
-                              {itinerary.author?.name || 'Cộng đồng'}
-                            </span>
-                            <CheckCircle2
-                              size={15}
-                              className="text-emerald-500 fill-emerald-100 shrink-0"
-                            />
-                          </div>
+                          <span className="text-xs font-bold text-slate-700 truncate block">
+                            {itinerary.author?.name || 'Cộng đồng'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div>
+                        <h3 className="text-base font-extrabold text-slate-900 group-hover:text-emerald-800 transition-colors line-clamp-2 leading-snug">
+                          {itinerary.title}
+                        </h3>
+                        {itinerary.overview && (
+                          <p className="text-xs text-slate-500 line-clamp-2 mt-1 leading-relaxed font-normal">
+                            {itinerary.overview}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="bg-slate-50/80 rounded-xl p-3 sm:p-3.5 border border-slate-200/80 grid grid-cols-2 divide-x divide-slate-200">
+                        <div className="pr-3 min-w-0">
+                          <span className="text-sm sm:text-base font-extrabold text-slate-900 block truncate">
+                            {itinerary.duration || `${itinerary.daysCount} ngày`}
+                          </span>
+                          <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block truncate mt-0.5">
+                            {totalStops} ĐIỂM DỪNG
+                          </span>
+                        </div>
+
+                        <div className="pl-3 sm:pl-4 min-w-0">
+                          <span className="text-sm sm:text-base font-extrabold text-emerald-800 block truncate">
+                            {itinerary.estimatedCost || 'Linh hoạt'}
+                          </span>
+                          <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block truncate mt-0.5">
+                            CHI PHÍ DỰ TÍNH
+                          </span>
                         </div>
                       </div>
                     </div>
 
-                    <div>
-                      <h3 className="text-base font-bold text-slate-900 group-hover:text-emerald-800 transition-colors line-clamp-2 leading-snug">
-                        {itinerary.title}
-                      </h3>
-                      {itinerary.overview && (
-                        <p className="text-xs text-slate-500 line-clamp-2 mt-1 leading-relaxed font-normal">
-                          {itinerary.overview}
-                        </p>
-                      )}
-                    </div>
+                    <div className="pt-3.5 border-t border-slate-100">
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <button
+                          type="button"
+                          onClick={(e) => handleOpenPreview(itinerary, e)}
+                          className="w-full py-2.5 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all text-center cursor-pointer"
+                        >
+                          Xem chi tiết
+                        </button>
 
-                    <div className="bg-slate-50/80 rounded-xl p-3 sm:p-3.5 border border-slate-200/80 grid grid-cols-2 divide-x divide-slate-200">
-                      <div className="pr-3 min-w-0">
-                        <span className="text-sm sm:text-base font-extrabold text-slate-900 block truncate">
-                          {itinerary.destination}
-                        </span>
-                        <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block truncate mt-0.5">
-                          {itinerary.duration || `${itinerary.daysCount} ngày`} • {totalStops} ĐIỂM
-                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            if (onApplyItinerary) onApplyItinerary(itinerary)
+                          }}
+                          className={`w-full py-2.5 px-3 rounded-xl text-xs font-bold transition-all shadow-xs text-center flex items-center justify-center gap-1 cursor-pointer ${appliedItineraryIds.has(itinerary.id)
+                            ? 'bg-emerald-900 text-white'
+                            : 'bg-emerald-800 hover:bg-emerald-900 text-white'
+                            }`}
+                        >
+                          <span>Áp dụng</span>
+                        </button>
                       </div>
-
-                      <div className="pl-3 sm:pl-4 min-w-0">
-                        <span className="text-sm sm:text-base font-extrabold text-emerald-800 block truncate">
-                          {itinerary.estimatedCost || 'Linh hoạt'}
-                        </span>
-                        <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block truncate mt-0.5">
-                          CHI PHÍ DỰ TÍNH
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="pt-3.5 mt-3.5 border-t border-slate-100">
-                    <div className="grid grid-cols-2 gap-2.5">
-                      <button
-                        type="button"
-                        onClick={(e) => handleOpenPreview(itinerary, e)}
-                        className="w-full py-2.5 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all text-center cursor-pointer"
-                      >
-                        Xem chi tiết
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          if (onApplyItinerary) onApplyItinerary(itinerary)
-                        }}
-                        className={`w-full py-2.5 px-3 rounded-xl text-xs font-bold transition-all shadow-xs text-center flex items-center justify-center gap-1 cursor-pointer ${appliedItineraryIds.has(itinerary.id)
-                          ? 'bg-emerald-900 text-white'
-                          : 'bg-emerald-800 hover:bg-emerald-900 text-white'
-                          }`}
-                      >
-                        <span>Áp dụng</span>
-                      </button>
                     </div>
                   </div>
                 </div>

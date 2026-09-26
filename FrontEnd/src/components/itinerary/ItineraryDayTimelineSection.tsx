@@ -74,8 +74,10 @@ export const ItineraryDayTimelineSection: React.FC<ItineraryDayTimelineSectionPr
   const [tempTitle, setTempTitle] = useState(day.title || `Ngày ${day.dayNumber}`)
   const [tempDate, setTempDate] = useState(day.date || '')
 
-  const canEdit = currentUserRole !== 'Viewer'
-  const isOwner = currentUserRole === 'Owner'
+  const roleLower = (currentUserRole || '').toLowerCase()
+  const isOwner = roleLower === 'owner'
+  const isEditor = roleLower === 'editor'
+  const canEdit = isOwner || isEditor
   const dayCost = day.stops.reduce((sum, s) => sum + (s.costEstimate || 0), 0)
   const isDropTarget = dragOverDayIdx === dayIndex
   const dayTheme = getDayTheme(dayIndex)
@@ -96,9 +98,9 @@ export const ItineraryDayTimelineSection: React.FC<ItineraryDayTimelineSectionPr
 
   return (
     <div
-      onDragOver={(e) => onDragOverDay(e, dayIndex)}
-      onDragLeave={onDragLeaveDay}
-      onDrop={(e) => onDropOnDay(e, dayIndex)}
+      onDragOver={canEdit ? (e) => onDragOverDay(e, dayIndex) : undefined}
+      onDragLeave={canEdit ? onDragLeaveDay : undefined}
+      onDrop={canEdit ? (e) => onDropOnDay(e, dayIndex) : undefined}
       className={`bg-white rounded-2xl border transition-all overflow-hidden shadow-2xs ${isDropTarget
           ? 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/20'
           : 'border-slate-200'
@@ -211,7 +213,7 @@ export const ItineraryDayTimelineSection: React.FC<ItineraryDayTimelineSectionPr
             </button>
           )}
 
-          {isOwner && totalDays > 1 && (
+          {canEdit && totalDays > 1 && (
             <button
               type="button"
               onClick={(e) => {

@@ -24,8 +24,9 @@ export const UserProfileVisitLogCard: React.FC<UserProfileVisitLogCardProps> = (
           <img
             src={coverImage}
             alt={log.placeName}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            className="w-full h-full object-cover"
           />
+          <div className="absolute inset-0 bg-white/0 group-hover:bg-white/15 transition-colors duration-300 pointer-events-none" />
           <div className="absolute top-1 left-1 bg-amber-500 text-white p-1 rounded-full shadow-xs">
             <CheckCircle2 size={10} />
           </div>

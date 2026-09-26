@@ -50,13 +50,16 @@ export const ItineraryWishlistSection: React.FC<ItineraryWishlistSectionProps> =
   onDropOnWishlist
 }) => {
 
-  const canEdit = currentUserRole !== 'Viewer'
+  const roleLower = (currentUserRole || '').toLowerCase()
+  const isOwner = roleLower === 'owner'
+  const isEditor = roleLower === 'editor'
+  const canEdit = isOwner || isEditor
 
   return (
     <div
-      onDragOver={onDragOverWishlist}
-      onDragLeave={onDragLeaveWishlist}
-      onDrop={onDropOnWishlist}
+      onDragOver={canEdit ? onDragOverWishlist : undefined}
+      onDragLeave={canEdit ? onDragLeaveWishlist : undefined}
+      onDrop={canEdit ? onDropOnWishlist : undefined}
       className={`bg-white rounded-2xl border transition-all overflow-hidden shadow-2xs ${isDropTarget
         ? 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/20'
         : 'border-slate-200'

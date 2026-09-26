@@ -14,6 +14,7 @@ const ItineraryPage = lazy(() => import('@/pages/ItineraryPage').then((m) => ({ 
 const BlogPage = lazy(() => import('@/pages/BlogPage').then((m) => ({ default: m.BlogPage })))
 const LoginPage = lazy(() => import('@/pages/LoginPage').then((m) => ({ default: m.LoginPage })))
 const RegisterPage = lazy(() => import('@/pages/RegisterPage').then((m) => ({ default: m.RegisterPage })))
+const ForgotPasswordPage = lazy(() => import('@/pages/ForgotPasswordPage').then((m) => ({ default: m.ForgotPasswordPage })))
 const SettingsPage = lazy(() => import('@/pages/SettingsPage').then((m) => ({ default: m.SettingsPage })))
 const ProposePlacePage = lazy(() => import('@/pages/ProposePlacePage').then((m) => ({ default: m.ProposePlacePage })))
 const RegionPage = lazy(() => import('@/pages/RegionPage').then((m) => ({ default: m.RegionPage })))
@@ -104,6 +105,9 @@ export const App: React.FC = () => {
 
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/quen-mat-khau" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password" element={<ForgotPasswordPage />} />
               <Route path="/admin" element={<AdminPage />} />
               <Route path="/admin/*" element={<AdminPage />} />
             </Routes>

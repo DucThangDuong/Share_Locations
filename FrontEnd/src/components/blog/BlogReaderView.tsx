@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Clock,
   BookOpen,
@@ -8,6 +9,7 @@ import { ReportModal } from '@/components/report/ReportModal'
 import type { BlogDetailDto, BlogListItemDto } from '@/types/models/blogArticle.model'
 import { BlogTableOfContents } from './BlogTableOfContents'
 import { convertRawContentToHtml, extractHeadingsAndProcessHtml } from '@/utils/contentConverter'
+import { navigateToAuthorProfile } from '@/utils/authorNavigation'
 
 interface BlogReaderViewProps {
   article: BlogDetailDto
@@ -25,8 +27,13 @@ interface BlogReaderViewProps {
 export const BlogReaderView: React.FC<BlogReaderViewProps> = ({
   article
 }) => {
+  const navigate = useNavigate()
   const [readProgress, setReadProgress] = useState(0)
   const [isReportModalOpen, setIsReportModalOpen] = useState(false)
+
+  const handleNavigateToAuthor = (e?: React.MouseEvent) => {
+    navigateToAuthorProfile(navigate, article.author, article, e)
+  }
 
   useEffect(() => {
     const handleScroll = () => {
@@ -87,25 +94,26 @@ export const BlogReaderView: React.FC<BlogReaderViewProps> = ({
             </div>
 
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4 border-y border-slate-200">
-              <div className="flex items-center gap-3">
+              <div
+                onClick={handleNavigateToAuthor}
+                className="flex items-center gap-3 cursor-pointer group/author transition-opacity hover:opacity-90 w-fit"
+                title="Xem trang cá nhân của tác giả"
+              >
                 {article.author?.avatar ? (
                   <img
                     src={article.author.avatar}
                     alt={article.author.name}
-                    className="w-12 h-12 rounded-full object-cover border border-slate-200"
+                    className="w-12 h-12 rounded-full object-cover border border-slate-200 group-hover/author:ring-2 group-hover/author:ring-emerald-500/50 transition-all"
                   />
                 ) : (
-                  <div className="w-12 h-12 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-sm">
+                  <div className="w-12 h-12 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-sm group-hover/author:ring-2 group-hover/author:ring-emerald-500/50 transition-all">
                     {(article.author?.name || 'T').charAt(0).toUpperCase()}
                   </div>
                 )}
                 <div>
-                  <h4 className="font-bold text-sm text-slate-900">
+                  <h4 className="font-bold text-sm text-slate-900 group-hover/author:text-emerald-700 transition-colors">
                     {article.author?.name || 'Tác giả'}
                   </h4>
-                  <p className="text-xs text-slate-500">
-                    {article.author?.role || 'Tác giả chia sẻ'}
-                  </p>
                 </div>
               </div>
 
@@ -151,19 +159,29 @@ export const BlogReaderView: React.FC<BlogReaderViewProps> = ({
 
             <div className="pt-8 border-t border-slate-200 space-y-6">
               <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200 flex flex-col sm:flex-row items-center gap-4">
-                {article.author?.avatar ? (
-                  <img
-                    src={article.author.avatar}
-                    alt={article.author.name}
-                    className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-sm"
-                  />
-                ) : (
-                  <div className="w-16 h-16 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-lg">
-                    {(article.author?.name || 'T').charAt(0).toUpperCase()}
-                  </div>
-                )}
+                <div
+                  onClick={handleNavigateToAuthor}
+                  className="cursor-pointer group/bottomAuthor shrink-0"
+                  title="Xem trang cá nhân của tác giả"
+                >
+                  {article.author?.avatar ? (
+                    <img
+                      src={article.author.avatar}
+                      alt={article.author.name}
+                      className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-sm group-hover/bottomAuthor:ring-2 group-hover/bottomAuthor:ring-emerald-500/50 transition-all"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-lg group-hover/bottomAuthor:ring-2 group-hover/bottomAuthor:ring-emerald-500/50 transition-all">
+                      {(article.author?.name || 'T').charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                </div>
                 <div className="space-y-1 text-center sm:text-left flex-1">
-                  <h4 className="font-bold text-base text-slate-900">
+                  <h4
+                    onClick={handleNavigateToAuthor}
+                    className="font-bold text-base text-slate-900 hover:text-emerald-700 cursor-pointer transition-colors inline-block"
+                    title="Xem trang cá nhân của tác giả"
+                  >
                     {article.author?.name || 'Tác giả'}
                   </h4>
                   <p className="text-xs text-slate-500">

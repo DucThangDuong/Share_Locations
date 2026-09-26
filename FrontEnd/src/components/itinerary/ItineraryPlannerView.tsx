@@ -54,6 +54,7 @@ interface ItineraryPlannerViewProps {
   onQuickAddWishlistStop: (name: string) => void
   onPublishTrip: () => void
   onUpdateBudgetTarget: (newBudget: number) => void
+  onUpdateTripDates?: (newStartDate?: string, newEndDate?: string) => void
   onViewPlaceDetails: (stop: ItineraryStop) => void
   onAddPlaceFromLibrary?: (place: PlaceItem, targetDayIdx: number) => void
   onSaveTrip?: () => void
@@ -71,7 +72,6 @@ export const ItineraryPlannerView: React.FC<ItineraryPlannerViewProps> = ({
   hasUnsavedChanges = false,
   onBackToCatalog,
   onUpdateTripTitle,
-  onUpdateTripProvince,
   onToggleDay,
   onToggleAllDays,
   onToggleWishlist,
@@ -93,6 +93,7 @@ export const ItineraryPlannerView: React.FC<ItineraryPlannerViewProps> = ({
   onQuickAddWishlistStop,
   onPublishTrip,
   onUpdateBudgetTarget,
+  onUpdateTripDates,
   onViewPlaceDetails,
   onAddPlaceFromLibrary,
   onSaveTrip
@@ -101,8 +102,12 @@ export const ItineraryPlannerView: React.FC<ItineraryPlannerViewProps> = ({
   const [selectedBatchStopIds, setSelectedBatchStopIds] = useState<Set<string>>(new Set())
   const [dragOverTargetIdx, setDragOverTargetIdx] = useState<number | null>(null)
   const [explorerTargetDayIdx, setExplorerTargetDayIdx] = useState<number>(-1)
-
-  const canEdit = currentUserRole !== 'Viewer'
+  const roleLower = (currentUserRole || '').toLowerCase()
+  const isPublished = itinerary.privacy === 0 || String(itinerary.privacy).toLowerCase() === 'public'
+  const isOwner = !isPublished && roleLower === 'owner'
+  const isEditor = !isPublished && roleLower === 'editor'
+  const canEdit = isOwner || isEditor
+  const effectiveUserRole: TripRole = isPublished ? 'Viewer' : currentUserRole
   const isAllExpanded = expandedDayIndices.size === itinerary.days.length
 
   const allStops = useMemo(() => {
@@ -252,17 +257,17 @@ export const ItineraryPlannerView: React.FC<ItineraryPlannerViewProps> = ({
     <div className="min-h-screen bg-slate-50/50 text-slate-900 font-sans antialiased pb-28 relative">
       <ItineraryPlannerToolbar
         itinerary={itinerary}
-        currentUserRole={currentUserRole}
+        currentUserRole={effectiveUserRole}
         totalStopsCount={totalStopsCount}
         totalTripCost={totalTripCost}
         isSaving={isSaving}
         hasUnsavedChanges={hasUnsavedChanges}
         onBackToCatalog={onBackToCatalog}
         onUpdateTitle={onUpdateTripTitle}
-        onUpdateProvince={onUpdateTripProvince}
         onOpenMemberModal={onOpenMemberModal}
         onPublishTrip={onPublishTrip}
         onUpdateBudgetTarget={onUpdateBudgetTarget}
+        onUpdateDates={onUpdateTripDates}
         onSaveTrip={onSaveTrip}
       />
 
@@ -289,7 +294,7 @@ export const ItineraryPlannerView: React.FC<ItineraryPlannerViewProps> = ({
                   dayIndex={dIdx}
                   totalDays={itinerary.days.length}
                   isExpanded={expandedDayIndices.has(dIdx)}
-                  currentUserRole={currentUserRole}
+                  currentUserRole={effectiveUserRole}
                   selectedStopId={selectedStopInfo?.stop.id || null}
                   selectedBatchStopIds={selectedBatchStopIds}
                   dragOverDayIdx={dragOverTargetIdx}
@@ -314,7 +319,7 @@ export const ItineraryPlannerView: React.FC<ItineraryPlannerViewProps> = ({
               stops={filteredWishlist}
               totalDays={itinerary.days.length}
               isExpanded={isWishlistExpanded}
-              currentUserRole={currentUserRole}
+              currentUserRole={effectiveUserRole}
               selectedStopId={selectedStopInfo?.stop.id || null}
               selectedBatchStopIds={selectedBatchStopIds}
               isDropTarget={dragOverTargetIdx === -1}
@@ -341,7 +346,7 @@ export const ItineraryPlannerView: React.FC<ItineraryPlannerViewProps> = ({
                 stop={selectedStopInfo.stop}
                 dayIndex={selectedStopInfo.dayIndex}
                 isWishlist={selectedStopInfo.isWishlist}
-                currentUserRole={currentUserRole}
+                currentUserRole={effectiveUserRole}
                 onClose={onCloseDetailPanel}
                 onUpdateStop={onUpdateStop}
                 onViewPlaceDetails={onViewPlaceDetails}
@@ -350,18 +355,20 @@ export const ItineraryPlannerView: React.FC<ItineraryPlannerViewProps> = ({
           )}
         </div>
 
-        <div className="w-full pt-2">
-          <ItineraryPlacePickerDrawer
-            targetDayIndex={explorerTargetDayIdx}
-            days={itinerary.days.map((d) => ({
-              dayNumber: d.dayNumber,
-              title: d.title || `Ngày ${d.dayNumber}`
-            }))}
-            onAddPlace={(place, targetIdx) => {
-              onAddPlaceFromLibrary?.(place, targetIdx)
-            }}
-          />
-        </div>
+        {canEdit && (
+          <div className="w-full pt-2">
+            <ItineraryPlacePickerDrawer
+              targetDayIndex={explorerTargetDayIdx}
+              days={itinerary.days.map((d) => ({
+                dayNumber: d.dayNumber,
+                title: d.title || `Ngày ${d.dayNumber}`
+              }))}
+              onAddPlace={(place, targetIdx) => {
+                onAddPlaceFromLibrary?.(place, targetIdx)
+              }}
+            />
+          </div>
+        )}
       </main>
 
       <ItineraryBatchActionBar

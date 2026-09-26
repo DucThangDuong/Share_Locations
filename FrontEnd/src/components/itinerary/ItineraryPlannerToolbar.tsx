@@ -1,18 +1,17 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   ArrowLeft,
   Users,
-  UserPlus,
   Send,
-  Globe,
   Lock,
-  MapPin,
   Pencil,
   DollarSign,
   AlertTriangle,
   Check,
   Save,
-  Loader2
+  Loader2,
+  Calendar,
+  X
 } from 'lucide-react'
 import type {
   DetailedItineraryItem,
@@ -28,14 +27,38 @@ interface ItineraryPlannerToolbarProps {
   hasUnsavedChanges?: boolean
   onBackToCatalog: () => void
   onUpdateTitle: (title: string) => void
-  onUpdateProvince: (province: string) => void
   onOpenMemberModal: () => void
   onPublishTrip: () => void
   onUpdateBudgetTarget: (newBudget: number) => void
+  onUpdateDates?: (newStartDate?: string, newEndDate?: string) => void
   onSaveTrip?: () => void
 }
 
 const BUDGET_PRESETS = [3000000, 5000000, 8000000, 10000000, 15000000, 20000000]
+
+const formatDateDisplay = (dateStr?: string) => {
+  if (!dateStr) return ''
+  try {
+    const parts = dateStr.split('-')
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`
+    }
+    return dateStr
+  } catch {
+    return dateStr
+  }
+}
+
+const computeEndDateFromStart = (startStr: string, daysCount: number): string => {
+  if (!startStr || daysCount <= 0) return ''
+  try {
+    const d = new Date(startStr)
+    d.setDate(d.getDate() + Math.max(0, daysCount - 1))
+    return d.toISOString().split('T')[0]
+  } catch {
+    return ''
+  }
+}
 
 export const ItineraryPlannerToolbar: React.FC<ItineraryPlannerToolbarProps> = ({
   itinerary,
@@ -46,10 +69,10 @@ export const ItineraryPlannerToolbar: React.FC<ItineraryPlannerToolbarProps> = (
   hasUnsavedChanges = false,
   onBackToCatalog,
   onUpdateTitle,
-  onUpdateProvince,
   onOpenMemberModal,
   onPublishTrip,
   onUpdateBudgetTarget,
+  onUpdateDates,
   onSaveTrip
 }) => {
   const [isEditingBudget, setIsEditingBudget] = useState(false)
@@ -57,10 +80,24 @@ export const ItineraryPlannerToolbar: React.FC<ItineraryPlannerToolbarProps> = (
     String(itinerary.budgetTarget || 5000000)
   )
 
-  const canEdit = currentUserRole !== 'Viewer'
+  const [isEditingDates, setIsEditingDates] = useState(false)
+  const [tempStartDate, setTempStartDate] = useState(itinerary.startDate || '')
+  const [tempEndDate, setTempEndDate] = useState(
+    itinerary.endDate || computeEndDateFromStart(itinerary.startDate || '', itinerary.days.length)
+  )
+
+  useEffect(() => {
+    setTempStartDate(itinerary.startDate || '')
+    setTempEndDate(
+      itinerary.endDate || computeEndDateFromStart(itinerary.startDate || '', itinerary.days.length)
+    )
+  }, [itinerary.startDate, itinerary.endDate, itinerary.days.length])
+
+  const roleLower = (currentUserRole || '').toLowerCase()
+  const isPublished = itinerary.privacy === 0 || String(itinerary.privacy).toLowerCase() === 'public'
+  const canEdit = !isPublished && (roleLower === 'owner' || roleLower === 'editor')
   const budgetTarget = itinerary.budgetTarget || 5000000
   const members = itinerary.members || []
-  const isPublished = itinerary.privacy === 0
 
   const percentUsed = budgetTarget > 0 ? Math.round((totalTripCost / budgetTarget) * 100) : 0
   const isOverBudget = totalTripCost > budgetTarget
@@ -71,6 +108,37 @@ export const ItineraryPlannerToolbar: React.FC<ItineraryPlannerToolbarProps> = (
     const parsed = parseInt(customBudgetString.replace(/\D/g, ''), 10) || 0
     onUpdateBudgetTarget(Math.max(0, parsed))
     setIsEditingBudget(false)
+  }
+
+  const handleStartDateChange = (newStart: string) => {
+    setTempStartDate(newStart)
+    const computedEnd = computeEndDateFromStart(newStart, itinerary.days.length)
+    setTempEndDate(computedEnd)
+  }
+
+  const handleSaveDates = (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
+    onUpdateDates?.(tempStartDate || undefined, tempEndDate || undefined)
+    setIsEditingDates(false)
+  }
+
+  const handleQuickSetToday = () => {
+    const todayStr = new Date().toISOString().split('T')[0]
+    handleStartDateChange(todayStr)
+  }
+
+  const handleQuickSetTomorrow = () => {
+    const d = new Date()
+    d.setDate(d.getDate() + 1)
+    handleStartDateChange(d.toISOString().split('T')[0])
+  }
+
+  const handleQuickSetNextWeekend = () => {
+    const d = new Date()
+    const dayOfWeek = d.getDay()
+    const daysUntilSaturday = (6 - dayOfWeek + 7) % 7 || 7
+    d.setDate(d.getDate() + daysUntilSaturday)
+    handleStartDateChange(d.toISOString().split('T')[0])
   }
 
   return (
@@ -88,49 +156,13 @@ export const ItineraryPlannerToolbar: React.FC<ItineraryPlannerToolbarProps> = (
             </button>
 
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 mb-0.5">
-                <span
-                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase shrink-0 flex items-center gap-1 ${
-                    isPublished
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : 'bg-slate-100 text-slate-700'
-                  }`}
-                >
-                  {isPublished ? (
-                    <>
-                      <Globe size={11} />
-                      <span>Đã xuất bản</span>
-                    </>
-                  ) : (
-                    <>
-                      <Lock size={11} />
-                      <span>Chưa xuất bản</span>
-                    </>
-                  )}
-                </span>
-
-                <div className="flex items-center gap-1 text-xs text-slate-500 font-semibold">
-                  <MapPin size={11} className="text-slate-400" />
-                  <input
-                    type="text"
-                    disabled={!canEdit}
-                    value={itinerary.province}
-                    onChange={(e) => onUpdateProvince(e.target.value)}
-                    placeholder="Tỉnh/Thành phố"
-                    className="bg-transparent text-slate-700 font-bold outline-none focus:bg-slate-50 rounded px-1 max-w-[120px]"
-                  />
-                  <span>•</span>
-                  <span>{itinerary.durationDays}N{itinerary.nightsCount}Đ</span>
-                </div>
-              </div>
-
               <input
                 type="text"
                 disabled={!canEdit}
                 value={itinerary.title}
                 onChange={(e) => onUpdateTitle(e.target.value)}
                 placeholder="Nhập tên chuyến đi..."
-                className="font-extrabold text-base sm:text-xl text-slate-900 bg-transparent outline-none focus:bg-slate-50 rounded-lg transition-all w-full tracking-tight truncate"
+                className="font-extrabold text-base sm:text-xl text-slate-900 bg-transparent outline-none focus:bg-slate-50 rounded-lg transition-all w-full tracking-tight truncate disabled:cursor-default"
               />
             </div>
           </div>
@@ -167,30 +199,17 @@ export const ItineraryPlannerToolbar: React.FC<ItineraryPlannerToolbarProps> = (
               </div>
             </div>
 
-            {canEdit && (
-              <button
-                type="button"
-                onClick={onOpenMemberModal}
-                className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
-                title="Mời thêm bạn bè vào cùng lên kế hoạch"
-              >
-                <UserPlus size={13} />
-                <span className="hidden sm:inline">Mời bạn bè</span>
-              </button>
-            )}
-
             {canEdit && onSaveTrip && (
               <button
                 type="button"
                 onClick={onSaveTrip}
                 disabled={isSaving}
-                className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer ${
-                  isSaving
-                    ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
-                    : hasUnsavedChanges
+                className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer ${isSaving
+                  ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
+                  : hasUnsavedChanges
                     ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20'
                     : 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-200'
-                }`}
+                  }`}
                 title="Lưu lại toàn bộ lịch trình và địa điểm đã chọn"
               >
                 {isSaving ? (
@@ -207,28 +226,28 @@ export const ItineraryPlannerToolbar: React.FC<ItineraryPlannerToolbarProps> = (
               </button>
             )}
 
-            {canEdit && (
+            {isPublished ? (
               <button
                 type="button"
-                onClick={onPublishTrip}
-                className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer ${
-                  isPublished
-                    ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300'
-                    : 'bg-emerald-800 hover:bg-emerald-900 text-white'
-                }`}
+                disabled
+                className="px-3.5 py-1.5 text-xs font-bold rounded-xl flex items-center gap-1.5 bg-slate-100 text-slate-400 border border-slate-200 opacity-60 cursor-not-allowed select-none shadow-none"
+                title="Chuyến đi đã xuất bản ở chế độ chỉ xem"
               >
-                {isPublished ? (
-                  <>
-                    <Lock size={13} />
-                    <span>Hủy xuất bản</span>
-                  </>
-                ) : (
-                  <>
-                    <Send size={13} />
-                    <span>Xuất bản chuyến đi</span>
-                  </>
-                )}
+                <Lock size={13} />
+                <span>Đã xuất bản</span>
               </button>
+            ) : (
+              roleLower === 'owner' && (
+                <button
+                  type="button"
+                  onClick={onPublishTrip}
+                  className="px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer bg-emerald-800 hover:bg-emerald-900 text-white"
+                  title="Xuất bản chuyến đi công khai cho cộng đồng"
+                >
+                  <Send size={13} />
+                  <span>Xuất bản chuyến đi</span>
+                </button>
+              )
             )}
           </div>
         </div>
@@ -250,13 +269,11 @@ export const ItineraryPlannerToolbar: React.FC<ItineraryPlannerToolbarProps> = (
             <div className="relative">
               <div
                 onClick={() => canEdit && setIsEditingBudget(!isEditingBudget)}
-                className={`flex items-center gap-2 px-2.5 py-1 rounded-xl border transition-colors ${
-                  canEdit ? 'cursor-pointer hover:bg-slate-50' : ''
-                } ${
-                  isOverBudget
+                className={`flex items-center gap-2 px-2.5 py-1 rounded-xl border transition-colors ${canEdit ? 'cursor-pointer hover:bg-slate-50' : ''
+                  } ${isOverBudget
                     ? 'border-red-200 bg-red-50/40 text-red-800'
                     : 'border-slate-200 bg-white text-slate-800'
-                }`}
+                  }`}
                 title={canEdit ? 'Nhấn để cài đặt ngân sách đề ra cho chuyến đi' : undefined}
               >
                 <DollarSign size={13} className={isOverBudget ? 'text-red-600' : 'text-emerald-700'} />
@@ -271,9 +288,8 @@ export const ItineraryPlannerToolbar: React.FC<ItineraryPlannerToolbarProps> = (
 
                 <div className="w-20 h-2 bg-slate-100 rounded-full overflow-hidden ml-1 hidden sm:block">
                   <div
-                    className={`h-full transition-all duration-300 ${
-                      isOverBudget ? 'bg-red-500' : 'bg-emerald-600'
-                    }`}
+                    className={`h-full transition-all duration-300 ${isOverBudget ? 'bg-red-500' : 'bg-emerald-600'
+                      }`}
                     style={{
                       width: `${Math.min(100, percentUsed)}%`
                     }}
@@ -329,11 +345,10 @@ export const ItineraryPlannerToolbar: React.FC<ItineraryPlannerToolbarProps> = (
                           type="button"
                           key={preset}
                           onClick={() => setCustomBudgetString(String(preset))}
-                          className={`px-2 py-1 rounded-lg text-[10px] font-semibold transition-colors cursor-pointer ${
-                            parseInt(customBudgetString, 10) === preset
-                              ? 'bg-emerald-800 text-white'
-                              : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                          }`}
+                          className={`px-2 py-1 rounded-lg text-[10px] font-semibold transition-colors cursor-pointer ${parseInt(customBudgetString, 10) === preset
+                            ? 'bg-emerald-800 text-white'
+                            : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                            }`}
                         >
                           {(preset / 1000000).toLocaleString('vi-VN')} triệu
                         </button>
@@ -355,6 +370,147 @@ export const ItineraryPlannerToolbar: React.FC<ItineraryPlannerToolbarProps> = (
                         className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold rounded-xl transition-colors cursor-pointer"
                       >
                         Hủy
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
+            </div>
+
+            {/* Date Range Picker */}
+            <div className="relative">
+              <div
+                onClick={() => canEdit && setIsEditingDates(!isEditingDates)}
+                className={`flex items-center gap-2 px-2.5 py-1 rounded-xl border transition-colors ${canEdit ? 'cursor-pointer hover:bg-slate-50' : ''
+                  } ${itinerary.startDate
+                    ? 'border-emerald-300 bg-emerald-50/50 text-emerald-900'
+                    : 'border-slate-200 bg-white text-slate-700'
+                  }`}
+                title={canEdit ? 'Nhấn để điều chỉnh ngày khởi hành & kết thúc của chuyến đi' : undefined}
+              >
+                <Calendar
+                  size={13}
+                  className={itinerary.startDate ? 'text-emerald-700' : 'text-slate-400'}
+                />
+                <span className="text-slate-500 font-medium">Thời gian:</span>
+                <span className="font-bold">
+                  {itinerary.startDate
+                    ? `${formatDateDisplay(itinerary.startDate)} - ${formatDateDisplay(
+                      itinerary.endDate ||
+                      computeEndDateFromStart(itinerary.startDate, itinerary.days.length)
+                    )}`
+                    : 'Chưa đặt ngày'}
+                </span>
+
+                {canEdit && (
+                  <Pencil size={11} className="text-slate-400 hover:text-slate-700 ml-0.5" />
+                )}
+
+                <span className="px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 text-[10px] font-bold border border-slate-200">
+                  {itinerary.days.length} ngày
+                </span>
+              </div>
+
+              {isEditingDates && (
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className="absolute left-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 z-50 animate-in fade-in zoom-in-95 duration-150 text-xs space-y-3"
+                >
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                    <div className="flex items-center gap-1.5 font-bold text-slate-900">
+                      <Calendar size={14} className="text-emerald-700" />
+                      <span>Thời gian chuyến đi ({itinerary.days.length} ngày)</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingDates(false)}
+                      className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 cursor-pointer"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+
+                  <form onSubmit={handleSaveDates} className="space-y-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                        Ngày bắt đầu (Khởi hành) <span className="text-emerald-600">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        autoFocus
+                        value={tempStartDate}
+                        onChange={(e) => handleStartDateChange(e.target.value)}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 focus:border-emerald-600 focus:bg-white rounded-xl text-xs font-bold text-slate-900 outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 mb-1 flex items-center justify-between">
+                        <span>Ngày kết thúc (Dự tính)</span>
+                        <span className="text-[10px] font-normal text-emerald-700 bg-emerald-50 px-1 rounded">
+                          Tự động tính
+                        </span>
+                      </label>
+                      <input
+                        type="date"
+                        disabled
+                        value={tempEndDate}
+                        className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 outline-none cursor-not-allowed"
+                      />
+                      <p className="text-[10px] text-slate-500 mt-1">
+                        * Tự động tính theo {itinerary.days.length} ngày của lịch trình.
+                      </p>
+                    </div>
+
+                    <div>
+                      <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                        Chọn nhanh:
+                      </span>
+                      <div className="flex flex-wrap gap-1">
+                        <button
+                          type="button"
+                          onClick={handleQuickSetToday}
+                          className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-slate-100 hover:bg-emerald-50 hover:text-emerald-800 text-slate-700 transition-colors cursor-pointer"
+                        >
+                          Hôm nay
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleQuickSetTomorrow}
+                          className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-slate-100 hover:bg-emerald-50 hover:text-emerald-800 text-slate-700 transition-colors cursor-pointer"
+                        >
+                          Ngày mai
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleQuickSetNextWeekend}
+                          className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-slate-100 hover:bg-emerald-50 hover:text-emerald-800 text-slate-700 transition-colors cursor-pointer"
+                        >
+                          Cuối tuần này
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+                      <button
+                        type="submit"
+                        className="flex-1 py-1.5 bg-emerald-800 hover:bg-emerald-900 text-white font-bold rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-1"
+                      >
+                        <Check size={13} />
+                        <span>Cập nhật ngày</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleStartDateChange('')
+                          onUpdateDates?.(undefined, undefined)
+                          setIsEditingDates(false)
+                        }}
+                        className="px-2.5 py-1.5 bg-slate-100 hover:bg-red-50 hover:text-red-700 text-slate-600 text-[11px] font-semibold rounded-xl transition-colors cursor-pointer"
+                        title="Xóa ngày"
+                      >
+                        Xóa ngày
                       </button>
                     </div>
                   </form>

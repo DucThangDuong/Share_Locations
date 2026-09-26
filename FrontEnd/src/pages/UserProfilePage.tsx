@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { Loader2, AlertCircle } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { useChat } from '@/context/ChatContext'
@@ -20,6 +20,8 @@ import type { PublicUserProfileDto } from '@/types/models/userProfile.model'
 export const UserProfilePage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const location = useLocation()
   const { user: currentUser } = useAuth()
   const { openFloatingChat } = useChat()
 
@@ -37,54 +39,119 @@ export const UserProfilePage: React.FC = () => {
     setTimeout(() => setToastMessage(null), 3500)
   }
 
+  const locationState = location.state as { authorName?: string; authorAvatar?: string; authorRole?: string } | undefined
+  const nameFromQuery = searchParams.get('name') || locationState?.authorName
+
   // Determine target User ID
   const currentUserId = currentUser?.id ? Number(currentUser.id) : null
-  const targetUserId = id && id !== 'me' ? Number(id) || 1 : currentUserId || 1
-  const isCurrentUser = Boolean(currentUserId && currentUserId === targetUserId)
+  const hasExplicitId = Boolean(id && id !== 'me')
+  const targetUserId = hasExplicitId ? Number(id) || 1 : (nameFromQuery ? null : (currentUserId || 1))
+  const isCurrentUser = Boolean(currentUserId && targetUserId && currentUserId === targetUserId && !nameFromQuery)
 
-  // ── Fetch Profile Info ONLY on mount ──
+  // ── Fetch Profile Info ONLY on mount / params change ──
   useEffect(() => {
     let isMounted = true
 
     const loadProfile = async () => {
       setLoading(true)
-      try {
-        const res = await userService.getUserPublicProfile(targetUserId)
-        if (res.success && res.data && isMounted) {
-          setProfile(res.data)
-        } else if (isCurrentUser && isMounted) {
-          setProfile({
-            id: currentUserId || 1,
-            fullName: currentUser?.fullName || 'Người dùng',
-            avatarUrl: currentUser?.avatarUrl || null,
-            coverUrl: currentUser?.coverUrl || null,
-            bio: currentUser?.bio || 'Đam mê khám phá các cung đường và địa điểm mới trên khắp Việt Nam.',
-            joinedDate: 'Tháng 4, 2024',
-            rankLevel: currentUser?.rankLevel || 'Chuyên gia khám phá',
-            reputationScore: currentUser?.reputationScore || 1250,
-            friendStatus: 'none'
-          })
+
+      // Case 1: An explicit target ID is present
+      if (targetUserId) {
+        try {
+          const res = await userService.getUserPublicProfile(targetUserId)
+          if (res.success && res.data && isMounted) {
+            setProfile(res.data)
+          } else if (isCurrentUser && isMounted) {
+            setProfile({
+              id: currentUserId || 1,
+              fullName: currentUser?.fullName || 'Người dùng',
+              avatarUrl: currentUser?.avatarUrl || null,
+              coverUrl: currentUser?.coverUrl || null,
+              bio: currentUser?.bio || 'Đam mê khám phá các cung đường và địa điểm mới trên khắp Việt Nam.',
+              joinedDate: 'Tháng 4, 2024',
+              rankLevel: currentUser?.rankLevel || 'Chuyên gia khám phá',
+              reputationScore: currentUser?.reputationScore || 1250,
+              friendStatus: 'none'
+            })
+          }
+        } catch {
+          if (isMounted) {
+            setProfile({
+              id: targetUserId,
+              fullName: isCurrentUser ? currentUser?.fullName || 'Người dùng' : (nameFromQuery || 'Người dùng'),
+              avatarUrl: isCurrentUser
+                ? currentUser?.avatarUrl || null
+                : (locationState?.authorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop'),
+              coverUrl: isCurrentUser
+                ? currentUser?.coverUrl || null
+                : 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1600&h=400&fit=crop',
+              bio: 'Đam mê khám phá các cung đường và địa điểm mới trên khắp Việt Nam.',
+              joinedDate: 'Tháng 4, 2024',
+              rankLevel: 'Chuyên gia khám phá',
+              reputationScore: 890,
+              friendStatus: 'none'
+            })
+          }
+        } finally {
+          if (isMounted) setLoading(false)
         }
-      } catch {
+        return
+      }
+
+      // Case 2: No explicit ID but author name is provided -> Look up user by name
+      if (nameFromQuery) {
+        try {
+          const searchRes = await friendService.searchUsers(nameFromQuery.trim())
+          if (searchRes.success && Array.isArray(searchRes.data) && searchRes.data.length > 0) {
+            const foundUser =
+              searchRes.data.find(
+                (u) => u.name?.trim().toLowerCase() === nameFromQuery.trim().toLowerCase()
+              ) || searchRes.data[0]
+
+            if (foundUser && foundUser.id) {
+              const profileRes = await userService.getUserPublicProfile(foundUser.id)
+              if (profileRes.success && profileRes.data && isMounted) {
+                setProfile(profileRes.data)
+                if (isMounted) setLoading(false)
+                return
+              }
+            }
+          }
+        } catch {
+          // search error fallback
+        }
+
         if (isMounted) {
           setProfile({
-            id: targetUserId,
-            fullName: isCurrentUser ? currentUser?.fullName || 'Người dùng' : 'Người dùng',
-            avatarUrl: isCurrentUser
-              ? currentUser?.avatarUrl || null
-              : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop',
-            coverUrl: isCurrentUser
-              ? currentUser?.coverUrl || null
-              : 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1600&h=400&fit=crop',
-            bio: 'Đam mê khám phá các cung đường và địa điểm mới trên khắp Việt Nam.',
+            id: 9999,
+            fullName: nameFromQuery,
+            avatarUrl: locationState?.authorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop',
+            coverUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1600&h=400&fit=crop',
+            bio: locationState?.authorRole || 'Tác giả chia sẻ cẩm nang du lịch và địa điểm trên LangThang.',
             joinedDate: 'Tháng 4, 2024',
-            rankLevel: 'Hạng Vàng',
-            reputationScore: 890,
+            rankLevel: 'Tác giả cẩm nang',
+            reputationScore: 1200,
             friendStatus: 'none'
           })
+          setLoading(false)
         }
-      } finally {
-        if (isMounted) setLoading(false)
+        return
+      }
+
+      // Case 3: Default current user profile
+      if (isMounted) {
+        setProfile({
+          id: currentUserId || 1,
+          fullName: currentUser?.fullName || 'Người dùng',
+          avatarUrl: currentUser?.avatarUrl || null,
+          coverUrl: currentUser?.coverUrl || null,
+          bio: currentUser?.bio || 'Đam mê khám phá các cung đường và địa điểm mới trên khắp Việt Nam.',
+          joinedDate: 'Tháng 4, 2024',
+          rankLevel: currentUser?.rankLevel || 'Chuyên gia khám phá',
+          reputationScore: currentUser?.reputationScore || 1250,
+          friendStatus: 'none'
+        })
+        setLoading(false)
       }
     }
 
@@ -93,7 +160,7 @@ export const UserProfilePage: React.FC = () => {
     return () => {
       isMounted = false
     }
-  }, [targetUserId, isCurrentUser, currentUser])
+  }, [id, targetUserId, isCurrentUser, currentUser, nameFromQuery, locationState])
 
   // Handle Social Actions
   const handleSendMessage = () => {
@@ -223,7 +290,7 @@ export const UserProfilePage: React.FC = () => {
           <div className="lg:col-span-8 space-y-5">
             {activeTab === 'reviews' && (
               <UserProfileReviewsTab
-                userId={targetUserId}
+                userId={profile.id}
                 authorName={profile.fullName}
                 authorAvatar={profile.avatarUrl}
                 onImageClick={(img) => setLightboxImage(img)}
@@ -233,25 +300,25 @@ export const UserProfilePage: React.FC = () => {
 
             {activeTab === 'activity' && (
               <UserProfileActivityTab
-                userId={targetUserId}
+                userId={profile.id}
                 userName={profile.fullName}
               />
             )}
 
             {activeTab === 'trips' && (
-              <UserProfileTripsTab userId={targetUserId} />
+              <UserProfileTripsTab userId={profile.id} />
             )}
 
             {activeTab === 'visit_logs' && (
-              <UserProfileVisitLogsTab userId={targetUserId} />
+              <UserProfileVisitLogsTab userId={profile.id} />
             )}
 
             {activeTab === 'blogs' && (
-              <UserProfileBlogsTab userId={targetUserId} />
+              <UserProfileBlogsTab userId={profile.id} />
             )}
 
             {activeTab === 'proposals' && (
-              <UserProfileProposalsTab userId={targetUserId} />
+              <UserProfileProposalsTab userId={profile.id} />
             )}
           </div>
         </div>

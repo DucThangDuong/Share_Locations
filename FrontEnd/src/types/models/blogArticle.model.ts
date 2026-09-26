@@ -1,4 +1,7 @@
 export interface BlogAuthorDto {
+  id?: number | string
+  userId?: number | string
+  authorId?: number | string
   name: string
   avatar?: string | null
   role: string

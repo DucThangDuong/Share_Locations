@@ -1,5 +1,8 @@
+import React from 'react'
+import { useNavigate } from 'react-router-dom'
 import { X, Share2 } from 'lucide-react'
 import { RichContentRenderer } from '@/components/common/RichContentRenderer'
+import { navigateToAuthorProfile } from '@/utils/authorNavigation'
 import type { BlogDetailDto } from '@/types/models/blogArticle.model'
 
 interface BlogDetailModalProps {
@@ -7,15 +10,21 @@ interface BlogDetailModalProps {
   onClose: () => void
 }
 
-export const BlogDetailModal = ({
+export const BlogDetailModal: React.FC<BlogDetailModalProps> = ({
   article,
   onClose
-}: BlogDetailModalProps) => {
+}) => {
+  const navigate = useNavigate()
   if (!article) return null
 
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href)
     alert('Đã sao chép liên kết bài viết vào bộ nhớ tạm!')
+  }
+
+  const handleNavigateToAuthor = (e?: React.MouseEvent) => {
+    onClose()
+    navigateToAuthorProfile(navigate, article.author, article, e)
   }
 
   return (
@@ -29,7 +38,7 @@ export const BlogDetailModal = ({
             <button
               type="button"
               onClick={handleShare}
-              className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+              className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
               title="Chia sẻ bài viết"
             >
               <Share2 className="w-4 h-4" />
@@ -37,7 +46,7 @@ export const BlogDetailModal = ({
             <button
               type="button"
               onClick={onClose}
-              className="p-2 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+              className="p-2 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -50,20 +59,26 @@ export const BlogDetailModal = ({
               {article.title}
             </h1>
             <div className="flex items-center gap-3 text-xs text-gray-500">
-              {article.author?.avatar ? (
-                <img
-                  src={article.author.avatar}
-                  alt={article.author?.name || 'Tác giả'}
-                  className="w-8 h-8 rounded-full object-cover border border-gray-200"
-                />
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center text-xs font-bold">
-                  {(article.author?.name || 'T').charAt(0).toUpperCase()}
+              <div
+                onClick={handleNavigateToAuthor}
+                className="flex items-center gap-3 cursor-pointer group/author hover:opacity-90 transition-opacity"
+                title="Xem trang cá nhân của tác giả"
+              >
+                {article.author?.avatar ? (
+                  <img
+                    src={article.author.avatar}
+                    alt={article.author?.name || 'Tác giả'}
+                    className="w-8 h-8 rounded-full object-cover border border-gray-200 group-hover/author:ring-1 group-hover/author:ring-emerald-500/50"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center text-xs font-bold group-hover/author:ring-1 group-hover/author:ring-emerald-500/50">
+                    {(article.author?.name || 'T').charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <div>
+                  <span className="font-bold text-gray-900 group-hover/author:text-emerald-700 transition-colors block">{article.author?.name || 'Tác giả'}</span>
+                  <span>{article.publishedAt ? new Date(article.publishedAt).toLocaleDateString('vi-VN') : ''}</span>
                 </div>
-              )}
-              <div>
-                <span className="font-bold text-gray-900 block">{article.author?.name || 'Tác giả'}</span>
-                <span>{article.publishedAt ? new Date(article.publishedAt).toLocaleDateString('vi-VN') : ''}</span>
               </div>
             </div>
           </div>

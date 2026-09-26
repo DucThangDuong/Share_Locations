@@ -59,12 +59,13 @@ export const UserProfileHeader: React.FC<UserProfileHeaderProps> = ({
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
               {/* Avatar floating half on cover, half on white */}
               <div className="relative -mt-16 sm:-mt-20 shrink-0 group z-10">
-                <div className="w-28 h-28 sm:w-34 sm:h-34 md:w-36 md:h-36 rounded-full overflow-hidden border-4 border-white shadow-xl bg-slate-100 ring-2 ring-slate-200/90 shrink-0">
+                <div className="relative w-28 h-28 sm:w-34 sm:h-34 md:w-36 md:h-36 rounded-full overflow-hidden border-4 border-white shadow-xl bg-slate-100 ring-2 ring-slate-200/90 shrink-0">
                   <img
                     src={avatar}
                     alt={profile.fullName}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="w-full h-full object-cover"
                   />
+                  <div className="absolute inset-0 bg-white/0 group-hover:bg-white/15 transition-colors duration-300 pointer-events-none" />
                 </div>
               </div>
 

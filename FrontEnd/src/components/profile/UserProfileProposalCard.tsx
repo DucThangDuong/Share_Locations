@@ -27,8 +27,9 @@ export const UserProfileProposalCard: React.FC<UserProfileProposalCardProps> = (
         <img
           src={coverImage}
           alt={proposal.name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          className="w-full h-full object-cover"
         />
+        <div className="absolute inset-0 bg-white/0 group-hover:bg-white/15 transition-colors duration-300 pointer-events-none" />
         <div className="absolute top-2.5 left-2.5 bg-emerald-600/90 backdrop-blur-md text-white px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1 shadow-sm">
           <CheckCircle2 size={12} />
           <span>Đã duyệt & Đưa vào bản đồ</span>

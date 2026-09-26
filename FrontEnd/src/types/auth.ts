@@ -57,3 +57,25 @@ export interface AuthTokenResponse {
   refreshTokenExpiryTime: string
   user: UserDto
 }
+
+export interface ForgotPasswordRequest {
+  email: string
+}
+
+export interface VerifyResetOtpRequest {
+  email: string
+  otpCode: string
+}
+
+export interface VerifyResetOtpResponseData {
+  resetToken: string
+  expiresAt: string
+}
+
+export interface ResetPasswordRequest {
+  resetToken: string
+  newPassword: string
+  confirmPassword: string
+}
+
+

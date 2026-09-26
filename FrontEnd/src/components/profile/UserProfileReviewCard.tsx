@@ -138,13 +138,18 @@ export const UserProfileReviewCard: React.FC<UserProfileReviewCardProps> = ({
       {review.images && review.images.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-4">
           {review.images.map((img, idx) => (
-            <img
+            <div
               key={idx}
-              src={img}
-              alt=""
               onClick={() => onImageClick && onImageClick(img)}
-              className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl object-cover cursor-pointer hover:opacity-90 hover:scale-105 transition-all border border-slate-200 shadow-2xs"
-            />
+              className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden cursor-pointer border border-slate-200 shadow-2xs group/img"
+            >
+              <img
+                src={img}
+                alt=""
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-white/0 group-hover/img:bg-white/15 transition-colors duration-300 pointer-events-none" />
+            </div>
           ))}
         </div>
       )}
@@ -155,14 +160,17 @@ export const UserProfileReviewCard: React.FC<UserProfileReviewCardProps> = ({
           to={`/places/${review.placeId}`}
           className="flex items-center gap-3.5 min-w-0 flex-1"
         >
-          <img
-            src={
-              review.coverImg ||
-              'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=160&h=160&fit=crop'
-            }
-            alt={review.placeName}
-            className="w-14 h-14 rounded-xl object-cover border border-slate-200 shrink-0 group-hover:scale-105 transition-transform"
-          />
+          <div className="relative w-14 h-14 rounded-xl overflow-hidden border border-slate-200 shrink-0">
+            <img
+              src={
+                review.coverImg ||
+                'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=160&h=160&fit=crop'
+              }
+              alt={review.placeName}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-white/0 group-hover:bg-white/15 transition-colors duration-300 pointer-events-none" />
+          </div>
 
           <div className="min-w-0">
             <h4 className="text-sm font-bold text-slate-900 group-hover:text-emerald-700 transition-colors truncate">

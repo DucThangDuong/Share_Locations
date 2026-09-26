@@ -1,5 +1,8 @@
+import React from 'react'
+import { useNavigate } from 'react-router-dom'
 import { ChevronRight, BookOpen } from 'lucide-react'
 import { extractPlainText } from '@/components/common/RichContentRenderer'
+import { navigateToAuthorProfile } from '@/utils/authorNavigation'
 import type { BlogListItemDto } from '@/types/models/place.model'
 
 interface BlogFeaturedCardProps {
@@ -7,8 +10,14 @@ interface BlogFeaturedCardProps {
   onRead: (post: BlogListItemDto) => void
 }
 
-export const BlogFeaturedCard = ({ post, onRead }: BlogFeaturedCardProps) => {
+export const BlogFeaturedCard: React.FC<BlogFeaturedCardProps> = ({ post, onRead }) => {
+  const navigate = useNavigate()
   const summaryText = extractPlainText(post.excerpt || post.content)
+
+  const handleNavigateToAuthor = (e: React.MouseEvent) => {
+    navigateToAuthorProfile(navigate, post.author, post, e)
+  }
+
   return (
     <div
       onClick={() => onRead(post)}
@@ -54,20 +63,24 @@ export const BlogFeaturedCard = ({ post, onRead }: BlogFeaturedCardProps) => {
         </div>
 
         <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div
+            onClick={handleNavigateToAuthor}
+            className="flex items-center gap-3 cursor-pointer group/author hover:opacity-90 transition-opacity"
+            title="Xem trang cá nhân của tác giả"
+          >
             {post.author?.avatar ? (
               <img
                 src={post.author.avatar}
                 alt={post.author?.name || 'Tác giả'}
-                className="w-8 h-8 rounded-full object-cover border border-gray-200"
+                className="w-8 h-8 rounded-full object-cover border border-gray-200 group-hover/author:ring-1 group-hover/author:ring-emerald-500/50"
               />
             ) : (
-              <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center text-xs font-bold">
+              <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center text-xs font-bold group-hover/author:ring-1 group-hover/author:ring-emerald-500/50">
                 {(post.author?.name || 'T').charAt(0).toUpperCase()}
               </div>
             )}
             <div className="text-xs">
-              <span className="font-bold text-gray-900 block">{post.author?.name || 'Tác giả'}</span>
+              <span className="font-bold text-gray-900 group-hover/author:text-emerald-700 transition-colors block">{post.author?.name || 'Tác giả'}</span>
               <span className="text-gray-400">{post.publishedAt}</span>
             </div>
           </div>

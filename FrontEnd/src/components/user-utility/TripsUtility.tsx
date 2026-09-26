@@ -11,10 +11,13 @@ import {
   Lock,
   Globe,
   Loader2,
-  ArrowRight
+  ArrowRight,
+  Users
 } from 'lucide-react'
 import { tripService } from '@/services/tripService'
-import type { UserTripSummaryDto } from '@/types/models/trip.model'
+import { useAuth } from '@/context/AuthContext'
+import { ItineraryMemberModal } from '@/components/itinerary/ItineraryMemberModal'
+import type { UserTripSummaryDto, TripMemberDetailDto } from '@/types/models/trip.model'
 import type { PagedResultDto } from '@/types/models/userProfile.model'
 
 interface TripsUtilityProps {
@@ -29,9 +32,16 @@ export const TripsUtility: React.FC<TripsUtilityProps> = ({
   onToast
 }) => {
   const navigate = useNavigate()
+  const { user: currentUser } = useAuth()
   const [trips, setTrips] = useState<UserTripSummaryDto[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+
+  // Member management state
+  const [selectedTripForMembers, setSelectedTripForMembers] = useState<UserTripSummaryDto | null>(null)
+  const [tripMembers, setTripMembers] = useState<TripMemberDetailDto[]>([])
+  const [currentUserRoleInTrip, setCurrentUserRoleInTrip] = useState<string>('Owner')
+  const [isMemberModalOpen, setIsMemberModalOpen] = useState(false)
 
   const fetchTrips = useCallback(async () => {
     setIsLoading(true)
@@ -69,10 +79,96 @@ export const TripsUtility: React.FC<TripsUtilityProps> = ({
         setTrips((prev) => prev.filter((t) => Number(t.id) !== Number(id)))
         onToast?.('Đã xóa chuyến đi thành công.')
       } else {
-        onToast?.('Không thể xóa chuyến đi lúc này.')
+        onToast?.(res.message || 'Không thể xóa chuyến đi lúc này.')
+      }
+    } catch (err: any) {
+      onToast?.(err?.response?.data?.message || 'Có lỗi xảy ra khi xóa chuyến đi.')
+    }
+  }
+
+  // Open Member Management Modal for a trip
+  const handleOpenMembersModal = async (e: React.MouseEvent, trip: UserTripSummaryDto) => {
+    e.stopPropagation()
+    e.preventDefault()
+    setSelectedTripForMembers(trip)
+    setCurrentUserRoleInTrip(trip.userRole || 'Owner')
+    setIsMemberModalOpen(true)
+
+    try {
+      const res = await tripService.getTripDetail(trip.id)
+      if (res.success && res.data) {
+        setTripMembers(res.data.members || [])
+        if (res.data.currentUserRole) {
+          setCurrentUserRoleInTrip(res.data.currentUserRole)
+        }
       }
     } catch {
-      onToast?.('Có lỗi xảy ra khi xóa chuyến đi.')
+      setTripMembers([])
+    }
+  }
+
+  // Handle Invite Member via API
+  const handleInviteMember = async (email: string, role: string) => {
+    if (!selectedTripForMembers) return
+    try {
+      const res = await tripService.inviteMember(selectedTripForMembers.id, { email, role })
+      if (res.success) {
+        onToast?.(res.message || `Đã thêm thành viên: ${email}`)
+        // Refresh members list
+        const detailRes = await tripService.getTripDetail(selectedTripForMembers.id)
+        if (detailRes.success && detailRes.data?.members) {
+          setTripMembers(detailRes.data.members)
+          // Increment members count in local trips list
+          setTrips((prev) =>
+            prev.map((t) =>
+              t.id === selectedTripForMembers.id
+                ? { ...t, membersCount: detailRes.data.members.length }
+                : t
+            )
+          )
+        }
+      } else {
+        onToast?.(res.message || 'Không thể thêm thành viên lúc này.')
+      }
+    } catch (err: any) {
+      console.error('Failed to invite member:', err)
+      const errorMsg = err?.response?.data?.message || err?.message || 'Có lỗi xảy ra khi mời thành viên.'
+      onToast?.(errorMsg)
+    }
+  }
+
+  // Handle Remove Member or Leave Trip via API
+  const handleRemoveMember = async (userId: number, isSelf: boolean = false) => {
+    if (!selectedTripForMembers) return
+    try {
+      const res = await tripService.removeMember(selectedTripForMembers.id, userId)
+      if (res.success) {
+        if (isSelf) {
+          onToast?.(res.message || 'Bạn đã rời khỏi chuyến đi.')
+          setIsMemberModalOpen(false)
+          // Remove trip from user's trip list
+          setTrips((prev) => prev.filter((t) => t.id !== selectedTripForMembers.id))
+          setSelectedTripForMembers(null)
+          return
+        }
+
+        onToast?.(res.message || 'Đã xóa thành viên khỏi chuyến đi.')
+        setTripMembers((prev) => prev.filter((m) => m.userId !== userId))
+        // Decrement members count in local trips list
+        setTrips((prev) =>
+          prev.map((t) =>
+            t.id === selectedTripForMembers.id
+              ? { ...t, membersCount: Math.max(1, (t.membersCount || 1) - 1) }
+              : t
+          )
+        )
+      } else {
+        onToast?.(res.message || 'Không thể xóa thành viên lúc này.')
+      }
+    } catch (err: any) {
+      console.error('Failed to remove member:', err)
+      const errorMsg = err?.response?.data?.message || err?.message || 'Có lỗi xảy ra khi xóa thành viên.'
+      onToast?.(errorMsg)
     }
   }
 
@@ -181,7 +277,7 @@ export const TripsUtility: React.FC<TripsUtilityProps> = ({
             </button>
           </div>
         ) : isDrawer ? (
-          /* Drawer Compact Clean Layout (No Fake Cover Photos) */
+          /* Drawer Compact Clean Layout */
           <div className="space-y-2.5">
             {filteredTrips.map((trip) => (
               <div
@@ -192,7 +288,7 @@ export const TripsUtility: React.FC<TripsUtilityProps> = ({
                 <div className="w-11 h-11 rounded-2xl bg-blue-50 text-blue-800 flex items-center justify-center shrink-0 border border-blue-100/80 transition-colors">
                   <Luggage size={20} />
                 </div>
-                <div className="flex-1 min-w-0 pr-6">
+                <div className="flex-1 min-w-0 pr-16">
                   <h4 className="text-xs font-bold text-slate-900 truncate group-hover:text-blue-800 transition-colors">
                     {trip.title}
                   </h4>
@@ -211,14 +307,27 @@ export const TripsUtility: React.FC<TripsUtilityProps> = ({
                   </p>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={(e) => handleDeleteTrip(e, trip.id)}
-                  className="absolute top-3 right-3 p-1.5 rounded-full text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-colors cursor-pointer"
-                  title="Xóa chuyến đi"
-                >
-                  <Trash2 size={13} />
-                </button>
+                <div className="absolute top-2.5 right-2.5 flex items-center gap-1">
+                  {/* Members button in Drawer */}
+                  <button
+                    type="button"
+                    onClick={(e) => handleOpenMembersModal(e, trip)}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer flex items-center gap-1 text-[10px] font-bold"
+                    title="Quản lý thành viên chuyến đi"
+                  >
+                    <Users size={12} className="text-emerald-600" />
+                    <span>{trip.membersCount || 1}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={(e) => handleDeleteTrip(e, trip.id)}
+                    className="p-1.5 rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-colors cursor-pointer"
+                    title="Xóa chuyến đi"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -250,6 +359,18 @@ export const TripsUtility: React.FC<TripsUtilityProps> = ({
                       <span className="p-1.5 rounded-lg bg-slate-100 text-slate-500 text-xs">
                         {trip.privacy === 1 ? <Lock size={12} /> : <Globe size={12} />}
                       </span>
+
+                      {/* Members button in full card */}
+                      <button
+                        type="button"
+                        onClick={(e) => handleOpenMembersModal(e, trip)}
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100 hover:bg-emerald-50 hover:text-emerald-800 text-slate-700 text-xs font-semibold transition-colors cursor-pointer border border-transparent hover:border-emerald-200"
+                        title="Quản lý thành viên chuyến đi"
+                      >
+                        <Users size={12} className="text-emerald-700" />
+                        <span>{trip.membersCount || 1}</span>
+                      </button>
+
                       <button
                         type="button"
                         onClick={(e) => handleDeleteTrip(e, trip.id)}
@@ -297,8 +418,27 @@ export const TripsUtility: React.FC<TripsUtilityProps> = ({
           </div>
         )}
       </div>
+
+      {/* Trip Member Management Modal */}
+      {selectedTripForMembers && (
+        <ItineraryMemberModal
+          isOpen={isMemberModalOpen}
+          tripId={selectedTripForMembers.id}
+          tripTitle={selectedTripForMembers.title}
+          members={tripMembers}
+          currentUserRole={currentUserRoleInTrip}
+          currentUserId={currentUser?.id ? Number(currentUser.id) : undefined}
+          onClose={() => {
+            setIsMemberModalOpen(false)
+            setSelectedTripForMembers(null)
+          }}
+          onInviteMember={handleInviteMember}
+          onRemoveMember={handleRemoveMember}
+        />
+      )}
     </div>
   )
 }
 
 export default TripsUtility
+
