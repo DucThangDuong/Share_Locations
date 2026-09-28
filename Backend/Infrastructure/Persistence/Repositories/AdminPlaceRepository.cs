@@ -1,4 +1,5 @@
 using Application.Common;
+using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs.Admin;
 using Dapper;
@@ -11,10 +12,12 @@ namespace Infrastructure.Persistence.Repositories;
 public class AdminPlaceRepository : IAdminPlaceRepository
 {
     private readonly TravelReviewDbContext _dbContext;
+    private readonly ICurrentUserService _currentUserService;
 
-    public AdminPlaceRepository(TravelReviewDbContext dbContext)
+    public AdminPlaceRepository(TravelReviewDbContext dbContext, ICurrentUserService currentUserService)
     {
         _dbContext = dbContext;
+        _currentUserService = currentUserService;
     }
 
     public async Task<PagedResult<AdminPlaceListItemDto>> GetAdminPlacesAsync(
@@ -30,6 +33,9 @@ public class AdminPlaceRepository : IAdminPlaceRepository
 
         var whereClauses = new List<string>();
         var parameters = new DynamicParameters();
+
+        // Áp dụng giới hạn phân quyền theo Scope (Category, Province, Region) của Admin cấp 1
+        AdminScopeFilterHelper.ApplyPlaceScope(_currentUserService, whereClauses, parameters, "p", "prov");
 
         if (provinceId.HasValue && provinceId.Value > 0)
         {
@@ -57,7 +63,11 @@ public class AdminPlaceRepository : IAdminPlaceRepository
 
         var whereSql = whereClauses.Count > 0 ? " WHERE " + string.Join(" AND ", whereClauses) : "";
 
-        var countSql = $"SELECT COUNT(1) FROM dbo.Places p {whereSql};";
+        var countSql = $@"
+            SELECT COUNT(1) 
+            FROM dbo.Places p 
+            LEFT JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id 
+            {whereSql};";
         var totalCount = await connection.ExecuteScalarAsync<int>(countSql, parameters);
 
         var offset = (page - 1) * pageSize;
@@ -130,6 +140,12 @@ public class AdminPlaceRepository : IAdminPlaceRepository
         var detail = await connection.QueryFirstOrDefaultAsync<AdminPlaceDetailDto>(sql, new { Id = id });
         if (detail == null) return null;
 
+        // Kiểm tra quyền hạn phạm vi quản lý của Admin cấp 1
+        if (!await AdminScopeFilterHelper.IsPlaceInScopeAsync(_currentUserService, connection, id))
+        {
+            return null;
+        }
+
         const string mediaSql = "SELECT MediaUrl FROM dbo.PlaceMedia WHERE PlaceId = @Id ORDER BY DisplayOrder, Id;";
         var photos = (await connection.QueryAsync<string>(mediaSql, new { Id = id })).ToList();
         detail.Photos = photos;
@@ -177,6 +193,9 @@ public class AdminPlaceRepository : IAdminPlaceRepository
 
     public async Task<bool> UpdateAdminPlaceAsync(long id, UpdateAdminPlaceInput input, CancellationToken ct = default)
     {
+        if (!await AdminScopeFilterHelper.IsPlaceInScopeAsync(_currentUserService, _dbContext.Database.GetDbConnection(), id))
+            return false;
+
         var place = await _dbContext.Places.FirstOrDefaultAsync(p => p.Id == id, ct);
         if (place == null) return false;
 
@@ -226,6 +245,9 @@ public class AdminPlaceRepository : IAdminPlaceRepository
 
     public async Task<bool> UpdateAdminPlaceStatusAsync(long id, PlaceStatus status, CancellationToken ct = default)
     {
+        if (!await AdminScopeFilterHelper.IsPlaceInScopeAsync(_currentUserService, _dbContext.Database.GetDbConnection(), id))
+            return false;
+
         var place = await _dbContext.Places.FirstOrDefaultAsync(p => p.Id == id, ct);
         if (place == null) return false;
 
@@ -236,6 +258,9 @@ public class AdminPlaceRepository : IAdminPlaceRepository
 
     public async Task<bool> DeleteAdminPlaceAsync(long id, CancellationToken ct = default)
     {
+        if (!await AdminScopeFilterHelper.IsPlaceInScopeAsync(_currentUserService, _dbContext.Database.GetDbConnection(), id))
+            return false;
+
         var place = await _dbContext.Places.FirstOrDefaultAsync(p => p.Id == id, ct);
         if (place == null) return false;
 

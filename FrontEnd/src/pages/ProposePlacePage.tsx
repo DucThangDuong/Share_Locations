@@ -663,7 +663,7 @@ export const ProposePlacePage: React.FC = () => {
                 onClick={() => navigate(-1)}
                 className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
               >
-                <span>Quay lại danh sách</span>
+                <span>Quay lại</span>
               </button>
             </div>
           </div>

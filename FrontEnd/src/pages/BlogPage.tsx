@@ -430,7 +430,7 @@ export const BlogPage: React.FC = () => {
                 onClick={() => navigate('/blog')}
                 className="mt-4 px-4 py-2 bg-emerald-800 text-white text-xs font-bold rounded-xl cursor-pointer"
               >
-                Quay lại danh sách cẩm nang
+                Quay lại
               </button>
             </div>
           )}

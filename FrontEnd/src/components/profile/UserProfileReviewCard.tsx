@@ -121,12 +121,11 @@ export const UserProfileReviewCard: React.FC<UserProfileReviewCardProps> = ({
       )}
 
       {/* ── DATE OF EXPERIENCE ── */}
-      {review.visitDate && (
+      {review.createdAt && (
         <div className="text-xs text-slate-500 font-medium mb-3.5 flex items-center gap-1.5">
           <Calendar size={13} className="text-slate-400" />
           <span>
-            <strong>Ngày trải nghiệm:</strong>{' '}
-            {new Date(review.visitDate).toLocaleDateString('vi-VN', {
+            {new Date(review.createdAt).toLocaleDateString('vi-VN', {
               month: 'long',
               year: 'numeric'
             })}

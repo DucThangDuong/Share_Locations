@@ -2,6 +2,7 @@ using API.DTOs;
 using API.Extensions;
 using Application.Common;
 using Application.Features.Admin.Foods;
+using Domain.Constants;
 using FastEndpoints;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -21,11 +22,11 @@ public class DeleteAdminFoodEndpoint : Endpoint<DeleteAdminFoodRequest, ApiSucce
     {
         Delete("/api/admin/foods/{id}");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
-        Roles("CategoryAdmin", "SystemAdmin");
+        Roles(AppRoles.SuperAdminOnly);
         Summary(s =>
         {
-            s.Summary = "Xóa món ăn đặc sản (Admin)";
-            s.Description = "Xóa món ăn đặc sản khỏi hệ thống danh mục.";
+            s.Summary = "Xóa món ăn đặc sản (Đặc quyền SystemAdmin)";
+            s.Description = "Xóa món ăn đặc sản khỏi hệ thống danh mục. Chỉ dành riêng cho Quản trị viên tối cao (SystemAdmin).";
         });
     }
 

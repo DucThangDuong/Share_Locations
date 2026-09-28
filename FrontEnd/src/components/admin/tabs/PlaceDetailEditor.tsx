@@ -7,8 +7,6 @@ import {
   Trash2,
   AlertCircle,
   Navigation,
-  Check,
-  ShieldCheck,
   Eye,
   EyeOff,
   FileText,
@@ -21,7 +19,6 @@ import {
   Save,
   Globe,
   Phone,
-  Link as LinkIcon,
 } from "lucide-react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -150,8 +147,8 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
   // Description
   const [description, setDescription] = useState(
     place?.description ||
-      place?.desc ||
-      "Địa điểm ẩm thực và du lịch đặc sắc với không gian rộng rãi, chất lượng dịch vụ chuyên nghiệp và phong vị chuẩn địa phương."
+    place?.desc ||
+    "Địa điểm ẩm thực và du lịch đặc sắc với không gian rộng rãi, chất lượng dịch vụ chuyên nghiệp và phong vị chuẩn địa phương."
   );
 
   // Images
@@ -165,13 +162,12 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
       "https://images.unsplash.com/photo-1541544741938-0af808871cc0?w=800&h=600&fit=crop",
     ];
   });
-  const [newImageUrl, setNewImageUrl] = useState("");
   const [activePreviewImgIndex, setActivePreviewImgIndex] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
 
   // Moderation / Status fields
   const [statusNum, setStatusNum] = useState<number>(place?.statusNum ?? (place?.status === "Chờ duyệt" ? 0 : 1));
-  const [rating, setRating] = useState<number>(place?.rating || 4.8);
+  const rating = place?.rating
 
   // Refs
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -322,13 +318,6 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
       }
     });
   };
-
-  const handleAddImageUrl = () => {
-    if (!newImageUrl.trim()) return;
-    setImages((prev) => [...prev, newImageUrl.trim()]);
-    setNewImageUrl("");
-  };
-
   const handleRemoveImage = (index: number) => {
     setImages((prev) => {
       const next = prev.filter((_, idx) => idx !== index);
@@ -372,9 +361,9 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
     const priceFormatted = isFree
       ? "Miễn phí vé"
       : `${parseInt(minPrice || "0", 10).toLocaleString("vi-VN")}đ – ${parseInt(
-          maxPrice || "0",
-          10
-        ).toLocaleString("vi-VN")}đ`;
+        maxPrice || "0",
+        10
+      ).toLocaleString("vi-VN")}đ`;
 
     const hoursFormatted = is24Hours ? "Mở cửa cả ngày (24/7)" : `${openTime} – ${closeTime}`;
 
@@ -438,7 +427,7 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
             title="Quay lại danh sách"
           >
             <ArrowLeft size={15} />
-            <span className="hidden sm:inline">Quay lại danh sách</span>
+            <span className="hidden sm:inline">Quay lại</span>
           </button>
 
           <div>
@@ -447,15 +436,14 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
                 {name || place.name}
               </h2>
               <span
-                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                  statusNum === 0
-                    ? "bg-amber-100 text-amber-800"
-                    : statusNum === 3
+                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold ${statusNum === 0
+                  ? "bg-amber-100 text-amber-800"
+                  : statusNum === 3
                     ? "bg-slate-200 text-slate-700"
                     : "bg-emerald-100 text-emerald-800"
-                }`}
+                  }`}
               >
-                {statusNum === 0 ? "Chờ duyệt" : statusNum === 3 ? "Đang ẩn" : "Đã duyệt (Công khai)"}
+                {statusNum === 0 ? "Chờ duyệt" : statusNum === 3 ? "Đang ẩn" : "Đã duyệt"}
               </span>
             </div>
             <p className="text-[11px] text-slate-400 mt-0.5">
@@ -493,6 +481,13 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
               <span>{statusNum === 3 ? "Hiện lại trên web" : "Tạm ẩn địa điểm"}</span>
             </button>
           )}
+          <button
+            type="button"
+            onClick={onBack}
+            className="flex-1 sm:flex-none px-5 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer transition-all text-center"
+          >
+            Hủy
+          </button>
 
           <button
             type="button"
@@ -836,11 +831,10 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
                 }}
                 onDragLeave={() => setIsDragging(false)}
                 onDrop={handleDropFiles}
-                className={`p-6 border-2 border-dashed rounded-2xl text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2.5 ${
-                  isDragging
-                    ? "border-emerald-600 bg-emerald-50/80 text-emerald-800 ring-2 ring-emerald-500/30"
-                    : "border-slate-300 hover:border-emerald-600 hover:bg-slate-50 text-slate-600"
-                }`}
+                className={`p-6 border-2 border-dashed rounded-2xl text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2.5 ${isDragging
+                  ? "border-emerald-600 bg-emerald-50/80 text-emerald-800 ring-2 ring-emerald-500/30"
+                  : "border-slate-300 hover:border-emerald-600 hover:bg-slate-50 text-slate-600"
+                  }`}
               >
                 <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center shadow-xs">
                   <UploadCloud className="w-6 h-6" />
@@ -854,34 +848,6 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
                   </p>
                 </div>
               </div>
-
-              {/* Quick URL Adder for Admin */}
-              <div className="flex items-center gap-2 pt-1">
-                <div className="relative flex-1">
-                  <LinkIcon className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="text"
-                    placeholder="Hoặc dán URL ảnh trực tuyến (https://...)..."
-                    value={newImageUrl}
-                    onChange={(e) => setNewImageUrl(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        handleAddImageUrl();
-                      }
-                    }}
-                    className="w-full pl-8 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 focus:outline-none focus:bg-white focus:border-emerald-700"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={handleAddImageUrl}
-                  className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs cursor-pointer transition-colors"
-                >
-                  Thêm URL
-                </button>
-              </div>
-
               <div className="space-y-4 pt-2">
                 <div>
                   <span className="text-xs font-bold text-slate-700 mb-2 block">
@@ -932,41 +898,6 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
                 </div>
               </div>
             </div>
-
-            {/* Bottom Action Card */}
-            <div className="p-6 bg-white rounded-3xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="text-xs text-slate-500">
-                Thông tin chỉnh sửa sẽ được lưu vào hệ thống và cập nhật thời gian thực trên toàn bộ ứng dụng.
-              </div>
-
-              <div className="flex items-center gap-2.5 w-full sm:w-auto">
-                <button
-                  type="button"
-                  onClick={onBack}
-                  className="flex-1 sm:flex-none px-5 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer transition-all text-center"
-                >
-                  Hủy & Quay lại
-                </button>
-
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="flex-1 sm:flex-none px-7 py-3 rounded-2xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 cursor-pointer transition-all shadow-md disabled:opacity-50"
-                >
-                  {isSaving ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Đang lưu...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Save className="w-4 h-4" />
-                      <span>Lưu thông tin địa điểm</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
           </div>
 
           {/* Right Column (4 cols, sticky): Live Preview Card & Admin Meta */}
@@ -978,9 +909,6 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
                   <Eye className="w-4 h-4 text-emerald-700" />
                   <span>Bản xem trước trực tiếp</span>
                 </h3>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200/60">
-                  Live Sync
-                </span>
               </div>
 
               {/* Discovery Card Component Replica */}
@@ -1071,69 +999,6 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
                     </span>
                   </div>
                 </div>
-              </div>
-            </div>
-
-            {/* Moderation & Quality Controls */}
-            <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-4">
-              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
-                <ShieldCheck className="w-4 h-4 text-emerald-700" />
-                <span>Trạng thái & Quản trị</span>
-              </h3>
-
-              <div className="space-y-3 text-xs">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Trạng thái công khai
-                  </label>
-                  <select
-                    value={statusNum}
-                    onChange={(e) => setStatusNum(Number(e.target.value))}
-                    className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 font-semibold text-slate-800 outline-none focus:border-emerald-600 cursor-pointer"
-                  >
-                    <option value={1}>Đã duyệt (Công khai trên toàn hệ thống)</option>
-                    <option value={0}>Chờ duyệt (Chưa hiển thị cho người dùng)</option>
-                    <option value={3}>Đang ẩn (Tạm ẩn khỏi trang tìm kiếm)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Điểm đánh giá trung bình
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      step="0.1"
-                      min="1"
-                      max="5"
-                      value={rating}
-                      onChange={(e) => setRating(parseFloat(e.target.value) || 5)}
-                      className="w-24 p-2 rounded-xl border border-slate-200 bg-slate-50 font-bold text-slate-800 outline-none focus:border-emerald-600"
-                    />
-                    <div className="flex items-center gap-1 text-amber-500 font-bold">
-                      <Star size={14} className="fill-amber-400" />
-                      <span>/ 5.0 sao</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-2 border-t border-slate-100">
-                <ul className="space-y-2 text-[11px] text-slate-500">
-                  <li className="flex items-center gap-2">
-                    <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>Tọa độ bản đồ chuẩn xác với địa chỉ</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>Hình ảnh chụp thực tế rõ ràng sắc nét</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>Thông tin mức giá & giờ hoạt động đầy đủ</span>
-                  </li>
-                </ul>
               </div>
             </div>
           </div>

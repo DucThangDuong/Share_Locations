@@ -1,6 +1,7 @@
-// 11 TABS THEO ĐÚNG ĐẶC TẢ HỆ THỐNG
+// 12 TABS THEO ĐÚNG ĐẶC TẢ HỆ THỐNG
 export type AdminMainTab =
   | "dashboard"             // 1. Tổng quan (Dashboard)
+  | "users"                 // Quản lý Tài khoản & Phân quyền (Users, Admins)
   | "places"                // 2. Địa điểm (Places, PlaceMedia)
   | "proposals"             // 3. Đề xuất đóng góp (Proposals)
   | "reviews_comments"      // 4. Đánh giá & Bình luận (Reviews, Comments)
@@ -226,7 +227,7 @@ export interface ReportReason {
 }
 
 // Report Target Info (for universal ReportModal)
-export type ReportTargetType = "place" | "review" | "comment" | "blog" | "photo";
+export type ReportTargetType = "place" | "review" | "comment" | "blog" | "photo" | "user";
 
 export interface ReportTargetInfo {
   targetType: ReportTargetType;
@@ -240,3 +241,157 @@ export interface ReportTargetInfo {
   province?: string;
   category?: string;
 }
+
+// ── ADMIN USER MANAGEMENT TYPES ──
+export interface AdminUserCategoryScope {
+  categoryId: number;
+  categoryName: string;
+}
+
+export interface AdminUserProvinceScope {
+  provinceId: number;
+  provinceName: string;
+}
+
+export interface AdminUserRegionScope {
+  regionId: number;
+  regionName: string;
+}
+
+export interface AdminUserItem {
+  id?: number;
+  userId: number;
+  email: string;
+  fullName: string;
+  phoneNumber?: string | null;
+  avatarUrl?: string | null;
+  status: "ACTIVE" | "INACTIVE" | "BANNED" | number | string;
+  statusName?: string;
+  createdAt: string;
+  lastLoginAt?: string | null;
+  roles: string[];
+  categoryAdminsCount?: number;
+  systemAdminsCount?: number;
+  regularUsersCount?: number;
+  categoryScopes?: AdminUserCategoryScope[];
+  provinceScopes?: AdminUserProvinceScope[];
+  regionScopes?: AdminUserRegionScope[];
+  managedCategories?: AdminUserCategoryScope[];
+  managedProvinces?: AdminUserProvinceScope[];
+  managedRegions?: AdminUserRegionScope[];
+}
+
+export interface AdminUsersMeta {
+  page: number;
+  size: number;
+  pageSize?: number;
+  totalElements: number;
+  totalCount?: number;
+  totalPages: number;
+  categoryAdminsCount?: number;
+  systemAdminsCount?: number;
+  regularUsersCount?: number;
+}
+
+export interface AdminUsersQueryParams {
+  role?: "USER" | "CATEGORY_ADMIN" | "SYSTEM_ADMIN" | string;
+  categoryId?: number;
+  provinceId?: number;
+  regionId?: number;
+  placeId?: number;
+  status?: string;
+  keyword?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface AdminUserDetail {
+  userId: number;
+  email: string;
+  fullName: string;
+  phoneNumber?: string | null;
+  avatarUrl?: string | null;
+  bio?: string | null;
+  status: number | string;
+  rankLevel?: string;
+  reputationScore?: number;
+  createdAt?: string;
+  lastLoginAt?: string;
+  roles: string[];
+  categoryScopes?: AdminUserCategoryScope[];
+  provinceScopes?: AdminUserProvinceScope[];
+  regionScopes?: AdminUserRegionScope[];
+  statistics?: {
+    totalApprovedPlaces?: number;
+    totalModeratedReviews?: number;
+    totalHandledReports?: number;
+  };
+}
+
+export interface AdminUserActivities {
+  reviews?: Array<{
+    id: number;
+    placeId?: number;
+    placeName: string;
+    category?: string;
+    province?: string;
+    rating: number;
+    content: string;
+    createdAt?: string;
+    likes?: number;
+    status?: string | number;
+  }>;
+  blogs?: Array<{
+    id: number;
+    title: string;
+    category?: string;
+    views?: number;
+    likes?: number;
+    publishedAt?: string;
+    readTime?: string;
+    status?: string | number;
+  }>;
+  trips?: Array<{
+    id: number;
+    title: string;
+    duration?: string;
+    placesCount?: number;
+    likes?: number;
+    createdAt?: string;
+    status?: string | number;
+  }>;
+  proposals?: Array<{
+    id: number;
+    placeName: string;
+    category?: string;
+    province?: string;
+    submittedAt?: string;
+    status?: number | string;
+    badgeColor?: string;
+  }>;
+}
+
+export interface AdminUserAccessHistoryItem {
+  id?: number | string;
+  logId?: string;
+  action: string;
+  targetType?: string;
+  targetId?: number;
+  target?: string;
+  targetName?: string;
+  category?: string;
+  province?: string;
+  time?: string;
+  timestamp?: string;
+  result?: string;
+  ip?: string;
+  ipAddress?: string;
+}
+
+export interface UpdateAdminUserScopesRequest {
+  categoryIds: number[];
+  provinceIds: number[];
+  regionIds?: number[];
+  note?: string;
+}
+

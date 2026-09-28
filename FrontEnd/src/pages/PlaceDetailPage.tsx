@@ -131,9 +131,13 @@ export const PlaceDetailPage = () => {
       if (isSaved) {
         await userService.removeFavorite(1, targetId)
         setIsSaved(false)
+        setShareToastMsg('Đã bỏ yêu thích địa điểm')
+        setTimeout(() => setShareToastMsg(null), 2500)
       } else {
         await userService.addFavorite(1, targetId)
         setIsSaved(true)
+        setShareToastMsg('Đã thêm địa điểm vào danh sách yêu thích!')
+        setTimeout(() => setShareToastMsg(null), 2500)
       }
     } catch {
       setIsSaved(!isSaved)
@@ -289,12 +293,22 @@ export const PlaceDetailPage = () => {
         </div>
       </div>
 
-      <ReportModal
-        isOpen={isReportOpen}
-        onClose={() => setIsReportOpen(false)}
-        placeId={place.id}
-        placeName={place.name}
-      />
+      {isReportOpen && (
+        <ReportModal
+          isOpen={isReportOpen}
+          onClose={() => setIsReportOpen(false)}
+          placeId={place.id}
+          placeName={place.name}
+          initialTarget={{
+            targetType: 'place',
+            targetId: place.id,
+            targetTitle: place.name,
+            targetSubtitle: place.address || place.regionName,
+            targetContent: place.description || place.detailedDescription || undefined,
+            targetRating: place.avgRating,
+          }}
+        />
+      )}
 
       <SharePlaceModal
         isOpen={isShareOpen}

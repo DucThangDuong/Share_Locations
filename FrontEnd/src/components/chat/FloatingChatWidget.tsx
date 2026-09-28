@@ -249,7 +249,11 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
     }
   }
 
-  const avatar = activeRoom?.avatarUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop'
+  const avatar =
+    activeRoom?.avatarUrl ||
+    (activeRoom?.isGroup
+      ? 'https://cdn.pixabay.com/photo/2016/11/14/17/39/group-1824145_1280.png'
+      : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop')
   const title = activeRoom?.name || 'Đoạn chat'
 
   return (
@@ -277,7 +281,11 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                 {chatHeadRooms.map((room) => {
                   const isToastTarget = incomingToast && incomingToast.roomId === room.roomId
                   const isCurrentActive = room.roomId === activeRoomId
-                  const headAvatar = room.avatarUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop'
+                  const headAvatar =
+                    room.avatarUrl ||
+                    (room.isGroup
+                      ? 'https://cdn.pixabay.com/photo/2016/11/14/17/39/group-1824145_1280.png'
+                      : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop')
                   const headTitle = room.name || 'Đoạn chat'
 
                   return (
@@ -431,7 +439,12 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                               }`}
                             >
                               <img
-                                src={item.avatarUrl || avatar}
+                                src={
+                                  item.avatarUrl ||
+                                  (item.isGroup
+                                    ? 'https://cdn.pixabay.com/photo/2016/11/14/17/39/group-1824145_1280.png'
+                                    : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop')
+                                }
                                 alt=""
                                 className="w-6 h-6 rounded-full object-cover"
                               />

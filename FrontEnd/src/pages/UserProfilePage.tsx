@@ -251,21 +251,24 @@ export const UserProfilePage: React.FC = () => {
       />
 
       {/* Report Modal */}
-      <ReportModal
-        placeName={profile.fullName}
-        placeId={profile.id}
-        initialTarget={{
-          targetType: 'place',
-          targetId: profile.id,
-          targetTitle: `Người dùng: ${profile.fullName}`
-        }}
-        isOpen={isReportModalOpen}
-        onClose={() => setIsReportModalOpen(false)}
-        onSubmittedReport={() => {
-          showToast('Đã gửi báo cáo vi phạm thành công')
-          setIsReportModalOpen(false)
-        }}
-      />
+      {isReportModalOpen && (
+        <ReportModal
+          placeName={profile.fullName}
+          placeId={profile.id}
+          initialTarget={{
+            targetType: 'user',
+            targetId: profile.id,
+            targetTitle: `Tài khoản: ${profile.fullName}`,
+            targetSubtitle: profile.bio || 'Hồ sơ người dùng',
+          }}
+          isOpen={isReportModalOpen}
+          onClose={() => setIsReportModalOpen(false)}
+          onSubmittedReport={() => {
+            showToast('Đã gửi báo cáo vi phạm thành công')
+            setIsReportModalOpen(false)
+          }}
+        />
+      )}
 
       {/* ── HEADER HERO SECTION (Tripadvisor Style) ── */}
       <UserProfileHeader

@@ -16,6 +16,18 @@ public class PaginationMeta
     [JsonPropertyName("totalPages")]
     public int TotalPages { get; set; }
 
+    [JsonPropertyName("categoryAdminsCount")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public int CategoryAdminsCount { get; set; }
+
+    [JsonPropertyName("systemAdminsCount")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public int SystemAdminsCount { get; set; }
+
+    [JsonPropertyName("regularUsersCount")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public int RegularUsersCount { get; set; }
+
     public PaginationMeta() { }
 
     public PaginationMeta(int page, int size, long totalElements)
@@ -24,6 +36,20 @@ public class PaginationMeta
         Size = size;
         TotalElements = totalElements;
         TotalPages = size > 0 ? (int)Math.Ceiling((double)totalElements / size) : 0;
+    }
+
+    public PaginationMeta(
+        int page,
+        int size,
+        long totalElements,
+        int categoryAdminsCount = 0,
+        int systemAdminsCount = 0,
+        int regularUsersCount = 0)
+        : this(page, size, totalElements)
+    {
+        CategoryAdminsCount = categoryAdminsCount;
+        SystemAdminsCount = systemAdminsCount;
+        RegularUsersCount = regularUsersCount;
     }
 }
 

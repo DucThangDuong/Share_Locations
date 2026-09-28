@@ -165,7 +165,7 @@ export const UserUtilityDrawer: React.FC<UserUtilityDrawerProps> = ({
       },
       {
         key: 'blogs',
-        title: 'Bài viết',
+        title: 'Cẩm nang',
         subtitle: 'Cẩm nang du lịch và kinh nghiệm khám phá',
         icon: Newspaper,
         iconColor: 'text-teal-800',
@@ -244,11 +244,11 @@ export const UserUtilityDrawer: React.FC<UserUtilityDrawerProps> = ({
                   </h3>
                   <p className="text-xs text-slate-400 truncate mt-0.5">{email}</p>
                   <Link
-                    to="/settings"
+                    to={user?.id ? `/user/${user.id}` : '/profile'}
                     onClick={onClose}
                     className="mt-1 text-[11px] font-bold text-emerald-800 hover:text-emerald-900 flex items-center gap-1 inline-flex hover:underline"
                   >
-                    <span>Quản lý tài khoản</span>
+                    <span>Xem trang cá nhân</span>
                     <ChevronRight size={12} />
                   </Link>
                 </div>

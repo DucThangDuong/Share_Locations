@@ -1,4 +1,5 @@
 using Application.Common;
+using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs.Admin;
 using Dapper;
@@ -11,10 +12,12 @@ namespace Infrastructure.Persistence.Repositories;
 public class AdminReportRepository : IAdminReportRepository
 {
     private readonly TravelReviewDbContext _dbContext;
+    private readonly ICurrentUserService _currentUserService;
 
-    public AdminReportRepository(TravelReviewDbContext dbContext)
+    public AdminReportRepository(TravelReviewDbContext dbContext, ICurrentUserService currentUserService)
     {
         _dbContext = dbContext;
+        _currentUserService = currentUserService;
     }
 
     public async Task<IReadOnlyList<ReportReasonDto>> GetReportReasonsAsync(string? targetType = null, CancellationToken ct = default)
@@ -212,7 +215,10 @@ public class AdminReportRepository : IAdminReportRepository
                     pr.ResolvedBy AS AssignedToAdminId,
                     COALESCE(adminProf.FullName, adminU.Email) AS AssignedToAdminName,
                     prov.Name AS Province,
-                    cat.Name AS Category
+                    cat.Name AS Category,
+                    p.CategoryId AS ScopeCategoryId,
+                    p.ProvinceId AS ScopeProvinceId,
+                    prov.RegionId AS ScopeRegionId
                 FROM dbo.PlaceReports pr
                 LEFT JOIN dbo.Places p ON pr.PlaceId = p.Id
                 LEFT JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id
@@ -251,7 +257,10 @@ public class AdminReportRepository : IAdminReportRepository
                     rr.ResolvedBy AS AssignedToAdminId,
                     COALESCE(adminProf.FullName, adminU.Email) AS AssignedToAdminName,
                     prov.Name AS Province,
-                    cat.Name AS Category
+                    cat.Name AS Category,
+                    p.CategoryId AS ScopeCategoryId,
+                    p.ProvinceId AS ScopeProvinceId,
+                    prov.RegionId AS ScopeRegionId
                 FROM dbo.ReviewReports rr
                 LEFT JOIN dbo.Reviews r ON rr.ReviewId = r.Id
                 LEFT JOIN dbo.Places p ON r.PlaceId = p.Id
@@ -286,10 +295,17 @@ public class AdminReportRepository : IAdminReportRepository
                     CAST(cr.Status AS INT) AS Status,
                     cr.ResolvedBy AS AssignedToAdminId,
                     COALESCE(adminProf.FullName, adminU.Email) AS AssignedToAdminName,
-                    NULL AS Province,
-                    NULL AS Category
+                    prov.Name AS Province,
+                    cat.Name AS Category,
+                    p.CategoryId AS ScopeCategoryId,
+                    p.ProvinceId AS ScopeProvinceId,
+                    prov.RegionId AS ScopeRegionId
                 FROM dbo.CommentReports cr
                 LEFT JOIN dbo.Comments c ON cr.CommentId = c.Id
+                LEFT JOIN dbo.Reviews r ON c.ReviewId = r.Id
+                LEFT JOIN dbo.Places p ON r.PlaceId = p.Id
+                LEFT JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id
+                LEFT JOIN dbo.Categories cat ON p.CategoryId = cat.Id
                 LEFT JOIN dbo.ReportTypes rt ON cr.ReportTypeId = rt.Id
                 LEFT JOIN dbo.Users u ON cr.ReporterId = u.Id
                 LEFT JOIN dbo.UserProfiles prof ON u.Id = prof.UserId
@@ -320,7 +336,10 @@ public class AdminReportRepository : IAdminReportRepository
                     br.ResolvedBy AS AssignedToAdminId,
                     COALESCE(adminProf.FullName, adminU.Email) AS AssignedToAdminName,
                     NULL AS Province,
-                    cat.Name AS Category
+                    cat.Name AS Category,
+                    b.CategoryId AS ScopeCategoryId,
+                    CAST(NULL AS INT) AS ScopeProvinceId,
+                    CAST(NULL AS INT) AS ScopeRegionId
                 FROM dbo.BlogReports br
                 LEFT JOIN dbo.Blogs b ON br.BlogId = b.Id
                 LEFT JOIN dbo.Categories cat ON b.CategoryId = cat.Id
@@ -333,6 +352,44 @@ public class AdminReportRepository : IAdminReportRepository
 
         var whereClauses = new List<string>();
         var parameters = new DynamicParameters();
+
+        // Áp dụng giới hạn phân quyền theo Scope của Admin cấp 1
+        if (!_currentUserService.IsSystemAdmin)
+        {
+            var catScopes = _currentUserService.CategoryScopes;
+            var provScopes = _currentUserService.ProvinceScopes;
+            var regScopes = _currentUserService.RegionScopes;
+
+            if (catScopes.Count == 0 && provScopes.Count == 0 && regScopes.Count == 0)
+            {
+                whereClauses.Add("1 = 0");
+            }
+            else
+            {
+                if (catScopes.Count > 0)
+                {
+                    whereClauses.Add("ScopeCategoryId IN @ScopeCategoryIds");
+                    parameters.Add("ScopeCategoryIds", catScopes);
+                }
+
+                if (provScopes.Count > 0 && regScopes.Count > 0)
+                {
+                    whereClauses.Add("(ScopeProvinceId IN @ScopeProvinceIds OR ScopeRegionId IN @ScopeRegionIds)");
+                    parameters.Add("ScopeProvinceIds", provScopes);
+                    parameters.Add("ScopeRegionIds", regScopes);
+                }
+                else if (provScopes.Count > 0)
+                {
+                    whereClauses.Add("ScopeProvinceId IN @ScopeProvinceIds");
+                    parameters.Add("ScopeProvinceIds", provScopes);
+                }
+                else if (regScopes.Count > 0)
+                {
+                    whereClauses.Add("ScopeRegionId IN @ScopeRegionIds");
+                    parameters.Add("ScopeRegionIds", regScopes);
+                }
+            }
+        }
 
         if (!string.IsNullOrWhiteSpace(targetType) && targetType.ToLowerInvariant() != "all")
         {
@@ -427,6 +484,7 @@ public class AdminReportRepository : IAdminReportRepository
             case "place":
                 var placeReport = await _dbContext.PlaceReports.FirstOrDefaultAsync(r => r.Id == reportId, ct);
                 if (placeReport == null) return false;
+                if (!await IsTargetInScopeAsync("place", placeReport.PlaceId)) return false;
                 placeReport.Resolve(adminId, status);
                 if (status == ReportStatus.Resolved && actionTaken == "hide_target")
                 {
@@ -438,6 +496,7 @@ public class AdminReportRepository : IAdminReportRepository
             case "review":
                 var reviewReport = await _dbContext.ReviewReports.FirstOrDefaultAsync(r => r.Id == reportId, ct);
                 if (reviewReport == null) return false;
+                if (!await IsTargetInScopeAsync("review", reviewReport.ReviewId)) return false;
                 reviewReport.Resolve(adminId, status);
                 if (status == ReportStatus.Resolved && (actionTaken == "hide_target" || actionTaken == "delete_permanently"))
                 {
@@ -453,6 +512,7 @@ public class AdminReportRepository : IAdminReportRepository
             case "comment":
                 var commentReport = await _dbContext.CommentReports.FirstOrDefaultAsync(r => r.Id == reportId, ct);
                 if (commentReport == null) return false;
+                if (!await IsTargetInScopeAsync("comment", commentReport.CommentId)) return false;
                 commentReport.Resolve(adminId, status);
                 if (status == ReportStatus.Resolved && actionTaken == "hide_target")
                 {
@@ -464,6 +524,7 @@ public class AdminReportRepository : IAdminReportRepository
             case "blog":
                 var blogReport = await _dbContext.BlogReports.FirstOrDefaultAsync(r => r.Id == reportId, ct);
                 if (blogReport == null) return false;
+                if (!await IsTargetInScopeAsync("blog", blogReport.BlogId)) return false;
                 blogReport.Resolve(adminId, status);
                 if (status == ReportStatus.Resolved && actionTaken == "hide_target")
                 {
@@ -489,6 +550,8 @@ public class AdminReportRepository : IAdminReportRepository
         string? resolutionNote,
         CancellationToken ct = default)
     {
+        if (!await IsTargetInScopeAsync(targetType, targetId)) return false;
+
         switch (targetType.Trim().ToLowerInvariant())
         {
             case "place":
@@ -541,6 +604,34 @@ public class AdminReportRepository : IAdminReportRepository
 
         await _dbContext.SaveChangesAsync(ct);
         return true;
+    }
+
+    private async Task<bool> IsTargetInScopeAsync(string targetType, long targetId)
+    {
+        if (_currentUserService.IsSystemAdmin) return true;
+        var connection = _dbContext.Database.GetDbConnection();
+
+        switch (targetType.Trim().ToLowerInvariant())
+        {
+            case "place":
+                return await AdminScopeFilterHelper.IsPlaceInScopeAsync(_currentUserService, connection, targetId);
+
+            case "review":
+                const string revSql = "SELECT PlaceId FROM dbo.Reviews WHERE Id = @Id;";
+                var placeId = await connection.QueryFirstOrDefaultAsync<long?>(revSql, new { Id = targetId });
+                return placeId.HasValue && await AdminScopeFilterHelper.IsPlaceInScopeAsync(_currentUserService, connection, placeId.Value);
+
+            case "comment":
+                const string comSql = "SELECT r.PlaceId FROM dbo.Comments c JOIN dbo.Reviews r ON c.ReviewId = r.Id WHERE c.Id = @Id;";
+                var comPlaceId = await connection.QueryFirstOrDefaultAsync<long?>(comSql, new { Id = targetId });
+                return comPlaceId.HasValue && await AdminScopeFilterHelper.IsPlaceInScopeAsync(_currentUserService, connection, comPlaceId.Value);
+
+            case "blog":
+                return await AdminScopeFilterHelper.IsBlogInScopeAsync(_currentUserService, connection, targetId);
+
+            default:
+                return false;
+        }
     }
 
     private async Task RecalculatePlaceRatingAsync(long placeId, CancellationToken ct)

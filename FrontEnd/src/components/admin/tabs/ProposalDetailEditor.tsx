@@ -20,10 +20,8 @@ import {
   Save,
   Globe,
   Phone,
-  Link as LinkIcon,
   X,
   User,
-  MessageSquareQuote,
 } from "lucide-react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -143,9 +141,9 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
   // Description & Note
   const [description, setDescription] = useState(
     proposal.proposedData.description ||
-      "Địa điểm ẩm thực và trải nghiệm được người dùng đề xuất đóng góp vào bản đồ du lịch LangThang."
+    "Địa điểm ẩm thực và trải nghiệm được người dùng đề xuất đóng góp vào bản đồ du lịch LangThang."
   );
-  const [contributorNote, setContributorNote] = useState(proposal.note || "");
+  const contributorNote = proposal.note;
 
   // Images
   const [images, setImages] = useState<string[]>(() => {
@@ -155,7 +153,6 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
       "https://images.unsplash.com/photo-1541544741938-0af808871cc0?w=800&h=600&fit=crop",
     ];
   });
-  const [newImageUrl, setNewImageUrl] = useState("");
   const [activePreviewImgIndex, setActivePreviewImgIndex] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -311,12 +308,6 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
     });
   };
 
-  const handleAddImageUrl = () => {
-    if (!newImageUrl.trim()) return;
-    setImages((prev) => [...prev, newImageUrl.trim()]);
-    setNewImageUrl("");
-  };
-
   const handleRemoveImage = (index: number) => {
     setImages((prev) => {
       const next = prev.filter((_, idx) => idx !== index);
@@ -360,9 +351,9 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
     const priceFormatted = isFree
       ? "Miễn phí vé"
       : `${parseInt(minPrice || "0", 10).toLocaleString("vi-VN")}đ – ${parseInt(
-          maxPrice || "0",
-          10
-        ).toLocaleString("vi-VN")}đ`;
+        maxPrice || "0",
+        10
+      ).toLocaleString("vi-VN")}đ`;
 
     const hoursFormatted = is24Hours ? "Mở cửa cả ngày (24/7)" : `${openTime} – ${closeTime}`;
 
@@ -411,7 +402,7 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
             title="Quay lại danh sách đề xuất"
           >
             <ArrowLeft size={15} />
-            <span className="hidden sm:inline">Quay lại đề xuất</span>
+            <span className="hidden sm:inline">Quay lại</span>
           </button>
 
           <div>
@@ -420,13 +411,12 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
                 {placeName || proposal.placeName}
               </h2>
               <span
-                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                  status === 0
-                    ? "bg-amber-100 text-amber-800"
-                    : status === 1
+                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold ${status === 0
+                  ? "bg-amber-100 text-amber-800"
+                  : status === 1
                     ? "bg-emerald-100 text-emerald-800"
                     : "bg-rose-100 text-rose-800"
-                }`}
+                  }`}
               >
                 {status === 0 ? "Chờ duyệt" : status === 1 ? "Đã chấp nhận" : "Đã từ chối"}
               </span>
@@ -783,21 +773,6 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
                   className="w-full p-3.5 rounded-2xl bg-slate-50/80 border border-slate-200 text-xs sm:text-sm text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-700 leading-relaxed"
                 />
               </div>
-
-              {/* Contributor Note Box */}
-              <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 space-y-2">
-                <label className="block text-xs font-bold text-amber-900 flex items-center gap-1.5">
-                  <MessageSquareQuote className="w-4 h-4 text-amber-600" />
-                  <span>Ghi chú của người gửi đề xuất ({proposal.proposedBy})</span>
-                </label>
-                <textarea
-                  rows={2}
-                  placeholder="Ghi chú thêm từ người đóng góp..."
-                  value={contributorNote}
-                  onChange={(e) => setContributorNote(e.target.value)}
-                  className="w-full p-3 rounded-xl bg-white border border-amber-200 text-xs text-slate-800 focus:outline-none focus:border-amber-500 leading-relaxed font-medium"
-                />
-              </div>
             </div>
 
             {/* Section 4: Image Gallery & Uploads */}
@@ -824,11 +799,10 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
                 }}
                 onDragLeave={() => setIsDragging(false)}
                 onDrop={handleDropFiles}
-                className={`p-6 border-2 border-dashed rounded-2xl text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2.5 ${
-                  isDragging
-                    ? "border-emerald-600 bg-emerald-50/80 text-emerald-800 ring-2 ring-emerald-500/30"
-                    : "border-slate-300 hover:border-emerald-600 hover:bg-slate-50 text-slate-600"
-                }`}
+                className={`p-6 border-2 border-dashed rounded-2xl text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2.5 ${isDragging
+                  ? "border-emerald-600 bg-emerald-50/80 text-emerald-800 ring-2 ring-emerald-500/30"
+                  : "border-slate-300 hover:border-emerald-600 hover:bg-slate-50 text-slate-600"
+                  }`}
               >
                 <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center shadow-xs">
                   <UploadCloud className="w-6 h-6" />
@@ -841,33 +815,6 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
                     Hỗ trợ định dạng JPG, PNG, WEBP, JPEG
                   </p>
                 </div>
-              </div>
-
-              {/* Quick URL Adder */}
-              <div className="flex items-center gap-2 pt-1">
-                <div className="relative flex-1">
-                  <LinkIcon className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="text"
-                    placeholder="Hoặc thêm URL ảnh đính kèm (https://...)..."
-                    value={newImageUrl}
-                    onChange={(e) => setNewImageUrl(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        handleAddImageUrl();
-                      }
-                    }}
-                    className="w-full pl-8 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 focus:outline-none focus:bg-white focus:border-emerald-700"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={handleAddImageUrl}
-                  className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs cursor-pointer transition-colors"
-                >
-                  Thêm URL
-                </button>
               </div>
 
               <div className="space-y-4 pt-2">
@@ -920,44 +867,8 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
                 </div>
               </div>
             </div>
-
-            {/* Bottom Action Card */}
-            <div className="p-6 bg-white rounded-3xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="text-xs text-slate-500">
-                Sau khi phê duyệt, địa điểm sẽ tự động được đưa vào danh sách quản lý và hiển thị công khai trên ứng dụng.
-              </div>
-
-              <div className="flex items-center gap-2.5 w-full sm:w-auto">
-                <button
-                  type="button"
-                  onClick={onBack}
-                  className="flex-1 sm:flex-none px-5 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer transition-all text-center"
-                >
-                  Quay lại
-                </button>
-
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="flex-1 sm:flex-none px-7 py-3 rounded-2xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 cursor-pointer transition-all shadow-md disabled:opacity-50"
-                >
-                  {isSaving ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Đang lưu...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Save className="w-4 h-4" />
-                      <span>Lưu thông tin đề xuất</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
           </div>
 
-          {/* Right Column (4 cols, sticky): Live Preview Card & Contributor Meta */}
           <div className="lg:col-span-4 space-y-6 sticky top-6">
             {/* Live Preview Card */}
             <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-4">
@@ -1096,8 +1007,8 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
                     {proposal.type === "new_place"
                       ? "Thêm địa điểm mới"
                       : proposal.type === "update_info"
-                      ? "Cập nhật thông tin"
-                      : "Sửa lỗi sai"}
+                        ? "Cập nhật thông tin"
+                        : "Sửa lỗi sai"}
                   </span>
                 </div>
                 <div className="flex items-center justify-between p-2.5 bg-slate-50/60 rounded-xl">

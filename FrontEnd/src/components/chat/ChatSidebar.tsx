@@ -163,7 +163,9 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
             const isUnread = item.unreadCount > 0
             const avatarUrl =
               item.avatarUrl ||
-              'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop'
+              (item.isGroup
+                ? 'https://cdn.pixabay.com/photo/2016/11/14/17/39/group-1824145_1280.png'
+                : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop')
 
             return (
               <div

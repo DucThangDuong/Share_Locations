@@ -1,4 +1,5 @@
 using Application.Common;
+using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs.Admin;
 using Dapper;
@@ -11,10 +12,12 @@ namespace Infrastructure.Persistence.Repositories;
 public class AdminBlogRepository : IAdminBlogRepository
 {
     private readonly TravelReviewDbContext _dbContext;
+    private readonly ICurrentUserService _currentUserService;
 
-    public AdminBlogRepository(TravelReviewDbContext dbContext)
+    public AdminBlogRepository(TravelReviewDbContext dbContext, ICurrentUserService currentUserService)
     {
         _dbContext = dbContext;
+        _currentUserService = currentUserService;
     }
 
     public async Task<PagedResult<AdminBlogListItemDto>> GetAdminBlogsAsync(
@@ -27,6 +30,9 @@ public class AdminBlogRepository : IAdminBlogRepository
     {
         var whereClauses = new List<string>();
         var parameters = new DynamicParameters();
+
+        // Áp dụng giới hạn phân quyền theo Category Scope của Admin cấp 1
+        AdminScopeFilterHelper.ApplyBlogScope(_currentUserService, whereClauses, parameters, "b");
 
         if (categoryId.HasValue && categoryId.Value > 0)
         {
@@ -160,6 +166,8 @@ public class AdminBlogRepository : IAdminBlogRepository
         return await strategy.ExecuteAsync(async () =>
         {
             var connection = _dbContext.Database.GetDbConnection();
+            if (!await AdminScopeFilterHelper.IsBlogInScopeAsync(_currentUserService, connection, id))
+                return null;
             var command=new CommandDefinition(sql,new {Id=id},cancellationToken: ct);
             return await connection.QueryFirstOrDefaultAsync<AdminBlogDetailDto>(command);
         });
@@ -188,6 +196,9 @@ public class AdminBlogRepository : IAdminBlogRepository
 
     public async Task<bool> UpdateAdminBlogAsync(long id, UpdateAdminBlogInput input, CancellationToken ct = default)
     {
+        if (!await AdminScopeFilterHelper.IsBlogInScopeAsync(_currentUserService, _dbContext.Database.GetDbConnection(), id))
+            return false;
+
         var blog = await _dbContext.Blogs.FirstOrDefaultAsync(b => b.Id == id, ct);
         if (blog == null) return false;
 
@@ -210,6 +221,9 @@ public class AdminBlogRepository : IAdminBlogRepository
 
     public async Task<bool> UpdateAdminBlogStatusAsync(long id, string status, CancellationToken ct = default)
     {
+        if (!await AdminScopeFilterHelper.IsBlogInScopeAsync(_currentUserService, _dbContext.Database.GetDbConnection(), id))
+            return false;
+
         var blog = await _dbContext.Blogs.FirstOrDefaultAsync(b => b.Id == id, ct);
         if (blog == null) return false;
 
@@ -224,6 +238,9 @@ public class AdminBlogRepository : IAdminBlogRepository
 
     public async Task<bool> DeleteAdminBlogAsync(long id, CancellationToken ct = default)
     {
+        if (!await AdminScopeFilterHelper.IsBlogInScopeAsync(_currentUserService, _dbContext.Database.GetDbConnection(), id))
+            return false;
+
         var blog = await _dbContext.Blogs.FirstOrDefaultAsync(b => b.Id == id, ct);
         if (blog == null) return false;
 

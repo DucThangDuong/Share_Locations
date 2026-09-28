@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { adminService, extractList, type AdminMetrics } from "@/services/adminService";
+import { isUserAdmin } from "@/utils/authUtils";
 import type {
   AdminMainTab,
   PlaceReviewItem,
@@ -11,6 +12,7 @@ import type {
   AdminProposalItem,
   AdminFoodItem,
   AdminBlogItem,
+  AdminUserItem,
 } from "@/types/admin.types";
 
 // Modular Admin Components
@@ -21,6 +23,7 @@ import { AddPlaceModal } from "@/components/admin/modals/AddPlaceModal";
 
 // Modular Tabs
 import { DashboardTab } from "@/components/admin/tabs/DashboardTab";
+import { UsersTab } from "@/components/admin/tabs/UsersTab";
 import { PlacesTab } from "@/components/admin/tabs/PlacesTab";
 import { ProposalsTab } from "@/components/admin/tabs/ProposalsTab";
 import { ReviewsCommentsTab } from "@/components/admin/tabs/ReviewsCommentsTab";
@@ -37,6 +40,13 @@ import {
 
 export const AdminPage: React.FC = () => {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isUserAdmin()) {
+      navigate('/', { replace: true });
+    }
+  }, [navigate]);
+
   const storedAdmin = (() => {
     try {
       return JSON.parse(localStorage.getItem("user_info") || "{}");
@@ -69,6 +79,35 @@ export const AdminPage: React.FC = () => {
   const [dashboardMetrics, setDashboardMetrics] = useState<AdminMetrics | null>(null);
 
   // Core Data Stores
+  const [usersList, setUsersList] = useState<AdminUserItem[]>([]);
+  const [isUsersLoading, setIsUsersLoading] = useState(false);
+  const [userFilters, setUserFilters] = useState<{
+    role?: string;
+    status?: string;
+    keyword?: string;
+    categoryId?: number;
+    provinceId?: number;
+    regionId?: number;
+    page?: number;
+    pageSize?: number;
+  }>({ page: 1, pageSize: 20 });
+  const [usersPagination, setUsersPagination] = useState<{
+    page: number;
+    pageSize: number;
+    totalCount: number;
+    totalPages: number;
+    categoryAdminsCount?: number;
+    systemAdminsCount?: number;
+    regularUsersCount?: number;
+  }>({
+    page: 1,
+    pageSize: 20,
+    totalCount: 0,
+    totalPages: 1,
+    categoryAdminsCount: 0,
+    systemAdminsCount: 0,
+    regularUsersCount: 0,
+  });
   const [placesList, setPlacesList] = useState<any[]>([]);
   const [proposals, setProposals] = useState<AdminProposalItem[]>([]);
   const [reports, setReports] = useState<AdminReportItem[]>([]);
@@ -94,7 +133,7 @@ export const AdminPage: React.FC = () => {
   // Reports Queue State
   const [reportSubTab, setReportSubTab] = useState<"all" | "urgent" | "assigned_to_me" | "resolved">("all");
   const [reportTargetTypeFilter, setReportTargetTypeFilter] = useState<"all" | "place" | "review" | "comment" | "blog" | "photo">("all");
-  const [reportPriorityFilter, setReportPriorityFilter] = useState<"all" | "urgent" | "high" | "normal" | "low">("all");
+  const [reportPriorityFilter] = useState<"all" | "urgent" | "high" | "normal" | "low">("all");
   const [reportProvinceFilter, setReportProvinceFilter] = useState("all");
   const [reportSearchText, setReportSearchText] = useState("");
   const [reportCurrentPage, setReportCurrentPage] = useState(1);
@@ -129,6 +168,7 @@ export const AdminPage: React.FC = () => {
   const currentPlace = placesList.find((p) => p.id === selectedPlaceId) || null;
 
   useEffect(() => {
+    if (!isUserAdmin()) return;
     let cancelled = false;
     const page = { page: 1, pageSize: 50 };
 
@@ -139,6 +179,64 @@ export const AdminPage: React.FC = () => {
             const res = await adminService.getMetrics();
             if (!cancelled && res?.data) {
               setDashboardMetrics(res.data);
+            }
+            break;
+          }
+          case "users": {
+            setIsUsersLoading(true);
+            try {
+              const res: any = await adminService.getUsers(userFilters as Record<string, unknown>);
+              if (!cancelled) {
+                const list = extractList<AdminUserItem>(res?.data || res);
+                setUsersList(list);
+
+                const meta = res?.meta || res?.pagination || {};
+                const firstItem = (list[0] || {}) as any;
+
+                const page = Number(meta.page || userFilters.page || 1);
+                const pageSize = Number(meta.size || meta.pageSize || userFilters.pageSize || 20);
+                const totalCount = Number(
+                  meta.totalElements ??
+                  meta.totalCount ??
+                  meta.total ??
+                  res?.totalCount ??
+                  res?.totalElements ??
+                  list.length
+                );
+                const totalPages = Number(
+                  meta.totalPages ??
+                  Math.max(1, Math.ceil(totalCount / pageSize))
+                );
+                const categoryAdminsCount = Number(
+                  meta.categoryAdminsCount ??
+                  firstItem?.categoryAdminsCount ??
+                  0
+                );
+                const systemAdminsCount = Number(
+                  meta.systemAdminsCount ??
+                  firstItem?.systemAdminsCount ??
+                  0
+                );
+                const regularUsersCount = Number(
+                  meta.regularUsersCount ??
+                  firstItem?.regularUsersCount ??
+                  0
+                );
+
+                setUsersPagination({
+                  page,
+                  pageSize,
+                  totalCount,
+                  totalPages,
+                  categoryAdminsCount,
+                  systemAdminsCount,
+                  regularUsersCount,
+                });
+              }
+            } catch {
+              if (!cancelled) setUsersList([]);
+            } finally {
+              if (!cancelled) setIsUsersLoading(false);
             }
             break;
           }
@@ -246,9 +344,9 @@ export const AdminPage: React.FC = () => {
             break;
           }
           case "reports": {
-            const result = await adminService.getReports({ ...page, status: "Pending" });
+            const result = await adminService.getReports(page);
             if (!cancelled) {
-              const rawReports = extractList(result?.data);
+              const rawReports = extractList(result?.data || result);
               setReports(
                 rawReports.map((item: any) => {
                   const isPending =
@@ -362,8 +460,8 @@ export const AdminPage: React.FC = () => {
                     item.priceRange ||
                     (item.minPrice
                       ? `${Number(item.minPrice).toLocaleString("vi-VN")}đ – ${Number(
-                          item.maxPrice || item.minPrice
-                        ).toLocaleString("vi-VN")}đ`
+                        item.maxPrice || item.minPrice
+                      ).toLocaleString("vi-VN")}đ`
                       : ""),
                   createdAt: item.createdAt || "",
                 } as AdminFoodItem))
@@ -434,7 +532,7 @@ export const AdminPage: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [mainTab]);
+  }, [mainTab, userFilters]);
 
   // ── AUDIT LOG HELPER ──
   const addAuditLog = (
@@ -559,38 +657,38 @@ export const AdminPage: React.FC = () => {
   // Grouped active report calculation for drawer
   const activeReportGroup: GroupedReport | null = activeReportGroupKey
     ? (() => {
-        const [targetType, targetIdStr] = activeReportGroupKey.split("_");
-        const targetId = Number(targetIdStr);
-        const groupReports = reports.filter(
-          (r) => r.targetType === targetType && r.targetId === targetId
-        );
+      const [targetType, targetIdStr] = activeReportGroupKey.split("_");
+      const targetId = Number(targetIdStr);
+      const groupReports = reports.filter(
+        (r) => r.targetType === targetType && r.targetId === targetId
+      );
 
-        if (groupReports.length === 0) return null;
+      if (groupReports.length === 0) return null;
 
-        const first = groupReports[0];
-        const isUrgent = groupReports.some((r) => r.priority === "urgent" || r.slaStatus === "breached");
-        const isHigh = groupReports.some((r) => r.priority === "high");
+      const first = groupReports[0];
+      const isUrgent = groupReports.some((r) => r.priority === "urgent" || r.slaStatus === "breached");
+      const isHigh = groupReports.some((r) => r.priority === "high");
 
-        return {
-          groupKey: activeReportGroupKey,
-          targetType: first.targetType,
-          targetId: first.targetId,
-          targetTitle: first.targetTitle,
-          targetSubtitle: first.targetSubtitle,
-          targetContent: first.targetContent,
-          targetRating: first.targetRating,
-          province: first.province,
-          category: first.category,
-          reportsCount: groupReports.length,
-          reportsList: groupReports,
-          highestPriority: isUrgent ? "urgent" : isHigh ? "high" : "normal",
-          latestReportTime: first.submittedAt,
-          assignedAdminId: first.assignedToAdminId,
-          assignedAdminName: first.assignedToAdminName,
-          hasUnresolvedUrgent: isUrgent,
-          status: first.status,
-        };
-      })()
+      return {
+        groupKey: activeReportGroupKey,
+        targetType: first.targetType,
+        targetId: first.targetId,
+        targetTitle: first.targetTitle,
+        targetSubtitle: first.targetSubtitle,
+        targetContent: first.targetContent,
+        targetRating: first.targetRating,
+        province: first.province,
+        category: first.category,
+        reportsCount: groupReports.length,
+        reportsList: groupReports,
+        highestPriority: isUrgent ? "urgent" : isHigh ? "high" : "normal",
+        latestReportTime: first.submittedAt,
+        assignedAdminId: first.assignedToAdminId,
+        assignedAdminName: first.assignedToAdminName,
+        hasUnresolvedUrgent: isUrgent,
+        status: first.status,
+      };
+    })()
     : null;
 
   // Drawer Confirm Resolution
@@ -663,10 +761,10 @@ export const AdminPage: React.FC = () => {
       prev.map((r) =>
         selectedReportRowIds.includes(r.id)
           ? {
-              ...r,
-              assignedToAdminId: currentAdminInfo.adminId,
-              assignedToAdminName: currentAdminInfo.adminName,
-            }
+            ...r,
+            assignedToAdminId: currentAdminInfo.adminId,
+            assignedToAdminName: currentAdminInfo.adminName,
+          }
           : r
       )
     );
@@ -679,10 +777,10 @@ export const AdminPage: React.FC = () => {
       prev.map((r) =>
         selectedReportRowIds.includes(r.id)
           ? {
-              ...r,
-              status: 2,
-              resolutionAction: "Bác bỏ hàng loạt",
-            }
+            ...r,
+            status: 2,
+            resolutionAction: "Bác bỏ hàng loạt",
+          }
           : r
       )
     );
@@ -690,8 +788,12 @@ export const AdminPage: React.FC = () => {
     setSelectedReportRowIds([]);
   };
 
+  if (!isUserAdmin()) {
+    return null;
+  }
+
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900">
+    <div className="h-screen bg-slate-50 flex flex-col font-sans text-slate-900 overflow-hidden">
       {/* Toast popup */}
       {toastMsg && (
         <div className="fixed bottom-6 right-6 z-[99999] bg-slate-900 text-white px-4 py-2.5 rounded-xl shadow-xl border border-slate-700 text-xs font-semibold flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2">
@@ -766,6 +868,22 @@ export const AdminPage: React.FC = () => {
                 />
               )}
 
+              {mainTab === "users" && (
+                <UsersTab
+                  usersList={usersList}
+                  isLoading={isUsersLoading}
+                  pagination={usersPagination}
+                  onPageChange={(p) => {
+                    setUserFilters((prev) => ({ ...prev, page: p }));
+                  }}
+                  onFilterChange={(newFilters) => {
+                    setUserFilters((prev) => ({ ...prev, ...newFilters, page: 1 }));
+                  }}
+                  currentFilters={userFilters}
+                  showToast={showToast}
+                />
+              )}
+
               {mainTab === "places" && (
                 <PlacesTab
                   placesList={placesList}
@@ -814,11 +932,9 @@ export const AdminPage: React.FC = () => {
                 <ReportsTab
                   reports={reports}
                   reportSubTab={reportSubTab}
-                  setReportSubTab={setReportSubTab}
                   reportTargetTypeFilter={reportTargetTypeFilter}
                   setReportTargetTypeFilter={setReportTargetTypeFilter}
                   reportPriorityFilter={reportPriorityFilter}
-                  setReportPriorityFilter={setReportPriorityFilter}
                   reportProvinceFilter={reportProvinceFilter}
                   setReportProvinceFilter={setReportProvinceFilter}
                   reportSearchText={reportSearchText}

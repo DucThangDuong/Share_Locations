@@ -1,4 +1,5 @@
 using Application.Common;
+using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs.Admin;
 using Dapper;
@@ -10,10 +11,12 @@ namespace Infrastructure.Persistence.Repositories;
 public class AdminReviewRepository : IAdminReviewRepository
 {
     private readonly TravelReviewDbContext _dbContext;
+    private readonly ICurrentUserService _currentUserService;
 
-    public AdminReviewRepository(TravelReviewDbContext dbContext)
+    public AdminReviewRepository(TravelReviewDbContext dbContext, ICurrentUserService currentUserService)
     {
         _dbContext = dbContext;
+        _currentUserService = currentUserService;
     }
 
     public async Task<PagedResult<AdminReviewItemDto>> GetAdminReviewsAsync(
@@ -29,6 +32,9 @@ public class AdminReviewRepository : IAdminReviewRepository
 
         var whereClauses = new List<string>();
         var parameters = new DynamicParameters();
+
+        // Áp dụng giới hạn phân quyền theo Scope của Admin cấp 1
+        AdminScopeFilterHelper.ApplyPlaceScope(_currentUserService, whereClauses, parameters, "p", "prov");
 
         if (hasReportsOnly == true)
         {
@@ -59,6 +65,7 @@ public class AdminReviewRepository : IAdminReviewRepository
             SELECT COUNT(1)
             FROM dbo.Reviews r
             LEFT JOIN dbo.Places p ON r.PlaceId = p.Id
+            LEFT JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id
             LEFT JOIN dbo.Users u ON r.UserId = u.Id
             LEFT JOIN dbo.UserProfiles prof ON u.Id = prof.UserId
             {whereSql};";
@@ -99,7 +106,7 @@ public class AdminReviewRepository : IAdminReviewRepository
         if (items.Count > 0)
         {
             var reviewIds = items.Select(x => x.Id).ToList();
-            const string mediaSql = "SELECT ReviewId, MediaUrl FROM dbo.ReviewMedia WHERE ReviewId IN @ReviewIds;";
+            const string mediaSql = "SELECT ReviewId, Url AS MediaUrl FROM dbo.ReviewMedia WHERE ReviewId IN @ReviewIds ORDER BY DisplayOrder, Id;";
             var mediaRows = await connection.QueryAsync<(long ReviewId, string MediaUrl)>(mediaSql, new { ReviewIds = reviewIds });
             var mediaLookup = mediaRows.ToLookup(x => x.ReviewId, x => x.MediaUrl);
 
@@ -120,6 +127,9 @@ public class AdminReviewRepository : IAdminReviewRepository
         var review = await _dbContext.Reviews.FirstOrDefaultAsync(r => r.Id == id, ct);
         if (review == null) return false;
 
+        if (!await AdminScopeFilterHelper.IsPlaceInScopeAsync(_currentUserService, _dbContext.Database.GetDbConnection(), review.PlaceId))
+            return false;
+
         review.UpdateStatus(status);
         await _dbContext.SaveChangesAsync(ct);
 
@@ -131,6 +141,9 @@ public class AdminReviewRepository : IAdminReviewRepository
     {
         var review = await _dbContext.Reviews.FirstOrDefaultAsync(r => r.Id == id, ct);
         if (review == null) return false;
+
+        if (!await AdminScopeFilterHelper.IsPlaceInScopeAsync(_currentUserService, _dbContext.Database.GetDbConnection(), review.PlaceId))
+            return false;
 
         var placeId = review.PlaceId;
         _dbContext.Reviews.Remove(review);
@@ -152,6 +165,9 @@ public class AdminReviewRepository : IAdminReviewRepository
 
         var whereClauses = new List<string>();
         var parameters = new DynamicParameters();
+
+        // Áp dụng giới hạn phân quyền theo Scope của Admin cấp 1
+        AdminScopeFilterHelper.ApplyPlaceScope(_currentUserService, whereClauses, parameters, "p", "prov");
 
         if (hasReportsOnly == true)
         {
@@ -175,6 +191,9 @@ public class AdminReviewRepository : IAdminReviewRepository
         var countSql = $@"
             SELECT COUNT(1)
             FROM dbo.Comments c
+            LEFT JOIN dbo.Reviews r ON c.ReviewId = r.Id
+            LEFT JOIN dbo.Places p ON r.PlaceId = p.Id
+            LEFT JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id
             LEFT JOIN dbo.Users u ON c.UserId = u.Id
             LEFT JOIN dbo.UserProfiles prof ON u.Id = prof.UserId
             {whereSql};";
@@ -199,6 +218,9 @@ public class AdminReviewRepository : IAdminReviewRepository
                 CASE WHEN c.Status = 1 THEN 'active' ELSE 'hidden' END AS Status,
                 (SELECT COUNT(1) FROM dbo.CommentReports cr WHERE cr.CommentId = c.Id) AS ReportCount
             FROM dbo.Comments c
+            LEFT JOIN dbo.Reviews r ON c.ReviewId = r.Id
+            LEFT JOIN dbo.Places p ON r.PlaceId = p.Id
+            LEFT JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id
             LEFT JOIN dbo.Users u ON c.UserId = u.Id
             LEFT JOIN dbo.UserProfiles prof ON u.Id = prof.UserId
             {whereSql}
@@ -211,8 +233,11 @@ public class AdminReviewRepository : IAdminReviewRepository
 
     public async Task<bool> UpdateCommentStatusAsync(long id, CommentStatus status, CancellationToken ct = default)
     {
-        var comment = await _dbContext.Comments.FirstOrDefaultAsync(c => c.Id == id, ct);
+        var comment = await _dbContext.Comments.Include(c => c.Review).FirstOrDefaultAsync(c => c.Id == id, ct);
         if (comment == null) return false;
+
+        if (!await AdminScopeFilterHelper.IsPlaceInScopeAsync(_currentUserService, _dbContext.Database.GetDbConnection(), comment.Review.PlaceId))
+            return false;
 
         comment.UpdateStatus(status);
         await _dbContext.SaveChangesAsync(ct);
@@ -221,8 +246,11 @@ public class AdminReviewRepository : IAdminReviewRepository
 
     public async Task<bool> DeleteCommentAsync(long id, CancellationToken ct = default)
     {
-        var comment = await _dbContext.Comments.FirstOrDefaultAsync(c => c.Id == id, ct);
+        var comment = await _dbContext.Comments.Include(c => c.Review).FirstOrDefaultAsync(c => c.Id == id, ct);
         if (comment == null) return false;
+
+        if (!await AdminScopeFilterHelper.IsPlaceInScopeAsync(_currentUserService, _dbContext.Database.GetDbConnection(), comment.Review.PlaceId))
+            return false;
 
         _dbContext.Comments.Remove(comment);
         await _dbContext.SaveChangesAsync(ct);

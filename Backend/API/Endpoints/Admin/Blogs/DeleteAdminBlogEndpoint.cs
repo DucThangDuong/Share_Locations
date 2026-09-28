@@ -2,6 +2,7 @@ using API.DTOs;
 using API.Extensions;
 using Application.Common;
 using Application.Features.Admin.Blogs;
+using Domain.Constants;
 using FastEndpoints;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -21,11 +22,11 @@ public class DeleteAdminBlogEndpoint : Endpoint<DeleteAdminBlogRequest, ApiSucce
     {
         Delete("/api/admin/blogs/{id}");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
-        Roles("CategoryAdmin", "SystemAdmin");
+        Roles(AppRoles.SuperAdminOnly);
         Summary(s =>
         {
-            s.Summary = "Xóa bài viết cẩm nang (Admin)";
-            s.Description = "Xóa vĩnh viễn bài viết cẩm nang khỏi hệ thống.";
+            s.Summary = "Xóa bài viết cẩm nang (Đặc quyền SystemAdmin)";
+            s.Description = "Xóa vĩnh viễn bài viết cẩm nang khỏi hệ thống. Chỉ dành riêng cho Quản trị viên tối cao (SystemAdmin).";
         });
     }
 

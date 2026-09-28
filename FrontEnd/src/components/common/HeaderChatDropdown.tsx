@@ -3,8 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import {
   Search,
   Maximize2,
-  Edit3,
-  MoreHorizontal,
   X,
   Loader2,
   UserPlus,
@@ -111,34 +109,11 @@ export const HeaderChatDropdown: React.FC<HeaderChatDropdownProps> = ({ onClose 
         <div className="flex items-center gap-1 text-slate-600">
           <button
             type="button"
-            onClick={() => setIsCreateGroupOpen(true)}
-            className="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center transition-colors cursor-pointer text-[#0084FF]"
-            title="Tạo nhóm trò chuyện mới"
-          >
-            <UserPlus size={17} />
-          </button>
-          <button
-            type="button"
-            className="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center transition-colors cursor-pointer"
-            title="Tùy chọn"
-          >
-            <MoreHorizontal size={18} />
-          </button>
-          <button
-            type="button"
             onClick={handleViewAllInMessenger}
             className="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center transition-colors cursor-pointer"
             title="Mở toàn màn hình trong Messenger"
           >
             <Maximize2 size={16} />
-          </button>
-          <button
-            type="button"
-            onClick={handleViewAllInMessenger}
-            className="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center transition-colors cursor-pointer"
-            title="Soạn tin nhắn mới"
-          >
-            <Edit3 size={16} />
           </button>
         </div>
       </div>
@@ -171,22 +146,20 @@ export const HeaderChatDropdown: React.FC<HeaderChatDropdownProps> = ({ onClose 
         <button
           type="button"
           onClick={() => setActiveTab('all')}
-          className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer ${
-            activeTab === 'all'
-              ? 'bg-blue-100 text-blue-700'
-              : 'text-slate-600 hover:bg-slate-100'
-          }`}
+          className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer ${activeTab === 'all'
+            ? 'bg-blue-100 text-blue-700'
+            : 'text-slate-600 hover:bg-slate-100'
+            }`}
         >
           Tất cả
         </button>
         <button
           type="button"
           onClick={() => setActiveTab('unread')}
-          className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5 ${
-            activeTab === 'unread'
-              ? 'bg-blue-100 text-blue-700'
-              : 'text-slate-600 hover:bg-slate-100'
-          }`}
+          className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5 ${activeTab === 'unread'
+            ? 'bg-blue-100 text-blue-700'
+            : 'text-slate-600 hover:bg-slate-100'
+            }`}
         >
           <span>Chưa đọc</span>
           {totalUnreadCount > 0 && (
@@ -198,11 +171,10 @@ export const HeaderChatDropdown: React.FC<HeaderChatDropdownProps> = ({ onClose 
         <button
           type="button"
           onClick={() => setActiveTab('groups')}
-          className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer ${
-            activeTab === 'groups'
-              ? 'bg-blue-100 text-blue-700'
-              : 'text-slate-600 hover:bg-slate-100'
-          }`}
+          className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer ${activeTab === 'groups'
+            ? 'bg-blue-100 text-blue-700'
+            : 'text-slate-600 hover:bg-slate-100'
+            }`}
         >
           Nhóm
         </button>
@@ -259,7 +231,11 @@ export const HeaderChatDropdown: React.FC<HeaderChatDropdownProps> = ({ onClose 
         ) : (
           filteredInbox.map((item) => {
             const isUnread = (item.unreadCount || 0) > 0
-            const avatar = item.avatarUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop'
+            const avatar =
+              item.avatarUrl ||
+              (item.isGroup
+                ? 'https://cdn.pixabay.com/photo/2016/11/14/17/39/group-1824145_1280.png'
+                : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop')
 
             return (
               <button
@@ -281,9 +257,8 @@ export const HeaderChatDropdown: React.FC<HeaderChatDropdownProps> = ({ onClose 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-1 mb-0.5">
                     <h3
-                      className={`text-[14px] truncate leading-snug ${
-                        isUnread ? 'font-bold text-slate-900' : 'font-medium text-slate-800'
-                      }`}
+                      className={`text-[14px] truncate leading-snug ${isUnread ? 'font-bold text-slate-900' : 'font-medium text-slate-800'
+                        }`}
                     >
                       {item.name}
                     </h3>
@@ -291,9 +266,8 @@ export const HeaderChatDropdown: React.FC<HeaderChatDropdownProps> = ({ onClose 
 
                   <div className="flex items-center gap-1.5 text-xs text-slate-500">
                     <p
-                      className={`truncate flex-1 ${
-                        isUnread ? 'font-bold text-slate-900' : 'text-slate-500'
-                      }`}
+                      className={`truncate flex-1 ${isUnread ? 'font-bold text-slate-900' : 'text-slate-500'
+                        }`}
                     >
                       {item.lastMessage || 'Bắt đầu cuộc trò chuyện'}
                     </p>

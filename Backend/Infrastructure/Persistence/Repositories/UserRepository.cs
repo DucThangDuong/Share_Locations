@@ -15,30 +15,41 @@ public class UserRepository : IUserRepository
         _dbContext = dbContext;
     }
 
+    private IQueryable<User> GetUserWithRelationsQuery()
+    {
+        return _dbContext.Users
+            .Include(u => u.Profile)
+            .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
+                    .ThenInclude(r => r.RolePermissions)
+                        .ThenInclude(rp => rp.Permission)
+            .Include(u => u.AdminCategoryScopes)
+            .Include(u => u.AdminProvinceScopes)
+            .Include(u => u.AdminRegionScopes);
+    }
+
     public async Task<User?> GetByIdAsync(long id, CancellationToken ct = default)
     {
-        return await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == id, ct);
+        return await GetUserWithRelationsQuery()
+            .FirstOrDefaultAsync(u => u.Id == id, ct);
     }
 
     public async Task<User?> GetByEmailAsync(string email, CancellationToken ct = default)
     {
         var normalizedEmail = email.Trim().ToLowerInvariant();
-        return await _dbContext.Users
-            .Include(u => u.Profile)
+        return await GetUserWithRelationsQuery()
             .FirstOrDefaultAsync(u => u.Email == normalizedEmail && !u.IsDeleted, ct);
     }
 
     public async Task<User?> GetByGoogleIdAsync(string googleId, CancellationToken ct = default)
     {
-        return await _dbContext.Users
-            .Include(u => u.Profile)
+        return await GetUserWithRelationsQuery()
             .FirstOrDefaultAsync(u => u.Profile != null && u.Profile.GoogleId == googleId && !u.IsDeleted, ct);
     }
 
     public async Task<User?> GetByIdWithProfileAsync(long id, CancellationToken ct = default)
     {
-        return await _dbContext.Users
-            .Include(u => u.Profile)
+        return await GetUserWithRelationsQuery()
             .FirstOrDefaultAsync(u => u.Id == id && !u.IsDeleted, ct);
     }
 

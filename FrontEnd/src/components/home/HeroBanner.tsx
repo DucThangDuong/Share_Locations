@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, Compass, Navigation, Layers } from 'lucide-react'
+import { MapPin, Compass, Layers, ArrowRight } from 'lucide-react'
 import { placeService } from '@/services/placeService'
 import type { LookupItemDto, RegionLookupDto } from '@/types/models/place.model'
 
@@ -38,82 +38,117 @@ export const HeroBanner: React.FC = () => {
   }
 
   return (
-    <header className="relative w-full overflow-hidden mx-auto max-w-7xl md:mt-4 md:rounded-lg border border-slate-200/50">
-      <div className="relative min-h-[70vh] md:min-h-[80vh] flex flex-col justify-between p-6 sm:p-12 lg:p-16">
+    <header className="relative w-full overflow-hidden mx-auto max-w-7xl md:mt-4 md:rounded-3xl border border-slate-200/60 shadow-md">
+      <div className="relative min-h-[580px] sm:min-h-[640px] md:min-h-[680px] flex flex-col justify-between items-center text-center p-6 sm:p-10 lg:p-12">
+        {/* Background Scenery Image */}
         <img
           alt="Việt Nam ngút ngàn"
           className="absolute inset-0 w-full h-full object-cover"
-          src="https://images.unsplash.com/photo-1528127269322-539801943592?q=80&w=1920&auto=format&fit=crop"
+          src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1920&auto=format&fit=crop"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/45 to-slate-900/30"></div>
+        {/* Gradient Overlay for high readability: subtle light sky on top, soft focus on scenery, grounded bottom */}
+        <div className="absolute inset-0 bg-gradient-to-b from-sky-50/90 via-sky-50/25 to-slate-900/40 pointer-events-none" />
 
-        <div className="relative z-10 max-w-4xl space-y-6 my-auto text-left pt-6 sm:pt-10">
-          <h1 className="text-4xl sm:text-6xl md:text-7xl text-white font-extrabold tracking-tight leading-[1.12]">
-            Mỗi chuyến đi là <br />
-            <span className="text-secondary-container">một điều kỳ diệu</span>
+        {/* ── TOP: Centered Heading & Subtitle ── */}
+        <div className="relative z-10 max-w-3xl sm:max-w-4xl space-y-3.5 pt-3 sm:pt-6 md:pt-8">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl text-slate-900 font-black tracking-tight leading-[1.18] sm:leading-[1.15]">
+            Cảm Hứng Khám Phá & <br className="hidden sm:inline" />
+            <span className="relative inline-block whitespace-nowrap">
+              <span className="relative z-10">Vô Vàn Trải Nghiệm</span>
+            </span>
           </h1>
 
-          <div className="pt-2 max-w-3xl">
-            <form
-              onSubmit={handleSearchSubmit}
-              className="bg-white/95 backdrop-blur-md p-2.5 sm:p-3 rounded-lg sm:rounded-full flex flex-col sm:flex-row gap-2 border border-white/80"
-            >
-              <div className="flex-1 flex items-center pl-3">
-                <Search className="w-4 h-4 text-emerald-700 shrink-0" />
+          <p className="text-sm sm:text-base md:text-lg text-slate-700 max-w-2xl mx-auto font-medium leading-relaxed">
+            Khám phá thế giới du lịch nhanh chóng, tiện lợi cùng LangThang — nơi đam mê xê dịch biến thành những hành trình đáng nhớ.
+          </p>
+        </div>
+
+        <div className="relative z-10 w-full max-w-4xl mx-auto pb-2 sm:pb-4">
+          <form
+            onSubmit={handleSearchSubmit}
+            className="bg-white/95 backdrop-blur-md p-2 sm:p-2.5 rounded-2xl sm:rounded-full shadow-[0_15px_35px_rgba(0,0,0,0.15)] border border-white/90 flex flex-col sm:flex-row items-center gap-2 sm:gap-1.5"
+          >
+            <div className="flex-1 w-full flex items-center gap-3 px-3.5 py-2 hover:bg-slate-50/90 rounded-xl sm:rounded-full transition-colors">
+              <div className="w-9 h-9 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center shrink-0">
+                <MapPin size={17} />
+              </div>
+              <div className="flex-1 min-w-0 text-left">
+                <label className="block text-[11px] font-medium text-slate-400 leading-none mb-1">
+                  Điểm đến
+                </label>
                 <input
                   type="text"
                   value={keyword}
                   onChange={(e) => setKeyword(e.target.value)}
-                  placeholder="Bạn muốn đi đâu? (Hà Giang, Tràng An, Cơm tấm...)"
-                  className="w-full px-3 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 bg-transparent focus:outline-hidden"
+                  placeholder="Bạn muốn đi đâu? (Hà Giang, Đà Lạt...)"
+                  className="w-full text-xs sm:text-sm font-bold text-slate-900 placeholder:text-slate-400 placeholder:font-normal bg-transparent focus:outline-hidden truncate"
                 />
               </div>
+            </div>
 
-              <div className="flex items-center gap-2 border-t sm:border-t-0 sm:border-l border-slate-200 pl-0 sm:pl-2">
-                <div className="flex items-center pl-2 sm:pl-1">
-                  <Navigation className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  <select
-                    value={region}
-                    onChange={(e) => setRegion(e.target.value)}
-                    aria-label="Chọn vùng miền"
-                    className="bg-transparent text-xs sm:text-sm text-slate-700 font-semibold px-2 py-2 focus:outline-hidden cursor-pointer"
-                  >
-                    <option value="">Tất cả miền</option>
-                    {regions.map((r) => (
-                      <option key={r.id} value={r.name}>
-                        {r.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+            <div className="hidden sm:block w-px h-8 bg-slate-200 shrink-0 mx-1" />
 
-                <div className="flex items-center pl-2">
-                  <Layers className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    aria-label="Chọn danh mục"
-                    className="bg-transparent text-xs sm:text-sm text-slate-700 font-semibold px-2 py-2 focus:outline-hidden cursor-pointer"
-                  >
-                    <option value="">Tất cả danh mục</option>
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.name}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+            <div className="w-full sm:w-48 flex items-center gap-3 px-3.5 py-2 hover:bg-slate-50/90 rounded-xl sm:rounded-full transition-colors relative">
+              <div className="w-9 h-9 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center shrink-0">
+                <Compass size={17} />
               </div>
+              <div className="flex-1 min-w-0 text-left">
+                <label className="block text-[11px] font-medium text-slate-400 leading-none mb-1">
+                  Vùng miền
+                </label>
+                <select
+                  value={region}
+                  onChange={(e) => setRegion(e.target.value)}
+                  aria-label="Chọn vùng miền"
+                  className="w-full text-xs sm:text-sm font-bold text-slate-900 bg-transparent focus:outline-hidden cursor-pointer truncate pr-5"
+                >
+                  <option value="">Tất cả miền</option>
+                  {regions.map((r) => (
+                    <option key={r.id} value={r.name}>
+                      {r.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
 
-              <button
-                type="submit"
-                className="px-6 py-3 bg-gradient-to-r from-primary to-emerald-700 hover:from-primary-hover hover:to-emerald-800 text-white text-xs sm:text-sm font-bold rounded-lg sm:rounded-full active-press transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer min-h-[44px]"
-              >
-                <Compass className="w-4 h-4" />
-                <span>Khám phá ngay</span>
-              </button>
-            </form>
-          </div>
+            <div className="hidden sm:block w-px h-8 bg-slate-200 shrink-0 mx-1" />
+
+            <div className="w-full sm:w-48 flex items-center gap-3 px-3.5 py-2 hover:bg-slate-50/90 rounded-xl sm:rounded-full transition-colors relative">
+              <div className="w-9 h-9 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center shrink-0">
+                <Layers size={17} />
+              </div>
+              <div className="flex-1 min-w-0 text-left">
+                <label className="block text-[11px] font-medium text-slate-400 leading-none mb-1">
+                  Danh mục
+                </label>
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  aria-label="Chọn danh mục"
+                  className="w-full text-xs sm:text-sm font-bold text-slate-900 bg-transparent focus:outline-hidden cursor-pointer truncate pr-5"
+                >
+                  <option value="">Tất cả danh mục</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.name}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Action Button */}
+            <button
+              type="submit"
+              className="w-full sm:w-auto px-6 py-3.5 bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-bold rounded-xl sm:rounded-full transition-all flex items-center justify-center gap-2.5 shrink-0 cursor-pointer shadow-md group min-h-[46px]"
+            >
+              <span>Khám phá ngay</span>
+              <div className="w-6 h-6 rounded-full bg-amber-400 text-amber-950 flex items-center justify-center shrink-0 group-hover:translate-x-0.5 transition-transform">
+                <ArrowRight size={13} strokeWidth={3} />
+              </div>
+            </button>
+          </form>
         </div>
       </div>
     </header>

@@ -2,6 +2,7 @@ using API.DTOs;
 using API.Extensions;
 using Application.Common;
 using Application.Features.Admin.Places;
+using Domain.Constants;
 using FastEndpoints;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -21,11 +22,11 @@ public class DeleteAdminPlaceEndpoint : Endpoint<DeleteAdminPlaceRequest, ApiSuc
     {
         Delete("/api/admin/places/{id}");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
-        Roles("CategoryAdmin", "SystemAdmin");
+        Roles(AppRoles.SuperAdminOnly);
         Summary(s =>
         {
-            s.Summary = "Xóa địa điểm (Admin)";
-            s.Description = "Xóa địa điểm khỏi hệ thống hiển thị.";
+            s.Summary = "Xóa địa điểm (Đặc quyền SystemAdmin)";
+            s.Description = "Xóa vĩnh viễn địa điểm khỏi hệ thống. Chỉ dành riêng cho Quản trị viên tối cao (SystemAdmin).";
         });
     }
 

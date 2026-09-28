@@ -106,6 +106,7 @@ export interface DetailedItineraryItem {
   startDate?: string
   endDate?: string
   privacy: TripPrivacy
+  status?: number | string
   coverImg?: string
   authorName: string
   authorAvatar?: string | null

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import type { AdminMainTab } from "@/types/admin.types";
 import {
   LayoutDashboard,
+  Users,
   MapPin,
   MessageSquare,
   ShieldAlert,
@@ -118,6 +119,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
               {[
                 { id: "dashboard", label: "Tổng quan", icon: LayoutDashboard },
+                { id: "users", label: "Quản lý Tài khoản", icon: Users },
                 { id: "places", label: "Địa điểm", icon: MapPin, count: pendingPlacesCount, isAlert: pendingPlacesCount > 0 },
                 { id: "proposals", label: "Đề xuất đóng góp", icon: ClipboardCheck, count: pendingProposalsCount, isAlert: pendingProposalsCount > 0 },
                 { id: "reviews_comments", label: "Đánh giá & Bình luận", icon: MessageSquare, count: reportedReviewsCount, isAlert: reportedReviewsCount > 0 },

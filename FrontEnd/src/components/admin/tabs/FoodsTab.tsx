@@ -339,11 +339,10 @@ export const FoodsTab: React.FC<FoodsTabProps> = ({
                     {/* Status */}
                     <td className="p-3.5">
                       <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                          isHidden
+                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${isHidden
                             ? "bg-slate-100 text-slate-600"
                             : "bg-emerald-100 text-emerald-800"
-                        }`}
+                          }`}
                       >
                         {isHidden ? "Đang tạm ẩn" : "Đang công khai"}
                       </span>
@@ -365,11 +364,10 @@ export const FoodsTab: React.FC<FoodsTabProps> = ({
                         <button
                           type="button"
                           onClick={() => handleToggleHideFood(food.id)}
-                          className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
-                            isHidden
+                          className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${isHidden
                               ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
                               : "border-slate-200 hover:bg-slate-100 text-slate-600"
-                          }`}
+                            }`}
                           title={isHidden ? "Hiện lại món ăn" : "Tạm ẩn món ăn"}
                         >
                           {isHidden ? <Eye size={13} /> : <EyeOff size={13} />}
@@ -561,8 +559,8 @@ const FoodDetailEditor: React.FC<FoodDetailEditorProps> = ({
   const [maxPrice, setMaxPrice] = useState(String(food.maxPrice || 65000));
   const [coverImg, setCoverImg] = useState(
     food.coverImg ||
-      food.imageUrl ||
-      "https://images.unsplash.com/photo-1541544741938-0af808871cc0?w=600&h=400&fit=crop"
+    food.imageUrl ||
+    "https://images.unsplash.com/photo-1541544741938-0af808871cc0?w=600&h=400&fit=crop"
   );
   const [desc, setDesc] = useState(food.desc || food.description || "");
   const [status, setStatus] = useState<"active" | "hidden">(
@@ -637,7 +635,7 @@ const FoodDetailEditor: React.FC<FoodDetailEditorProps> = ({
             title="Quay lại danh sách món ăn"
           >
             <ArrowLeft size={15} />
-            <span className="hidden sm:inline">Quay lại danh sách</span>
+            <span className="hidden sm:inline">Quay lại</span>
           </button>
 
           <div>
@@ -646,9 +644,8 @@ const FoodDetailEditor: React.FC<FoodDetailEditorProps> = ({
                 {name || food.name}
               </h2>
               <span
-                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                  isHidden ? "bg-slate-200 text-slate-700" : "bg-emerald-100 text-emerald-800"
-                }`}
+                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold ${isHidden ? "bg-slate-200 text-slate-700" : "bg-emerald-100 text-emerald-800"
+                  }`}
               >
                 {isHidden ? "Đang tạm ẩn" : "Đang công khai"}
               </span>

@@ -96,6 +96,19 @@ export const adminService = {
   getCompleteness: () => get<unknown[]>("/api/admin/provinces/completeness"),
   getCategories: () => get<unknown[]>("/api/admin/categories"),
   getCollections: () => get<unknown[]>("/api/admin/collections"),
+
+  getUsers: (params?: Record<string, unknown>) =>
+    get<Record<string, unknown>[]>("/api/admin/users", params),
+  getUserDetail: (userId: number) =>
+    get<Record<string, unknown>>(`/api/admin/users/${userId}`),
+  updateUserScopes: (userId: number, data: unknown) =>
+    write<unknown>("put", `/api/admin/users/${userId}/scopes`, data),
+  updateUserStatus: (userId: number, status: string | number, reason?: string) =>
+    write<boolean>("patch", `/api/admin/users/${userId}/status`, { status: String(status), reason }),
+  getUserActivities: (userId: number) =>
+    get<Record<string, unknown>>(`/api/admin/users/${userId}/activities`),
+  getUserAccessHistory: (userId: number) =>
+    get<Record<string, unknown>[]>("/api/admin/users/" + userId + "/access-history"),
 };
 
 export default adminService;

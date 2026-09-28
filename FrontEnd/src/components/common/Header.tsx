@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { useChat } from '@/context/ChatContext'
+import { isUserAdmin } from '@/utils/authUtils'
 import { HeaderChatDropdown } from './HeaderChatDropdown'
 import { UserUtilityDrawer } from './UserUtilityDrawer'
 import {
@@ -11,6 +12,7 @@ import {
   MapPin,
   Route,
   BookOpen,
+  Home,
   Menu,
   X,
   ChevronDown,
@@ -75,10 +77,10 @@ export const Header: React.FC = () => {
   }
 
   const navLinks = [
-    { label: 'Trang chủ', href: '/', icon: Compass, exact: true },
-    { label: 'Khám phá', href: '/explore', icon: MapPin },
+    { label: 'Trang chủ', href: '/', icon: Home, exact: true },
+    { label: 'Khám phá', href: '/explore', icon: Compass },
     { label: 'Bản đồ', href: '/map', icon: MapPin },
-    { label: 'Lịch trình', href: '/itinerary', icon: Route },
+    { label: 'Chuyến đi', href: '/itinerary', icon: Route },
     { label: 'Cẩm nang', href: '/blog', icon: BookOpen }
   ]
 
@@ -87,9 +89,8 @@ export const Header: React.FC = () => {
   return (
     <header className="sticky top-0 z-40 w-full border-b border-slate-200/80 bg-white/95 backdrop-blur-md shadow-2xs">
       <div
-        className={`${
-          isFullWidthRoute ? 'w-full px-4 sm:px-6' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'
-        } h-16 flex justify-between items-center gap-4 transition-all duration-150`}
+        className={`${isFullWidthRoute ? 'w-full px-4 sm:px-6' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'
+          } h-16 flex justify-between items-center gap-4 transition-all duration-150`}
       >
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <button
@@ -137,11 +138,10 @@ export const Header: React.FC = () => {
               <button
                 type="button"
                 onClick={toggleHeaderDropdown}
-                className={`relative inline-flex h-11 w-11 items-center justify-center rounded-full transition-colors cursor-pointer ${
-                  isHeaderDropdownOpen
-                    ? 'bg-blue-100 text-[#0084FF]'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                }`}
+                className={`relative inline-flex h-11 w-11 items-center justify-center rounded-full transition-colors cursor-pointer ${isHeaderDropdownOpen
+                  ? 'bg-blue-100 text-[#0084FF]'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  }`}
                 aria-label="Mở tin nhắn"
                 title="Tin nhắn"
                 aria-expanded={isHeaderDropdownOpen}
@@ -213,26 +213,23 @@ export const Header: React.FC = () => {
 
       {createPortal(
         <div
-          className={`fixed inset-0 z-[9999] flex transition-all duration-300 ${
-            isNavDrawerOpen
-              ? 'opacity-100 pointer-events-auto visible'
-              : 'opacity-0 pointer-events-none invisible'
-          }`}
+          className={`fixed inset-0 z-[9999] flex transition-all duration-300 ${isNavDrawerOpen
+            ? 'opacity-100 pointer-events-auto visible'
+            : 'opacity-0 pointer-events-none invisible'
+            }`}
         >
           {/* Backdrop with smooth fade */}
           <div
-            className={`fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity duration-300 ease-in-out ${
-              isNavDrawerOpen ? 'opacity-100' : 'opacity-0'
-            }`}
+            className={`fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity duration-300 ease-in-out ${isNavDrawerOpen ? 'opacity-100' : 'opacity-0'
+              }`}
             onClick={() => setIsNavDrawerOpen(false)}
           />
 
           {/* Sidebar Drawer with smooth slide in/out */}
           <aside
             ref={drawerRef}
-            className={`${
-              isNavDrawerOpen ? 'translate-x-0' : '-translate-x-full'
-            } relative w-80 max-w-[85vw] bg-white h-screen shadow-2xl flex flex-col z-10 transition-transform duration-300 ease-in-out border-r border-slate-200 overflow-y-auto`}
+            className={`${isNavDrawerOpen ? 'translate-x-0' : '-translate-x-full'
+              } relative w-80 max-w-[85vw] bg-white h-screen shadow-2xl flex flex-col z-10 transition-transform duration-300 ease-in-out border-r border-slate-200 overflow-y-auto`}
           >
             <div className="p-4 border-b border-slate-100 flex items-center justify-between">
               <Link
@@ -269,11 +266,10 @@ export const Header: React.FC = () => {
                     key={item.label}
                     to={item.href}
                     onClick={() => setIsNavDrawerOpen(false)}
-                    className={`flex items-center gap-3 px-3.5 py-3 rounded-2xl text-xs font-bold transition-colors ${
-                      isActive
-                        ? 'bg-emerald-50 text-emerald-900 border border-emerald-200/80'
-                        : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
-                    }`}
+                    className={`flex items-center gap-3 px-3.5 py-3 rounded-2xl text-xs font-bold transition-colors ${isActive
+                      ? 'bg-emerald-50 text-emerald-900 border border-emerald-200/80'
+                      : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+                      }`}
                   >
                     <item.icon className={`w-4 h-4 ${isActive ? 'text-emerald-800' : 'text-slate-500'}`} />
                     <span className="flex-1">{item.label}</span>
@@ -281,20 +277,21 @@ export const Header: React.FC = () => {
                 )
               })}
 
-              <div className="pt-3 border-t border-slate-100 mt-3">
-                <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">
-                  Quản trị &amp; Điều hành
+              {isAuthenticated && isUserAdmin() && (
+                <div className="pt-3 border-t border-slate-100 mt-3">
+                  <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">
+                    Quản trị
+                  </div>
+                  <Link
+                    to="/admin"
+                    onClick={() => setIsNavDrawerOpen(false)}
+                    className="flex items-center gap-3 px-3.5 py-3 rounded-2xl text-xs font-bold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+                  >
+                    <Shield className="w-4 h-4 text-emerald-700" />
+                    <span className="flex-1">Trang quản trị</span>
+                  </Link>
                 </div>
-                <Link
-                  to="/admin"
-                  onClick={() => setIsNavDrawerOpen(false)}
-                  className="flex items-center gap-3 px-3.5 py-3 rounded-2xl text-xs font-bold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors"
-                >
-                  <Shield className="w-4 h-4 text-emerald-700" />
-                  <span className="flex-1">Trang quản trị (Admin)</span>
-                  <span className="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-full font-bold">Portal</span>
-                </Link>
-              </div>
+              )}
             </div>
           </aside>
         </div>,

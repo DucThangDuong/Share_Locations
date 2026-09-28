@@ -94,7 +94,11 @@ export const ItineraryPlannerToolbar: React.FC<ItineraryPlannerToolbarProps> = (
   }, [itinerary.startDate, itinerary.endDate, itinerary.days.length])
 
   const roleLower = (currentUserRole || '').toLowerCase()
-  const isPublished = itinerary.privacy === 0 || String(itinerary.privacy).toLowerCase() === 'public'
+  const isPublished =
+    itinerary.privacy === 0 ||
+    String(itinerary.privacy).toLowerCase() === 'public' ||
+    itinerary.status === 1 ||
+    String(itinerary.status).toLowerCase() === 'published'
   const canEdit = !isPublished && (roleLower === 'owner' || roleLower === 'editor')
   const budgetTarget = itinerary.budgetTarget || 5000000
   const members = itinerary.members || []
@@ -144,6 +148,13 @@ export const ItineraryPlannerToolbar: React.FC<ItineraryPlannerToolbarProps> = (
   return (
     <div className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-2xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 space-y-3">
+        {isPublished && (
+          <div className="flex items-center gap-2 p-2 px-3 rounded-xl bg-emerald-50/80 border border-emerald-200/80 text-emerald-900 text-xs font-medium">
+            <Lock size={14} className="text-emerald-700 shrink-0" />
+            <span>Chuyến đi này <strong>đã được công bố</strong> công khai và đang ở chế độ chỉ xem, không thể chỉnh sửa nội dung.</span>
+          </div>
+        )}
+
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <button
@@ -155,7 +166,7 @@ export const ItineraryPlannerToolbar: React.FC<ItineraryPlannerToolbarProps> = (
               <ArrowLeft size={18} />
             </button>
 
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 flex-1 flex items-center gap-2">
               <input
                 type="text"
                 disabled={!canEdit}
@@ -164,6 +175,12 @@ export const ItineraryPlannerToolbar: React.FC<ItineraryPlannerToolbarProps> = (
                 placeholder="Nhập tên chuyến đi..."
                 className="font-extrabold text-base sm:text-xl text-slate-900 bg-transparent outline-none focus:bg-slate-50 rounded-lg transition-all w-full tracking-tight truncate disabled:cursor-default"
               />
+              {isPublished && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 shrink-0">
+                  <Lock size={11} className="text-emerald-700" />
+                  <span>Đã công bố</span>
+                </span>
+              )}
             </div>
           </div>
 
@@ -227,27 +244,31 @@ export const ItineraryPlannerToolbar: React.FC<ItineraryPlannerToolbarProps> = (
             )}
 
             {isPublished ? (
+              <span
+                className="px-3.5 py-1.5 text-xs font-bold rounded-xl flex items-center gap-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200 select-none shadow-2xs"
+                title="Chuyến đi đã được công bố cho cộng đồng (ở chế độ chỉ xem)"
+              >
+                <Lock size={13} className="text-emerald-700" />
+                <span>Đã công bố</span>
+              </span>
+            ) : roleLower === 'owner' ? (
               <button
                 type="button"
-                disabled
-                className="px-3.5 py-1.5 text-xs font-bold rounded-xl flex items-center gap-1.5 bg-slate-100 text-slate-400 border border-slate-200 opacity-60 cursor-not-allowed select-none shadow-none"
-                title="Chuyến đi đã xuất bản ở chế độ chỉ xem"
+                onClick={onPublishTrip}
+                className="px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer bg-emerald-800 hover:bg-emerald-900 text-white"
+                title="Công bố chuyến đi công khai cho cộng đồng"
               >
-                <Lock size={13} />
-                <span>Đã xuất bản</span>
+                <Send size={13} />
+                <span>Công bố chuyến đi</span>
               </button>
             ) : (
-              roleLower === 'owner' && (
-                <button
-                  type="button"
-                  onClick={onPublishTrip}
-                  className="px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer bg-emerald-800 hover:bg-emerald-900 text-white"
-                  title="Xuất bản chuyến đi công khai cho cộng đồng"
-                >
-                  <Send size={13} />
-                  <span>Xuất bản chuyến đi</span>
-                </button>
-              )
+              <span
+                className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-slate-100 text-slate-600 border border-slate-200 flex items-center gap-1.5 select-none"
+                title="Bạn đang xem chuyến đi ở chế độ thành viên (chỉ xem)"
+              >
+                <Lock size={12} className="text-slate-500" />
+                <span>Chế độ xem</span>
+              </span>
             )}
           </div>
         </div>

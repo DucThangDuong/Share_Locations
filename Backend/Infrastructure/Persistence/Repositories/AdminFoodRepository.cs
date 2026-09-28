@@ -1,4 +1,5 @@
 using Application.Common;
+using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs.Admin;
 using Dapper;
@@ -11,10 +12,12 @@ namespace Infrastructure.Persistence.Repositories;
 public class AdminFoodRepository : IAdminFoodRepository
 {
     private readonly TravelReviewDbContext _dbContext;
+    private readonly ICurrentUserService _currentUserService;
 
-    public AdminFoodRepository(TravelReviewDbContext dbContext)
+    public AdminFoodRepository(TravelReviewDbContext dbContext, ICurrentUserService currentUserService)
     {
         _dbContext = dbContext;
+        _currentUserService = currentUserService;
     }
 
     public async Task<PagedResult<AdminFoodItemDto>> GetAdminFoodsAsync(
@@ -29,6 +32,9 @@ public class AdminFoodRepository : IAdminFoodRepository
 
         var whereClauses = new List<string>();
         var parameters = new DynamicParameters();
+
+        // Áp dụng giới hạn phân quyền theo Scope của Admin cấp 1
+        AdminScopeFilterHelper.ApplyFoodScope(_currentUserService, whereClauses, parameters, "f");
 
         if (provinceId.HasValue && provinceId.Value > 0)
         {
@@ -109,6 +115,8 @@ public class AdminFoodRepository : IAdminFoodRepository
 
     public async Task<bool> UpdateAdminFoodAsync(long id, UpdateAdminFoodInput input, CancellationToken ct = default)
     {
+        if (!await IsFoodInScopeAsync(id)) return false;
+
         var food = await _dbContext.Foods.FirstOrDefaultAsync(f => f.Id == id, ct);
         if (food == null) return false;
 
@@ -140,6 +148,8 @@ public class AdminFoodRepository : IAdminFoodRepository
 
     public async Task<bool> UpdateAdminFoodStatusAsync(long id, string status, CancellationToken ct = default)
     {
+        if (!await IsFoodInScopeAsync(id)) return false;
+
         var food = await _dbContext.Foods.FirstOrDefaultAsync(f => f.Id == id, ct);
         if (food == null) return false;
 
@@ -154,11 +164,25 @@ public class AdminFoodRepository : IAdminFoodRepository
 
     public async Task<bool> DeleteAdminFoodAsync(long id, CancellationToken ct = default)
     {
+        if (!await IsFoodInScopeAsync(id)) return false;
+
         var food = await _dbContext.Foods.FirstOrDefaultAsync(f => f.Id == id, ct);
         if (food == null) return false;
 
         _dbContext.Foods.Remove(food);
         await _dbContext.SaveChangesAsync(ct);
         return true;
+    }
+
+    private async Task<bool> IsFoodInScopeAsync(long foodId)
+    {
+        if (_currentUserService.IsSystemAdmin) return true;
+        var connection = _dbContext.Database.GetDbConnection();
+        var clauses = new List<string> { "f.Id = @FoodId" };
+        var p = new DynamicParameters();
+        p.Add("FoodId", foodId);
+        AdminScopeFilterHelper.ApplyFoodScope(_currentUserService, clauses, p, "f");
+        var sql = $"SELECT COUNT(1) FROM dbo.Foods f WHERE {string.Join(" AND ", clauses)};";
+        return await connection.ExecuteScalarAsync<int>(sql, p) > 0;
     }
 }

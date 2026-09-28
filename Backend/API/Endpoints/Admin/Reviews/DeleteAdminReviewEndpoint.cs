@@ -2,6 +2,7 @@ using API.DTOs;
 using API.Extensions;
 using Application.Common;
 using Application.Features.Admin.Reviews;
+using Domain.Constants;
 using FastEndpoints;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -21,11 +22,11 @@ public class DeleteAdminReviewEndpoint : Endpoint<DeleteAdminReviewRequest, ApiS
     {
         Delete("/api/admin/reviews/{id}");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
-        Roles("CategoryAdmin", "SystemAdmin");
+        Roles(AppRoles.SuperAdminOnly);
         Summary(s =>
         {
-            s.Summary = "Xóa vĩnh viễn đánh giá vi phạm (Admin)";
-            s.Description = "Xóa đánh giá khỏi hệ thống và tự động tính toán lại điểm rating trung bình của quán.";
+            s.Summary = "Xóa vĩnh viễn đánh giá vi phạm (Đặc quyền SystemAdmin)";
+            s.Description = "Xóa đánh giá khỏi hệ thống và tự động tính toán lại điểm rating trung bình của quán. Chỉ dành riêng cho Quản trị viên tối cao (SystemAdmin).";
         });
     }
 

@@ -1,7 +1,7 @@
 import {
   Star,
   Share2,
-  Bookmark,
+  Heart,
   Flag,
   CalendarCheck
 } from 'lucide-react'
@@ -82,12 +82,13 @@ export const PlaceDetailOverview = ({
           <button type="button"
             onClick={onToggleSave}
             className={`inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-lg transition-colors shadow-2xs cursor-pointer ${isSaved
-              ? 'bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100'
+              ? 'bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 font-bold'
               : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
               }`}
+            title={isSaved ? 'Bỏ yêu thích địa điểm này' : 'Yêu thích địa điểm này'}
           >
-            <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-rose-600' : ''}`} />
-            <span>{isSaved ? 'Đã lưu' : 'Lưu'}</span>
+            <Heart className={`w-4 h-4 ${isSaved ? 'fill-rose-600 text-rose-600' : 'text-gray-600'}`} />
+            <span>{isSaved ? 'Đã yêu thích' : 'Yêu thích'}</span>
           </button>
 
           <button type="button"

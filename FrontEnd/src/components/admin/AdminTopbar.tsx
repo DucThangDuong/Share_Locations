@@ -39,10 +39,9 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
 
         {/* Clean Breadcrumb */}
         <div className="flex items-center gap-2 text-xs font-medium">
-          <span className="text-slate-400">Điều phối</span>
-          <span className="text-slate-300">/</span>
           <span className="text-slate-900 font-bold">
             {mainTab === "dashboard" && "Tổng quan (Dashboard)"}
+            {mainTab === "users" && "Quản lý Tài khoản & Phân quyền"}
             {mainTab === "places" && (selectedPlaceId ? `Chi tiết: ${currentPlaceName || ""}` : "Quản lý Địa điểm")}
             {mainTab === "proposals" && "Đề xuất đóng góp"}
             {mainTab === "reviews_comments" && "Đánh giá & Bình luận"}

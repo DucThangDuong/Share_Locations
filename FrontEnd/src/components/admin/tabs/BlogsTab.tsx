@@ -432,19 +432,18 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
                     {/* Status */}
                     <td className="p-3.5">
                       <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                          isHidden
+                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${isHidden
                             ? "bg-slate-100 text-slate-600"
                             : isDraft
-                            ? "bg-blue-100 text-blue-800"
-                            : "bg-emerald-100 text-emerald-800"
-                        }`}
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-emerald-100 text-emerald-800"
+                          }`}
                       >
                         {isHidden
                           ? "Đang tạm ẩn"
                           : isDraft
-                          ? "Bản nháp"
-                          : "Đang công khai"}
+                            ? "Bản nháp"
+                            : "Đang công khai"}
                       </span>
                     </td>
 
@@ -470,11 +469,10 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
                         <button
                           type="button"
                           onClick={() => handleToggleHideBlog(blog.id)}
-                          className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
-                            isHidden
+                          className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${isHidden
                               ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
                               : "border-slate-200 hover:bg-slate-100 text-slate-600"
-                          }`}
+                            }`}
                           title={
                             isHidden
                               ? "Công khai lại bài viết"
@@ -709,7 +707,7 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
   );
   const [authorAvatar, setAuthorAvatar] = useState(
     blog.authorAvatar ||
-      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&h=80&fit=crop"
+    "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&h=80&fit=crop"
   );
   const [publishedAt, setPublishedAt] = useState(
     blog.publishedAt || "18/09/2026"
@@ -718,7 +716,7 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
   const [likes, setLikes] = useState(String(blog.likes || 0));
   const [coverImg, setCoverImg] = useState(
     blog.coverImg ||
-      "https://images.unsplash.com/photo-1505474975305-453b4ac9b972?w=600&h=400&fit=crop"
+    "https://images.unsplash.com/photo-1505474975305-453b4ac9b972?w=600&h=400&fit=crop"
   );
   const [summary, setSummary] = useState(blog.summary || "");
   const [content, setContent] = useState(blog.content || "");
@@ -879,7 +877,7 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
             title="Quay lại danh sách bài viết"
           >
             <ArrowLeft size={15} />
-            <span className="hidden sm:inline">Quay lại danh sách</span>
+            <span className="hidden sm:inline">Quay lại</span>
           </button>
 
           <div className="min-w-0">
@@ -888,19 +886,18 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
                 {title || blog.title}
               </h2>
               <span
-                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${
-                  isHidden
+                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${isHidden
                     ? "bg-slate-200 text-slate-700"
                     : isDraft
-                    ? "bg-blue-100 text-blue-800"
-                    : "bg-emerald-100 text-emerald-800"
-                }`}
+                      ? "bg-blue-100 text-blue-800"
+                      : "bg-emerald-100 text-emerald-800"
+                  }`}
               >
                 {isHidden
                   ? "Đang tạm ẩn"
                   : isDraft
-                  ? "Bản nháp"
-                  : "Đang công khai"}
+                    ? "Bản nháp"
+                    : "Đang công khai"}
               </span>
             </div>
             <p className="text-[11px] text-slate-400 mt-0.5 truncate">
@@ -916,11 +913,10 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
             <button
               type="button"
               onClick={() => setActiveMode("reader")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-xs transition-all cursor-pointer ${
-                activeMode === "reader"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-xs transition-all cursor-pointer ${activeMode === "reader"
                   ? "bg-white text-emerald-800 shadow-2xs"
                   : "text-slate-600 hover:text-slate-900"
-              }`}
+                }`}
             >
               <BookMarked size={13} />
               <span>Giao diện đọc</span>
@@ -928,11 +924,10 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
             <button
               type="button"
               onClick={() => setActiveMode("editor")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-xs transition-all cursor-pointer ${
-                activeMode === "editor"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-xs transition-all cursor-pointer ${activeMode === "editor"
                   ? "bg-white text-emerald-800 shadow-2xs"
                   : "text-slate-600 hover:text-slate-900"
-              }`}
+                }`}
             >
               <Edit3 size={13} />
               <span>Chỉnh sửa</span>
@@ -1122,8 +1117,8 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
                         {isHidden
                           ? "Đang tạm ẩn"
                           : isDraft
-                          ? "Bản nháp"
-                          : "Đang công khai"}
+                            ? "Bản nháp"
+                            : "Đang công khai"}
                       </span>
                       . Quản trị viên có thể chuyển đổi trạng thái hoặc biên tập lại nội dung bất kỳ lúc nào.
                     </p>
@@ -1150,19 +1145,18 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
                     <span>Quản trị &amp; Xuất bản</span>
                   </h3>
                   <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      isHidden
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isHidden
                         ? "bg-slate-100 text-slate-700"
                         : isDraft
-                        ? "bg-blue-100 text-blue-800"
-                        : "bg-emerald-100 text-emerald-800"
-                    }`}
+                          ? "bg-blue-100 text-blue-800"
+                          : "bg-emerald-100 text-emerald-800"
+                      }`}
                   >
                     {isHidden
                       ? "Đang tạm ẩn"
                       : isDraft
-                      ? "Bản nháp"
-                      : "Công khai"}
+                        ? "Bản nháp"
+                        : "Công khai"}
                   </span>
                 </div>
 

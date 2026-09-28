@@ -116,7 +116,7 @@ export const PlaceDetailSidebar = ({ place }: PlaceDetailSidebarProps) => {
           <div className="flex items-center justify-between text-xs text-gray-500 pt-0.5">
             <span className="truncate pr-2">{place.address}</span>
             <a
-              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name + ' ' + place.address)}`}
+              href={`/directions?destLng=${place.longitude || 0}&destLat=${place.latitude || 0}&name=${encodeURIComponent(place.name || '')}&address=${encodeURIComponent(place.address || '')}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 text-emerald-600 hover:underline shrink-0 font-medium"

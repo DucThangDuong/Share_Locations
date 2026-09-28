@@ -189,7 +189,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                     className="inline-flex items-center gap-1.5 pl-1.5 pr-2 py-1 rounded-full bg-blue-50 text-[#0084FF] border border-blue-200/80 text-xs font-semibold animate-in zoom-in-75 duration-100"
                   >
                     <img
-                      src={f.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop'}
+                      src={f.avatar || 'https://cdn.pixabay.com/photo/2016/11/14/17/39/group-1824145_1280.png'}
                       alt=""
                       className="w-4 h-4 rounded-full object-cover"
                     />
@@ -238,9 +238,8 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                       <div
                         key={friend.id}
                         onClick={() => toggleSelectFriend(friend.id)}
-                        className={`flex items-center justify-between p-2.5 rounded-lg cursor-pointer transition-colors ${
-                          isSelected ? 'bg-blue-50/80' : 'hover:bg-slate-50'
-                        }`}
+                        className={`flex items-center justify-between p-2.5 rounded-lg cursor-pointer transition-colors ${isSelected ? 'bg-blue-50/80' : 'hover:bg-slate-50'
+                          }`}
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
                           <img
@@ -262,11 +261,10 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
 
                         {/* Checkbox circle */}
                         <div
-                          className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-colors ${
-                            isSelected
+                          className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-colors ${isSelected
                               ? 'bg-[#0084FF] border-[#0084FF] text-white'
                               : 'border-slate-300 bg-white'
-                          }`}
+                            }`}
                         >
                           {isSelected && <Check size={12} strokeWidth={3} />}
                         </div>

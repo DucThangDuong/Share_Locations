@@ -50,6 +50,10 @@ public static class DependencyInjection
         services.AddScoped<IAdminFoodRepository, AdminFoodRepository>();
         services.AddScoped<IAdminBlogRepository, AdminBlogRepository>();
         services.AddScoped<IAdminDashboardRepository, AdminDashboardRepository>();
+        services.AddScoped<IAdminUserRepository, AdminUserRepository>();
+
+        services.AddHttpContextAccessor();
+        services.AddScoped<ICurrentUserService, CurrentUserService>();
 
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();

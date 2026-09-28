@@ -18,7 +18,13 @@ public static class EndpointExtensions
     {
         if (result.IsSuccess && result.Data != null)
         {
-            var meta = new PaginationMeta(result.Data.PageIndex, result.Data.PageSize, result.Data.TotalCount);
+            var meta = new PaginationMeta(
+                result.Data.PageIndex,
+                result.Data.PageSize,
+                result.Data.TotalCount,
+                result.Data.CategoryAdminsCount,
+                result.Data.SystemAdminsCount,
+                result.Data.RegularUsersCount);
             return endpoint.HttpContext.Response.SendAsync(new ApiSuccessResponse<IReadOnlyList<T>>(result.Data.Items, result.Message, meta), (int)result.StatusCode, cancellation: ct);
         }
 

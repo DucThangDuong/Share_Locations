@@ -48,7 +48,11 @@ export const ItineraryPage: React.FC = () => {
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
 
-  const isPublished = plannerTrip?.privacy === 0 || String(plannerTrip?.privacy).toLowerCase() === 'public'
+  const isPublished =
+    plannerTrip?.privacy === 0 ||
+    String(plannerTrip?.privacy).toLowerCase() === 'public' ||
+    plannerTrip?.status === 1 ||
+    String(plannerTrip?.status).toLowerCase() === 'published'
   const roleLower = (currentUserRole || '').toLowerCase()
   const isOwner = !isPublished && roleLower === 'owner'
   const canEdit = !isPublished && (roleLower === 'owner' || roleLower === 'editor')
@@ -155,6 +159,7 @@ export const ItineraryPage: React.FC = () => {
       startDate: dto.startDate,
       endDate: dto.endDate,
       privacy: dto.privacy as DetailedItineraryItem['privacy'],
+      status: dto.status,
       coverImg: dto.coverImageUrl || '',
       authorName: 'Bạn',
       authorAvatar: '',

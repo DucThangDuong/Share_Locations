@@ -103,7 +103,11 @@ export const ItineraryPlannerView: React.FC<ItineraryPlannerViewProps> = ({
   const [dragOverTargetIdx, setDragOverTargetIdx] = useState<number | null>(null)
   const [explorerTargetDayIdx, setExplorerTargetDayIdx] = useState<number>(-1)
   const roleLower = (currentUserRole || '').toLowerCase()
-  const isPublished = itinerary.privacy === 0 || String(itinerary.privacy).toLowerCase() === 'public'
+  const isPublished =
+    itinerary.privacy === 0 ||
+    String(itinerary.privacy).toLowerCase() === 'public' ||
+    itinerary.status === 1 ||
+    String(itinerary.status).toLowerCase() === 'published'
   const isOwner = !isPublished && roleLower === 'owner'
   const isEditor = !isPublished && roleLower === 'editor'
   const canEdit = isOwner || isEditor
@@ -257,7 +261,7 @@ export const ItineraryPlannerView: React.FC<ItineraryPlannerViewProps> = ({
     <div className="min-h-screen bg-slate-50/50 text-slate-900 font-sans antialiased pb-28 relative">
       <ItineraryPlannerToolbar
         itinerary={itinerary}
-        currentUserRole={effectiveUserRole}
+        currentUserRole={currentUserRole}
         totalStopsCount={totalStopsCount}
         totalTripCost={totalTripCost}
         isSaving={isSaving}

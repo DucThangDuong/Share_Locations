@@ -2,6 +2,7 @@ using API.DTOs;
 using API.Extensions;
 using Application.Common;
 using Application.Features.Admin.Reviews;
+using Domain.Constants;
 using FastEndpoints;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -21,11 +22,11 @@ public class DeleteAdminCommentEndpoint : Endpoint<DeleteAdminCommentRequest, Ap
     {
         Delete("/api/admin/comments/{id}");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
-        Roles("CategoryAdmin", "SystemAdmin");
+        Roles(AppRoles.SuperAdminOnly);
         Summary(s =>
         {
-            s.Summary = "Xóa bình luận vi phạm (Admin)";
-            s.Description = "Xóa bình luận khỏi hệ thống.";
+            s.Summary = "Xóa bình luận vi phạm (Đặc quyền SystemAdmin)";
+            s.Description = "Xóa vĩnh viễn bình luận khỏi hệ thống. Chỉ dành riêng cho Quản trị viên tối cao (SystemAdmin).";
         });
     }
 

@@ -22,6 +22,7 @@ const ProvincePage = lazy(() => import('@/pages/ProvincePage').then((m) => ({ de
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })))
 const AdminPage = lazy(() => import('@/pages/AdminPage').then((m) => ({ default: m.AdminPage })))
 const UserProfilePage = lazy(() => import('@/pages/UserProfilePage').then((m) => ({ default: m.UserProfilePage })))
+const DirectionsPage = lazy(() => import('@/pages/DirectionsPage').then((m) => ({ default: m.DirectionsPage })))
 const ChatPage = lazy(() => import('@/pages/ChatPage'))
 
 const ChatRoute: React.FC = () => {
@@ -108,6 +109,8 @@ export const App: React.FC = () => {
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/quen-mat-khau" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ForgotPasswordPage />} />
+              <Route path="/directions" element={<DirectionsPage />} />
+              <Route path="/chi-duong" element={<DirectionsPage />} />
               <Route path="/admin" element={<AdminPage />} />
               <Route path="/admin/*" element={<AdminPage />} />
             </Routes>
