@@ -13,7 +13,7 @@ import type {
   TransportType,
   TripRole
 } from '@/types/models/itinerary.model'
-import { getDayTheme } from '@/utils/itineraryStyles'
+import { getDayTheme, normalizeTimeToHHmm } from '@/utils/itineraryStyles'
 
 interface ItineraryStopDetailPanelProps {
   stop: ItineraryStop | null
@@ -57,14 +57,21 @@ export const ItineraryStopDetailPanel: React.FC<ItineraryStopDetailPanelProps> =
   const canEdit = isOwner || isEditor
   const dayTheme = getDayTheme(dayIndex >= 0 ? dayIndex : 0)
 
+  const handleUpdateFields = (patch: Partial<ItineraryStop>) => {
+    if (!canEdit) return
+    const updated = { ...stop, ...patch }
+    onUpdateStop(dayIndex, updated, isWishlist)
+  }
+
   const handleChangeField = <K extends keyof ItineraryStop>(
     field: K,
     value: ItineraryStop[K]
   ) => {
-    if (!canEdit) return
-    const updated = { ...stop, [field]: value }
-    onUpdateStop(dayIndex, updated, isWishlist)
+    handleUpdateFields({ [field]: value } as Partial<ItineraryStop>)
   }
+
+  const currentStartTime = normalizeTimeToHHmm(stop.startTime || stop.time) || '08:00'
+  const currentEndTime = normalizeTimeToHHmm(stop.endTime) || '09:30'
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden flex flex-col h-full sticky top-20">
@@ -126,10 +133,13 @@ export const ItineraryStopDetailPanel: React.FC<ItineraryStopDetailPanelProps> =
             <input
               type="time"
               disabled={!canEdit}
-              value={stop.startTime || stop.time || '08:00'}
+              value={currentStartTime}
               onChange={(e) => {
-                handleChangeField('startTime', e.target.value)
-                handleChangeField('time', e.target.value)
+                const val = e.target.value
+                handleUpdateFields({
+                  startTime: val,
+                  time: val
+                })
               }}
               className="w-full px-3 py-2 bg-slate-50 focus:bg-white border border-slate-200 focus:border-emerald-600 rounded-xl text-slate-900 font-bold outline-none"
             />
@@ -143,8 +153,8 @@ export const ItineraryStopDetailPanel: React.FC<ItineraryStopDetailPanelProps> =
             <input
               type="time"
               disabled={!canEdit}
-              value={stop.endTime || '09:30'}
-              onChange={(e) => handleChangeField('endTime', e.target.value)}
+              value={currentEndTime}
+              onChange={(e) => handleUpdateFields({ endTime: e.target.value })}
               className="w-full px-3 py-2 bg-slate-50 focus:bg-white border border-slate-200 focus:border-emerald-600 rounded-xl text-slate-900 font-bold outline-none"
             />
           </div>

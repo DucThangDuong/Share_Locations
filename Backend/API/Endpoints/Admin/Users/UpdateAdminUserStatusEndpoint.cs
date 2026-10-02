@@ -32,7 +32,7 @@ public class UpdateAdminUserStatusEndpoint : Endpoint<UpdateAdminUserStatusApiRe
 
     public override async Task HandleAsync(UpdateAdminUserStatusApiRequest req, CancellationToken ct)
     {
-        byte statusByte = req.Status == "1" || req.Status.Equals("ACTIVE", StringComparison.OrdinalIgnoreCase) ? (byte)1 : (byte)2; // 1: Active, 2: Inactive/Banned
+        byte statusByte = req.Status == "1" || req.Status.Equals("ACTIVE", StringComparison.OrdinalIgnoreCase) ? (byte)1 : (byte)0; // 1: Active, 2: Inactive/Banned
 
         var result = await Mediator.Send(
             new UpdateAdminUserStatusCommand(

@@ -33,8 +33,8 @@ public class GetUserProposalsEndpoint : Endpoint<GetUserProposalsRequest, ApiSuc
         Options(x => x.RequireRateLimiting("general_api"));
         Summary(s =>
         {
-            s.Summary = "Lấy danh sách đề xuất của người dùng";
-            s.Description = "Lấy danh sách các địa điểm mà người dùng đề xuất cho hệ thống xét duyệt (hỗ trợ xem của chính mình hoặc người khác).";
+            s.Summary = "Lấy danh sách địa điểm đã được công bố / duyệt thành công của người dùng";
+            s.Description = "Lấy danh sách các địa điểm đã được quản trị viên phê duyệt thành công (Status = 1) của người dùng, trả về kèm theo PlaceId.";
         });
     }
 

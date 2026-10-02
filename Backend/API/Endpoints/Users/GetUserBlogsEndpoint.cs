@@ -33,8 +33,8 @@ public class GetUserBlogsEndpoint : Endpoint<GetUserBlogsRequest, ApiSuccessResp
         Options(x => x.RequireRateLimiting("general_api"));
         Summary(s =>
         {
-            s.Summary = "Lấy danh sách bài viết blog của người dùng";
-            s.Description = "Lấy danh sách các bài viết cẩm nang du lịch do người dùng biên tập (hỗ trợ xem của chính mình hoặc người khác).";
+            s.Summary = "Lấy danh sách bài viết blog đã công bố của người dùng";
+            s.Description = "Lấy danh sách các bài viết cẩm nang du lịch đã được phê duyệt / công bố (Status = 1) do người dùng biên tập (hỗ trợ xem của chính mình hoặc người khác).";
         });
     }
 
@@ -67,7 +67,7 @@ public class GetUserBlogsEndpoint : Endpoint<GetUserBlogsRequest, ApiSuccessResp
         }
 
         var result = await Mediator.Send(
-            new GetUserBlogsQuery(targetUserId, currentUserId, req.Status, req.Page, req.PageSize),
+            new GetUserBlogsQuery(targetUserId, currentUserId, 1, req.Page, req.PageSize),
             ct);
 
         await this.SendPagedApiResponseAsync(result, ct);

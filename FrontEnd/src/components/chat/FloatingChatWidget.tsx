@@ -1,7 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react'
 import {
-  Phone,
-  Video,
   Minus,
   X,
   ChevronDown,
@@ -30,7 +28,7 @@ interface FloatingChatWidgetProps {
 export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
   onOpenFullChat,
   onSelectPlace,
-  showToast = () => {},
+  showToast = () => { },
 }) => {
   const { user } = useAuth()
   const {
@@ -330,11 +328,10 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                             dismissIncomingToast()
                             restoreFloatingChat(room.roomId)
                           }}
-                          className={`relative w-14 h-14 rounded-full overflow-hidden shadow-2xl transition-all duration-200 cursor-pointer bg-slate-900 border-2 ${
-                            isCurrentActive
-                              ? 'border-white ring-4 ring-amber-400'
-                              : 'border-white ring-2 ring-slate-300 hover:ring-amber-300'
-                          }`}
+                          className={`relative w-14 h-14 rounded-full overflow-hidden shadow-2xl transition-all duration-200 cursor-pointer bg-slate-900 border-2 ${isCurrentActive
+                            ? 'border-white ring-4 ring-amber-400'
+                            : 'border-white ring-2 ring-slate-300 hover:ring-amber-300'
+                            }`}
                           title={`Đoạn chat: ${headTitle} (Bấm để mở cuộc trò chuyện)`}
                         >
                           <img
@@ -396,13 +393,8 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
               </button>
             </div>
           ) : (
-            /* ═══════════════════════════════════════════════════════════════
-               TRƯỜNG HỢP 2: CỬA SỔ CHAT MINI NỔI ĐẦY ĐỦ
-            ═══════════════════════════════════════════════════════════════ */
             <div className="w-[340px] sm:w-[360px] h-[520px] rounded-2xl shadow-2xl border border-amber-300/60 flex flex-col overflow-hidden bg-[#FFFDF0] animate-in fade-in slide-from-bottom-3 duration-200 relative">
-              {/* ── TOP HEADER CỦA CHAT MINI ── */}
               <div className="chat-draggable-handle px-3 py-2.5 bg-[#FFF8DE] border-b border-amber-200/80 flex items-center justify-between cursor-move text-slate-900 z-10 shadow-2xs">
-                {/* Left: Avatar + Tên + Chevron dropdown */}
                 <div className="relative flex items-center gap-2 min-w-0">
                   <div className="relative shrink-0">
                     <img src={avatar} alt="" className="w-8 h-8 rounded-full object-cover border border-amber-300" />
@@ -434,9 +426,8 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                                 selectRoom(item.roomId)
                                 setShowConvPicker(false)
                               }}
-                              className={`w-full px-3 py-2 text-left text-xs flex items-center gap-2 hover:bg-amber-50 cursor-pointer ${
-                                item.roomId === activeRoomId ? 'bg-amber-100/60 font-bold text-amber-900' : 'text-slate-700'
-                              }`}
+                              className={`w-full px-3 py-2 text-left text-xs flex items-center gap-2 hover:bg-amber-50 cursor-pointer ${item.roomId === activeRoomId ? 'bg-amber-100/60 font-bold text-amber-900' : 'text-slate-700'
+                                }`}
                             >
                               <img
                                 src={
@@ -462,22 +453,6 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
 
                 {/* Right: Nút Gọi thoại, Gọi video, Nút '-' (thu nhỏ) và Nút 'X' (đóng) */}
                 <div className="flex items-center gap-1 text-[#E11D48]">
-                  <button
-                    type="button"
-                    onClick={() => setActiveCall({ type: 'voice', partnerName: title })}
-                    className="p-1 hover:bg-amber-100/80 rounded-full transition-colors cursor-pointer text-[#E11D48]"
-                    title="Bắt đầu gọi thoại"
-                  >
-                    <Phone size={17} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveCall({ type: 'video', partnerName: title })}
-                    className="p-1 hover:bg-amber-100/80 rounded-full transition-colors cursor-pointer text-[#E11D48]"
-                    title="Bắt đầu gọi video"
-                  >
-                    <Video size={17} />
-                  </button>
                   <button
                     type="button"
                     onClick={minimizeFloatingChat}
@@ -553,9 +528,8 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                     // Action Toolbar (3-dots, reply)
                     const actionToolbar = (
                       <div
-                        className={`relative flex items-center gap-1 mb-1 shrink-0 transition-all ${
-                          isMenuOpen ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                        }`}
+                        className={`relative flex items-center gap-1 mb-1 shrink-0 transition-all ${isMenuOpen ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                          }`}
                         onClick={(e) => e.stopPropagation()}
                       >
                         {/* 1. Nút 3 chấm (More Options) */}
@@ -566,11 +540,10 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                               e.stopPropagation()
                               setActiveMenuMessageId(isMenuOpen ? null : m.id)
                             }}
-                            className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors cursor-pointer ${
-                              isMenuOpen
-                                ? 'bg-amber-200 text-amber-950 shadow-2xs'
-                                : 'bg-white/90 hover:bg-white text-slate-600 hover:text-slate-900 border border-amber-200/80 shadow-2xs'
-                            }`}
+                            className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors cursor-pointer ${isMenuOpen
+                              ? 'bg-amber-200 text-amber-950 shadow-2xs'
+                              : 'bg-white/90 hover:bg-white text-slate-600 hover:text-slate-900 border border-amber-200/80 shadow-2xs'
+                              }`}
                             title="Tùy chọn khác"
                           >
                             <MoreHorizontal size={13} />
@@ -579,9 +552,8 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                           {/* Dropdown Menu */}
                           {isMenuOpen && (
                             <div
-                              className={`absolute bottom-full mb-1.5 w-36 bg-white rounded-xl shadow-xl border border-amber-200/80 py-1.5 z-50 animate-in zoom-in-95 duration-150 ${
-                                isMe ? 'right-0' : 'left-0'
-                              }`}
+                              className={`absolute bottom-full mb-1.5 w-36 bg-white rounded-xl shadow-xl border border-amber-200/80 py-1.5 z-50 animate-in zoom-in-95 duration-150 ${isMe ? 'right-0' : 'left-0'
+                                }`}
                             >
                               {/* Trả lời */}
                               <button
@@ -762,11 +734,10 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                                     })
                                   }
                                 }}
-                                className={`relative text-[13.5px] leading-snug break-words px-3.5 py-2 rounded-[18px] transition-colors shadow-2xs ${
-                                  isMe
-                                    ? 'bg-[#FF8800] text-white font-medium border border-orange-400/50'
-                                    : 'bg-[#FFF3C4] text-slate-900 border border-amber-200/80 cursor-pointer'
-                                }`}
+                                className={`relative text-[13.5px] leading-snug break-words px-3.5 py-2 rounded-[18px] transition-colors shadow-2xs ${isMe
+                                  ? 'bg-[#FF8800] text-white font-medium border border-orange-400/50'
+                                  : 'bg-[#FFF3C4] text-slate-900 border border-amber-200/80 cursor-pointer'
+                                  }`}
                                 title={!isMe ? 'Bấm để trả lời tin nhắn này' : undefined}
                               >
                                 <p className="whitespace-pre-wrap">{m.content}</p>
@@ -900,11 +871,10 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                   type="button"
                   disabled={!inputText.trim() || isSending}
                   onClick={() => handleSend()}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all shrink-0 shadow-xs ${
-                    inputText.trim() && !isSending
-                      ? 'bg-[#F97316] hover:bg-[#EA580C] text-white cursor-pointer'
-                      : 'bg-amber-200/60 text-amber-500/50 cursor-not-allowed'
-                  }`}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all shrink-0 shadow-xs ${inputText.trim() && !isSending
+                    ? 'bg-[#F97316] hover:bg-[#EA580C] text-white cursor-pointer'
+                    : 'bg-amber-200/60 text-amber-500/50 cursor-not-allowed'
+                    }`}
                   title="Gửi tin nhắn"
                 >
                   {isSending ? <Loader2 size={14} className="animate-spin" /> : <Send size={15} />}

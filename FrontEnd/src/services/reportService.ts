@@ -35,10 +35,6 @@ class ReportService {
       return { data: [] };
     }
   }
-
-  /**
-   * Submit a new report for any target entity (place, review, comment, blog, photo, user)
-   */
   async submitReport(data: CreateReportDto) {
     const rawTargetType = String(data.targetType || "place").toLowerCase();
     const typeFormatted = rawTargetType.charAt(0).toUpperCase() + rawTargetType.slice(1);
@@ -76,7 +72,6 @@ class ReportService {
       const response = await apiClient.post("/api/reports", payload);
       return response.data;
     } catch (err: any) {
-      // Fallback for place endpoint if generic /api/reports 404s
       if (rawTargetType === "place" && targetNumId > 0) {
         try {
           const fallbackRes = await apiClient.post(`/api/places/${targetNumId}/reports`, {
@@ -86,16 +81,11 @@ class ReportService {
           });
           return fallbackRes.data;
         } catch {
-          // Re-throw original
         }
       }
       throw err;
     }
   }
-
-  /**
-   * Get user's submitted reports history
-   */
   async getMyReports() {
     try {
       const response = await apiClient.get("/api/reports/my-reports");
@@ -105,9 +95,6 @@ class ReportService {
     }
   }
 
-  /**
-   * Admin: Fetch all reports with filters
-   */
   async getAdminReports(params?: {
     targetType?: string;
     status?: number;
@@ -118,10 +105,6 @@ class ReportService {
     const response = await apiClient.get("/api/admin/reports", { params });
     return response.data;
   }
-
-  /**
-   * Admin: Resolve or dismiss report
-   */
   async resolveReport(reportId: number, data: {
     decision: "accept" | "dismiss";
     actionTaken?: string;

@@ -5,6 +5,7 @@ public class AdminReviewItemDto
     public long Id { get; set; }
     public long PlaceId { get; set; }
     public string PlaceName { get; set; } = string.Empty;
+    public string? PlaceCoverImg { get; set; }
     public string? Category { get; set; }
     public string? Province { get; set; }
     public long UserId { get; set; }
@@ -24,6 +25,8 @@ public class AdminCommentItemDto
     public long? BlogId { get; set; }
     public string? BlogTitle { get; set; }
     public long? ReviewId { get; set; }
+    public long? PlaceId { get; set; }
+    public string? PlaceName { get; set; }
     public long UserId { get; set; }
     public string UserName { get; set; } = string.Empty;
     public string? UserAvatar { get; set; }

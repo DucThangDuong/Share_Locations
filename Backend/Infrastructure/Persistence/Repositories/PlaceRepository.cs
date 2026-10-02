@@ -350,6 +350,7 @@ public class PlaceRepository : IPlaceRepository
         int pageSize,
         int? rating,
         long? userId = null,
+        bool includeHidden = false,
         CancellationToken ct = default)
     {
         var connection = _dbContext.Database.GetDbConnection();
@@ -367,7 +368,7 @@ public class PlaceRepository : IPlaceRepository
 
             SELECT Rating, COUNT(1) AS TotalCount
             FROM dbo.Reviews
-            WHERE PlaceId = @PlaceId AND Status = 1
+            WHERE PlaceId = @PlaceId AND (@IncludeHidden = 1 OR Status = 1)
             GROUP BY Rating;
 
             SELECT 
@@ -379,10 +380,11 @@ public class PlaceRepository : IPlaceRepository
                 r.Content,
                 r.CreatedAt,
                 r.LikesCount,
-                (SELECT COUNT(1) FROM dbo.Comments c WHERE c.ReviewId = r.Id AND c.Status = 1) AS CommentsCount
+                CASE WHEN r.Status = 1 THEN 'active' ELSE 'hidden' END AS Status,
+                (SELECT COUNT(1) FROM dbo.Comments c WHERE c.ReviewId = r.Id AND (@IncludeHidden = 1 OR c.Status = 1)) AS CommentsCount
             FROM dbo.Reviews r
             LEFT JOIN dbo.UserProfiles up ON r.UserId = up.UserId
-            WHERE r.PlaceId = @PlaceId AND r.Status = 1
+            WHERE r.PlaceId = @PlaceId AND (@IncludeHidden = 1 OR r.Status = 1)
               AND (@Rating IS NULL OR r.Rating = @Rating)
             ORDER BY r.CreatedAt DESC
             OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
@@ -391,6 +393,7 @@ public class PlaceRepository : IPlaceRepository
         {
             PlaceId = placeId,
             Rating = (rating is >= 1 and <= 5) ? rating : null,
+            IncludeHidden = includeHidden ? 1 : 0,
             Offset = offset,
             PageSize = safePageSize
         });

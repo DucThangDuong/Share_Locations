@@ -49,20 +49,14 @@ const normalizeForMatch = (str: string): string => {
     .trim()
 }
 
-/**
- * Format Nominatim address object into standard Vietnamese address format
- */
 const formatNominatimAddress = (item: any): { title: string; fullAddress: string } => {
   const addr = item.address || {}
   const houseNumber = addr.house_number || ''
   const road = addr.road || addr.street || addr.pedestrian || addr.footway || ''
   const amenity = addr.amenity || addr.shop || addr.tourism || addr.building || ''
 
-  // Sub-district / Ward
   const ward = addr.suburb || addr.quarter || addr.neighbourhood || addr.village || addr.commune || ''
-  // District
   const district = addr.city_district || addr.district || addr.county || addr.town || ''
-  // City / Province
   const province = addr.city || addr.state || addr.province || ''
 
   let title = ''
@@ -76,7 +70,6 @@ const formatNominatimAddress = (item: any): { title: string; fullAddress: string
     title = item.name || item.display_name?.split(',')[0] || ''
   }
 
-  // Construct structured full address
   const parts: string[] = []
   if (houseNumber && road) {
     parts.push(`${houseNumber} ${road}`)
@@ -99,10 +92,6 @@ const formatNominatimAddress = (item: any): { title: string; fullAddress: string
     fullAddress: fullAddress || item.display_name
   }
 }
-
-/**
- * Format Mapbox feature into standard title and fullAddress with house number
- */
 const formatMapboxFeature = (
   feature: MapboxFeature,
   userTypedHouseNum?: string
@@ -112,7 +101,6 @@ const formatMapboxFeature = (
   let fullAddress = feature.place_name || ''
 
   if (houseNumber) {
-    // If place_name doesn't already start with the house number
     if (!fullAddress.startsWith(houseNumber)) {
       title = `${houseNumber} ${feature.text}`
       fullAddress = `${houseNumber} ${feature.place_name}`
@@ -125,9 +113,6 @@ const formatMapboxFeature = (
 }
 
 export const mapboxService = {
-  /**
-   * Search address / POI suggestions from Mapbox + OSM Nominatim combined
-   */
   async searchAddress(
     query: string,
     token: string,
@@ -141,7 +126,6 @@ export const mapboxService = {
     const trimmed = query.trim()
     if (!trimmed) return []
 
-    // Detect if user typed a leading house number (e.g. "120 Nguyễn Thị Minh Khai", "Số 5 Hai Bà Trưng")
     const houseNumMatch = trimmed.match(/^(?:số\s+)?(\d+[a-zA-Z0-9/-]*)\s+(.+)$/i)
     const userHouseNum = houseNumMatch ? houseNumMatch[1] : undefined
     const searchQuery = trimmed
@@ -153,7 +137,6 @@ export const mapboxService = {
     const suggestions: AddressSuggestion[] = []
     const seenAddresses = new Set<string>()
 
-    // 1. Fetch Mapbox Geocoding API
     const mapboxPromise = (async () => {
       if (!token || token.includes('placeholder')) return []
       let url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
@@ -174,7 +157,6 @@ export const mapboxService = {
       }
     })()
 
-    // 2. Fetch OpenStreetMap Nominatim for highly accurate Vietnam house numbers and streets
     const nominatimPromise = (async () => {
       const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
         searchQuery
@@ -200,7 +182,6 @@ export const mapboxService = {
       nominatimPromise
     ])
 
-    // Process Nominatim results first if they contain house numbers
     if (nominatimResult.status === 'fulfilled' && nominatimResult.value.length > 0) {
       for (const item of nominatimResult.value) {
         const parsed = formatNominatimAddress(item)
@@ -222,13 +203,11 @@ export const mapboxService = {
       }
     }
 
-    // Process Mapbox results
     if (mapboxResult.status === 'fulfilled' && mapboxResult.value.length > 0) {
       for (const feat of mapboxResult.value) {
         const parsed = formatMapboxFeature(feat, userHouseNum)
         const normKey = normalizeForMatch(parsed.fullAddress)
 
-        // Avoid adding duplicate addresses
         if (!seenAddresses.has(normKey)) {
           seenAddresses.add(normKey)
           suggestions.push({
@@ -245,9 +224,6 @@ export const mapboxService = {
     return suggestions.slice(0, 10)
   },
 
-  /**
-   * Reverse geocode coordinates [lng, lat] to full human-readable address with house number, street, ward, district
-   */
   async reverseGeocode(
     lng: number,
     lat: number,
@@ -260,7 +236,6 @@ export const mapboxService = {
       return null
     }
 
-    // 1. Query OSM Nominatim reverse geocoding (zoom 18 for building & house number level)
     const nominatimPromise = (async () => {
       const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1&zoom=18&accept-language=vi`
       try {
@@ -281,7 +256,6 @@ export const mapboxService = {
       }
     })()
 
-    // 2. Query Mapbox reverse geocoding
     const mapboxPromise = (async () => {
       if (!token || token.includes('placeholder')) return null
       const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${token}&language=vi&limit=5`
@@ -292,7 +266,6 @@ export const mapboxService = {
         const features = data.features || []
         if (features.length === 0) return null
 
-        // Prioritize address or poi feature that has street/house number
         const addressFeature =
           features.find(
             (f) =>
@@ -315,7 +288,6 @@ export const mapboxService = {
     const nomResult = nominatimRes.status === 'fulfilled' ? nominatimRes.value : null
     const mbResult = mapboxRes.status === 'fulfilled' ? mapboxRes.value : null
 
-    // If Nominatim gave a detailed address with house number or road, prioritize it
     if (nomResult && nomResult.fullAddress && nomResult.fullAddress.length > 5) {
       return {
         fullAddress: nomResult.fullAddress,
@@ -323,8 +295,6 @@ export const mapboxService = {
         center: [lng, lat]
       }
     }
-
-    // Otherwise use Mapbox result
     if (mbResult && mbResult.fullAddress) {
       return {
         fullAddress: mbResult.fullAddress,
@@ -336,9 +306,6 @@ export const mapboxService = {
     return null
   },
 
-  /**
-   * Match an address text to a province ID from the provinces list
-   */
   findMatchingProvinceId(
     addressText: string,
     provinces: { id: number; name: string }[]
@@ -351,7 +318,6 @@ export const mapboxService = {
       const normProv = normalizeForMatch(prov.name)
       if (!normProv) continue
 
-      // Direct equal or substring match
       if (
         normText === normProv ||
         normText.includes(normProv) ||

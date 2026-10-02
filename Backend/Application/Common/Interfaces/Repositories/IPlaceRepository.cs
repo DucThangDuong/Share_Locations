@@ -29,6 +29,7 @@ public interface IPlaceRepository
         int pageSize,
         int? rating,
         long? userId = null,
+        bool includeHidden = false,
         CancellationToken ct = default);
 
     Task<bool> IsPlaceSavedAsync(

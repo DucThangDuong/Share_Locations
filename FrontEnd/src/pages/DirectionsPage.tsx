@@ -73,7 +73,7 @@ export const DirectionsPage: React.FC = () => {
 
       const map = mapRef.current
       if (map.getSource('route')) {
-        ;(map.getSource('route') as mapboxgl.GeoJSONSource).setData({
+        ; (map.getSource('route') as mapboxgl.GeoJSONSource).setData({
           type: 'Feature',
           properties: {},
           geometry: shortestRoute.geometry
@@ -200,7 +200,7 @@ export const DirectionsPage: React.FC = () => {
       {/* Map Container */}
       <div ref={mapContainerRef} className="w-full h-full" />
 
-      {/* Top Floating Control Panel */}
+
       <div className="absolute top-4 left-4 right-4 sm:right-auto sm:w-96 z-20 flex flex-col gap-3">
         <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200/80 p-4 transition-all">
           {/* Header */}
@@ -237,16 +237,14 @@ export const DirectionsPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Transport mode selector */}
           <div className="grid grid-cols-3 gap-1.5 mt-3.5 p-1 bg-slate-100 rounded-xl">
             <button
               type="button"
               onClick={() => handleProfileChange('driving')}
-              className={`flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                profile === 'driving'
+              className={`flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${profile === 'driving'
                   ? 'bg-white text-emerald-700 shadow-xs font-bold'
                   : 'text-slate-600 hover:text-slate-900'
-              }`}
+                }`}
             >
               <Car className="w-3.5 h-3.5" />
               <span>Ô tô</span>
@@ -254,11 +252,10 @@ export const DirectionsPage: React.FC = () => {
             <button
               type="button"
               onClick={() => handleProfileChange('cycling')}
-              className={`flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                profile === 'cycling'
+              className={`flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${profile === 'cycling'
                   ? 'bg-white text-emerald-700 shadow-xs font-bold'
                   : 'text-slate-600 hover:text-slate-900'
-              }`}
+                }`}
             >
               <Bike className="w-3.5 h-3.5" />
               <span>Xe máy</span>
@@ -266,18 +263,16 @@ export const DirectionsPage: React.FC = () => {
             <button
               type="button"
               onClick={() => handleProfileChange('walking')}
-              className={`flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                profile === 'walking'
+              className={`flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${profile === 'walking'
                   ? 'bg-white text-emerald-700 shadow-xs font-bold'
                   : 'text-slate-600 hover:text-slate-900'
-              }`}
+                }`}
             >
               <Footprints className="w-3.5 h-3.5" />
               <span>Đi bộ</span>
             </button>
           </div>
 
-          {/* Route metrics banner */}
           <div className="mt-3.5 p-3 rounded-xl bg-emerald-50/80 border border-emerald-100 flex items-center justify-between">
             <div>
               <div className="text-[11px] font-semibold text-emerald-800 uppercase tracking-wider">
@@ -305,7 +300,6 @@ export const DirectionsPage: React.FC = () => {
             </button>
           </div>
 
-          {/* Geo error message */}
           {geoError && (
             <div className="mt-2.5 p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-start gap-2">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-500" />
@@ -322,7 +316,6 @@ export const DirectionsPage: React.FC = () => {
             </div>
           )}
 
-          {/* Alternative: Google Maps fallback */}
           <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
             <span className="text-slate-400">Tùy chọn khác:</span>
             <a

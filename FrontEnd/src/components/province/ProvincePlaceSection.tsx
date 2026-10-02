@@ -9,8 +9,6 @@ interface ProvincePlaceSectionProps {
   categories: LookupItemDto[]
   selectedCategoryId: number | null
   onSelectCategory: (id: number | null) => void
-  sortBy: string
-  onSortChange: (sort: string) => void
   loading?: boolean
 }
 
@@ -29,8 +27,6 @@ export const ProvincePlaceSection: React.FC<ProvincePlaceSectionProps> = ({
   categories,
   selectedCategoryId,
   onSelectCategory,
-  sortBy,
-  onSortChange,
   loading = false
 }) => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
@@ -46,10 +42,10 @@ export const ProvincePlaceSection: React.FC<ProvincePlaceSectionProps> = ({
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  // Reset visible count when category, sort, province or batch size changes
+  // Reset visible count when category, province or batch size changes
   useEffect(() => {
     setVisibleCount(batchSize)
-  }, [selectedCategoryId, sortBy, provinceName, batchSize])
+  }, [selectedCategoryId, provinceName, batchSize])
 
   const displayedPlaces = places.slice(0, visibleCount)
   const hasMore = places.length > visibleCount
@@ -68,18 +64,6 @@ export const ProvincePlaceSection: React.FC<ProvincePlaceSectionProps> = ({
         </div>
 
         <div className="flex items-center gap-2.5 self-start md:self-auto">
-          <div className="flex items-center bg-stone-100 p-1 rounded-xl border border-stone-200">
-            <select
-              value={sortBy}
-              onChange={(e) => onSortChange(e.target.value)}
-              className="bg-transparent text-xs font-bold text-stone-700 focus:outline-hidden pr-2 cursor-pointer"
-            >
-              <option value="rating">Đánh giá cao nhất</option>
-              <option value="price_asc">Giá: Thấp đến cao</option>
-              <option value="price_desc">Giá: Cao đến thấp</option>
-            </select>
-          </div>
-
           <div className="flex items-center bg-stone-100 p-1 rounded-xl border border-stone-200">
             <button
               type="button"

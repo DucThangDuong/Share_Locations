@@ -12,7 +12,10 @@ interface BlogCardProps {
 
 export const BlogCard: React.FC<BlogCardProps> = ({ post, onRead }) => {
   const navigate = useNavigate()
-  const summaryText = extractPlainText(post.excerpt || post.content)
+  const authorName = post.author?.name || post.authorName || 'Tác giả'
+  const authorAvatar = post.author?.avatar || post.authorAvatar || null
+  const coverImage = post.coverImg || post.coverUrl || post.coverImageUrl
+  const summaryText = post.summary || extractPlainText(post.excerpt || post.content)
 
   const handleNavigateToAuthor = (e: React.MouseEvent) => {
     navigateToAuthorProfile(navigate, post.author, post, e)
@@ -24,9 +27,9 @@ export const BlogCard: React.FC<BlogCardProps> = ({ post, onRead }) => {
       className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-2xs hover:shadow-md transition-all cursor-pointer flex flex-col group"
     >
       <div className="relative h-48 overflow-hidden bg-gray-100">
-        {post.coverUrl ? (
+        {coverImage ? (
           <img
-            src={post.coverUrl}
+            src={coverImage}
             alt={post.title}
             className="w-full h-full object-cover transition-all duration-300"
           />
@@ -45,7 +48,7 @@ export const BlogCard: React.FC<BlogCardProps> = ({ post, onRead }) => {
 
       <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
         <div className="space-y-2">
-          <div className="text-2xs text-gray-400 font-medium">{post.readTime || '4 phút đọc'}</div>
+
           <h3 className="text-base font-bold text-gray-900 group-hover:text-emerald-700 transition-colors line-clamp-2 leading-snug">
             {post.title}
           </h3>
@@ -60,19 +63,19 @@ export const BlogCard: React.FC<BlogCardProps> = ({ post, onRead }) => {
             className="flex items-center gap-2 cursor-pointer group/author hover:opacity-90 transition-opacity"
             title="Xem trang cá nhân của tác giả"
           >
-            {post.author?.avatar ? (
+            {authorAvatar ? (
               <img
-                src={post.author.avatar}
-                alt={post.author?.name || 'Tác giả'}
+                src={authorAvatar}
+                alt={authorName}
                 className="w-6 h-6 rounded-full object-cover border border-gray-200 group-hover/author:ring-1 group-hover/author:ring-emerald-500/50"
               />
             ) : (
               <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center text-[10px] font-bold group-hover/author:ring-1 group-hover/author:ring-emerald-500/50">
-                {(post.author?.name || 'T').charAt(0).toUpperCase()}
+                {authorName.charAt(0).toUpperCase()}
               </div>
             )}
             <span className="text-2xs font-semibold text-gray-700 group-hover/author:text-emerald-700 transition-colors truncate max-w-[110px]">
-              {post.author?.name || 'Tác giả'}
+              {authorName}
             </span>
           </div>
 

@@ -19,6 +19,7 @@ import { itineraryService } from '@/services/itineraryService'
 import { tripService } from '@/services/tripService'
 import { useAuth } from '@/context/AuthContext'
 import type { TripDetailDto, PublishTripRequestDto } from '@/types/models/trip.model'
+import { sortStopsByStartTime, normalizeTimeToHHmm } from '@/utils/itineraryStyles'
 
 export const ItineraryPage: React.FC = () => {
   const navigate = useNavigate()
@@ -122,29 +123,42 @@ export const ItineraryPage: React.FC = () => {
   }
 
   const mapTripDetailDtoToDetailed = (dto: TripDetailDto): DetailedItineraryItem => {
-    const days: ItineraryDayData[] = (dto.days || []).map((d) => ({
-      dayNumber: d.dayNumber,
-      title: d.dayTitle || `Ngày ${d.dayNumber}`,
-      date: d.date,
-      description: 'Lộ trình tham quan',
-      stops: (d.stops || []).map((s) => ({
-        id: String(s.id),
-        time: s.startTime || '08:00',
-        startTime: s.startTime || '08:00',
-        endTime: s.endTime || '09:30',
-        name: s.name,
-        category: s.category || 'Điểm tham quan',
-        address: s.address,
-        lat: s.latitude || undefined,
-        lng: s.longitude || undefined,
-        note: s.note || '',
-        costEstimate: Number(s.estimatedCost || 0),
-        duration: '1.5 giờ',
-        transportMode: (s.transportMode as TransportType) || 'Xe máy',
-        visitOrder: s.visitOrder,
-        img: s.imageUrl || ''
+    const days: ItineraryDayData[] = (dto.days || []).map((d) => {
+      const rawStops: ItineraryStop[] = (d.stops || []).map((s) => {
+        const start = normalizeTimeToHHmm(s.startTime) || s.startTime || '08:00'
+        const end = normalizeTimeToHHmm(s.endTime) || s.endTime || '09:30'
+        return {
+          id: String(s.id),
+          time: start,
+          startTime: start,
+          endTime: end,
+          name: s.name,
+          category: s.category || 'Điểm tham quan',
+          address: s.address,
+          lat: s.latitude || undefined,
+          lng: s.longitude || undefined,
+          note: s.note || '',
+          costEstimate: Number(s.estimatedCost || 0),
+          duration: '1.5 giờ',
+          transportMode: (s.transportMode as TransportType) || 'Xe máy',
+          visitOrder: s.visitOrder,
+          img: s.imageUrl || ''
+        }
+      })
+
+      const sortedStops = sortStopsByStartTime(rawStops).map((s, idx) => ({
+        ...s,
+        visitOrder: idx + 1
       }))
-    }))
+
+      return {
+        dayNumber: d.dayNumber,
+        title: d.dayTitle || `Ngày ${d.dayNumber}`,
+        date: d.date,
+        description: 'Lộ trình tham quan',
+        stops: sortedStops
+      }
+    })
 
     return {
       id: Number(dto.id),
@@ -598,25 +612,9 @@ export const ItineraryPage: React.FC = () => {
       showToast('Bạn chỉ có quyền xem lịch trình (Member).')
       return
     }
-    setSelectedStopInfo({ dayIndex: dayIdx, stop: updatedStop, isWishlist })
     setHasUnsavedChanges(true)
 
-    if (!isWishlist && dayIdx !== -1) {
-      const stopNumId = Number(updatedStop.id)
-      if (stopNumId) {
-        try {
-          await tripService.updateTripPlace(stopNumId, {
-            visitOrder: updatedStop.visitOrder,
-            startTime: updatedStop.startTime,
-            endTime: updatedStop.endTime,
-            estimatedCost: updatedStop.costEstimate,
-            transportMode: updatedStop.transportMode,
-            note: updatedStop.note
-          })
-        } catch {
-        }
-      }
-    }
+    let finalUpdatedStop = updatedStop
 
     setPlannerTrip((prev) => {
       if (!prev) return null
@@ -628,10 +626,17 @@ export const ItineraryPage: React.FC = () => {
       }
       const updatedDays = prev.days.map((day, dIdx) => {
         if (dIdx === dayIdx) {
-          const updatedStops = day.stops.map((s) =>
+          const rawStops = day.stops.map((s) =>
             s.id === updatedStop.id ? updatedStop : s
           )
-          return { ...day, stops: updatedStops }
+          const sortedStops = sortStopsByStartTime(rawStops).map((s, idx) => {
+            const reordered = { ...s, visitOrder: idx + 1 }
+            if (reordered.id === updatedStop.id) {
+              finalUpdatedStop = reordered
+            }
+            return reordered
+          })
+          return { ...day, stops: sortedStops }
         }
         return day
       })
@@ -642,6 +647,25 @@ export const ItineraryPage: React.FC = () => {
       )
       return { ...prev, days: updatedDays, estimatedBudget: newTotal }
     })
+
+    setSelectedStopInfo({ dayIndex: dayIdx, stop: finalUpdatedStop, isWishlist })
+
+    if (!isWishlist && dayIdx !== -1) {
+      const stopNumId = Number(updatedStop.id)
+      if (stopNumId) {
+        try {
+          await tripService.updateTripPlace(stopNumId, {
+            visitOrder: finalUpdatedStop.visitOrder,
+            startTime: finalUpdatedStop.startTime || finalUpdatedStop.time,
+            endTime: finalUpdatedStop.endTime,
+            estimatedCost: finalUpdatedStop.costEstimate,
+            transportMode: finalUpdatedStop.transportMode,
+            note: finalUpdatedStop.note
+          })
+        } catch {
+        }
+      }
+    }
   }
 
   const handleDeleteStop = async (stopId: string, name: string) => {
@@ -695,12 +719,17 @@ export const ItineraryPage: React.FC = () => {
       if (!prev) return null
       const updatedDays = prev.days.map((day, dIdx) => {
         if (dIdx === fromDayIdx) {
-          return { ...day, stops: day.stops.filter((s) => s.id !== stop.id) }
+          const remaining = day.stops.filter((s) => s.id !== stop.id).map((s, idx) => ({ ...s, visitOrder: idx + 1 }))
+          return { ...day, stops: remaining }
         }
         if (dIdx === toDayIdx) {
+          const sorted = sortStopsByStartTime([...day.stops, stop]).map((s, idx) => ({
+            ...s,
+            visitOrder: idx + 1
+          }))
           return {
             ...day,
-            stops: [...day.stops, { ...stop, visitOrder: day.stops.length + 1 }]
+            stops: sorted
           }
         }
         return day
@@ -720,7 +749,8 @@ export const ItineraryPage: React.FC = () => {
       if (!prev) return null
       const updatedDays = prev.days.map((day, dIdx) => {
         if (dIdx === fromDayIdx) {
-          return { ...day, stops: day.stops.filter((s) => s.id !== stop.id) }
+          const remaining = day.stops.filter((s) => s.id !== stop.id).map((s, idx) => ({ ...s, visitOrder: idx + 1 }))
+          return { ...day, stops: remaining }
         }
         return day
       })
@@ -741,9 +771,13 @@ export const ItineraryPage: React.FC = () => {
       const updatedWishlist = (prev.backlogStops || []).filter((s) => s.id !== stop.id)
       const updatedDays = prev.days.map((day, dIdx) => {
         if (dIdx === toDayIdx) {
+          const sorted = sortStopsByStartTime([...day.stops, stop]).map((s, idx) => ({
+            ...s,
+            visitOrder: idx + 1
+          }))
           return {
             ...day,
-            stops: [...day.stops, { ...stop, visitOrder: day.stops.length + 1 }]
+            stops: sorted
           }
         }
         return day
@@ -1244,7 +1278,11 @@ export const ItineraryPage: React.FC = () => {
       }
       const updatedDays = prev.days.map((day, dIdx) => {
         if (dIdx === targetDayIdx) {
-          return { ...day, stops: [...day.stops, newStop] }
+          const sorted = sortStopsByStartTime([...day.stops, newStop]).map((s, idx) => ({
+            ...s,
+            visitOrder: idx + 1
+          }))
+          return { ...day, stops: sorted }
         }
         return day
       })

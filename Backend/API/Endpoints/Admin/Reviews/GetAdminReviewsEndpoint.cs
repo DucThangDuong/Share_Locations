@@ -11,6 +11,7 @@ namespace API.Endpoints.Admin.Reviews;
 
 public class GetAdminReviewsRequest
 {
+    public long? PlaceId { get; set; }
     public bool? HasReportsOnly { get; set; }
     public int? Rating { get; set; }
     public string? Status { get; set; }
@@ -31,7 +32,7 @@ public class GetAdminReviewsEndpoint : Endpoint<GetAdminReviewsRequest, ApiSucce
         Summary(s =>
         {
             s.Summary = "Lấy danh sách đánh giá địa điểm (Admin)";
-            s.Description = "Danh sách đánh giá địa điểm phục vụ kiểm duyệt, có hỗ trợ lọc chỉ lấy đánh giá có phản ánh vi phạm.";
+            s.Description = "Danh sách đánh giá địa điểm phục vụ kiểm duyệt (lấy tất cả bài đánh giá kể cả bị ẩn, trừ khi có bộ lọc trạng thái).";
         });
     }
 
@@ -39,6 +40,7 @@ public class GetAdminReviewsEndpoint : Endpoint<GetAdminReviewsRequest, ApiSucce
     {
         var result = await Mediator.Send(
             new GetAdminReviewsQuery(
+                req.PlaceId,
                 req.HasReportsOnly,
                 req.Rating,
                 req.Status,

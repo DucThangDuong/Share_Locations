@@ -1,6 +1,22 @@
 import React from "react";
 import type { GroupedReport, AdminReportItem } from "@/types/admin.types";
-import { X, UserCheck } from "lucide-react";
+import { X } from "lucide-react";
+
+const formatDateTime = (dateStr?: string) => {
+  if (!dateStr) return "";
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    const hours = String(d.getHours()).padStart(2, "0");
+    const minutes = String(d.getMinutes()).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const year = d.getFullYear();
+    return `${hours}:${minutes} ${day}/${month}/${year}`;
+  } catch {
+    return dateStr;
+  }
+};
 
 interface ModerationDrawerProps {
   activeReportGroup: GroupedReport | null;
@@ -14,14 +30,14 @@ interface ModerationDrawerProps {
   setDrawerResolutionNote: (note: string) => void;
   drawerDismissReason: string;
   setDrawerDismissReason: (reason: string) => void;
-  drawerAutoCloseDuplicates: boolean;
-  setDrawerAutoCloseDuplicates: (v: boolean) => void;
-  drawerAutoNotifyReporters: boolean;
-  setDrawerAutoNotifyReporters: (v: boolean) => void;
-  drawerAutoRecalculateRating: boolean;
-  setDrawerAutoRecalculateRating: (v: boolean) => void;
+  drawerAutoCloseDuplicates?: boolean;
+  setDrawerAutoCloseDuplicates?: (v: boolean) => void;
+  drawerAutoNotifyReporters?: boolean;
+  setDrawerAutoNotifyReporters?: (v: boolean) => void;
+  drawerAutoRecalculateRating?: boolean;
+  setDrawerAutoRecalculateRating?: (v: boolean) => void;
   handleConfirmDrawerResolution: () => void;
-  handleAssignToMe: (groupKey: string) => void;
+  handleAssignToMe?: (groupKey: string) => void;
   onClose: () => void;
 }
 
@@ -37,30 +53,43 @@ export const ModerationDrawer: React.FC<ModerationDrawerProps> = ({
   setDrawerResolutionNote,
   drawerDismissReason,
   setDrawerDismissReason,
-  drawerAutoCloseDuplicates,
-  setDrawerAutoCloseDuplicates,
-  drawerAutoNotifyReporters,
-  setDrawerAutoNotifyReporters,
-  drawerAutoRecalculateRating,
-  setDrawerAutoRecalculateRating,
   handleConfirmDrawerResolution,
-  handleAssignToMe,
   onClose,
 }) => {
   if (!activeReportGroup) return null;
 
   const currentReport = selectedReportInDrawer || activeReportGroup.reportsList[0];
 
+  // Multi-select actions state
+  const selectedActions = React.useMemo(() => {
+    if (!drawerActionTaken) return ["hide_target"];
+    return drawerActionTaken.split(",").filter(Boolean);
+  }, [drawerActionTaken]);
+
+  const toggleAction = (key: string) => {
+    const isPresent = selectedActions.includes(key) ||
+      (key === "hide_target" && selectedActions.includes("hide_content")) ||
+      (key === "delete_permanently" && selectedActions.includes("delete_content"));
+    let next: string[];
+    if (isPresent) {
+      next = selectedActions.filter((a) => a !== key && a !== "hide_content" && a !== "delete_content");
+    } else {
+      next = [...selectedActions, key];
+    }
+    setDrawerActionTaken(next.join(","));
+  };
+
+  const isHideChecked = selectedActions.includes("hide_target") || selectedActions.includes("hide_content");
+  const isDeleteChecked = selectedActions.includes("delete_permanently") || selectedActions.includes("delete_content");
+  const hasAtLeastOneAction = drawerDecisionTab === "dismiss" || (isHideChecked || isDeleteChecked);
+
   return (
     <div className="fixed inset-0 bg-slate-950/45 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 z-50 animate-in fade-in duration-150">
       <div className="bg-white rounded-2xl w-full max-w-5xl max-h-[90vh] shadow-2xl border border-slate-200/90 flex flex-col overflow-hidden text-xs">
-        {/* Header */}
         <div className="p-4 px-6 bg-white border-b border-slate-100 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <div className="space-y-0.5">
               <div className="flex items-center gap-2 text-[11px] font-medium text-slate-500">
-                <span>Kiểm duyệt phản ánh</span>
-                <span className="text-slate-300">•</span>
                 <span className="font-mono text-slate-500">#{activeReportGroup.targetId}</span>
                 <span className="text-slate-300">•</span>
                 <span className="text-slate-700 font-semibold">
@@ -70,31 +99,6 @@ export const ModerationDrawer: React.FC<ModerationDrawerProps> = ({
                   {activeReportGroup.targetType === "photo" && "Hình ảnh"}
                   {activeReportGroup.targetType === "comment" && "Bình luận"}
                 </span>
-                <span className="text-slate-300">•</span>
-                <span
-                  className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                    activeReportGroup.highestPriority === "urgent"
-                      ? "bg-rose-50 text-rose-700 border border-rose-200"
-                      : activeReportGroup.highestPriority === "high"
-                      ? "bg-amber-50 text-amber-700 border border-amber-200"
-                      : "bg-slate-100 text-slate-700 border border-slate-200"
-                  }`}
-                >
-                  <span
-                    className={`w-1.5 h-1.5 rounded-full ${
-                      activeReportGroup.highestPriority === "urgent"
-                        ? "bg-rose-500"
-                        : activeReportGroup.highestPriority === "high"
-                        ? "bg-amber-500"
-                        : "bg-slate-400"
-                    }`}
-                  />
-                  {activeReportGroup.highestPriority === "urgent"
-                    ? "Khẩn cấp"
-                    : activeReportGroup.highestPriority === "high"
-                    ? "Ưu tiên cao"
-                    : "Bình thường"}
-                </span>
               </div>
               <h2 className="text-base font-bold text-slate-900 tracking-tight">
                 {activeReportGroup.targetTitle}
@@ -103,25 +107,12 @@ export const ModerationDrawer: React.FC<ModerationDrawerProps> = ({
           </div>
 
           <div className="flex items-center gap-3">
-            {!activeReportGroup.assignedAdminId ? (
-              <button
-                onClick={() => handleAssignToMe(activeReportGroup.groupKey)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 text-white font-semibold hover:bg-slate-800 transition-colors cursor-pointer"
-              >
-                <UserCheck size={13} />
-                <span>Nhận xử lý</span>
-              </button>
-            ) : (
-              <span className="text-slate-500 text-[11px] bg-slate-100 px-2.5 py-1 rounded-lg">
-                Đang xử lý bởi: <strong className="text-slate-800">{activeReportGroup.assignedAdminName}</strong>
-              </span>
-            )}
-
             <button
               onClick={onClose}
               className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+              title="Đóng"
             >
-              <X size={17} />
+              <X size={18} />
             </button>
           </div>
         </div>
@@ -159,9 +150,8 @@ export const ModerationDrawer: React.FC<ModerationDrawerProps> = ({
             <div className="space-y-2.5">
               <div className="flex items-center justify-between">
                 <h4 className="font-bold text-slate-900 text-xs">
-                  Danh sách phản ánh từ cộng đồng ({activeReportGroup.reportsCount})
+                  Phản ánh từ cộng đồng
                 </h4>
-                <span className="text-[10px] text-slate-400">Chọn phản ánh để đối chiếu chi tiết</span>
               </div>
 
               <div className="space-y-2">
@@ -171,15 +161,16 @@ export const ModerationDrawer: React.FC<ModerationDrawerProps> = ({
                     <div
                       key={rep.id}
                       onClick={() => setSelectedReportIdInDrawer(rep.id)}
-                      className={`p-3.5 rounded-xl border transition-all cursor-pointer ${
-                        isSelected
-                          ? "border-emerald-600 bg-emerald-50/40 shadow-xs"
-                          : "border-slate-200/80 bg-white hover:bg-slate-50"
-                      }`}
+                      className={`p-3.5 rounded-xl border transition-all cursor-pointer ${isSelected
+                        ? "border-emerald-600 bg-emerald-50/40 shadow-xs"
+                        : "border-slate-200/80 bg-white hover:bg-slate-50"
+                        }`}
                     >
                       <div className="flex items-center justify-between mb-1">
-                        <span className="font-bold text-slate-900">{rep.reporterName}</span>
-                        <span className="text-[10px] text-slate-400 font-mono">{rep.submittedAt}</span>
+                        <span className="font-bold textslate-900">{rep.reporterName}</span>
+                        <span className="text-[11px] text-slate-400 font-medium">
+                          {formatDateTime(rep.submittedAt)}
+                        </span>
                       </div>
                       <p className="text-rose-700 font-semibold text-xs">{rep.reasonContent}</p>
                       {rep.description && (
@@ -202,44 +193,59 @@ export const ModerationDrawer: React.FC<ModerationDrawerProps> = ({
                 <button
                   type="button"
                   onClick={() => setDrawerDecisionTab("accept")}
-                  className={`py-2 rounded-lg font-bold text-center transition-all cursor-pointer ${
-                    drawerDecisionTab === "accept"
-                      ? "bg-rose-600 text-white shadow-xs"
-                      : "text-slate-600 hover:text-slate-900"
-                  }`}
+                  className={`py-2 rounded-lg font-bold text-center transition-all cursor-pointer ${drawerDecisionTab === "accept"
+                    ? "bg-rose-600 text-white shadow-xs"
+                    : "text-slate-600 hover:text-slate-900"
+                    }`}
                 >
                   Xác nhận vi phạm
                 </button>
                 <button
                   type="button"
                   onClick={() => setDrawerDecisionTab("dismiss")}
-                  className={`py-2 rounded-lg font-bold text-center transition-all cursor-pointer ${
-                    drawerDecisionTab === "dismiss"
-                      ? "bg-emerald-600 text-white shadow-xs"
-                      : "text-slate-600 hover:text-slate-900"
-                  }`}
+                  className={`py-2 rounded-lg font-bold text-center transition-all cursor-pointer ${drawerDecisionTab === "dismiss"
+                    ? "bg-emerald-600 text-white shadow-xs"
+                    : "text-slate-600 hover:text-slate-900"
+                    }`}
                 >
                   Bác bỏ báo cáo
                 </button>
               </div>
 
               {drawerDecisionTab === "accept" ? (
-                /* Action taken when confirmed */
-                <div className="space-y-3">
+                /* Action taken when confirmed: Clean checklist options */
+                <div className="space-y-3.5">
                   <div>
-                    <label className="font-bold text-slate-800 block mb-1.5">
+                    <label className="font-bold text-slate-800 block mb-2">
                       Hành động xử lý thực thi:
                     </label>
-                    <select
-                      value={drawerActionTaken}
-                      onChange={(e) => setDrawerActionTaken(e.target.value)}
-                      className="w-full p-2.5 rounded-xl border border-slate-300 bg-white font-medium text-slate-800 outline-none focus:border-rose-500"
-                    >
-                      <option value="hide_target">Tạm ẩn đối tượng khỏi hệ thống</option>
-                      <option value="delete_permanently">Xóa vĩnh viễn nội dung vi phạm</option>
-                      <option value="warn_user">Gửi cảnh cáo tới chủ tài khoản vi phạm</option>
-                      <option value="block_account">Khóa quyền đăng bài tài khoản</option>
-                    </select>
+                    <div className="space-y-2.5 bg-white p-3.5 rounded-xl border border-slate-200">
+                      <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={isHideChecked}
+                          onChange={() => toggleAction("hide_target")}
+                          className="w-4 h-4 mt-0.5 rounded text-rose-600 border-slate-300 focus:ring-rose-500 cursor-pointer"
+                        />
+                        <div>
+                          <span className="text-slate-800 font-bold text-xs block">
+                            Ẩn đối tượng vi phạm
+                          </span>
+                          <span className="text-[11px] text-slate-500 block mt-0.5 leading-relaxed">
+                            {activeReportGroup.targetType === "place"}
+                            {activeReportGroup.targetType === "review"}
+                            {activeReportGroup.targetType === "comment"}
+                            {activeReportGroup.targetType === "blog"}
+                            {!["place", "review", "comment", "blog"].includes(activeReportGroup.targetType) && "Ẩn đối tượng vi phạm khỏi hệ thống người dùng."}
+                          </span>
+                        </div>
+                      </label>
+                    </div>
+                    {!hasAtLeastOneAction && (
+                      <p className="text-[11px] text-rose-600 font-semibold mt-1">
+                        * Bắt buộc phải chọn ít nhất 1 hành động xử lý để thi hành.
+                      </p>
+                    )}
                   </div>
 
                   <div>
@@ -253,47 +259,6 @@ export const ModerationDrawer: React.FC<ModerationDrawerProps> = ({
                       placeholder="Nêu rõ lý do hoặc bằng chứng vi phạm..."
                       className="w-full p-2.5 rounded-xl border border-slate-300 bg-white text-slate-800 outline-none focus:border-rose-500 resize-none"
                     />
-                  </div>
-
-                  {/* Automation checkboxes */}
-                  <div className="space-y-2 pt-2 border-t border-slate-200/80">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={drawerAutoCloseDuplicates}
-                        onChange={(e) => setDrawerAutoCloseDuplicates(e.target.checked)}
-                        className="rounded border-slate-300 text-rose-600 focus:ring-rose-500"
-                      />
-                      <span className="text-slate-700 font-medium">
-                        Tự động đóng tất cả các báo cáo trùng lặp khác
-                      </span>
-                    </label>
-
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={drawerAutoNotifyReporters}
-                        onChange={(e) => setDrawerAutoNotifyReporters(e.target.checked)}
-                        className="rounded border-slate-300 text-rose-600 focus:ring-rose-500"
-                      />
-                      <span className="text-slate-700 font-medium">
-                        Gửi thông báo phản hồi tới người báo cáo
-                      </span>
-                    </label>
-
-                    {activeReportGroup.targetType === "review" && (
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={drawerAutoRecalculateRating}
-                          onChange={(e) => setDrawerAutoRecalculateRating(e.target.checked)}
-                          className="rounded border-slate-300 text-rose-600 focus:ring-rose-500"
-                        />
-                        <span className="text-slate-700 font-medium">
-                          Tính toán lại điểm đánh giá trung bình cho địa điểm
-                        </span>
-                      </label>
-                    )}
                   </div>
                 </div>
               ) : (
@@ -335,12 +300,14 @@ export const ModerationDrawer: React.FC<ModerationDrawerProps> = ({
             <div className="pt-4 border-t border-slate-200">
               <button
                 type="button"
+                disabled={!hasAtLeastOneAction}
                 onClick={handleConfirmDrawerResolution}
-                className={`w-full py-2.5 rounded-xl font-bold text-white transition-all cursor-pointer shadow-md ${
-                  drawerDecisionTab === "accept"
-                    ? "bg-rose-600 hover:bg-rose-700 shadow-rose-600/20"
-                    : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20"
-                }`}
+                className={`w-full py-2.5 rounded-xl font-bold text-white transition-all shadow-md ${!hasAtLeastOneAction
+                  ? "bg-slate-300 text-slate-500 cursor-not-allowed shadow-none"
+                  : drawerDecisionTab === "accept"
+                    ? "bg-rose-600 hover:bg-rose-700 shadow-rose-600/20 cursor-pointer"
+                    : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20 cursor-pointer"
+                  }`}
               >
                 {drawerDecisionTab === "accept"
                   ? "Xác nhận & Thi hành xử lý"

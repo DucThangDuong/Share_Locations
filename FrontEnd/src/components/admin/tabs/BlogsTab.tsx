@@ -2,30 +2,23 @@ import React, { useState, useRef, useEffect, useMemo } from "react";
 import {
   BookOpen,
   Search,
-  Plus,
   ArrowLeft,
   Eye,
   EyeOff,
   Trash2,
   Heart,
-  Clock,
   Save,
   FileText,
   UploadCloud,
   CheckCircle2,
   AlertCircle,
-  X,
   Link as LinkIcon,
   Sparkles,
   BarChart3,
-  Edit3,
-  BookMarked,
-  ShieldCheck,
-  Calendar,
-  User,
 } from "lucide-react";
 import type { AdminBlogItem } from "@/types/admin.types";
 import { adminService } from "@/services/adminService";
+import { blogService } from "@/services/blogService";
 import { BlogTableOfContents } from "@/components/blog/BlogTableOfContents";
 import {
   convertRawContentToHtml,
@@ -66,21 +59,6 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
   const [blogFilterCategory, setBlogFilterCategory] = useState("all");
   const [blogFilterStatus, setBlogFilterStatus] = useState("all");
 
-  // Add Blog Modal State
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [newBlogForm, setNewBlogForm] = useState({
-    title: "",
-    authorName: "Ban Biên Tập LangThang",
-    authorAvatar:
-      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&h=80&fit=crop",
-    category: "Lịch trình ăn uống",
-    readTime: "5 phút đọc",
-    coverImg:
-      "https://images.unsplash.com/photo-1505474975305-453b4ac9b972?w=600&h=400&fit=crop",
-    summary: "",
-    content: "",
-    status: "published" as "published" | "draft" | "hidden",
-  });
 
   const currentBlog = selectedBlogId
     ? blogsList.find((b) => b.id === selectedBlogId)
@@ -193,75 +171,6 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
     }
   };
 
-  const handleAddBlogSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newBlogForm.title.trim()) {
-      alert("Vui lòng nhập tiêu đề bài viết.");
-      return;
-    }
-
-    const todayStr = new Intl.DateTimeFormat("vi-VN").format(new Date());
-
-    const response = await adminService.createBlog({
-      title: newBlogForm.title.trim(),
-      content: newBlogForm.content.trim(),
-      coverImg: newBlogForm.coverImg.trim(),
-      status: newBlogForm.status,
-    });
-    const newBlog: AdminBlogItem = {
-      id: response.data,
-      title: newBlogForm.title.trim(),
-      authorName: newBlogForm.authorName.trim() || "Ban Biên Tập LangThang",
-      authorAvatar:
-        newBlogForm.authorAvatar.trim() ||
-        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&h=80&fit=crop",
-      category: newBlogForm.category,
-      publishedAt: todayStr,
-      views: 0,
-      likes: 0,
-      status: newBlogForm.status,
-      coverImg:
-        newBlogForm.coverImg.trim() ||
-        "https://images.unsplash.com/photo-1505474975305-453b4ac9b972?w=600&h=400&fit=crop",
-      readTime: newBlogForm.readTime.trim() || "5 phút đọc",
-      summary:
-        newBlogForm.summary.trim() ||
-        "Bài viết chia sẻ cẩm nang và kinh nghiệm du lịch hữu ích.",
-      content:
-        newBlogForm.content.trim() ||
-        "Nội dung chi tiết của bài viết đang được cập nhật...",
-    };
-
-    if (setBlogsList) {
-      setBlogsList((prev) => [newBlog, ...prev]);
-    }
-    if (addAuditLog) {
-      addAuditLog(
-        "Tạo bài viết cẩm nang mới",
-        newBlog.title,
-        "Đăng tải bài viết chia sẻ cẩm nang du lịch",
-        "create"
-      );
-    }
-    if (showToast) {
-      showToast(`Đã xuất bản bài viết "${newBlog.title}" thành công.`);
-    }
-
-    setIsAddModalOpen(false);
-    setNewBlogForm({
-      title: "",
-      authorName: "Ban Biên Tập LangThang",
-      authorAvatar:
-        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&h=80&fit=crop",
-      category: "Lịch trình ăn uống",
-      readTime: "5 phút đọc",
-      coverImg:
-        "https://images.unsplash.com/photo-1505474975305-453b4ac9b972?w=600&h=400&fit=crop",
-      summary: "",
-      content: "",
-      status: "published",
-    });
-  };
 
   // If a blog is selected, render full BlogDetailViewer & Editor
   if (selectedBlogId && currentBlog) {
@@ -320,13 +229,7 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
               <option value="draft">Bản nháp</option>
             </select>
 
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold cursor-pointer transition-all shadow-sm shadow-emerald-600/20"
-            >
-              <Plus size={14} />
-              <span>Thêm bài viết</span>
-            </button>
+
           </div>
         </div>
 
@@ -373,12 +276,7 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
                             <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
                               {blog.category}
                             </span>
-                            {blog.readTime && (
-                              <span className="text-[10px] text-slate-400 font-normal flex items-center gap-1">
-                                <Clock size={10} />
-                                {blog.readTime}
-                              </span>
-                            )}
+
                           </div>
                         </div>
                       </div>
@@ -433,10 +331,10 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
                     <td className="p-3.5">
                       <span
                         className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${isHidden
-                            ? "bg-slate-100 text-slate-600"
-                            : isDraft
-                              ? "bg-blue-100 text-blue-800"
-                              : "bg-emerald-100 text-emerald-800"
+                          ? "bg-slate-100 text-slate-600"
+                          : isDraft
+                            ? "bg-blue-100 text-blue-800"
+                            : "bg-emerald-100 text-emerald-800"
                           }`}
                       >
                         {isHidden
@@ -470,8 +368,8 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
                           type="button"
                           onClick={() => handleToggleHideBlog(blog.id)}
                           className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${isHidden
-                              ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                              : "border-slate-200 hover:bg-slate-100 text-slate-600"
+                            ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                            : "border-slate-200 hover:bg-slate-100 text-slate-600"
                             }`}
                           title={
                             isHidden
@@ -507,172 +405,7 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
       </div>
 
       {/* Add Blog Modal */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-5 shadow-2xl border border-slate-200 animate-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-emerald-700" />
-                <h3 className="font-bold text-base text-slate-900">
-                  Thêm bài viết / Cẩm nang du lịch
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsAddModalOpen(false)}
-                className="p-1 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-            </div>
 
-            <form onSubmit={handleAddBlogSubmit} className="space-y-4 text-xs">
-              <div>
-                <label className="block font-bold text-slate-800 mb-1">
-                  Tiêu đề bài viết <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ví dụ: Hành trình 48 giờ ăn sập Đà Nẵng..."
-                  value={newBlogForm.title}
-                  onChange={(e) =>
-                    setNewBlogForm({ ...newBlogForm, title: e.target.value })
-                  }
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-900 focus:bg-white focus:border-emerald-600 outline-none"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-slate-800 mb-1">
-                    Chủ đề / Danh mục
-                  </label>
-                  <select
-                    value={newBlogForm.category}
-                    onChange={(e) =>
-                      setNewBlogForm({
-                        ...newBlogForm,
-                        category: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-900 focus:bg-white focus:border-emerald-600 outline-none cursor-pointer"
-                  >
-                    {CATEGORY_OPTIONS.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-800 mb-1">
-                    Thời gian đọc dự kiến
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="5 phút đọc"
-                    value={newBlogForm.readTime}
-                    onChange={(e) =>
-                      setNewBlogForm({
-                        ...newBlogForm,
-                        readTime: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:bg-white focus:border-emerald-600 outline-none font-medium"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-slate-800 mb-1">
-                    Tên tác giả
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Ban Biên Tập LangThang"
-                    value={newBlogForm.authorName}
-                    onChange={(e) =>
-                      setNewBlogForm({
-                        ...newBlogForm,
-                        authorName: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:bg-white focus:border-emerald-600 outline-none font-medium"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-800 mb-1">
-                    Trạng thái ban đầu
-                  </label>
-                  <select
-                    value={newBlogForm.status}
-                    onChange={(e) =>
-                      setNewBlogForm({
-                        ...newBlogForm,
-                        status: e.target.value as any,
-                      })
-                    }
-                    className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-900 focus:bg-white focus:border-emerald-600 outline-none cursor-pointer"
-                  >
-                    <option value="published">Đang công khai</option>
-                    <option value="draft">Bản nháp</option>
-                    <option value="hidden">Đang tạm ẩn</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-800 mb-1">
-                  URL ảnh bìa đại diện
-                </label>
-                <input
-                  type="text"
-                  placeholder="https://images.unsplash.com/..."
-                  value={newBlogForm.coverImg}
-                  onChange={(e) =>
-                    setNewBlogForm({ ...newBlogForm, coverImg: e.target.value })
-                  }
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:bg-white focus:border-emerald-600 outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-800 mb-1">
-                  Tóm tắt / Sapo bài viết
-                </label>
-                <textarea
-                  rows={2}
-                  placeholder="Đoạn văn ngắn giới thiệu thu hút độc giả..."
-                  value={newBlogForm.summary}
-                  onChange={(e) =>
-                    setNewBlogForm({ ...newBlogForm, summary: e.target.value })
-                  }
-                  className="w-full p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:bg-white focus:border-emerald-600 outline-none leading-relaxed"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 font-bold cursor-pointer"
-                >
-                  Hủy bỏ
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold shadow-sm cursor-pointer"
-                >
-                  Tạo bài viết
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
@@ -710,7 +443,7 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
     "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&h=80&fit=crop"
   );
   const [publishedAt, setPublishedAt] = useState(
-    blog.publishedAt || "18/09/2026"
+    blog.publishedAt || ""
   );
   const [views, setViews] = useState(String(blog.views || 0));
   const [likes, setLikes] = useState(String(blog.likes || 0));
@@ -720,7 +453,7 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
   );
   const [summary, setSummary] = useState(blog.summary || "");
   const [content, setContent] = useState(blog.content || "");
-  const [status, setStatus] = useState<"published" | "draft" | "hidden">(
+  const [status, setStatus] = useState<"published" | "draft" | "hidden" | "archived">(
     blog.status || "published"
   );
 
@@ -729,6 +462,32 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
   const [errorMsg, setErrorMsg] = useState("");
   const [readProgress, setReadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch full details if content is missing or for full accuracy
+  useEffect(() => {
+    if (blog.id) {
+      blogService.getBlogDetail(blog.id).then((res) => {
+        if (res.success && res.data) {
+          const d = res.data;
+          if (d.title) setTitle(d.title);
+          if (d.category) setCategory(d.category);
+          if (d.summary) setSummary(d.summary);
+          else if (d.excerpt) setSummary(d.excerpt);
+          if (d.content) setContent(d.content);
+          if (d.coverImg) setCoverImg(d.coverImg);
+          else if (d.coverUrl) setCoverImg(d.coverUrl);
+          if (d.authorName) setAuthorName(d.authorName);
+          else if (d.author?.name) setAuthorName(d.author.name);
+          if (d.authorAvatar) setAuthorAvatar(d.authorAvatar);
+          else if (d.author?.avatar) setAuthorAvatar(d.author.avatar);
+          if (d.views !== undefined) setViews(String(d.views));
+          else if (d.viewCount !== undefined) setViews(String(d.viewCount));
+          if (d.likes !== undefined) setLikes(String(d.likes));
+          else if (d.likesCount !== undefined) setLikes(String(d.likesCount));
+        }
+      }).catch(() => { });
+    }
+  }, [blog.id]);
 
   // Reading progress scroll tracking
   useEffect(() => {
@@ -749,57 +508,8 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
     if (!raw.trim()) {
       return { processedHtml: "", extractedHeadings: [] };
     }
-
-    let html = "";
-    // If raw content is plain text with markdown or list indicators, format nicely
-    if (!raw.startsWith("<") && !raw.startsWith("{")) {
-      const blocks = raw.split(/\n\s*\n/);
-      html = blocks
-        .map((block) => {
-          const trimmed = block.trim();
-          if (trimmed.startsWith("### ")) {
-            return `<h3 class="font-bold text-slate-900 text-lg sm:text-xl mt-6 mb-2 tracking-tight">${trimmed.replace(
-              /^###\s+/,
-              ""
-            )}</h3>`;
-          }
-          if (trimmed.startsWith("## ")) {
-            return `<h2 class="font-bold text-slate-900 text-xl sm:text-2xl mt-8 mb-3 tracking-tight">${trimmed.replace(
-              /^##\s+/,
-              ""
-            )}</h2>`;
-          }
-          if (trimmed.startsWith("# ")) {
-            return `<h2 class="font-bold text-slate-900 text-2xl sm:text-3xl mt-8 mb-3 tracking-tight">${trimmed.replace(
-              /^#\s+/,
-              ""
-            )}</h2>`;
-          }
-          if (
-            /^(Ngày \d+:|Buổi (sáng|trưa|chiều|tối):|\d+\.\s+)/i.test(trimmed)
-          ) {
-            const firstLineEnd = trimmed.indexOf("\n");
-            if (firstLineEnd !== -1) {
-              const heading = trimmed.slice(0, firstLineEnd);
-              const rest = trimmed.slice(firstLineEnd + 1);
-              return `<h3 class="font-bold text-slate-900 text-lg sm:text-xl mt-6 mb-2 tracking-tight">${heading}</h3><p class="leading-relaxed text-slate-700 my-3 text-base sm:text-lg">${rest.replace(
-                /\n/g,
-                "<br/>"
-              )}</p>`;
-            }
-            return `<h3 class="font-bold text-slate-900 text-lg sm:text-xl mt-6 mb-2 tracking-tight">${trimmed}</h3>`;
-          }
-          return `<p class="leading-relaxed text-slate-700 my-3 text-base sm:text-lg">${trimmed.replace(
-            /\n/g,
-            "<br/>"
-          )}</p>`;
-        })
-        .join("");
-    } else {
-      html = convertRawContentToHtml(raw);
-    }
-
-    return extractHeadingsAndProcessHtml(html);
+    const convertedHtml = convertRawContentToHtml(raw);
+    return extractHeadingsAndProcessHtml(convertedHtml);
   }, [content]);
 
   const scrollToSection = (id: string) => {
@@ -867,8 +577,8 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
         style={{ width: `${readProgress}%` }}
       />
 
-      {/* Top Admin Navigation & Toolbar Header */}
-      <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 sticky top-4 z-40 backdrop-blur-md bg-white/95">
+      {/* Top Admin Navigation & Toolbar Header (Not sticky, scrolls away) */}
+      <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -887,10 +597,10 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
               </h2>
               <span
                 className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${isHidden
-                    ? "bg-slate-200 text-slate-700"
-                    : isDraft
-                      ? "bg-blue-100 text-blue-800"
-                      : "bg-emerald-100 text-emerald-800"
+                  ? "bg-slate-200 text-slate-700"
+                  : isDraft
+                    ? "bg-blue-100 text-blue-800"
+                    : "bg-emerald-100 text-emerald-800"
                   }`}
               >
                 {isHidden
@@ -901,38 +611,12 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
               </span>
             </div>
             <p className="text-[11px] text-slate-400 mt-0.5 truncate">
-              Mã bài viết #{blog.id} • {category} • {authorName} • {publishedAt}
+              Mã bài viết #{blog.id}
             </p>
           </div>
         </div>
 
-        {/* View Mode Switcher & Admin Action Buttons */}
         <div className="flex items-center gap-2 flex-wrap justify-end">
-          {/* Mode Switcher Tabs */}
-          <div className="flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200/60">
-            <button
-              type="button"
-              onClick={() => setActiveMode("reader")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-xs transition-all cursor-pointer ${activeMode === "reader"
-                  ? "bg-white text-emerald-800 shadow-2xs"
-                  : "text-slate-600 hover:text-slate-900"
-                }`}
-            >
-              <BookMarked size={13} />
-              <span>Giao diện đọc</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveMode("editor")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-xs transition-all cursor-pointer ${activeMode === "editor"
-                  ? "bg-white text-emerald-800 shadow-2xs"
-                  : "text-slate-600 hover:text-slate-900"
-                }`}
-            >
-              <Edit3 size={13} />
-              <span>Chỉnh sửa</span>
-            </button>
-          </div>
 
           <button
             type="button"
@@ -997,16 +681,10 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
             {/* Left Column (8 cols): Full Article Reader (Matching BlogReaderView.tsx) */}
             <div className="lg:col-span-8 space-y-8 min-w-0">
-              {/* Category & Date & Title Header */}
+              {/* Category & Title Header */}
               <div className="space-y-4">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold">
                   <span>{category || "Cẩm nang du lịch"}</span>
-                  {publishedAt && (
-                    <>
-                      <span>•</span>
-                      <span>{publishedAt}</span>
-                    </>
-                  )}
                 </div>
 
                 <h1 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 leading-tight tracking-tight">
@@ -1014,7 +692,7 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
                 </h1>
 
                 {summary && (
-                  <p className="text-base sm:text-lg text-slate-600 leading-relaxed font-normal">
+                  <p className="text-base sm:text-lg text-slate-600 leading-relaxed font-normal bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
                     {summary}
                   </p>
                 )}
@@ -1039,16 +717,12 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
                       {authorName || "Ban Biên Tập LangThang"}
                     </h4>
                     <p className="text-xs text-slate-500">
-                      Tác giả chia sẻ • Thành viên cộng đồng
+                      Thành viên cộng đồng
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-3 text-xs font-semibold text-slate-500 flex-wrap">
-                  <span className="flex items-center gap-1 text-slate-600">
-                    <Clock size={14} /> {readTime || "5 phút đọc"}
-                  </span>
-                  <span>•</span>
                   <span className="flex items-center gap-1 text-slate-600">
                     <Eye size={14} className="text-slate-400" />
                     <span>{(parseInt(views, 10) || 0).toLocaleString("vi-VN")} lượt xem</span>
@@ -1109,7 +783,7 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
                       {authorName || "Ban Biên Tập LangThang"}
                     </h4>
                     <p className="text-xs text-slate-500">
-                      Tác giả chia sẻ • Thành viên cộng đồng LangThang
+                      Thành viên cộng đồng LangThang
                     </p>
                     <p className="text-xs text-slate-600 pt-1">
                       Bài viết cẩm nang du lịch này đang ở trạng thái{" "}
@@ -1127,8 +801,8 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
               </div>
             </div>
 
-            {/* Right Column (4 cols Sticky): Table of Contents & Admin Moderation Card */}
-            <aside className="lg:col-span-4 space-y-6 sticky top-24">
+            {/* Right Column (4 cols Sticky): Table of Contents */}
+            <aside className="lg:col-span-4 space-y-6 sticky top-6">
               {/* Table of Contents (Matching BlogTableOfContents from BlogReaderView) */}
               {extractedHeadings && extractedHeadings.length > 0 && (
                 <BlogTableOfContents
@@ -1136,91 +810,6 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
                   onScrollToSection={scrollToSection}
                 />
               )}
-
-              {/* Admin Moderation Card */}
-              <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs space-y-4 text-xs">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                  <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4 text-emerald-700" />
-                    <span>Quản trị &amp; Xuất bản</span>
-                  </h3>
-                  <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isHidden
-                        ? "bg-slate-100 text-slate-700"
-                        : isDraft
-                          ? "bg-blue-100 text-blue-800"
-                          : "bg-emerald-100 text-emerald-800"
-                      }`}
-                  >
-                    {isHidden
-                      ? "Đang tạm ẩn"
-                      : isDraft
-                        ? "Bản nháp"
-                        : "Công khai"}
-                  </span>
-                </div>
-
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                      Chế độ hiển thị
-                    </label>
-                    <select
-                      value={status}
-                      onChange={(e) => {
-                        const nextVal = e.target.value as "published" | "draft" | "hidden";
-                        setStatus(nextVal);
-                        onSave({ ...blog, status: nextVal });
-                      }}
-                      className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 font-semibold text-slate-800 outline-none focus:border-emerald-600 cursor-pointer"
-                    >
-                      <option value="published">Đang công khai trên trang cẩm nang</option>
-                      <option value="draft">Bản nháp (Chưa xuất bản)</option>
-                      <option value="hidden">Đang tạm ẩn khỏi cộng đồng</option>
-                    </select>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => setActiveMode("editor")}
-                    className="w-full py-2.5 px-4 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer border border-emerald-200/80"
-                  >
-                    <Edit3 size={14} />
-                    <span>Mở biên tập viên chỉnh sửa bài</span>
-                  </button>
-                </div>
-
-                <div className="pt-3 border-t border-slate-100 space-y-2 text-slate-500 text-[11px]">
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-1 text-slate-400">
-                      <Calendar size={12} /> Ngày xuất bản:
-                    </span>
-                    <span className="font-semibold text-slate-700">{publishedAt}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-1 text-slate-400">
-                      <User size={12} /> Tác giả:
-                    </span>
-                    <span className="font-semibold text-slate-700">{authorName}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-1 text-slate-400">
-                      <Eye size={12} /> Lượt xem:
-                    </span>
-                    <span className="font-mono font-bold text-slate-800">
-                      {(parseInt(views, 10) || 0).toLocaleString("vi-VN")}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-1 text-slate-400">
-                      <Heart size={12} className="text-rose-500" /> Lượt thích:
-                    </span>
-                    <span className="font-mono font-bold text-slate-800">
-                      {(parseInt(likes, 10) || 0).toLocaleString("vi-VN")}
-                    </span>
-                  </div>
-                </div>
-              </div>
             </aside>
           </div>
         </div>
@@ -1523,12 +1112,7 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
                     <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-emerald-600/90 backdrop-blur-xs text-white text-[10px] font-bold">
                       {category}
                     </span>
-                    {readTime && (
-                      <span className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-slate-950/70 backdrop-blur-xs text-white text-[10px] font-medium flex items-center gap-1">
-                        <Clock size={10} />
-                        {readTime}
-                      </span>
-                    )}
+
                   </div>
 
                   <div className="space-y-2 pt-1">

@@ -7,6 +7,7 @@ namespace Application.Common.Interfaces.Repositories;
 public interface IAdminReviewRepository
 {
     Task<PagedResult<AdminReviewItemDto>> GetAdminReviewsAsync(
+        long? placeId,
         bool? hasReportsOnly,
         int? rating,
         string? status,
@@ -19,6 +20,8 @@ public interface IAdminReviewRepository
     Task<bool> DeleteReviewAsync(long id, CancellationToken ct = default);
 
     Task<PagedResult<AdminCommentItemDto>> GetAdminCommentsAsync(
+        long? reviewId,
+        long? placeId,
         bool? hasReportsOnly,
         string? status,
         string? keyword,

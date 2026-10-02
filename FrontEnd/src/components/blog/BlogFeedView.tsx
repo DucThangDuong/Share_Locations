@@ -223,75 +223,78 @@ export const BlogFeedView: React.FC<BlogFeedViewProps> = ({
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-10">
-            {visibleArticles.map((art) => (
-              <article
-                key={art.id}
-                onClick={() => onOpenArticle(art)}
-                className="group flex flex-col space-y-3.5 cursor-pointer bg-white rounded-2xl p-4 border border-slate-200/90 hover:border-emerald-600/70 hover:shadow-md transition-all shadow-2xs"
-              >
-                <div className="relative aspect-16/10 w-full overflow-hidden rounded-xl bg-slate-100 border border-slate-200/60">
-                  {art.coverUrl ? (
-                    <img
-                      src={art.coverUrl}
-                      alt={art.title}
-                      className="w-full h-full object-cover group-hover:scale-102 transition-all duration-300"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-emerald-900/10 to-teal-900/20 text-emerald-800">
-                      <BookOpen size={32} />
-                    </div>
-                  )}
-                </div>
+            {visibleArticles.map((art) => {
+              const coverImage = art.coverImg || art.coverUrl || art.coverImageUrl
+              const summaryText = art.summary || art.excerpt
+              const authorName = art.author?.name || art.authorName || 'Tác giả'
+              const authorAvatar = art.author?.avatar || art.authorAvatar || null
 
-                <div className="space-y-2.5 flex-1 flex flex-col justify-between">
-                  <div className="space-y-1.5">
-                    <div className="flex items-start justify-between gap-2">
-                      <h3 className="text-base font-bold text-slate-900 leading-snug group-hover:text-emerald-800 transition-colors line-clamp-2">
-                        {art.title}
-                      </h3>
-                      <ArrowUpRight
-                        size={18}
-                        className="text-slate-400 group-hover:text-emerald-800 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0 mt-0.5"
+              return (
+                <article
+                  key={art.id}
+                  onClick={() => onOpenArticle(art)}
+                  className="group flex flex-col space-y-3.5 cursor-pointer bg-white rounded-2xl p-4 border border-slate-200/90 hover:border-emerald-600/70 hover:shadow-md transition-all shadow-2xs"
+                >
+                  <div className="relative aspect-16/10 w-full overflow-hidden rounded-xl bg-slate-100 border border-slate-200/60">
+                    {coverImage ? (
+                      <img
+                        src={coverImage}
+                        alt={art.title}
+                        className="w-full h-full object-cover group-hover:scale-102 transition-all duration-300"
+                        loading="lazy"
                       />
-                    </div>
-
-                    {art.excerpt && (
-                      <p className="text-slate-600 text-xs leading-relaxed line-clamp-2 font-normal">
-                        {art.excerpt}
-                      </p>
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-emerald-900/10 to-teal-900/20 text-emerald-800">
+                        <BookOpen size={32} />
+                      </div>
                     )}
                   </div>
 
-                  <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-                    <div
-                      onClick={(e) => navigateToAuthorProfile(navigate, art.author, art, e)}
-                      className="flex items-center gap-2 min-w-0 cursor-pointer group/author hover:opacity-90 transition-opacity"
-                      title="Xem trang cá nhân của tác giả"
-                    >
-                      {art.author?.avatar ? (
-                        <img
-                          src={art.author.avatar}
-                          alt={art.author?.name || 'Tác giả'}
-                          className="w-6 h-6 rounded-full object-cover border border-slate-200 shrink-0 group-hover/author:ring-1 group-hover/author:ring-emerald-500/50"
+                  <div className="space-y-2.5 flex-1 flex flex-col justify-between">
+                    <div className="space-y-1.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="text-base font-bold text-slate-900 leading-snug group-hover:text-emerald-800 transition-colors line-clamp-2">
+                          {art.title}
+                        </h3>
+                        <ArrowUpRight
+                          size={18}
+                          className="text-slate-400 group-hover:text-emerald-800 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0 mt-0.5"
                         />
-                      ) : (
-                        <div className="w-6 h-6 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px] font-bold shrink-0 group-hover/author:ring-1 group-hover/author:ring-emerald-500/50">
-                          {(art.author?.name || 'T').charAt(0).toUpperCase()}
-                        </div>
+                      </div>
+
+                      {summaryText && (
+                        <p className="text-slate-600 text-xs leading-relaxed line-clamp-2 font-normal">
+                          {summaryText}
+                        </p>
                       )}
-                      <span className="font-semibold text-xs text-slate-800 group-hover/author:text-emerald-700 transition-colors truncate">
-                        {art.author?.name || 'Tác giả'}
-                      </span>
                     </div>
 
-                    <span className="text-[11px] text-slate-400 font-medium">
-                      {art.readTime || '5 phút đọc'}
-                    </span>
+                    <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                      <div
+                        onClick={(e) => navigateToAuthorProfile(navigate, art.author, art, e)}
+                        className="flex items-center gap-2 min-w-0 cursor-pointer group/author hover:opacity-90 transition-opacity"
+                        title="Xem trang cá nhân của tác giả"
+                      >
+                        {authorAvatar ? (
+                          <img
+                            src={authorAvatar}
+                            alt={authorName}
+                            className="w-6 h-6 rounded-full object-cover border border-slate-200 shrink-0 group-hover/author:ring-1 group-hover/author:ring-emerald-500/50"
+                          />
+                        ) : (
+                          <div className="w-6 h-6 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px] font-bold shrink-0 group-hover/author:ring-1 group-hover/author:ring-emerald-500/50">
+                            {authorName.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        <span className="font-semibold text-xs text-slate-800 group-hover/author:text-emerald-700 transition-colors truncate">
+                          {authorName}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </article>
-            ))}
+                </article>
+              )
+            })}
           </div>
         )}
 

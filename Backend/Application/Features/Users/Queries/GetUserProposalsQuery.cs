@@ -23,16 +23,16 @@ public class GetUserProposalsQueryHandler : IRequestHandler<GetUserProposalsQuer
 
     public async Task<Result<UserProposalPagedResultDto>> Handle(GetUserProposalsQuery request, CancellationToken ct)
     {
-        bool isCurrentUser = request.CurrentUserId.HasValue && request.CurrentUserId.Value == request.TargetUserId;
-        int? effectiveStatus = !isCurrentUser ? 1 : request.Status;
+        // Chỉ lấy các địa điểm đã được công bố / phê duyệt thành công (Status = 1)
+        const int approvedStatus = 1;
 
         var result = await _repo.GetProposalsAsync(
             request.TargetUserId,
-            effectiveStatus,
+            approvedStatus,
             request.Page > 0 ? request.Page : 1,
             request.PageSize > 0 ? request.PageSize : 15,
             ct);
 
-        return Result<UserProposalPagedResultDto>.Success(result, "Lấy danh sách đề xuất thành công.");
+        return Result<UserProposalPagedResultDto>.Success(result, "Lấy danh sách địa điểm đã duyệt thành công.");
     }
 }

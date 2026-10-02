@@ -28,6 +28,18 @@ public class PaginationMeta
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public int RegularUsersCount { get; set; }
 
+    [JsonPropertyName("pendingCount")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public int PendingCount { get; set; }
+
+    [JsonPropertyName("approvedCount")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public int ApprovedCount { get; set; }
+
+    [JsonPropertyName("rejectedCount")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public int RejectedCount { get; set; }
+
     public PaginationMeta() { }
 
     public PaginationMeta(int page, int size, long totalElements)
@@ -80,6 +92,9 @@ public class ApiSuccessResponse<T>
     [JsonPropertyName("success")]
     public bool Success { get; set; } = true;
 
+    [JsonPropertyName("statusCode")]
+    public int StatusCode { get; set; } = 200;
+
     [JsonPropertyName("message")]
     public string Message { get; set; } = "Thao tác thành công";
 
@@ -95,9 +110,10 @@ public class ApiSuccessResponse<T>
 
     public ApiSuccessResponse() { }
 
-    public ApiSuccessResponse(T? data, string message = "Thao tác thành công", PaginationMeta? meta = null)
+    public ApiSuccessResponse(T? data, string message = "Thao tác thành công", PaginationMeta? meta = null, int statusCode = 200)
     {
         Success = true;
+        StatusCode = statusCode;
         Message = message;
         Data = data;
         Meta = meta;

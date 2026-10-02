@@ -23,16 +23,16 @@ public class GetUserBlogsQueryHandler : IRequestHandler<GetUserBlogsQuery, Resul
 
     public async Task<Result<PagedResult<UserBlogItemDto>>> Handle(GetUserBlogsQuery request, CancellationToken ct)
     {
-        bool isCurrentUser = request.CurrentUserId.HasValue && request.CurrentUserId.Value == request.TargetUserId;
-        int? effectiveStatus = !isCurrentUser ? 1 : request.Status;
+        // Khi xem cẩm nang của người dùng, luôn chỉ lấy các bài viết đã được công bố / phê duyệt (Status = 1)
+        const int publishedStatus = 1;
 
         var result = await _repo.GetBlogsAsync(
             request.TargetUserId,
-            effectiveStatus,
+            publishedStatus,
             request.Page > 0 ? request.Page : 1,
             request.PageSize > 0 ? request.PageSize : 15,
             ct);
 
-        return Result<PagedResult<UserBlogItemDto>>.Success(result, "Lấy danh sách bài viết thành công.");
+        return Result<PagedResult<UserBlogItemDto>>.Success(result, "Lấy danh sách bài viết đã duyệt thành công.");
     }
 }

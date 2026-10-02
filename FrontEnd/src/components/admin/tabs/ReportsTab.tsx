@@ -1,6 +1,53 @@
 import React from "react";
 import type { AdminReportItem } from "@/types/admin.types";
 
+const formatDateTime = (dateStr?: string) => {
+  if (!dateStr) return "";
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    const hours = String(d.getHours()).padStart(2, "0");
+    const minutes = String(d.getMinutes()).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const year = d.getFullYear();
+    return `${hours}:${minutes} ${day}/${month}/${year}`;
+  } catch {
+    return dateStr;
+  }
+};
+
+const normalizeType = (type: string) => {
+  const t = String(type || "").toLowerCase().trim();
+  if (t === "place" || t === "1" || t === "địa điểm") return "place";
+  if (t === "review" || t === "2" || t === "đánh giá") return "review";
+  if (t === "comment" || t === "3" || t === "bình luận") return "comment";
+  if (t === "blog" || t === "4" || t === "bài viết") return "blog";
+  if (t === "photo" || t === "5" || t === "hình ảnh") return "photo";
+  if (t === "user" || t === "6" || t === "tài khoản") return "user";
+  return t;
+};
+
+const getTargetTypeLabel = (type: string) => {
+  const norm = normalizeType(type);
+  switch (norm) {
+    case "place":
+      return "Địa điểm";
+    case "review":
+      return "Đánh giá";
+    case "comment":
+      return "Bình luận";
+    case "blog":
+      return "Bài viết";
+    case "photo":
+      return "Hình ảnh";
+    case "user":
+      return "Tài khoản";
+    default:
+      return type || "Đối tượng";
+  }
+};
+
 interface ReportsTabProps {
   reports: AdminReportItem[];
   reportSubTab: "all" | "urgent" | "assigned_to_me" | "resolved";
@@ -54,7 +101,8 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
       if (r.status === 0) return false;
     }
 
-    if (reportTargetTypeFilter !== "all" && r.targetType !== reportTargetTypeFilter) return false;
+    const itemType = normalizeType(r.targetType);
+    if (reportTargetTypeFilter !== "all" && itemType !== reportTargetTypeFilter) return false;
 
     if (reportPriorityFilter !== "all") {
       if (reportPriorityFilter === "urgent" && r.priority !== "urgent" && r.slaStatus !== "breached") return false;
@@ -107,11 +155,10 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
             className="px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 font-medium text-slate-800 outline-none focus:border-emerald-500"
           >
             <option value="all">Tất cả đối tượng</option>
-            <option value="place">Địa điểm</option>
-            <option value="review">Đánh giá</option>
-            <option value="comment">Bình luận</option>
-            <option value="blog">Bài viết</option>
-            <option value="photo">Hình ảnh</option>
+            <option value="place">Báo cáo địa điểm</option>
+            <option value="review">Báo cáo đánh giá</option>
+            <option value="comment">Báo cáo bình luận</option>
+            <option value="blog">Báo cáo bài viết</option>
           </select>
 
           <select
@@ -142,7 +189,7 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-bold text-[11px] uppercase tracking-wider">
-                <th className="p-3.5 pl-4 w-[30%]">Địa điểm / Bài viết bị phản ánh</th>
+                <th className="p-3.5 pl-4 w-[30%]">Đối tượng bị phản ánh</th>
                 <th className="p-3.5">Loại vi phạm</th>
                 <th className="p-3.5">Người phản ánh</th>
                 <th className="p-3.5">Trạng thái</th>
@@ -159,10 +206,8 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
                   >
                     <td className="p-3.5 pl-4 w-[30%]">
                       <div className="space-y-0.5">
-                        <div className="flex items-center gap-1.5 font-mono text-[11px] text-slate-400">
-                          <span>{r.codeId || `#REP-${r.id}`}</span>
-                          <span>•</span>
-                          <span className="font-bold text-slate-700 capitalize">{r.targetType}</span>
+                        <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
+                          <span className="font-bold text-slate-700">{getTargetTypeLabel(r.targetType)}</span>
                         </div>
                         <div className="font-bold text-slate-900 text-xs line-clamp-2">
                           {r.targetTitle}
@@ -182,7 +227,7 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
                     <td className="p-3.5">
                       <div className="space-y-0.5">
                         <span className="font-semibold text-slate-800 block">{r.reporterName}</span>
-                        <span className="text-slate-400 text-[10px]">{r.submittedAt}</span>
+                        <span className="text-slate-400 text-[10px]">{formatDateTime(r.submittedAt)}</span>
                       </div>
                     </td>
                     <td className="p-3.5">

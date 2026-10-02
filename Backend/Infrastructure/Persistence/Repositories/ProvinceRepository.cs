@@ -152,9 +152,10 @@ public class ProvinceRepository : IProvinceRepository
         const string collectionsSql = @"
             SELECT
                 c.Id,
+                c.ProvinceId,
                 c.Title,
                 c.Description AS Subtitle,
-                (SELECT COUNT(1) FROM dbo.CollectionPlaces cp INNER JOIN dbo.Places pl ON cp.PlaceId = pl.Id WHERE cp.CollectionId = c.Id AND pl.ProvinceId = @ProvId AND pl.Status = 1) AS PlaceCount
+                (SELECT COUNT(1) FROM dbo.CollectionPlaces cp INNER JOIN dbo.Places pl ON cp.PlaceId = pl.Id WHERE cp.CollectionId = c.Id AND (c.ProvinceId = @ProvId OR pl.ProvinceId = @ProvId) AND pl.Status = 1) AS PlaceCount
             FROM dbo.Collections c
             WHERE c.Status = 1
               AND (
@@ -180,8 +181,9 @@ public class ProvinceRepository : IProvinceRepository
                 SELECT cp.CollectionId, p.Id, p.Name, p.AvgRating, p.ReviewCount, cat.Name AS CategoryName, p.CoverImageUrl
                 FROM dbo.CollectionPlaces cp
                 INNER JOIN dbo.Places p ON cp.PlaceId = p.Id
+                INNER JOIN dbo.Collections c ON cp.CollectionId = c.Id
                 LEFT JOIN dbo.Categories cat ON p.CategoryId = cat.Id
-                WHERE cp.CollectionId IN @ColIds AND p.ProvinceId = @ProvId AND p.Status = 1
+                WHERE cp.CollectionId IN @ColIds AND (c.ProvinceId = @ProvId OR p.ProvinceId = @ProvId) AND p.Status = 1
                 ORDER BY cp.CollectionId, cp.DisplayOrder;";
 
             var colPlaceRows = (await connection.QueryAsync<PlaceInCollectionRaw>(colPlacesSql, new { ColIds = colIds, ProvId = provId })).ToList();
@@ -190,8 +192,9 @@ public class ProvinceRepository : IProvinceRepository
                 SELECT pm.PlaceId, pm.Url
                 FROM dbo.PlaceMedia pm
                 INNER JOIN dbo.CollectionPlaces cp ON pm.PlaceId = cp.PlaceId
+                INNER JOIN dbo.Collections c ON cp.CollectionId = c.Id
                 INNER JOIN dbo.Places pl ON pm.PlaceId = pl.Id
-                WHERE cp.CollectionId IN @ColIds AND pl.ProvinceId = @ProvId AND pl.Status = 1
+                WHERE cp.CollectionId IN @ColIds AND (c.ProvinceId = @ProvId OR pl.ProvinceId = @ProvId) AND pl.Status = 1
                 ORDER BY pm.PlaceId, pm.DisplayOrder;";
 
             var colMediaRows = (await connection.QueryAsync<PlaceMediaRaw>(colPlaceMediaSql, new { ColIds = colIds, ProvId = provId })).ToList();
@@ -226,14 +229,15 @@ public class ProvinceRepository : IProvinceRepository
             {
                 var id = (int)c.Id;
                 var places = placeCardsByCollection[id].ToList();
-                if (places.Count > 0)
+                int dbPlaceCount = (int)(c.PlaceCount ?? 0);
+                if (places.Count > 0 || (c.ProvinceId != null && (int)c.ProvinceId == provId))
                 {
                     collections.Add(new RegionCollectionDto
                     {
                         Id = id,
                         Title = (string)c.Title,
                         Subtitle = (string?)c.Subtitle,
-                        PlaceCount = places.Count,
+                        PlaceCount = places.Count > 0 ? places.Count : dbPlaceCount,
                         Places = places
                     });
                 }

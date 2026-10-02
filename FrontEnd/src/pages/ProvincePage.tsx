@@ -11,7 +11,6 @@ import { RegionCollections } from '@/components/region/RegionCollections'
 import { RegionLandmarks } from '@/components/region/RegionLandmarks'
 import { RegionFoodSpecialties } from '@/components/region/RegionFoodSpecialties'
 import { ProvinceItinerarySection } from '@/components/province/ProvinceItinerarySection'
-import { RegionBlogSection } from '@/components/region/RegionBlogSection'
 import { RegionSpotlightReviews } from '@/components/region/RegionSpotlightReviews'
 import { ProvincePlaceSection } from '@/components/province/ProvincePlaceSection'
 
@@ -26,7 +25,6 @@ export const ProvincePage: React.FC = () => {
   const [places, setPlaces] = useState<PlaceSummaryDto[]>([])
 
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null)
-  const [sortBy, setSortBy] = useState('rating')
 
   const [initialLoading, setInitialLoading] = useState(true)
   const [placesLoading, setPlacesLoading] = useState(false)
@@ -74,7 +72,7 @@ export const ProvincePage: React.FC = () => {
         const res = await placeService.searchPlaces({
           provinceId: landingData.province.id,
           categoryId: selectedCategoryId || undefined,
-          sortBy: sortBy === 'rating' ? 'rating_desc' : sortBy === 'newest' ? 'newest' : sortBy === 'price_asc' ? 'price_asc' : 'price_desc',
+          sortBy: 'rating_desc',
           pageSize: 48
         })
 
@@ -149,7 +147,7 @@ export const ProvincePage: React.FC = () => {
     return () => {
       isMounted = false
     }
-  }, [landingData?.province?.id, landingData?.landmarks, selectedCategoryId, sortBy])
+  }, [landingData?.province?.id, landingData?.landmarks, selectedCategoryId])
 
   if (initialLoading) {
     return (
@@ -250,21 +248,12 @@ export const ProvincePage: React.FC = () => {
           initialItineraries={landingData.itineraries}
         />
 
-        {landingData.blogPosts && landingData.blogPosts.length > 0 && (
-          <RegionBlogSection
-            posts={landingData.blogPosts}
-            regionName={landingData.province.name}
-          />
-        )}
-
         <ProvincePlaceSection
           places={places}
           provinceName={landingData.province.name}
           categories={categories}
           selectedCategoryId={selectedCategoryId}
           onSelectCategory={setSelectedCategoryId}
-          sortBy={sortBy}
-          onSortChange={setSortBy}
           loading={placesLoading}
         />
 

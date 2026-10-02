@@ -197,7 +197,7 @@ export const UserProfileHeader: React.FC<UserProfileHeaderProps> = ({
               : 'border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300'
               }`}
           >
-            Bài viết
+            Cẩm nang
           </button>
 
           <button

@@ -1,4 +1,4 @@
-export interface CategoryStyle {
+﻿export interface CategoryStyle {
   bg: string
   text: string
   border: string
@@ -185,5 +185,55 @@ export const DAY_THEMES: DayColorTheme[] = [
 ]
 
 export const getDayTheme = (dayIndex: number): DayColorTheme => {
-  return DAY_THEMES[dayIndex % DAY_THEMES.length]
+  const safeIndex = Math.abs(typeof dayIndex === 'number' && !isNaN(dayIndex) ? dayIndex : 0);
+  return DAY_THEMES[safeIndex % DAY_THEMES.length] || DAY_THEMES[0];
+}
+
+export const normalizeTimeToHHmm = (timeStr?: string | null): string => {
+  if (!timeStr) return ''
+  const trimmed = timeStr.trim()
+
+  // Match 12h formats with SA/CH or AM/PM (e.g., 09:00 SA, 02:30 CH, 9:00 AM)
+  const match12h = trimmed.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(SA|CH|AM|PM)?$/i)
+  if (match12h) {
+    let hours = parseInt(match12h[1], 10)
+    const minutes = match12h[2]
+    const period = (match12h[3] || '').toUpperCase()
+
+    if (period === 'CH' || period === 'PM') {
+      if (hours < 12) hours += 12
+    } else if (period === 'SA' || period === 'AM') {
+      if (hours === 12) hours = 0
+    }
+    return `${String(hours).padStart(2, '0')}:${minutes}`
+  }
+
+  // Standard 24h format HH:mm or HH:mm:ss
+  const match24h = trimmed.match(/^(\d{1,2}):(\d{2})/)
+  if (match24h) {
+    const hh = match24h[1].padStart(2, '0')
+    const mm = match24h[2]
+    return `${hh}:${mm}`
+  }
+
+  return ''
+}
+
+export const parseTimeToMinutes = (timeStr?: string | null): number => {
+  if (!timeStr) return 99999
+  const hhmm = normalizeTimeToHHmm(timeStr)
+  if (!hhmm) return 99999
+  const [h, m] = hhmm.split(':').map((x) => parseInt(x, 10))
+  return h * 60 + m
+}
+
+export const sortStopsByStartTime = <T extends { startTime?: string; time?: string; visitOrder?: number }>(
+  stops: T[]
+): T[] => {
+  return [...stops].sort((a, b) => {
+    const timeA = parseTimeToMinutes(a.startTime || a.time)
+    const timeB = parseTimeToMinutes(b.startTime || b.time)
+    if (timeA !== timeB) return timeA - timeB
+    return (a.visitOrder || 0) - (b.visitOrder || 0)
+  })
 }

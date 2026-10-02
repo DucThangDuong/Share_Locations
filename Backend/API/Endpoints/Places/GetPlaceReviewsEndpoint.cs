@@ -1,4 +1,4 @@
-﻿using API.DTOs;
+using API.DTOs;
 using API.DTOs.Places;
 using API.Extensions;
 using Application.DTOs;
@@ -27,8 +27,9 @@ public class GetPlaceReviewsEndpoint : Endpoint<GetPlaceReviewsRequest, ApiSucce
     public override async Task HandleAsync(GetPlaceReviewsRequest req, CancellationToken ct)
     {
         var userId = this.GetUserId();
+        var isAdmin = User.IsInRole("SystemAdmin") || User.IsInRole("CategoryAdmin");
         var result = await Mediator.Send(
-            new GetPlaceReviewsQuery(req.Id, req.Page, req.PageSize, req.Rating, userId),
+            new GetPlaceReviewsQuery(req.Id, req.Page, req.PageSize, req.Rating, userId, isAdmin),
             ct);
 
         await this.SendApiResponseAsync(result, ct);

@@ -56,7 +56,7 @@ export const ChatMessageFeed: React.FC<ChatMessageFeedProps> = ({
   const scrollRef = useRef<HTMLDivElement>(null)
   const previousScrollHeightRef = useRef<number>(0)
 
-  // Editing state
+
   const [editingMessageId, setEditingMessageId] = useState<number | null>(null)
   const [editingText, setEditingText] = useState('')
   const [isSavingEdit, setIsSavingEdit] = useState(false)

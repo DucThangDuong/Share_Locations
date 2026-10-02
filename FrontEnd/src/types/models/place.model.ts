@@ -34,6 +34,8 @@ export interface CollectionDto {
   id: number
   provinceId?: number | null
   title: string
+  description?: string | null
+  coverUrl?: string | null
   isFeatured: boolean
   displayOrder: number
   placeCount: number

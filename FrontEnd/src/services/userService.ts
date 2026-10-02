@@ -143,12 +143,144 @@ export const userService = {
     return response.data
   },
 
-  async createProposal(data: CreateProposalRequest): Promise<ApiSuccessResponse<ProposalItem>> {
-    const response = await apiClient.post<ApiSuccessResponse<ProposalItem>>(
-      '/api/proposals',
-      data
-    )
-    return response.data
+  async createProposal(data: CreateProposalRequest | FormData): Promise<ApiSuccessResponse<ProposalItem>> {
+    let payload: CreateProposalRequest | FormData = data
+    if (!(data instanceof FormData)) {
+      const hasFiles =
+        (data.photos && data.photos.length > 0) ||
+        (data.files && data.files.length > 0) ||
+        (data.images && data.images.some((img) => img instanceof File)) ||
+        data.coverImageFile instanceof File
+
+      if (hasFiles) {
+        const formData = new FormData()
+        formData.append('name', data.name)
+        formData.append('Name', data.name)
+        formData.append('categoryId', String(data.categoryId))
+        formData.append('CategoryId', String(data.categoryId))
+        formData.append('provinceId', String(data.provinceId))
+        formData.append('ProvinceId', String(data.provinceId))
+        formData.append('address', data.address)
+        formData.append('Address', data.address)
+        if (data.phone) {
+          formData.append('phone', data.phone)
+          formData.append('Phone', data.phone)
+        }
+        if (data.website) {
+          formData.append('website', data.website)
+          formData.append('Website', data.website)
+        }
+        if (data.openingHours) {
+          formData.append('openingHours', data.openingHours)
+          formData.append('OpeningHours', data.openingHours)
+        }
+        if (data.minPrice !== undefined) {
+          formData.append('minPrice', String(data.minPrice))
+          formData.append('MinPrice', String(data.minPrice))
+        }
+        if (data.maxPrice !== undefined) {
+          formData.append('maxPrice', String(data.maxPrice))
+          formData.append('MaxPrice', String(data.maxPrice))
+        }
+        if (data.latitude !== undefined) {
+          formData.append('latitude', String(data.latitude))
+          formData.append('Latitude', String(data.latitude))
+        }
+        if (data.longitude !== undefined) {
+          formData.append('longitude', String(data.longitude))
+          formData.append('Longitude', String(data.longitude))
+        }
+        if (data.description) {
+          formData.append('description', data.description)
+          formData.append('Description', data.description)
+        }
+
+        const fileList: File[] = [
+          ...(data.photos || []),
+          ...(data.files || []),
+          ...((data.images?.filter((img) => img instanceof File) as File[]) || [])
+        ]
+
+        if (data.coverImageFile instanceof File) {
+          formData.append('coverImage', data.coverImageFile)
+          fileList.forEach((file) => {
+            if (file !== data.coverImageFile) {
+              formData.append('photos', file)
+            }
+          })
+        } else if (fileList.length > 0) {
+          formData.append('coverImage', fileList[0])
+          fileList.slice(1).forEach((file) => {
+            formData.append('photos', file)
+          })
+        } else if (data.coverImg) {
+          formData.append('coverImg', data.coverImg)
+        }
+
+        if (data.mediaUrls && data.mediaUrls.length > 0) {
+          data.mediaUrls.forEach((url) => {
+            formData.append('mediaUrls', url)
+          })
+        }
+        payload = formData
+      }
+    }
+
+    try {
+      const response = await apiClient.post<ApiSuccessResponse<ProposalItem>>(
+        '/api/proposals',
+        payload
+      )
+      return response.data
+    } catch (err: any) {
+      // Fallback: If multipart formData returned 415 or 400 and files exist, convert files to Base64 and send JSON (Option 1 in spec)
+      if (
+        (err.response?.status === 415 || err.response?.status === 400) &&
+        !(data instanceof FormData) &&
+        ((data.photos && data.photos.length > 0) || (data.files && data.files.length > 0) || data.coverImageFile)
+      ) {
+        const fileList: File[] = [
+          ...(data.photos || []),
+          ...(data.files || []),
+          ...((data.images?.filter((img) => img instanceof File) as File[]) || [])
+        ]
+        const toBase64 = (f: File) =>
+          new Promise<string>((resolve) => {
+            const r = new FileReader()
+            r.onload = () => resolve(r.result as string)
+            r.readAsDataURL(f)
+          })
+
+        const base64List = await Promise.all(fileList.map(toBase64))
+        const coverBase64 = data.coverImageFile ? await toBase64(data.coverImageFile) : (base64List[0] || data.coverImg)
+
+        const jsonBody = {
+          name: data.name,
+          categoryId: data.categoryId,
+          provinceId: data.provinceId,
+          address: data.address,
+          phone: data.phone,
+          website: data.website,
+          openingHours: data.openingHours,
+          minPrice: data.minPrice,
+          maxPrice: data.maxPrice,
+          latitude: data.latitude,
+          longitude: data.longitude,
+          description: data.description,
+          coverImg: coverBase64,
+          mediaUrls: [...base64List, ...(data.mediaUrls || [])],
+          images: [...base64List, ...(data.mediaUrls || [])],
+        }
+
+        const fallbackRes = await apiClient.post<ApiSuccessResponse<ProposalItem>>(
+          '/api/proposals',
+          jsonBody,
+          { headers: { 'Content-Type': 'application/json' } }
+        )
+        return fallbackRes.data
+      }
+      throw err
+    }
   },
 
   async deleteProposal(id: number): Promise<ApiSuccessResponse<boolean>> {

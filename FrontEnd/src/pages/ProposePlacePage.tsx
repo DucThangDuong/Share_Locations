@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import {
   MapPin,
@@ -33,6 +33,12 @@ import { mapboxService, type AddressSuggestion } from '@/services/mapboxService'
 import type { PlaceTypeDto } from '@/types/models/place.model'
 import type { ProvinceDto } from '@/types/models/geography.model'
 import type { ProposalItem, PagedResultDto } from '@/types/models/userProfile.model'
+
+interface ProposalImageItem {
+  id: string
+  url: string
+  file?: File
+}
 
 export const ProposePlacePage: React.FC = () => {
   const navigate = useNavigate()
@@ -79,11 +85,16 @@ export const ProposePlacePage: React.FC = () => {
   const [maxPrice, setMaxPrice] = useState('120000')
   const [description, setDescription] = useState(passedProposal?.description || '')
 
-  const [images, setImages] = useState<string[]>(() => {
-    if (passedProposal?.mediaUrls && passedProposal.mediaUrls.length > 0) return passedProposal.mediaUrls
-    if (passedProposal?.coverImg) return [passedProposal.coverImg]
+  const [imageItems, setImageItems] = useState<ProposalImageItem[]>(() => {
+    if (passedProposal?.mediaUrls && passedProposal.mediaUrls.length > 0) {
+      return passedProposal.mediaUrls.map((url, i) => ({ id: `init-${i}`, url }))
+    }
+    if (passedProposal?.coverImg) {
+      return [{ id: 'init-cover', url: passedProposal.coverImg }]
+    }
     return []
   })
+  const images = useMemo(() => imageItems.map((item) => item.url), [imageItems])
   const [activePreviewImgIndex, setActivePreviewImgIndex] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
 
@@ -141,7 +152,7 @@ export const ProposePlacePage: React.FC = () => {
     }
 
     const imgs = (p.mediaUrls && p.mediaUrls.length > 0) ? p.mediaUrls : p.coverImg ? [p.coverImg] : []
-    setImages(imgs)
+    setImageItems(imgs.map((url, idx) => ({ id: `apply-${idx}`, url })))
   }
 
   // Close address suggestions on click outside
@@ -396,39 +407,37 @@ export const ProposePlacePage: React.FC = () => {
   }
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return
-    const files = Array.from(e.target.files)
-    files.forEach((file) => {
-      const reader = new FileReader()
-      reader.onload = () => {
-        if (typeof reader.result === 'string') {
-          setImages((prev) => [...prev, reader.result as string])
-        }
-      }
-      reader.readAsDataURL(file)
-    })
+    if (!e.target.files || e.target.files.length === 0) return
+    const newFiles = Array.from(e.target.files)
+    const newItems: ProposalImageItem[] = newFiles.map((file) => ({
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      url: URL.createObjectURL(file),
+      file,
+    }))
+    setImageItems((prev) => [...prev, ...newItems])
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   const handleDropFiles = (e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(false)
-    if (!e.dataTransfer.files) return
-    const files = Array.from(e.dataTransfer.files)
-    files.forEach((file) => {
-      if (file.type.startsWith('image/')) {
-        const reader = new FileReader()
-        reader.onload = () => {
-          if (typeof reader.result === 'string') {
-            setImages((prev) => [...prev, reader.result as string])
-          }
-        }
-        reader.readAsDataURL(file)
-      }
-    })
+    if (!e.dataTransfer.files || e.dataTransfer.files.length === 0) return
+    const newFiles = Array.from(e.dataTransfer.files).filter((file) => file.type.startsWith('image/'))
+    if (newFiles.length === 0) return
+    const newItems: ProposalImageItem[] = newFiles.map((file) => ({
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      url: URL.createObjectURL(file),
+      file,
+    }))
+    setImageItems((prev) => [...prev, ...newItems])
   }
 
   const handleRemoveImage = (index: number) => {
-    setImages((prev) => {
+    setImageItems((prev) => {
+      const itemToRemove = prev[index]
+      if (itemToRemove && itemToRemove.url.startsWith('blob:')) {
+        URL.revokeObjectURL(itemToRemove.url)
+      }
       const next = prev.filter((_, idx) => idx !== index)
       if (activePreviewImgIndex >= next.length) {
         setActivePreviewImgIndex(Math.max(0, next.length - 1))
@@ -436,6 +445,17 @@ export const ProposePlacePage: React.FC = () => {
       return next
     })
   }
+
+  // Cleanup blob URLs on unmount
+  useEffect(() => {
+    return () => {
+      imageItems.forEach((item) => {
+        if (item.url.startsWith('blob:')) {
+          URL.revokeObjectURL(item.url)
+        }
+      })
+    }
+  }, [imageItems])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -456,9 +476,22 @@ export const ProposePlacePage: React.FC = () => {
       return
     }
 
+    if (imageItems.length === 0) {
+      setErrorMsg('Địa điểm đề xuất bắt buộc phải có ít nhất một hình ảnh (ảnh bìa hoặc ảnh đính kèm).')
+      if (fileInputRef.current) {
+        fileInputRef.current.parentElement?.scrollIntoView({ behavior: 'smooth' })
+      }
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
+      const filesToUpload = imageItems.filter((item) => item.file).map((item) => item.file!)
+      const existingUrls = imageItems
+        .filter((item) => !item.file && item.url && !item.url.startsWith('blob:') && !item.url.startsWith('data:'))
+        .map((item) => item.url)
+
       const res = await userService.createProposal({
         name: name.trim(),
         categoryId,
@@ -472,18 +505,22 @@ export const ProposePlacePage: React.FC = () => {
         latitude: parseFloat(lat) || undefined,
         longitude: parseFloat(lng) || undefined,
         description: description.trim(),
-        coverImg: images[0] || undefined,
-        mediaUrls: images.length > 0 ? images : undefined
+        photos: filesToUpload.length > 0 ? filesToUpload : undefined,
+        files: filesToUpload.length > 0 ? filesToUpload : undefined,
+        coverImageFile: filesToUpload[0] || undefined,
+        coverImg: existingUrls[0] || undefined,
+        mediaUrls: existingUrls.length > 0 ? existingUrls : undefined
       })
 
       if (res.success) {
         setIsSubmittedSuccess(true)
         window.scrollTo({ top: 0, behavior: 'smooth' })
       } else {
-        setErrorMsg('Không thể gửi đề xuất lúc này. Vui lòng kiểm tra lại thông tin.')
+        setErrorMsg(res.message || 'Không thể gửi đề xuất lúc này. Vui lòng kiểm tra lại thông tin.')
       }
-    } catch {
-      setErrorMsg('Có lỗi xảy ra khi gửi đề xuất. Vui lòng thử lại.')
+    } catch (err: any) {
+      const serverMsg = err.response?.data?.message || err.message || 'Có lỗi xảy ra khi gửi đề xuất. Vui lòng thử lại.'
+      setErrorMsg(serverMsg)
     } finally {
       setIsSubmitting(false)
     }
@@ -614,7 +651,7 @@ export const ProposePlacePage: React.FC = () => {
                 setName('')
                 setAddress('')
                 setDescription('')
-                setImages([])
+                setImageItems([])
               }}
               className="flex-1 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-all cursor-pointer"
             >
@@ -632,7 +669,6 @@ export const ProposePlacePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50/70 pb-20 pt-6 font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-        {/* Header Bar for View Mode */}
         {isViewMode && (
           <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in">
             <div className="flex items-center gap-3">
@@ -669,7 +705,6 @@ export const ProposePlacePage: React.FC = () => {
           </div>
         )}
 
-        {/* Rejection / Note Callouts */}
         {isViewMode && proposalData?.status === 2 && proposalData?.rejectReason && (
           <div className="p-4.5 rounded-3xl bg-rose-50 border border-rose-200 text-rose-800 text-xs space-y-1 shadow-2xs animate-in fade-in">
             <p className="font-bold flex items-center gap-2 text-rose-900 text-sm">
@@ -808,7 +843,6 @@ export const ProposePlacePage: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Mapbox Autocomplete Suggestions Dropdown */}
                     {isSuggestionsOpen && addressSuggestions.length > 0 && !isViewMode && (
                       <div className="absolute top-full left-0 right-0 mt-1.5 z-50 bg-white rounded-2xl shadow-xl border border-slate-200/90 overflow-hidden divide-y divide-slate-100 max-h-72 overflow-y-auto animate-in fade-in zoom-in-95 duration-150">
                         {addressSuggestions.map((item) => (
@@ -1063,7 +1097,7 @@ export const ProposePlacePage: React.FC = () => {
               <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-4">
                 <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
                   <ImageIcon className="w-4 h-4 text-emerald-700" />
-                  <span>4. Hình ảnh địa điểm thực tế</span>
+                  <span>4. Hình ảnh địa điểm thực tế {!isViewMode && <span className="text-rose-500">*</span>}</span>
                 </h3>
 
                 <input

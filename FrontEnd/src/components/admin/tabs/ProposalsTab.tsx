@@ -1,5 +1,6 @@
-import React, { useState } from "react";
-import { Search, User } from "lucide-react";
+import React, { useState, useMemo } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Search, User, Image as ImageIcon } from "lucide-react";
 import type { AdminProposalItem } from "@/types/admin.types";
 import { adminService } from "@/services/adminService";
 import { ProposalDetailEditor } from "./ProposalDetailEditor";
@@ -16,7 +17,7 @@ interface ProposalsTabProps {
     type: "approve" | "reject" | "resolve" | "hide" | "edit"
   ) => void;
   showToast: (msg: string) => void;
-  onApprove?: (id: number) => Promise<void>;
+  onApprove?: (id: number, adminNotes?: string) => Promise<void>;
   onReject?: (id: number, reason: string) => Promise<void>;
 }
 
@@ -30,52 +31,61 @@ export const ProposalsTab: React.FC<ProposalsTabProps> = ({
   onApprove,
   onReject,
 }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [selectedProposalId, setSelectedProposalId] = useState<number | null>(null);
   const [proposalSearchText, setProposalSearchText] = useState("");
   const [proposalFilterProvince, setProposalFilterProvince] = useState("all");
 
-  const currentProposal = selectedProposalId
-    ? proposals.find((p) => p.id === selectedProposalId)
-    : null;
+  // Match /admin/proposals/:id from URL path
+  const proposalPathMatch = location.pathname.match(/\/admin\/proposals\/(\d+)/i);
+  const urlProposalId = proposalPathMatch ? Number(proposalPathMatch[1]) : selectedProposalId;
+
+  const currentProposal = useMemo(() => {
+    if (!urlProposalId) return null;
+    return proposals.find((p) => Number(p.id) === urlProposalId) || null;
+  }, [urlProposalId, proposals]);
 
   const filteredProposals = proposals.filter((p) => {
-    if (proposalFilterProvince !== "all" && p.province !== proposalFilterProvince) return false;
+    const prov = p.provinceName || p.province || "";
+    if (proposalFilterProvince !== "all" && prov !== proposalFilterProvince) return false;
     if (proposalStatusFilter !== "all" && String(p.status) !== proposalStatusFilter) return false;
     if (proposalSearchText.trim()) {
       const q = proposalSearchText.toLowerCase();
       const matchName = (p.placeName || p.proposedData?.name || "").toLowerCase().includes(q);
-      const matchLoc = (p.proposedData?.address || p.province || "").toLowerCase().includes(q);
-      const matchUser = (p.proposedBy || "").toLowerCase().includes(q);
+      const matchLoc = (p.address || p.proposedData?.address || prov).toLowerCase().includes(q);
+      const matchUser = (p.proposerName || p.proposedBy || "").toLowerCase().includes(q);
       if (!matchName && !matchLoc && !matchUser) return false;
     }
     return true;
   });
 
-  const handleApprove = async (proposal: AdminProposalItem) => {
-    if (onApprove) await onApprove(proposal.id);
-    else await adminService.approveProposal(proposal.id);
+  const handleApprove = async (proposal: AdminProposalItem, adminNotes?: string) => {
+    if (onApprove) await onApprove(proposal.id, adminNotes);
+    else await adminService.approveProposal(proposal.id, adminNotes);
     setProposals((prev) =>
-      prev.map((p) => (p.id === proposal.id ? { ...p, status: 1 } : p))
+      prev.map((p) => (p.id === proposal.id ? { ...p, status: 1, adminNotes } : p))
     );
     addAuditLog(
       "Duyệt đề xuất người dùng",
       proposal.placeName,
-      `Chấp thuận đề xuất từ ${proposal.proposedBy}`,
+      `Chấp thuận đề xuất từ ${proposal.proposerName || proposal.proposedBy}`,
       "approve"
     );
     showToast(`Đã duyệt đề xuất "${proposal.placeName}".`);
   };
 
-  const handleReject = async (proposal: AdminProposalItem) => {
-    if (onReject) await onReject(proposal.id, "Đề xuất không đáp ứng tiêu chí kiểm duyệt.");
-    else await adminService.rejectProposal(proposal.id, "Đề xuất không đáp ứng tiêu chí kiểm duyệt.");
+  const handleReject = async (proposal: AdminProposalItem, reason: string) => {
+    if (onReject) await onReject(proposal.id, reason);
+    else await adminService.rejectProposal(proposal.id, reason);
     setProposals((prev) =>
-      prev.map((p) => (p.id === proposal.id ? { ...p, status: 2 } : p))
+      prev.map((p) => (p.id === proposal.id ? { ...p, status: 2, rejectionReason: reason } : p))
     );
     addAuditLog(
       "Từ chối đề xuất người dùng",
       proposal.placeName,
-      `Từ chối đề xuất từ ${proposal.proposedBy}`,
+      `Từ chối đề xuất từ ${proposal.proposerName || proposal.proposedBy}: ${reason}`,
       "reject"
     );
     showToast(`Đã từ chối đề xuất "${proposal.placeName}".`);
@@ -94,11 +104,14 @@ export const ProposalsTab: React.FC<ProposalsTabProps> = ({
     showToast(`Đã lưu chỉnh sửa đề xuất "${updatedProposal.placeName}".`);
   };
 
-  if (selectedProposalId && currentProposal) {
+  if (currentProposal) {
     return (
       <ProposalDetailEditor
         proposal={currentProposal}
-        onBack={() => setSelectedProposalId(null)}
+        onBack={() => {
+          setSelectedProposalId(null);
+          navigate('/admin/proposals');
+        }}
         onSave={handleSaveProposal}
         onApprove={handleApprove}
         onReject={handleReject}
@@ -167,28 +180,53 @@ export const ProposalsTab: React.FC<ProposalsTabProps> = ({
             <tbody className="divide-y divide-slate-100">
               {filteredProposals.map((prop) => {
                 const thumb =
+                  prop.coverImg ||
+                  prop.placeData?.coverImg ||
                   prop.proposedData?.imageUrl ||
-                  "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&h=400&fit=crop";
+                  prop.proposedData?.coverImg ||
+                  "";
                 const displayAddr =
+                  prop.address ||
                   prop.proposedData?.address ||
-                  (prop.province ? `${prop.province}, Việt Nam` : "Chưa có địa chỉ chi tiết");
+                  (prop.provinceName || prop.province ? `${prop.provinceName || prop.province}, Việt Nam` : "Chưa có địa chỉ chi tiết");
+                const pName = prop.placeName || prop.proposedData?.name || "Địa điểm đề xuất";
+                const catName = prop.categoryName || prop.category || prop.proposedData?.category || "Nhà hàng & Quán ăn";
+                const provName = prop.provinceName || prop.province || "Toàn quốc";
+                const proposerName = prop.proposerName || prop.proposedBy || prop.proposer?.name || "Người dùng";
+                const proposerAvatar = prop.proposerAvatar || prop.userAvatar || prop.proposer?.avatarUrl;
+                const formattedDate = prop.submittedAt
+                  ? new Date(prop.submittedAt).toLocaleDateString("vi-VN", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                    })
+                  : "";
 
                 return (
                   <tr
                     key={prop.id}
                     className="hover:bg-slate-50/60 transition-colors group cursor-pointer"
-                    onClick={() => setSelectedProposalId(prop.id)}
+                    onClick={() => {
+                      setSelectedProposalId(prop.id);
+                      navigate(`/admin/proposals/${prop.id}`);
+                    }}
                   >
                     <td className="p-3.5 pl-4 font-bold text-slate-900">
                       <div className="flex items-center gap-3">
-                        <img
-                          src={thumb}
-                          className="w-10 h-10 rounded-lg object-cover border border-slate-200 shrink-0"
-                          alt=""
-                        />
+                        {thumb ? (
+                          <img
+                            src={thumb}
+                            className="w-10 h-10 rounded-lg object-cover border border-slate-200 shrink-0"
+                            alt=""
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 shrink-0">
+                            <ImageIcon size={16} />
+                          </div>
+                        )}
                         <div>
                           <div className="font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">
-                            {prop.placeName}
+                            {pName}
                           </div>
                           <div className="text-[11px] text-slate-400 font-normal truncate max-w-xs">
                             {displayAddr}
@@ -197,14 +235,14 @@ export const ProposalsTab: React.FC<ProposalsTabProps> = ({
                       </div>
                     </td>
                     <td className="p-3.5 text-slate-700 font-medium">
-                      {prop.category || prop.proposedData?.category || "Nhà hàng & Quán ăn"}
+                      {catName}
                     </td>
-                    <td className="p-3.5 text-slate-700 font-medium">{prop.province}</td>
+                    <td className="p-3.5 text-slate-700 font-medium">{provName}</td>
                     <td className="p-3.5">
                       <div className="flex items-center gap-2">
-                        {prop.userAvatar ? (
+                        {proposerAvatar ? (
                           <img
-                            src={prop.userAvatar}
+                            src={proposerAvatar}
                             className="w-6 h-6 rounded-full object-cover border border-slate-200"
                             alt=""
                           />
@@ -215,10 +253,10 @@ export const ProposalsTab: React.FC<ProposalsTabProps> = ({
                         )}
                         <div>
                           <div className="font-semibold text-slate-800 text-[11px]">
-                            {prop.proposedBy}
+                            {proposerName}
                           </div>
                           <div className="text-[10px] text-slate-400 font-normal">
-                            {prop.submittedAt}
+                            {formattedDate || prop.submittedAt}
                           </div>
                         </div>
                       </div>
@@ -242,7 +280,10 @@ export const ProposalsTab: React.FC<ProposalsTabProps> = ({
                     </td>
                     <td className="p-3.5 text-right pr-4" onClick={(e) => e.stopPropagation()}>
                       <button
-                        onClick={() => setSelectedProposalId(prop.id)}
+                        onClick={() => {
+                          setSelectedProposalId(prop.id);
+                          navigate(`/admin/proposals/${prop.id}`);
+                        }}
                         className="px-2.5 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
                       >
                         Chi tiết →

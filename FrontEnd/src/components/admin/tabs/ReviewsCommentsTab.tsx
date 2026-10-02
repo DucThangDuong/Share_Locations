@@ -14,9 +14,27 @@ import {
   MessageSquare,
   AlertTriangle,
   BookOpen,
+  User,
+  MapPin,
 } from "lucide-react";
 import type { PlaceReviewItem, PlaceCommentItem } from "@/types/admin.types";
 import { adminService } from "@/services/adminService";
+
+const formatDateTime = (dateStr?: string) => {
+  if (!dateStr) return "";
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    const hours = String(d.getHours()).padStart(2, "0");
+    const minutes = String(d.getMinutes()).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const year = d.getFullYear();
+    return `${hours}:${minutes} ${day}/${month}/${year}`;
+  } catch {
+    return dateStr;
+  }
+};
 
 interface ReviewsCommentsTabProps {
   revComTab: "reviews" | "comments";
@@ -295,7 +313,7 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
           </div>
         </div>
 
-        {/* Table Layout - Exact layout matching the requested screenshot */}
+        {/* Table Layout - Exact layout without Chi tiết column, clean images & proper dates */}
         <div className="overflow-x-auto rounded-xl border border-slate-200/80 bg-white">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -309,8 +327,7 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
                 {revComTab === "reviews" && (
                   <th className="p-3.5 min-w-[140px]">Rating</th>
                 )}
-                <th className="p-3.5 text-center min-w-[110px]">Chi tiết</th>
-                <th className="p-3.5 text-center pr-5 min-w-[80px]">Tác vụ</th>
+                <th className="p-3.5 text-right pr-5 min-w-[100px]">Tác vụ</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -318,8 +335,10 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
                 displayedReviews.map((rev) => {
                   const placeImg =
                     (rev as any).placeCoverImg ||
+                    (rev as any).placeThumbnail ||
+                    (rev as any).coverImg ||
                     (rev.images && rev.images[0]) ||
-                    "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&h=300&fit=crop";
+                    "";
 
                   return (
                     <tr
@@ -331,21 +350,24 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
                       {/* Review Column (User Avatar + Name + Date + Snippet) */}
                       <td className="p-3.5 pl-5">
                         <div className="flex items-center gap-3">
-                          <img
-                            src={
-                              rev.userAvatar ||
-                              "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=80&h=80&fit=crop"
-                            }
-                            alt=""
-                            className="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0"
-                          />
+                          {rev.userAvatar ? (
+                            <img
+                              src={rev.userAvatar}
+                              alt=""
+                              className="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 shrink-0">
+                              <User size={16} />
+                            </div>
+                          )}
                           <div className="space-y-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-bold text-slate-900 text-xs sm:text-sm">
                                 {rev.userName}
                               </span>
                               <span className="text-[11px] text-slate-400 font-normal">
-                                {rev.createdAt}
+                                {formatDateTime(rev.createdAt)}
                               </span>
                               {rev.reportCount > 0 && (
                                 <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-rose-100 text-rose-700 text-[10px] font-bold">
@@ -369,17 +391,23 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
                       {/* Product / Place Column */}
                       <td className="p-3.5">
                         <div className="flex items-center gap-2.5">
-                          <img
-                            src={placeImg}
-                            alt=""
-                            className="w-9 h-9 rounded-lg object-cover border border-slate-200 shrink-0"
-                          />
+                          {placeImg ? (
+                            <img
+                              src={placeImg}
+                              alt=""
+                              className="w-9 h-9 rounded-lg object-cover border border-slate-200 shrink-0"
+                            />
+                          ) : (
+                            <div className="w-9 h-9 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 shrink-0">
+                              <MapPin size={15} />
+                            </div>
+                          )}
                           <div className="min-w-0">
                             <div className="font-bold text-slate-800 text-xs truncate max-w-[180px]">
                               {rev.placeName}
                             </div>
                             <div className="text-[10px] text-slate-400 truncate">
-                              {rev.province || "Đà Nẵng"}
+                              {rev.province || "Toàn quốc"}
                             </div>
                           </div>
                         </div>
@@ -395,19 +423,8 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
                         </div>
                       </td>
 
-                      {/* Details Column ("View Details" Button) */}
-                      <td className="p-3.5 text-center">
-                        <button
-                          type="button"
-                          onClick={() => setSelectedReview(rev)}
-                          className="px-3.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
-                        >
-                          View Details
-                        </button>
-                      </td>
-
-                      {/* Action Column ("..." Menu) */}
-                      <td className="p-3.5 pr-5 text-center relative">
+                      {/* Action Column ("..." Menu with View Details) */}
+                      <td className="p-3.5 pr-5 text-right relative">
                         <div className="inline-block text-left">
                           <button
                             type="button"
@@ -422,6 +439,18 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
 
                           {openActionMenuId === rev.id && (
                             <div className="absolute right-5 mt-1 w-44 bg-white rounded-xl shadow-lg border border-slate-200 p-1 z-30 animate-in fade-in zoom-in-95 text-left">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedReview(rev);
+                                  setOpenActionMenuId(null);
+                                }}
+                                className="w-full px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 rounded-lg flex items-center gap-2 cursor-pointer"
+                              >
+                                <Eye size={13} className="text-emerald-700" />
+                                <span>Xem chi tiết</span>
+                              </button>
+
                               <button
                                 type="button"
                                 onClick={() => handleToggleHideReview(rev.id)}
@@ -461,22 +490,24 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
                     {/* Comment User & Content */}
                     <td className="p-3.5 pl-5">
                       <div className="flex items-center gap-3">
-                        <img
-                          src={
-                            comm.authorAvatar ||
-                            comm.userAvatar ||
-                            "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&h=80&fit=crop"
-                          }
-                          alt=""
-                          className="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0"
-                        />
+                        {comm.authorAvatar || comm.userAvatar ? (
+                          <img
+                            src={comm.authorAvatar || comm.userAvatar}
+                            alt=""
+                            className="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 shrink-0">
+                            <User size={16} />
+                          </div>
+                        )}
                         <div className="space-y-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-bold text-slate-900 text-xs sm:text-sm">
                               {comm.authorName || comm.userName}
                             </span>
                             <span className="text-[11px] text-slate-400 font-normal">
-                              {comm.createdAt}
+                              {formatDateTime(comm.createdAt)}
                             </span>
                             {comm.status === "hidden" && (
                               <span className="px-1.5 py-0.2 rounded-md bg-slate-100 text-slate-500 text-[10px] font-bold">
@@ -499,7 +530,7 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
                         </div>
                         <div className="min-w-0">
                           <div className="font-bold text-slate-800 text-xs truncate max-w-[180px]">
-                            {comm.placeName || "Cẩm nang du lịch Miền Trung"}
+                            {comm.placeName || "Cẩm nang du lịch"}
                           </div>
                           <div className="text-[10px] text-slate-400 truncate">
                             Blog bài viết #{comm.blogId || 1}
@@ -508,19 +539,8 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
                       </div>
                     </td>
 
-                    {/* Details Column */}
-                    <td className="p-3.5 text-center">
-                      <button
-                        type="button"
-                        onClick={() => setSelectedComment(comm)}
-                        className="px-3.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
-                      >
-                        View Details
-                      </button>
-                    </td>
-
                     {/* Action Column */}
-                    <td className="p-3.5 pr-5 text-center relative">
+                    <td className="p-3.5 pr-5 text-right relative">
                       <div className="inline-block text-left">
                         <button
                           type="button"
@@ -535,6 +555,18 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
 
                         {openActionMenuId === comm.id && (
                           <div className="absolute right-5 mt-1 w-44 bg-white rounded-xl shadow-lg border border-slate-200 p-1 z-30 animate-in fade-in zoom-in-95 text-left">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedComment(comm);
+                                setOpenActionMenuId(null);
+                              }}
+                              className="w-full px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 rounded-lg flex items-center gap-2 cursor-pointer"
+                            >
+                              <Eye size={13} className="text-emerald-700" />
+                              <span>Xem chi tiết</span>
+                            </button>
+
                             <button
                               type="button"
                               onClick={() => handleToggleHideComment(comm.id)}
@@ -641,19 +673,22 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
             {/* User & Place Meta */}
             <div className="flex items-start justify-between gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-200/80">
               <div className="flex items-center gap-3">
-                <img
-                  src={
-                    selectedReview.userAvatar ||
-                    "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=80&h=80&fit=crop"
-                  }
-                  className="w-12 h-12 rounded-full object-cover border border-slate-200"
-                  alt=""
-                />
+                {selectedReview.userAvatar ? (
+                  <img
+                    src={selectedReview.userAvatar}
+                    className="w-12 h-12 rounded-full object-cover border border-slate-200"
+                    alt=""
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 shrink-0">
+                    <User size={20} />
+                  </div>
+                )}
                 <div>
                   <h4 className="font-bold text-slate-900 text-sm">{selectedReview.userName}</h4>
                   <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
                     <Calendar size={12} />
-                    <span>Đăng ngày: {selectedReview.createdAt}</span>
+                    <span>Đăng ngày: {formatDateTime(selectedReview.createdAt)}</span>
                   </div>
                   {selectedReview.visitDate && (
                     <div className="text-[11px] text-slate-500">
@@ -756,22 +791,24 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
             </div>
 
             <div className="flex items-center gap-3 p-4 rounded-2xl bg-slate-50 border border-slate-200/80">
-              <img
-                src={
-                  selectedComment.authorAvatar ||
-                  selectedComment.userAvatar ||
-                  "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&h=80&fit=crop"
-                }
-                className="w-12 h-12 rounded-full object-cover border border-slate-200"
-                alt=""
-              />
+              {selectedComment.authorAvatar || selectedComment.userAvatar ? (
+                <img
+                  src={selectedComment.authorAvatar || selectedComment.userAvatar}
+                  className="w-12 h-12 rounded-full object-cover border border-slate-200"
+                  alt=""
+                />
+              ) : (
+                <div className="w-12 h-12 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 shrink-0">
+                  <User size={20} />
+                </div>
+              )}
               <div>
                 <h4 className="font-bold text-slate-900 text-sm">
                   {selectedComment.authorName || selectedComment.userName}
                 </h4>
                 <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
                   <Calendar size={12} />
-                  <span>Đăng ngày: {selectedComment.createdAt}</span>
+                  <span>Đăng ngày: {formatDateTime(selectedComment.createdAt)}</span>
                 </div>
               </div>
             </div>

@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import {
-  FolderHeart,
   Compass,
   Layers,
   History,
@@ -13,51 +12,7 @@ import type {
 import { adminService, extractList } from "@/services/adminService";
 
 export { FoodsTab } from "./FoodsTab";
-
-/* ── TAB 7: COLLECTIONS ── */
-export const CollectionsTab: React.FC = () => {
-  const [collections, setCollections] = useState<any[]>([]);
-
-  React.useEffect(() => {
-    adminService.getCollections().then((res: any) => {
-      const items = extractList(res?.data);
-      if (items.length > 0) {
-        setCollections(items);
-      }
-    }).catch(() => {});
-  }, []);
-
-  return (
-    <div className="space-y-6 animate-in fade-in duration-150 text-xs">
-      <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs">
-        <h2 className="font-bold text-base text-slate-900 tracking-tight flex items-center gap-2">
-          <FolderHeart className="text-slate-700" size={18} />
-          <span>Bộ sưu tập địa điểm tuyển chọn</span>
-        </h2>
-        <p className="text-xs text-slate-400 mt-0.5">
-          Bộ sưu tập do Ban biên tập định hướng theo chủ đề du lịch và ẩm thực
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {collections.map((col) => (
-          <div key={col.id} className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
-            <img src={col.coverImg || col.img || "https://images.unsplash.com/photo-1541544741938-0af808871cc0?w=600&h=400&fit=crop"} alt="" className="w-full h-40 rounded-xl object-cover" />
-            <h4 className="font-bold text-sm text-slate-900">{col.name}</h4>
-            <span className="text-xs text-slate-500 font-medium block">
-              {col.placesCount ?? col.count ?? 0} địa điểm tuyển chọn
-            </span>
-          </div>
-        ))}
-        {collections.length === 0 && (
-          <div className="col-span-full p-8 text-center text-slate-400 bg-white rounded-2xl border border-dashed border-slate-200">
-            Chưa có bộ sưu tập nào được tải từ hệ thống.
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
+export { CollectionsTab } from "./CollectionsTab";
 
 /* ── TAB 8: PROVINCES ── */
 export const ProvincesTab: React.FC = () => {

@@ -57,8 +57,15 @@ export const placeService = {
   },
 
   async getPlaceReviews(id: number | string, params?: { page?: number; pageSize?: number; rating?: number }): Promise<ApiSuccessResponse<PlaceReviewSummaryDto>> {
+    const cleanParams: Record<string, any> = {
+      page: params?.page || 1,
+      pageSize: Math.min(params?.pageSize || 20, 50),
+    }
+    if (params?.rating) {
+      cleanParams.rating = params.rating
+    }
     const response = await apiClient.get<ApiSuccessResponse<PlaceReviewSummaryDto>>(`/api/places/${id}/reviews`, {
-      params
+      params: cleanParams
     })
     return response.data
   },

@@ -175,12 +175,6 @@ export const ItineraryPlannerToolbar: React.FC<ItineraryPlannerToolbarProps> = (
                 placeholder="Nhập tên chuyến đi..."
                 className="font-extrabold text-base sm:text-xl text-slate-900 bg-transparent outline-none focus:bg-slate-50 rounded-lg transition-all w-full tracking-tight truncate disabled:cursor-default"
               />
-              {isPublished && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 shrink-0">
-                  <Lock size={11} className="text-emerald-700" />
-                  <span>Đã công bố</span>
-                </span>
-              )}
             </div>
           </div>
 

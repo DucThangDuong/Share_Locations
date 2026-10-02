@@ -33,8 +33,6 @@ interface AdminSidebarProps {
   blogReportsCount?: number;
   reportTargetTypeFilter?: "all" | "place" | "review" | "comment" | "blog" | "photo";
   setReportTargetTypeFilter?: (v: "all" | "place" | "review" | "comment" | "blog" | "photo") => void;
-  foodsCount: number;
-  blogsCount: number;
   auditLogsCount: number;
   onBackToUserView: () => void;
 }
@@ -55,8 +53,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   blogReportsCount = 0,
   reportTargetTypeFilter = "all",
   setReportTargetTypeFilter,
-  foodsCount,
-  blogsCount,
   auditLogsCount: _auditLogsCount,
   onBackToUserView,
 }) => {
@@ -228,9 +224,12 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                         <button
                           key={sub.id}
                           onClick={() => {
-                            setMainTab("reports");
-                            setReportTargetTypeFilter?.(sub.id);
                             setSelectedPlaceId(null);
+                            if (setReportTargetTypeFilter) {
+                              setReportTargetTypeFilter(sub.id);
+                            } else {
+                              setMainTab("reports");
+                            }
                           }}
                           className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-[11px] transition-all duration-150 cursor-pointer ${isSubActive
                             ? "bg-emerald-50 text-emerald-800 font-bold border border-emerald-200/80 shadow-2xs"
@@ -255,9 +254,9 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               )}
 
               {[
-                { id: "foods", label: "Ẩm thực & Đặc sản", icon: Utensils, count: foodsCount },
-                { id: "collections", label: "Bộ sưu tập tuyển chọn", icon: FolderHeart },
-                { id: "blogs", label: "Blog & Cẩm nang", icon: BookOpen, count: blogsCount },
+                { id: "foods", label: "Ẩm thực & Đặc sản", icon: Utensils },
+                { id: "collections", label: "Bộ sưu tập", icon: FolderHeart },
+                { id: "blogs", label: "Cẩm nang", icon: BookOpen },
                 { id: "categories", label: "Danh mục hệ thống", icon: Layers },
               ].map((item) => {
                 const IconComp = item.icon;
@@ -287,17 +286,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                       />
                       {isSidebarOpen && <span className="truncate text-xs">{item.label}</span>}
                     </span>
-
-                    {isSidebarOpen && item.count !== undefined && (
-                      <span
-                        className={`text-[10px] px-1.5 py-0.2 rounded-full font-medium ${isActive
-                          ? "bg-white text-emerald-700"
-                          : "bg-slate-100 text-slate-500"
-                          }`}
-                      >
-                        {item.count}
-                      </span>
-                    )}
                   </button>
                 );
               })}

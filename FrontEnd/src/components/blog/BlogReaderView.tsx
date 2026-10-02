@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Clock,
   BookOpen,
-  Flag
+  Flag,
+  Eye,
+  Heart
 } from 'lucide-react'
 import { ReportModal } from '@/components/report/ReportModal'
 import type { BlogDetailDto, BlogListItemDto } from '@/types/models/blogArticle.model'
@@ -31,6 +32,15 @@ export const BlogReaderView: React.FC<BlogReaderViewProps> = ({
   const [readProgress, setReadProgress] = useState(0)
   const [isReportModalOpen, setIsReportModalOpen] = useState(false)
 
+  const authorName = article.author?.name || article.authorName || 'Tác giả'
+  const authorAvatar = article.author?.avatar || article.authorAvatar || null
+  const authorRole = article.author?.role || 'Thành viên cộng đồng LangThang'
+  const coverImage = article.coverImg || article.coverUrl || article.coverImageUrl
+  const summaryText = article.summary || article.excerpt
+  const categoryName = article.category || article.categoryName || 'Cẩm nang du lịch'
+  const viewsCount = article.views ?? article.viewCount
+  const likesCount = article.likes ?? article.likesCount
+
   const handleNavigateToAuthor = (e?: React.MouseEvent) => {
     navigateToAuthorProfile(navigate, article.author, article, e)
   }
@@ -47,6 +57,7 @@ export const BlogReaderView: React.FC<BlogReaderViewProps> = ({
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
+  // Process HTML and extract Table of Contents
   const { processedHtml, extractedHeadings } = useMemo(() => {
     const raw = article.content || ''
     const convertedHtml = convertRawContentToHtml(raw)
@@ -60,7 +71,6 @@ export const BlogReaderView: React.FC<BlogReaderViewProps> = ({
     }
   }
 
-
   return (
     <div className="bg-white min-h-screen">
       <div
@@ -73,22 +83,16 @@ export const BlogReaderView: React.FC<BlogReaderViewProps> = ({
           <div className="lg:col-span-8 space-y-8 min-w-0">
             <div className="space-y-4">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold">
-                <span>{article.category || 'Cẩm nang du lịch'}</span>
-                {article.publishedAt && (
-                  <>
-                    <span>•</span>
-                    <span>{article.publishedAt}</span>
-                  </>
-                )}
+                <span>{categoryName}</span>
               </div>
 
               <h1 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 leading-tight tracking-tight">
                 {article.title}
               </h1>
 
-              {article.excerpt && (
-                <p className="text-base sm:text-lg text-slate-600 leading-relaxed font-normal">
-                  {article.excerpt}
+              {summaryText && (
+                <p className="text-base sm:text-lg text-slate-600 leading-relaxed font-normal bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
+                  {summaryText}
                 </p>
               )}
             </div>
@@ -99,28 +103,43 @@ export const BlogReaderView: React.FC<BlogReaderViewProps> = ({
                 className="flex items-center gap-3 cursor-pointer group/author transition-opacity hover:opacity-90 w-fit"
                 title="Xem trang cá nhân của tác giả"
               >
-                {article.author?.avatar ? (
+                {authorAvatar ? (
                   <img
-                    src={article.author.avatar}
-                    alt={article.author.name}
+                    src={authorAvatar}
+                    alt={authorName}
                     className="w-12 h-12 rounded-full object-cover border border-slate-200 group-hover/author:ring-2 group-hover/author:ring-emerald-500/50 transition-all"
                   />
                 ) : (
                   <div className="w-12 h-12 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-sm group-hover/author:ring-2 group-hover/author:ring-emerald-500/50 transition-all">
-                    {(article.author?.name || 'T').charAt(0).toUpperCase()}
+                    {authorName.charAt(0).toUpperCase()}
                   </div>
                 )}
                 <div>
                   <h4 className="font-bold text-sm text-slate-900 group-hover/author:text-emerald-700 transition-colors">
-                    {article.author?.name || 'Tác giả'}
+                    {authorName}
                   </h4>
+                  <p className="text-xs text-slate-500">
+                    {authorRole}
+                  </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 text-xs font-semibold text-slate-500">
-                <span className="flex items-center gap-1">
-                  <Clock size={14} /> {article.readTime || '5 phút đọc'}
-                </span>
+              <div className="flex items-center gap-3 text-xs font-semibold text-slate-500 flex-wrap">
+                {viewsCount !== undefined && (
+                  <span className="flex items-center gap-1 text-slate-600">
+                    <Eye size={14} className="text-slate-400" />
+                    <span>{Number(viewsCount).toLocaleString('vi-VN')} lượt xem</span>
+                  </span>
+                )}
+                {likesCount !== undefined && (
+                  <>
+                    <span>•</span>
+                    <span className="flex items-center gap-1 text-rose-600">
+                      <Heart size={14} className="text-rose-400 fill-rose-100" />
+                      <span>{Number(likesCount).toLocaleString('vi-VN')}</span>
+                    </span>
+                  </>
+                )}
                 <span>•</span>
                 <button
                   type="button"
@@ -134,10 +153,10 @@ export const BlogReaderView: React.FC<BlogReaderViewProps> = ({
               </div>
             </div>
 
-            {article.coverUrl ? (
+            {coverImage ? (
               <div className="rounded-3xl overflow-hidden shadow-md border border-slate-200 bg-slate-100">
                 <img
-                  src={article.coverUrl}
+                  src={coverImage}
                   alt={article.title}
                   className="w-full max-h-[480px] object-cover"
                 />
@@ -164,15 +183,15 @@ export const BlogReaderView: React.FC<BlogReaderViewProps> = ({
                   className="cursor-pointer group/bottomAuthor shrink-0"
                   title="Xem trang cá nhân của tác giả"
                 >
-                  {article.author?.avatar ? (
+                  {authorAvatar ? (
                     <img
-                      src={article.author.avatar}
-                      alt={article.author.name}
+                      src={authorAvatar}
+                      alt={authorName}
                       className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-sm group-hover/bottomAuthor:ring-2 group-hover/bottomAuthor:ring-emerald-500/50 transition-all"
                     />
                   ) : (
                     <div className="w-16 h-16 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-lg group-hover/bottomAuthor:ring-2 group-hover/bottomAuthor:ring-emerald-500/50 transition-all">
-                      {(article.author?.name || 'T').charAt(0).toUpperCase()}
+                      {authorName.charAt(0).toUpperCase()}
                     </div>
                   )}
                 </div>
@@ -182,10 +201,10 @@ export const BlogReaderView: React.FC<BlogReaderViewProps> = ({
                     className="font-bold text-base text-slate-900 hover:text-emerald-700 cursor-pointer transition-colors inline-block"
                     title="Xem trang cá nhân của tác giả"
                   >
-                    {article.author?.name || 'Tác giả'}
+                    {authorName}
                   </h4>
                   <p className="text-xs text-slate-500">
-                    {article.author?.role || 'Thành viên cộng đồng LangThang'}
+                    {authorRole}
                   </p>
                   <p className="text-xs text-slate-600 pt-1">
                     Cảm ơn bạn đã đọc bài viết! Hãy lưu lại cẩm nang hoặc chia sẻ cho bạn bè cùng chuyến đi nhé.
@@ -214,9 +233,9 @@ export const BlogReaderView: React.FC<BlogReaderViewProps> = ({
             targetType: 'blog',
             targetId: article.id,
             targetTitle: article.title,
-            targetSubtitle: `Tác giả: ${article.author?.name || 'Ẩn danh'} • ${article.category || 'Cẩm nang'}`,
-            targetContent: article.excerpt || article.content?.slice(0, 200),
-            targetAuthor: article.author?.name,
+            targetSubtitle: `Tác giả: ${authorName} • ${categoryName}`,
+            targetContent: summaryText || article.content?.slice(0, 200),
+            targetAuthor: authorName,
           }}
         />
       )}

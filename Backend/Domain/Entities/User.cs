@@ -107,6 +107,16 @@ public class User
         CreatedAt = DateTime.UtcNow;
         UpdatedAt = DateTime.UtcNow;
         IsDeleted = false;
+        AddRole(Domain.Constants.AppRoles.UserRoleId, assignedBy: 1);
+    }
+
+    public void AddRole(byte roleId, long? assignedBy = 1, DateTime? expiresAt = null)
+    {
+        if (!_userRoles.Any(ur => ur.RoleId == roleId))
+        {
+            _userRoles.Add(new UserRole(this, roleId, assignedBy, expiresAt));
+            UpdatedAt = DateTime.UtcNow;
+        }
     }
 
     public void SetPasswordHash(string newPasswordHash)

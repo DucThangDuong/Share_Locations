@@ -15,6 +15,11 @@ public class GetAdminPlacesRequest
     public int? CategoryId { get; set; }
     public int? Status { get; set; }
     public string? Keyword { get; set; }
+    public string? Search
+    {
+        get => Keyword;
+        set => Keyword = value ?? Keyword;
+    }
     public int Page { get; set; } = 1;
     public int PageSize { get; set; } = 10;
 }
@@ -42,7 +47,7 @@ public class GetAdminPlacesEndpoint : Endpoint<GetAdminPlacesRequest, ApiSuccess
                 req.ProvinceId,
                 req.CategoryId,
                 req.Status,
-                req.Keyword,
+                req.Keyword ?? req.Search,
                 req.Page,
                 req.PageSize),
             ct);

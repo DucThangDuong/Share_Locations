@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { adminService, extractList, type AdminMetrics } from "@/services/adminService";
 import { isUserAdmin } from "@/utils/authUtils";
 import type {
@@ -38,8 +38,47 @@ import {
   AuditLogsTab,
 } from "@/components/admin/tabs/OtherTabs";
 
+const TAB_SLUG_MAP: Record<AdminMainTab, string> = {
+  dashboard: "dashboard",
+  users: "users",
+  places: "places",
+  proposals: "proposals",
+  reviews_comments: "reviews",
+  reports: "reports",
+  foods: "foods",
+  collections: "collections",
+  provinces: "provinces",
+  blogs: "blogs",
+  categories: "categories",
+  notifications_profile: "profile",
+  audit_logs: "audit-logs",
+};
+
+const SLUG_TO_TAB_MAP: Record<string, AdminMainTab> = {
+  "": "dashboard",
+  dashboard: "dashboard",
+  users: "users",
+  places: "places",
+  proposals: "proposals",
+  reviews: "reviews_comments",
+  "reviews-comments": "reviews_comments",
+  reviews_comments: "reviews_comments",
+  reports: "reports",
+  foods: "foods",
+  collections: "collections",
+  provinces: "provinces",
+  blogs: "blogs",
+  categories: "categories",
+  profile: "notifications_profile",
+  "notifications-profile": "notifications_profile",
+  notifications_profile: "notifications_profile",
+  "audit-logs": "audit_logs",
+  audit_logs: "audit_logs",
+};
+
 export const AdminPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     if (!isUserAdmin()) {
@@ -61,10 +100,85 @@ export const AdminPage: React.FC = () => {
     avatar: storedAdmin.avatarUrl || storedAdmin.avatar,
   };
 
-  // Navigation State
-  const [mainTab, setMainTab] = useState<AdminMainTab>("dashboard");
+  // Determine active tab from URL path or query params
+  const getTabFromUrl = (): AdminMainTab => {
+    // 1. Check path e.g. /admin/places or /admin/users
+    const pathParts = location.pathname.replace(/\/+$/, "").split("/");
+    const adminIndex = pathParts.indexOf("admin");
+    if (adminIndex !== -1 && pathParts[adminIndex + 1]) {
+      const subSlug = pathParts[adminIndex + 1].toLowerCase();
+      if (SLUG_TO_TAB_MAP[subSlug]) {
+        return SLUG_TO_TAB_MAP[subSlug];
+      }
+    }
+
+    // 2. Check query param e.g. /admin?tab=places
+    const params = new URLSearchParams(location.search);
+    const queryTab = params.get("tab")?.toLowerCase();
+    if (queryTab && SLUG_TO_TAB_MAP[queryTab]) {
+      return SLUG_TO_TAB_MAP[queryTab];
+    }
+
+    return "dashboard";
+  };
+
+  const getReportTargetTypeFromUrl = (): "all" | "place" | "review" | "comment" | "blog" | "photo" => {
+    const params = new URLSearchParams(location.search);
+    const type = params.get("targetType")?.toLowerCase();
+    if (type === "place" || type === "review" || type === "comment" || type === "blog" || type === "photo") {
+      return type;
+    }
+    return "all";
+  };
+
+  // Navigation State initialized from URL
+  const [mainTab, setMainTabState] = useState<AdminMainTab>(getTabFromUrl);
+  const [reportTargetTypeFilter, setReportTargetTypeFilterState] = useState<"all" | "place" | "review" | "comment" | "blog" | "photo">(getReportTargetTypeFromUrl);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+
+  // Sync state when URL changes (e.g. back/forward button)
+  useEffect(() => {
+    const tabFromUrl = getTabFromUrl();
+    if (tabFromUrl !== mainTab) {
+      setMainTabState(tabFromUrl);
+    }
+    if (tabFromUrl === "reports") {
+      const typeFromUrl = getReportTargetTypeFromUrl();
+      if (typeFromUrl !== reportTargetTypeFilter) {
+        setReportTargetTypeFilterState(typeFromUrl);
+      }
+    }
+  }, [location.pathname, location.search]);
+
+  // Handler to switch tab and update browser URL
+  const setMainTab = (tab: AdminMainTab) => {
+    setMainTabState(tab);
+    const slug = TAB_SLUG_MAP[tab];
+    let targetPath = slug === "dashboard" ? "/admin" : `/admin/${slug}`;
+    if (tab === "reports" && reportTargetTypeFilter && reportTargetTypeFilter !== "all") {
+      targetPath += `?targetType=${reportTargetTypeFilter}`;
+    }
+    if (location.pathname + location.search !== targetPath) {
+      navigate(targetPath);
+    }
+  };
+
+  const setReportTargetTypeFilter = (type: "all" | "place" | "review" | "comment" | "blog" | "photo") => {
+    setReportTargetTypeFilterState(type);
+    setMainTabState("reports");
+    const params = new URLSearchParams(location.search);
+    if (type && type !== "all") {
+      params.set("targetType", type);
+    } else {
+      params.delete("targetType");
+    }
+    const searchStr = params.toString();
+    const targetPath = `/admin/reports${searchStr ? `?${searchStr}` : ""}`;
+    if (location.pathname + location.search !== targetPath) {
+      navigate(targetPath);
+    }
+  };
 
   const showToast = (msg: string) => {
     setToastMsg(msg);
@@ -119,6 +233,7 @@ export const AdminPage: React.FC = () => {
   const [selectedPlaceId, setSelectedPlaceId] = useState<number | null>(null);
   const [placeSearchText, setPlaceSearchText] = useState("");
   const [placeFilterProvince, setPlaceFilterProvince] = useState("all");
+  const [placeFilterCategory, setPlaceFilterCategory] = useState("all");
   const [placeFilterStatus, setPlaceFilterStatus] = useState("all");
 
   // Proposals Filter
@@ -132,7 +247,6 @@ export const AdminPage: React.FC = () => {
 
   // Reports Queue State
   const [reportSubTab, setReportSubTab] = useState<"all" | "urgent" | "assigned_to_me" | "resolved">("all");
-  const [reportTargetTypeFilter, setReportTargetTypeFilter] = useState<"all" | "place" | "review" | "comment" | "blog" | "photo">("all");
   const [reportPriorityFilter] = useState<"all" | "urgent" | "high" | "normal" | "low">("all");
   const [reportProvinceFilter, setReportProvinceFilter] = useState("all");
   const [reportSearchText, setReportSearchText] = useState("");
@@ -246,13 +360,17 @@ export const AdminPage: React.FC = () => {
               const rawPlaces = extractList(result?.data);
               setPlacesList(
                 rawPlaces.map((item: any) => {
-                  const isPending =
-                    String(item.status || "").toLowerCase() === "pending" ||
-                    item.status === 0;
-                  const isHidden =
-                    String(item.status || "").toLowerCase() === "suspended" ||
-                    String(item.status || "").toLowerCase() === "hidden" ||
-                    item.status === 3;
+                  const isVis =
+                    item.status === 1 ||
+                    item.status === "1" ||
+                    item.statusNum === 1 ||
+                    String(item.status || "").toLowerCase() === "active" ||
+                    String(item.status || "").toLowerCase() === "approved" ||
+                    item.status === "Đang hiển thị" ||
+                    item.status === "Đã duyệt";
+                  const statusNum = isVis ? 1 : 0;
+                  const statusStr = isVis ? "Đang hiển thị" : "Đang ẩn";
+
                   return {
                     ...item,
                     id: item.id,
@@ -285,8 +403,8 @@ export const AdminPage: React.FC = () => {
                     latitude: item.latitude ?? item.lat,
                     longitude: item.longitude ?? item.lng,
                     desc: item.desc || item.description || "",
-                    status: isPending ? "Chờ duyệt" : isHidden ? "Đang ẩn" : "Đã duyệt",
-                    statusNum: isPending ? 0 : isHidden ? 3 : 1,
+                    status: statusStr,
+                    statusNum: statusNum,
                   };
                 })
               );
@@ -313,29 +431,60 @@ export const AdminPage: React.FC = () => {
                     ...item,
                     id: item.id,
                     type: item.type || "new_place",
-                    placeName: item.name || item.placeName || "",
+                    placeName: item.placeName || item.name || "",
+                    coverImg: item.coverImg || item.thumbnailUrl || item.img || "",
+                    address: item.address || item.location || "",
+                    categoryName: item.categoryName || item.category || "Nhà hàng & Quán ăn",
+                    category: item.categoryName || item.category || "Nhà hàng & Quán ăn",
+                    provinceName: item.provinceName || item.province || "",
+                    province: item.provinceName || item.province || "",
+                    proposerName:
+                      item.proposerName ||
+                      item.proposedBy ||
+                      item.proposer?.name ||
+                      item.userName ||
+                      "Người dùng",
                     proposedBy:
                       item.proposerName ||
                       item.proposedBy ||
+                      item.proposer?.name ||
                       item.userName ||
                       "Người dùng",
+                    proposerAvatar:
+                      item.proposerAvatar || item.userAvatar || item.proposer?.avatarUrl || item.avatar || "",
                     userAvatar:
-                      item.proposerAvatar || item.userAvatar || item.avatar || "",
-                    province: item.provinceName || item.province || "",
+                      item.proposerAvatar || item.userAvatar || item.proposer?.avatarUrl || item.avatar || "",
                     submittedAt: item.submittedAt || item.createdAt || "",
                     status: statusCode,
-                    category: item.categoryName || item.category || "Nhà hàng & Quán ăn",
+                    adminNotes: item.adminNotes || item.adminNote || item.AdminNote || null,
+                    adminNote: item.adminNote || item.AdminNote || item.adminNotes || null,
+                    rejectReason: item.rejectReason || item.RejectReason || item.rejectionReason || item.RejectionReason || item.adminNote || item.AdminNote || null,
+                    rejectionReason: item.rejectionReason || item.RejectionReason || item.rejectReason || item.RejectReason || item.adminNote || item.AdminNote || null,
+                    proposer: item.proposer || {
+                      name: item.proposerName || item.proposedBy || "Người dùng",
+                      avatarUrl: item.proposerAvatar || item.userAvatar || "",
+                      email: item.proposerEmail || item.email || "",
+                    },
+                    placeData: item.placeData || {
+                      name: item.placeName || item.name || "",
+                      address: item.address || item.location || "",
+                      categoryName: item.categoryName || item.category || "Nhà hàng & Quán ăn",
+                      provinceName: item.provinceName || item.province || "",
+                      coverImg: item.coverImg || item.thumbnailUrl || item.img || "",
+                      images: Array.from(new Set([item.coverImg, ...(item.images || []), ...(item.mediaUrls || [])].filter(Boolean))),
+                    },
                     proposedData: {
-                      name: item.name || item.placeName || "",
+                      name: item.placeName || item.name || "",
                       address: item.address || item.location || "",
                       category:
                         item.categoryName || item.category || "Nhà hàng & Quán ăn",
-                      phone: item.phone || "",
-                      hours: item.openingHours || item.hours || "",
+                      phone: item.phone || item.placeData?.phone || "",
+                      hours: item.openingHours || item.hours || item.placeData?.openingHours || "",
                       price: item.priceLevel || item.price || "",
-                      desc: item.desc || item.description || "",
-                      mediaUrls:
-                        item.mediaUrls || (item.coverImg ? [item.coverImg] : []),
+                      description: item.description || item.desc || item.placeData?.description || "",
+                      imageUrl: item.coverImg || item.thumbnailUrl || item.img || "",
+                      coverImg: item.coverImg || item.thumbnailUrl || item.img || "",
+                      images: Array.from(new Set([item.coverImg, ...(item.images || []), ...(item.placeData?.images || [])].filter(Boolean))),
                     },
                   } as AdminProposalItem;
                 })
@@ -344,7 +493,21 @@ export const AdminPage: React.FC = () => {
             break;
           }
           case "reports": {
-            const result = await adminService.getReports(page);
+            const reportParams: Record<string, any> = {
+              page: 1,
+              pageSize: 50,
+            };
+            if (reportTargetTypeFilter && reportTargetTypeFilter !== "all") {
+              reportParams.targetType = reportTargetTypeFilter;
+            }
+            if (reportSubTab && reportSubTab !== "all") {
+              reportParams.subTab = reportSubTab;
+            }
+            if (reportSearchText?.trim()) {
+              reportParams.keyword = reportSearchText.trim();
+            }
+
+            const result = await adminService.getReports(reportParams);
             if (!cancelled) {
               const rawReports = extractList(result?.data || result);
               setReports(
@@ -358,24 +521,38 @@ export const AdminPage: React.FC = () => {
                     item.status === 1;
                   const statusCode = isPending ? 0 : isResolved ? 1 : 2;
 
+                  let rawType = String(item.targetType || item.targetTypeName || item.entityType || "").toLowerCase().trim();
+                  const typeNum = Number(item.targetTypeId || item.targetType);
+                  if (typeNum === 1 || rawType === "1" || rawType === "place") rawType = "place";
+                  else if (typeNum === 2 || rawType === "2" || rawType === "review" || (item.reviewId && !item.commentId)) rawType = "review";
+                  else if (typeNum === 3 || rawType === "3" || rawType === "comment" || item.commentId) rawType = "comment";
+                  else if (typeNum === 4 || rawType === "4" || rawType === "blog" || item.blogId) rawType = "blog";
+                  else if (typeNum === 5 || rawType === "5" || rawType === "photo") rawType = "photo";
+                  else if (typeNum === 6 || rawType === "6" || rawType === "user") rawType = "user";
+                  else if (rawType.includes("comment") || String(item.title || "").toLowerCase().startsWith("bình luận")) rawType = "comment";
+                  else if (rawType.includes("review") || String(item.title || "").toLowerCase().startsWith("đánh giá")) rawType = "review";
+                  else if (rawType.includes("blog") || String(item.title || "").toLowerCase().startsWith("bài viết")) rawType = "blog";
+                  else if (!rawType) rawType = "place";
+
                   return {
                     ...item,
                     id: item.id,
                     codeId: item.codeId || `REP-${item.id}`,
-                    targetType: String(item.targetType || "place").toLowerCase(),
-                    targetId: item.targetId || 0,
+                    targetType: rawType as any,
+                    targetId: item.targetId || item.placeId || item.reviewId || item.commentId || item.blogId || 0,
                     targetTitle: item.targetTitle || item.title || "Đối tượng báo cáo",
                     reporterId: item.reporterId || 0,
                     reporterName:
                       item.reporterName || item.reporter || "Người dùng ẩn danh",
                     reportTypeName:
-                      item.reason || item.reportTypeName || "Vi phạm quy định",
+                      item.reportReasonCategory || item.reason || item.reportTypeName || "Vi phạm quy định",
                     reasonContent:
-                      item.reason ||
                       item.reasonContent ||
+                      item.reportReasonCategory ||
+                      item.reason ||
                       item.reportTypeName ||
                       "Vi phạm quy định",
-                    description: item.notes || item.description || "",
+                    description: item.notes || item.description || item.targetContent || "",
                     submittedAt: item.createdAt || item.submittedAt || "",
                     priority: item.priority || "normal",
                     slaStatus: item.slaStatus || "normal",
@@ -532,7 +709,7 @@ export const AdminPage: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [mainTab, userFilters]);
+  }, [mainTab, userFilters, reportTargetTypeFilter, reportSubTab, reportSearchText]);
 
   // ── AUDIT LOG HELPER ──
   const addAuditLog = (
@@ -545,45 +722,31 @@ export const AdminPage: React.FC = () => {
   };
 
   // Handlers for Places
-  const handleApprovePlace = async (placeId: number) => {
-    const place = placesList.find((item) => item.id === placeId);
-    if (!place) return;
-    await adminService.updatePlaceStatus(placeId, "active");
-    setPlacesList((prev) =>
-      prev.map((p) => {
-        if (p.id === placeId) {
-          addAuditLog("Duyệt địa điểm phát hành", p.name, "Địa điểm đã được công khai trên hệ thống", "approve");
-          showToast(`Đã duyệt địa điểm "${p.name}".`);
-          return { ...p, status: "Đã duyệt", statusNum: 1 };
-        }
-        return p;
-      })
-    );
-  };
-
   const handleTogglePlaceStatus = async (placeId: number) => {
     const place = placesList.find((item) => item.id === placeId);
-    if (!place) return;
-    const nextStatus = place.statusNum === 3 ? "active" : "suspended";
-    await adminService.updatePlaceStatus(placeId, nextStatus);
+    const isCurrentlyVisible = place
+      ? (Number(place.statusNum ?? place.status) === 1 || String(place.status).toLowerCase() === "active" || place.status === "Đang hiển thị" || place.status === "Đã duyệt")
+      : true;
+    const nextStatusNum = isCurrentlyVisible ? 0 : 1;
+    const nextStatusStr = isCurrentlyVisible ? "Đang ẩn" : "Đang hiển thị";
+
+    await adminService.updatePlaceStatus(placeId, nextStatusNum);
+
     setPlacesList((prev) =>
       prev.map((p) => {
         if (p.id === placeId) {
-          const isHidden = p.statusNum === 3;
-          const nextStatusNum = isHidden ? 1 : 3;
-          const nextStatusStr = isHidden ? "Đã duyệt" : "Đang ẩn";
-          addAuditLog(
-            isHidden ? "Khôi phục hiển thị địa điểm" : "Tạm ẩn địa điểm",
-            p.name,
-            isHidden ? "Khôi phục hiển thị trên trang khách" : "Tạm ẩn khỏi trang khách",
-            "hide"
-          );
-          showToast(`Đã ${isHidden ? "hiện lại" : "tạm ẩn"} địa điểm "${p.name}".`);
           return { ...p, status: nextStatusStr, statusNum: nextStatusNum };
         }
         return p;
       })
     );
+    addAuditLog(
+      isCurrentlyVisible ? "Tạm ẩn địa điểm" : "Khôi phục hiển thị địa điểm",
+      place?.name || `Địa điểm #${placeId}`,
+      isCurrentlyVisible ? "Tạm ẩn khỏi trang khách" : "Khôi phục hiển thị trên trang khách",
+      "hide"
+    );
+    showToast(`Đã ${isCurrentlyVisible ? "tạm ẩn" : "hiện lại"} địa điểm "${place?.name || `#${placeId}`}".`);
   };
 
   const handleUpdatePlace = async (updatedPlace: any) => {
@@ -698,12 +861,40 @@ export const AdminPage: React.FC = () => {
     const newStatus = drawerDecisionTab === "accept" ? 1 : 2;
     const actionName = drawerDecisionTab === "accept" ? "Chấp thuận & Xử lý vi phạm" : "Bác bỏ phản ánh";
     const selectedId = selectedReportIdInDrawer || activeReportGroup.reportsList[0].id;
+
+    const effectiveActionTaken = drawerDecisionTab === "accept"
+      ? (drawerActionTaken || "hide_target")
+      : drawerDismissReason;
+
     await adminService.resolveReport(selectedId, {
-      action: drawerDecisionTab === "accept" ? drawerActionTaken || "hide_content" : "dismiss",
-      adminNotes: drawerDecisionTab === "accept" ? drawerResolutionNote : drawerDismissReason,
+      id: selectedId,
       targetType: activeReportGroup.targetType,
-      targetId: activeReportGroup.targetId,
+      decision: drawerDecisionTab,
+      actionTaken: effectiveActionTaken,
+      resolutionNote: drawerResolutionNote,
     });
+
+    // Cập nhật trạng thái thực thể tại Client theo đúng nghiệp vụ
+    if (drawerDecisionTab === "accept" && (effectiveActionTaken.includes("hide_target") || effectiveActionTaken.includes("hide_content"))) {
+      const targetId = activeReportGroup.targetId;
+      if (activeReportGroup.targetType === "place") {
+        setPlacesList((prev) =>
+          prev.map((p) => (p.id === targetId ? { ...p, status: "Đang ẩn", statusNum: 0 } : p))
+        );
+      } else if (activeReportGroup.targetType === "review") {
+        setReviewsList((prev) =>
+          prev.map((rev) => (rev.id === targetId ? { ...rev, status: "hidden" } : rev))
+        );
+      } else if (activeReportGroup.targetType === "comment") {
+        setCommentsList((prev) =>
+          prev.map((c) => (c.id === targetId ? { ...c, status: "hidden" } : c))
+        );
+      } else if (activeReportGroup.targetType === "blog") {
+        setBlogsList((prev) =>
+          prev.map((b) => (b.id === targetId ? { ...b, status: "archived" } : b))
+        );
+      }
+    }
 
     setReports((prev) =>
       prev.map((r) => {
@@ -715,7 +906,7 @@ export const AdminPage: React.FC = () => {
           return {
             ...r,
             status: newStatus,
-            resolutionAction: drawerActionTaken,
+            resolutionAction: effectiveActionTaken,
             resolutionNote: drawerResolutionNote,
           };
         }
@@ -820,8 +1011,6 @@ export const AdminPage: React.FC = () => {
           blogReportsCount={reports.filter((r) => r.status === 0 && r.targetType === "blog").length}
           reportTargetTypeFilter={reportTargetTypeFilter}
           setReportTargetTypeFilter={setReportTargetTypeFilter}
-          foodsCount={foodsList.length}
-          blogsCount={blogsList.length}
           auditLogsCount={auditLogs.length}
           onBackToUserView={() => navigate("/")}
         />
@@ -893,10 +1082,11 @@ export const AdminPage: React.FC = () => {
                   setPlaceSearchText={setPlaceSearchText}
                   placeFilterProvince={placeFilterProvince}
                   setPlaceFilterProvince={setPlaceFilterProvince}
+                  placeFilterCategory={placeFilterCategory}
+                  setPlaceFilterCategory={setPlaceFilterCategory}
                   placeFilterStatus={placeFilterStatus}
                   setPlaceFilterStatus={setPlaceFilterStatus}
                   setIsAddPlaceModalOpen={setIsAddPlaceModalOpen}
-                  handleApprovePlace={handleApprovePlace}
                   handleTogglePlaceStatus={handleTogglePlaceStatus}
                   handleUpdatePlace={handleUpdatePlace}
                 />
@@ -960,7 +1150,7 @@ export const AdminPage: React.FC = () => {
                   showToast={showToast}
                 />
               )}
-              {mainTab === "collections" && <CollectionsTab />}
+              {mainTab === "collections" && <CollectionsTab showToast={showToast} />}
               {mainTab === "provinces" && <ProvincesTab />}
               {mainTab === "blogs" && (
                 <BlogsTab

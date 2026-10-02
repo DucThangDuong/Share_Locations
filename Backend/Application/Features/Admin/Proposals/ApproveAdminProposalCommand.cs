@@ -7,7 +7,8 @@ namespace Application.Features.Admin.Proposals;
 public record ApproveAdminProposalCommand(
     long ProposalId,
     long AdminId,
-    long? TargetPlaceId = null) : IRequest<Result<bool>>;
+    long? TargetPlaceId = null,
+    string? AdminNote = null) : IRequest<Result<bool>>;
 
 public class ApproveAdminProposalCommandHandler : IRequestHandler<ApproveAdminProposalCommand, Result<bool>>
 {
@@ -24,6 +25,7 @@ public class ApproveAdminProposalCommandHandler : IRequestHandler<ApproveAdminPr
             request.ProposalId,
             request.AdminId,
             request.TargetPlaceId,
+            request.AdminNote,
             ct);
 
         if (!success)

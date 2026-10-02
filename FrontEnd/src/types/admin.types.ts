@@ -88,25 +88,64 @@ export interface AdminAssignmentInfo {
 // Admin Proposal Item
 export interface AdminProposalItem {
   id: number;
-  type: "new_place" | "update_info" | "correction";
+  type?: "new_place" | "update_info" | "correction" | string;
   placeName: string;
-  proposedBy: string;
+  coverImg?: string;
+  address?: string;
+  categoryName?: string;
+  category?: string;
+  provinceName?: string;
+  province?: string;
+  proposerName?: string;
+  proposedBy?: string;
+  proposerAvatar?: string;
   userAvatar?: string;
-  category: string;
-  province: string;
   submittedAt: string;
   status: 0 | 1 | 2; // 0: Pending, 1: Approved, 2: Rejected
-  proposedData: {
+  adminNotes?: string | null;
+  adminNote?: string | null;
+  rejectionReason?: string | null;
+  rejectReason?: string | null;
+  note?: string | null;
+  proposer?: {
+    id?: number;
+    name?: string;
+    email?: string;
+    avatarUrl?: string;
+  };
+  placeData?: {
+    name?: string;
+    categoryId?: number;
+    categoryName?: string;
+    provinceId?: number;
+    provinceName?: string;
+    address?: string;
+    latitude?: number;
+    longitude?: number;
+    phone?: string;
+    website?: string;
+    openingHours?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    isFree?: boolean;
+    description?: string;
+    coverImg?: string;
+    images?: string[];
+    mediaUrls?: string[];
+  };
+  proposedData?: {
     name?: string;
     address?: string;
     hours?: string;
     phone?: string;
     description?: string;
     imageUrl?: string;
+    coverImg?: string;
+    images?: string[];
+    mediaUrls?: string[];
     category?: string;
     price?: string;
   };
-  note?: string;
 }
 
 // Admin Report Item
@@ -140,7 +179,7 @@ export interface AdminReportItem {
   submittedAt: string;
   priority: "urgent" | "high" | "normal" | "low";
   slaStatus: "normal" | "warning" | "breached";
-  status: 0 | 1 | 2; // 0: Pending, 1: Resolved, 2: Dismissed
+  status: 0 | 1 | 2; 
   assignedToAdminId?: number;
   assignedToAdminName?: string;
   resolutionAction?: string;
@@ -198,7 +237,7 @@ export interface AdminBlogItem {
   publishedAt: string;
   views: number;
   likes: number;
-  status: "published" | "draft" | "hidden";
+  status: "published" | "draft" | "hidden" | "archived";
   coverImg: string;
   summary?: string;
   content?: string;

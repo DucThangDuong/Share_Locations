@@ -6,6 +6,7 @@ using MediatR;
 namespace Application.Features.Admin.Reviews;
 
 public record GetAdminReviewsQuery(
+    long? PlaceId = null,
     bool? HasReportsOnly = null,
     int? Rating = null,
     string? Status = null,
@@ -28,6 +29,7 @@ public class GetAdminReviewsQueryHandler : IRequestHandler<GetAdminReviewsQuery,
         var pageSize = request.PageSize > 0 ? request.PageSize : 10;
 
         var result = await _reviewRepository.GetAdminReviewsAsync(
+            request.PlaceId,
             request.HasReportsOnly,
             request.Rating,
             request.Status,

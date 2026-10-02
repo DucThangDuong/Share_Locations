@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   MapPin,
   Clock,
@@ -19,11 +19,15 @@ import {
   Save,
   Globe,
   Phone,
+  RotateCcw,
+  MessageSquare,
 } from "lucide-react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { catalogService } from "@/services/catalogService";
 import { geographyService } from "@/services/geographyService";
+import { adminService } from "@/services/adminService";
+import { PlaceAdminReviews } from "./PlaceAdminReviews";
 import type { PlaceTypeDto } from "@/types/models/place.model";
 import type { ProvinceDto } from "@/types/models/geography.model";
 
@@ -31,8 +35,29 @@ interface PlaceDetailEditorProps {
   place: any;
   onBack: () => void;
   onSave: (updatedPlace: any) => void;
-  onApprove?: (id: number) => void;
   onToggleStatus?: (id: number) => void;
+}
+
+interface PlaceFormSnapshot {
+  name: string;
+  categoryId: number;
+  provinceId: number;
+  provinceName: string;
+  address: string;
+  phone: string;
+  website: string;
+  lat: string;
+  lng: string;
+  is24Hours: boolean;
+  openTime: string;
+  closeTime: string;
+  isFree: boolean;
+  minPrice: string;
+  maxPrice: string;
+  description: string;
+  statusNum: number;
+  images: string[];
+  mediaItems: { id?: number; url: string }[];
 }
 
 const DEFAULT_CATEGORIES: PlaceTypeDto[] = [
@@ -54,11 +79,133 @@ const DEFAULT_PROVINCES: ProvinceDto[] = [
   { id: 7, name: "TP. Hồ Chí Minh", regionId: 4, regionName: "Miền Nam", featured: true, displayOrder: 7, placeCount: 260 },
 ];
 
+const buildInitialSnapshot = (place: any): PlaceFormSnapshot => {
+  const isVis =
+    place?.status === 1 ||
+    place?.status === "1" ||
+    place?.statusNum === 1 ||
+    String(place?.status || "").toLowerCase() === "active" ||
+    String(place?.status || "").toLowerCase() === "approved" ||
+    place?.status === "Đã duyệt";
+
+  let catId = 1;
+  if (place?.categoryId) {
+    catId = place.categoryId;
+  } else {
+    const found = DEFAULT_CATEGORIES.find(
+      (c) => c.name === place?.category || c.name === place?.categoryName
+    );
+    if (found) catId = found.id;
+  }
+
+  let provId = 1;
+  if (place?.provinceId) {
+    provId = place.provinceId;
+  } else {
+    const found = DEFAULT_PROVINCES.find((p) => p.name === place?.province);
+    if (found) provId = found.id;
+  }
+
+  const provName = place?.province || "Đà Nẵng";
+  const addr = place?.location || place?.address || "";
+  const ph = place?.phone || "";
+  const web = place?.website || "";
+
+  let latVal = "16.054407";
+  if (place?.latitude) latVal = String(place.latitude);
+  else if (place?.lat) latVal = String(place.lat);
+
+  let lngVal = "108.202167";
+  if (place?.longitude) lngVal = String(place.longitude);
+  else if (place?.lng) lngVal = String(place.lng);
+
+  const h = (place?.hours || "").toLowerCase();
+  const is24 = h.includes("24/7") || h.includes("24h") || h.includes("cả ngày");
+  const openMatch = (place?.hours || "").match(/(\d{1,2}:\d{2})/);
+  const openT = openMatch ? openMatch[1] : "07:00";
+  const closeMatches = (place?.hours || "").match(/(\d{1,2}:\d{2})/g);
+  const closeT = closeMatches && closeMatches.length > 1 ? closeMatches[1] : "22:00";
+
+  const priceLower = (place?.price || "").toLowerCase();
+  const freeVal = priceLower.includes("miễn phí") || (place?.minPrice === 0 && place?.maxPrice === 0);
+
+  let minP = "35000";
+  if (place?.minPrice !== undefined) {
+    minP = String(place.minPrice);
+  } else {
+    const match = (place?.price || "").match(/\d+([.,]\d+)?/);
+    if (match) {
+      const numStr = match[0].replace(/[.,]/g, "");
+      minP = numStr.length < 5 ? `${numStr}000` : numStr;
+    }
+  }
+
+  let maxP = "75000";
+  if (place?.maxPrice !== undefined) {
+    maxP = String(place.maxPrice);
+  } else {
+    const matches = (place?.price || "").match(/\d+([.,]\d+)?/g);
+    if (matches && matches.length > 1) {
+      const numStr = matches[1].replace(/[.,]/g, "");
+      maxP = numStr.length < 5 ? `${numStr}000` : numStr;
+    }
+  }
+
+  const desc =
+    place?.description ||
+    place?.desc ||
+    "Địa điểm ẩm thực và du lịch đặc sắc với không gian rộng rãi, chất lượng dịch vụ chuyên nghiệp và phong vị chuẩn địa phương.";
+
+  let media: { id?: number; url: string }[] = [];
+  if (Array.isArray(place?.media) && place.media.length > 0) {
+    media = place.media.map((m: any) => ({ id: m.id, url: m.url || m.imageUrl || "" })).filter((m: any) => m.url);
+  } else if (Array.isArray(place?.images) && place.images.length > 0) {
+    media = place.images.map((img: any) => (typeof img === "string" ? { url: img } : { id: img.id, url: img.url || "" }));
+  } else if (Array.isArray(place?.mediaUrls) && place.mediaUrls.length > 0) {
+    media = place.mediaUrls.map((url: string) => ({ url }));
+  } else {
+    const fallbackCover = place?.coverImageUrl || place?.coverImg || place?.thumbnailUrl || place?.img || "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&h=600&fit=crop";
+    media = [{ url: fallbackCover }];
+  }
+
+  let imgs: string[] = [];
+  if (Array.isArray(place?.images) && place.images.length > 0) imgs = place.images;
+  else if (Array.isArray(place?.mediaUrls) && place.mediaUrls.length > 0) imgs = place.mediaUrls;
+  else if (place?.coverImageUrl) imgs = [place.coverImageUrl];
+  else if (place?.img) imgs = [place.img];
+  else if (place?.thumbnailUrl) imgs = [place.thumbnailUrl];
+  else imgs = [
+    "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&h=600&fit=crop",
+    "https://images.unsplash.com/photo-1541544741938-0af808871cc0?w=800&h=600&fit=crop",
+  ];
+
+  return {
+    name: place?.name || "",
+    categoryId: catId,
+    provinceId: provId,
+    provinceName: provName,
+    address: addr,
+    phone: ph,
+    website: web,
+    lat: latVal,
+    lng: lngVal,
+    is24Hours: is24,
+    openTime: openT,
+    closeTime: closeT,
+    isFree: freeVal,
+    minPrice: minP,
+    maxPrice: maxP,
+    description: desc,
+    statusNum: isVis ? 1 : 0,
+    images: imgs,
+    mediaItems: media,
+  };
+};
+
 export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
   place,
   onBack,
   onSave,
-  onApprove,
   onToggleStatus,
 }) => {
   const [isSaving, setIsSaving] = useState(false);
@@ -151,10 +298,25 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
     "Địa điểm ẩm thực và du lịch đặc sắc với không gian rộng rãi, chất lượng dịch vụ chuyên nghiệp và phong vị chuẩn địa phương."
   );
 
-  // Images
+  // Images & Media State
+  const [mediaItems, setMediaItems] = useState<{ id?: number; url: string }[]>(() => {
+    if (Array.isArray(place?.media) && place.media.length > 0) {
+      return place.media.map((m: any) => ({ id: m.id, url: m.url || m.imageUrl || "" })).filter((m: any) => m.url);
+    }
+    if (Array.isArray(place?.images) && place.images.length > 0) {
+      return place.images.map((img: any) => (typeof img === "string" ? { url: img } : { id: img.id, url: img.url || "" }));
+    }
+    if (Array.isArray(place?.mediaUrls) && place.mediaUrls.length > 0) {
+      return place.mediaUrls.map((url: string) => ({ url }));
+    }
+    const fallbackCover = place?.coverImageUrl || place?.coverImg || place?.thumbnailUrl || place?.img || "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&h=600&fit=crop";
+    return [{ url: fallbackCover }];
+  });
+
   const [images, setImages] = useState<string[]>(() => {
     if (Array.isArray(place?.images) && place.images.length > 0) return place.images;
     if (Array.isArray(place?.mediaUrls) && place.mediaUrls.length > 0) return place.mediaUrls;
+    if (place?.coverImageUrl) return [place.coverImageUrl];
     if (place?.img) return [place.img];
     if (place?.thumbnailUrl) return [place.thumbnailUrl];
     return [
@@ -164,10 +326,110 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
   });
   const [activePreviewImgIndex, setActivePreviewImgIndex] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [isUploadingImages, setIsUploadingImages] = useState(false);
+  const [isTogglingStatus, setIsTogglingStatus] = useState(false);
 
-  // Moderation / Status fields
-  const [statusNum, setStatusNum] = useState<number>(place?.statusNum ?? (place?.status === "Chờ duyệt" ? 0 : 1));
-  const rating = place?.rating
+  // Moderation / Status fields (1: visible / active, 0: hidden / suspended)
+  const [statusNum, setStatusNum] = useState<number>(() => {
+    const isVis =
+      place?.status === 1 ||
+      place?.status === "1" ||
+      place?.statusNum === 1 ||
+      String(place?.status || "").toLowerCase() === "active" ||
+      String(place?.status || "").toLowerCase() === "approved" ||
+      place?.status === "Đã duyệt";
+    return isVis ? 1 : 0;
+  });
+  const rating = place?.rating;
+
+  // Active Editor Tab ('info' for place info/media, 'reviews' for reviews & comments management)
+  const [activeEditorTab, setActiveEditorTab] = useState<"info" | "reviews">("info");
+  const [reviewsCount, setReviewsCount] = useState<number>(
+    place?.reviewCount || place?.reviewsCount || (Array.isArray(place?.reviews) ? place.reviews.length : 0)
+  );
+
+  // Initial snapshot to track dirty changes
+  const [initialSnapshot, setInitialSnapshot] = useState<PlaceFormSnapshot>(() =>
+    buildInitialSnapshot(place)
+  );
+
+  // Check if current form values differ from initialSnapshot
+  const hasChanges = useMemo(() => {
+    if (!initialSnapshot) return false;
+    if (name.trim() !== initialSnapshot.name.trim()) return true;
+    if (categoryId !== initialSnapshot.categoryId) return true;
+    if (provinceId !== initialSnapshot.provinceId) return true;
+    if (address.trim() !== initialSnapshot.address.trim()) return true;
+    if (phone.trim() !== initialSnapshot.phone.trim()) return true;
+    if (website.trim() !== initialSnapshot.website.trim()) return true;
+    if (lat !== initialSnapshot.lat) return true;
+    if (lng !== initialSnapshot.lng) return true;
+    if (is24Hours !== initialSnapshot.is24Hours) return true;
+    if (!is24Hours) {
+      if (openTime !== initialSnapshot.openTime) return true;
+      if (closeTime !== initialSnapshot.closeTime) return true;
+    }
+    if (isFree !== initialSnapshot.isFree) return true;
+    if (!isFree) {
+      if (minPrice !== initialSnapshot.minPrice) return true;
+      if (maxPrice !== initialSnapshot.maxPrice) return true;
+    }
+    if (description.trim() !== initialSnapshot.description.trim()) return true;
+    if (statusNum !== initialSnapshot.statusNum) return true;
+    if (images.length !== initialSnapshot.images.length) return true;
+    for (let i = 0; i < images.length; i++) {
+      if (images[i] !== initialSnapshot.images[i]) return true;
+    }
+    return false;
+  }, [
+    initialSnapshot,
+    name,
+    categoryId,
+    provinceId,
+    address,
+    phone,
+    website,
+    lat,
+    lng,
+    is24Hours,
+    openTime,
+    closeTime,
+    isFree,
+    minPrice,
+    maxPrice,
+    description,
+    statusNum,
+    images,
+  ]);
+
+  // Handle Cancel / Reset to initialSnapshot
+  const handleCancel = () => {
+    if (!initialSnapshot) return;
+    setName(initialSnapshot.name);
+    setCategoryId(initialSnapshot.categoryId);
+    setProvinceId(initialSnapshot.provinceId);
+    setProvinceName(initialSnapshot.provinceName);
+    setAddress(initialSnapshot.address);
+    setPhone(initialSnapshot.phone);
+    setWebsite(initialSnapshot.website);
+    setLat(initialSnapshot.lat);
+    setLng(initialSnapshot.lng);
+    updateMapPosition(initialSnapshot.lat, initialSnapshot.lng);
+    setIs24Hours(initialSnapshot.is24Hours);
+    setOpenTime(initialSnapshot.openTime);
+    setCloseTime(initialSnapshot.closeTime);
+    setIsFree(initialSnapshot.isFree);
+    setMinPrice(initialSnapshot.minPrice);
+    setMaxPrice(initialSnapshot.maxPrice);
+    setDescription(initialSnapshot.description);
+    setStatusNum(initialSnapshot.statusNum);
+    setImages([...initialSnapshot.images]);
+    setMediaItems([...initialSnapshot.mediaItems]);
+    setActivePreviewImgIndex(0);
+    setErrorMsg("");
+    setSaveSuccessMsg("Đã khôi phục dữ liệu ban đầu!");
+    setTimeout(() => setSaveSuccessMsg(""), 3000);
+  };
 
   // Refs
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -178,6 +440,70 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
   const mapboxToken =
     (import.meta.env.VITE_MAPBOX_ACCESS_TOKEN as string | undefined)?.trim() ||
     "pk.eyJ1IjoibGFuZ3RoYW5nLXZuIiwiYSI6ImNtODFhYmNkZTAxMzAya3B0eGZjcHB0ZmoifQ.placeholder";
+
+  // Load fresh place data from API on open
+  useEffect(() => {
+    if (!place?.id) return;
+    let mounted = true;
+    const fetchFreshPlace = async () => {
+      try {
+        const res = await adminService.getPlace(place.id);
+        const pData = (res as any)?.data || res;
+        if (mounted && pData) {
+          const isVis =
+            pData.status === 1 ||
+            pData.status === "1" ||
+            pData.statusNum === 1 ||
+            String(pData.status || "").toLowerCase() === "active" ||
+            String(pData.status || "").toLowerCase() === "approved" ||
+            pData.status === "Đã duyệt";
+          setStatusNum(isVis ? 1 : 0);
+          if (pData.name) setName(pData.name);
+
+          const cover = pData.coverImageUrl || pData.coverImg || pData.thumbnailUrl || pData.img || "";
+          let media: { id?: number; url: string }[] = [];
+
+          if (Array.isArray(pData.media) && pData.media.length > 0) {
+            media = pData.media.map((m: any) => ({
+              id: m.id,
+              url: m.url || m.imageUrl || "",
+            })).filter((m: any) => m.url);
+          } else if (Array.isArray(pData.images) && pData.images.length > 0) {
+            media = pData.images.map((img: any) => (typeof img === "string" ? { url: img } : { id: img.id, url: img.url || "" }));
+          } else if (Array.isArray(pData.mediaUrls) && pData.mediaUrls.length > 0) {
+            media = pData.mediaUrls.map((url: string) => ({ url }));
+          }
+
+          if (cover && !media.some((m) => m.url === cover)) {
+            media = [{ url: cover }, ...media];
+          }
+
+          if (media.length > 0) {
+            setMediaItems(media);
+            setImages(media.map((m) => m.url));
+          } else if (cover) {
+            setMediaItems([{ url: cover }]);
+            setImages([cover]);
+          }
+
+          const freshSnapshot = buildInitialSnapshot({
+            ...place,
+            ...pData,
+            statusNum: isVis ? 1 : 0,
+            media: media.length > 0 ? media : undefined,
+            images: media.length > 0 ? media.map((m) => m.url) : (cover ? [cover] : undefined),
+          });
+          setInitialSnapshot(freshSnapshot);
+        }
+      } catch {
+        // fallback
+      }
+    };
+    fetchFreshPlace();
+    return () => {
+      mounted = false;
+    };
+  }, [place?.id]);
 
   // Load Categories & Provinces from API with graceful fallback
   useEffect(() => {
@@ -286,39 +612,110 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
     );
   };
 
-  // Image Management
-  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return;
-    const files = Array.from(e.target.files);
-    files.forEach((file) => {
+  // Helper to read file as data url for instant preview and persistent fallback
+  const readFileAsDataUrl = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = () => {
         if (typeof reader.result === "string") {
-          setImages((prev) => [...prev, reader.result as string]);
+          resolve(reader.result);
+        } else {
+          resolve(URL.createObjectURL(file));
         }
+      };
+      reader.onerror = () => {
+        resolve(URL.createObjectURL(file));
       };
       reader.readAsDataURL(file);
     });
   };
 
+  const handleUploadFiles = async (files: File[]) => {
+    if (!files || files.length === 0) return;
+
+    const localDataUrls = await Promise.all(files.map(readFileAsDataUrl));
+    const newLocalMedia = localDataUrls.map((url) => ({ url }));
+
+    setMediaItems((prev) => [...prev, ...newLocalMedia]);
+    setImages((prev) => [...prev, ...localDataUrls]);
+
+    setIsUploadingImages(true);
+    setErrorMsg("");
+    try {
+      let newItems: { id?: number; url: string }[] = [];
+      if (place?.id) {
+        const res = await adminService.uploadPlaceMedia(place.id, files);
+        if (Array.isArray(res) && res.length > 0) {
+          newItems = res
+            .map((m: any) => ({
+              id: m.id,
+              url: typeof m === "string" ? m : m.url || m.imageUrl || "",
+            }))
+            .filter((m) => m.url);
+        }
+      }
+
+      if (newItems.length === 0) {
+        const fallbackUrls = await adminService.uploadPlaceImages(files, place?.id);
+        newItems = fallbackUrls.map((url) => ({ url }));
+      }
+
+      if (newItems.length > 0) {
+        const localSet = new Set(localDataUrls);
+        setMediaItems((prev) => {
+          const kept = prev.filter((m) => !localSet.has(m.url));
+          return [...kept, ...newItems];
+        });
+        setImages((prev) => {
+          const kept = prev.filter((url) => !localSet.has(url));
+          return [...kept, ...newItems.map((item) => item.url)];
+        });
+        setSaveSuccessMsg(`Đã tải lên thành công ${newItems.length} ảnh vào bộ sưu tập!`);
+        setTimeout(() => setSaveSuccessMsg(""), 3500);
+      }
+    } catch (err: any) {
+      console.warn("Backend upload place media failed, keeping local preview:", err);
+      setErrorMsg(
+        err?.message
+          ? `Đã thêm ${files.length} ảnh vào xem trước. Lưu ý: Lỗi đồng bộ máy chủ (${err.message})`
+          : `Đã thêm ${files.length} ảnh vào bộ sưu tập xem trước.`
+      );
+    } finally {
+      setIsUploadingImages(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const files = Array.from(e.target.files);
+    e.target.value = "";
+    handleUploadFiles(files);
+  };
+
   const handleDropFiles = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    if (!e.dataTransfer.files) return;
-    const files = Array.from(e.dataTransfer.files);
-    files.forEach((file) => {
-      if (file.type.startsWith("image/")) {
-        const reader = new FileReader();
-        reader.onload = () => {
-          if (typeof reader.result === "string") {
-            setImages((prev) => [...prev, reader.result as string]);
-          }
-        };
-        reader.readAsDataURL(file);
-      }
-    });
+    if (!e.dataTransfer.files || e.dataTransfer.files.length === 0) return;
+    const files = Array.from(e.dataTransfer.files).filter(
+      (f) => f.type.startsWith("image/") || /\.(jpe?g|png|webp|gif|bmp|svg|avif)$/i.test(f.name)
+    );
+    if (files.length > 0) {
+      handleUploadFiles(files);
+    }
   };
-  const handleRemoveImage = (index: number) => {
+
+  // 3. Delete Media Endpoint: DELETE /api/admin/places/{id}/media/{mediaId}
+  const handleRemoveImage = async (index: number) => {
+    const itemToRemove = mediaItems[index];
+    if (itemToRemove?.id && place?.id) {
+      try {
+        await adminService.deletePlaceMedia(place.id, itemToRemove.id);
+      } catch (err) {
+        console.warn("Lỗi khi xóa media trên Azure/Server:", err);
+      }
+    }
+    setMediaItems((prev) => prev.filter((_, idx) => idx !== index));
     setImages((prev) => {
       const next = prev.filter((_, idx) => idx !== index);
       if (activePreviewImgIndex >= next.length) {
@@ -326,20 +723,48 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
       }
       return next;
     });
+    setSaveSuccessMsg("Đã xóa ảnh khỏi địa điểm thành công!");
+    setTimeout(() => setSaveSuccessMsg(""), 3000);
   };
 
   const handleSetCoverImage = (index: number) => {
     if (index === 0) return;
+    setMediaItems((prev) => {
+      const selected = prev[index];
+      const others = prev.filter((_, idx) => idx !== index);
+      return [selected, ...others];
+    });
     setImages((prev) => {
       const selected = prev[index];
       const others = prev.filter((_, idx) => idx !== index);
       return [selected, ...others];
     });
     setActivePreviewImgIndex(0);
+    setSaveSuccessMsg("Đã chọn làm ảnh bìa chính!");
+    setTimeout(() => setSaveSuccessMsg(""), 3000);
+  };
+
+  const handleToggleStatusClick = async () => {
+    if (!place?.id) return;
+    setIsTogglingStatus(true);
+    try {
+      const nextStatusNum = statusNum === 1 ? 0 : 1;
+      await adminService.updatePlaceStatus(place.id, nextStatusNum);
+      if (onToggleStatus) {
+        onToggleStatus(place.id);
+      }
+      setStatusNum(nextStatusNum);
+      setSaveSuccessMsg(nextStatusNum === 1 ? "Đã công khai địa điểm thành công!" : "Đã ẩn địa điểm thành công!");
+      setTimeout(() => setSaveSuccessMsg(""), 4000);
+    } catch (err: any) {
+      setErrorMsg(err?.message || "Không thể cập nhật trạng thái địa điểm.");
+    } finally {
+      setIsTogglingStatus(false);
+    }
   };
 
   // Handle Save
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
     setSaveSuccessMsg("");
@@ -354,62 +779,88 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
     }
 
     setIsSaving(true);
+    try {
+      const currentCat = categories.find((c) => c.id === categoryId);
+      const currentProv = provinces.find((p) => p.id === provinceId);
 
-    const currentCat = categories.find((c) => c.id === categoryId);
-    const currentProv = provinces.find((p) => p.id === provinceId);
+      const priceFormatted = isFree
+        ? "Miễn phí vé"
+        : `${parseInt(minPrice || "0", 10).toLocaleString("vi-VN")}đ – ${parseInt(
+          maxPrice || "0",
+          10
+        ).toLocaleString("vi-VN")}đ`;
 
-    const priceFormatted = isFree
-      ? "Miễn phí vé"
-      : `${parseInt(minPrice || "0", 10).toLocaleString("vi-VN")}đ – ${parseInt(
-        maxPrice || "0",
-        10
-      ).toLocaleString("vi-VN")}đ`;
+      const hoursFormatted = is24Hours ? "Mở cửa cả ngày (24/7)" : `${openTime} – ${closeTime}`;
+      const statusStr = statusNum === 1 ? "Công khai" : "Đang ẩn";
 
-    const hoursFormatted = is24Hours ? "Mở cửa cả ngày (24/7)" : `${openTime} – ${closeTime}`;
+      const updatedPlace = {
+        ...place,
+        name: name.trim(),
+        categoryId,
+        category: currentCat?.name || place.category || "Nhà hàng & Quán ăn",
+        categoryName: currentCat?.name || place.categoryName || "Nhà hàng & Quán ăn",
+        provinceId,
+        province: currentProv?.name || provinceName,
+        location: address.trim(),
+        address: address.trim(),
+        phone: phone.trim(),
+        website: website.trim(),
+        hours: hoursFormatted,
+        openTime,
+        closeTime,
+        is24Hours,
+        price: priceFormatted,
+        minPrice: isFree ? 0 : parseInt(minPrice, 10) || 0,
+        maxPrice: isFree ? 0 : parseInt(maxPrice, 10) || 0,
+        isFree,
+        latitude: parseFloat(lat) || undefined,
+        longitude: parseFloat(lng) || undefined,
+        lat,
+        lng,
+        description: description.trim(),
+        desc: description.trim(),
+        img: images[0] || place.img,
+        coverImg: images[0] || place.coverImg || place.img,
+        thumbnailUrl: images[0] || place.thumbnailUrl || place.img,
+        images,
+        mediaUrls: images,
+        photos: images,
+        statusNum: statusNum === 1 ? 1 : 0,
+        status: statusStr,
+        rating: Number(rating) || 4.8,
+      };
 
-    const statusStr = statusNum === 0 ? "Chờ duyệt" : statusNum === 3 ? "Đang ẩn" : "Đã duyệt";
-
-    const updatedPlace = {
-      ...place,
-      name: name.trim(),
-      categoryId,
-      category: currentCat?.name || place.category || "Nhà hàng & Quán ăn",
-      categoryName: currentCat?.name || place.categoryName || "Nhà hàng & Quán ăn",
-      provinceId,
-      province: currentProv?.name || provinceName,
-      location: address.trim(),
-      address: address.trim(),
-      phone: phone.trim(),
-      website: website.trim(),
-      hours: hoursFormatted,
-      openTime,
-      closeTime,
-      is24Hours,
-      price: priceFormatted,
-      minPrice: isFree ? 0 : parseInt(minPrice, 10) || 0,
-      maxPrice: isFree ? 0 : parseInt(maxPrice, 10) || 0,
-      isFree,
-      latitude: parseFloat(lat) || undefined,
-      longitude: parseFloat(lng) || undefined,
-      lat,
-      lng,
-      description: description.trim(),
-      desc: description.trim(),
-      img: images[0] || place.img,
-      thumbnailUrl: images[0] || place.thumbnailUrl,
-      images,
-      mediaUrls: images,
-      statusNum,
-      status: statusStr,
-      rating: Number(rating) || 4.8,
-    };
-
-    setTimeout(() => {
-      onSave(updatedPlace);
-      setIsSaving(false);
+      if (onSave) {
+        await onSave(updatedPlace);
+      }
+      setInitialSnapshot({
+        name: name.trim(),
+        categoryId,
+        provinceId,
+        provinceName: currentProv?.name || provinceName,
+        address: address.trim(),
+        phone: phone.trim(),
+        website: website.trim(),
+        lat,
+        lng,
+        is24Hours,
+        openTime,
+        closeTime,
+        isFree,
+        minPrice: minPrice.trim(),
+        maxPrice: maxPrice.trim(),
+        description: description.trim(),
+        statusNum: statusNum === 1 ? 1 : 0,
+        images: [...images],
+        mediaItems: [...mediaItems],
+      });
       setSaveSuccessMsg("Đã lưu các thay đổi của địa điểm thành công!");
       setTimeout(() => setSaveSuccessMsg(""), 4000);
-    }, 400);
+    } catch (err: any) {
+      setErrorMsg(err?.message || "Lỗi khi lưu thông tin địa điểm.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const currentCategoryName = categories.find((c) => c.id === categoryId)?.name || place?.category || "Danh mục";
@@ -436,14 +887,12 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
                 {name || place.name}
               </h2>
               <span
-                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold ${statusNum === 0
-                  ? "bg-amber-100 text-amber-800"
-                  : statusNum === 3
-                    ? "bg-slate-200 text-slate-700"
-                    : "bg-emerald-100 text-emerald-800"
+                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold ${statusNum === 1
+                  ? "bg-emerald-100 text-emerald-800"
+                  : "bg-slate-200 text-slate-700"
                   }`}
               >
-                {statusNum === 0 ? "Chờ duyệt" : statusNum === 3 ? "Đang ẩn" : "Đã duyệt"}
+                {statusNum === 1 ? "Công khai" : "Đang ẩn"}
               </span>
             </div>
             <p className="text-[11px] text-slate-400 mt-0.5">
@@ -454,46 +903,50 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2 flex-wrap">
-          {statusNum === 0 && onApprove && (
-            <button
-              type="button"
-              onClick={() => {
-                onApprove(place.id);
-                setStatusNum(1);
-              }}
-              className="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl cursor-pointer shadow-xs transition-colors"
-            >
-              <CheckCircle2 size={14} />
-              <span>Duyệt công khai</span>
-            </button>
-          )}
-
           {onToggleStatus && (
             <button
               type="button"
-              onClick={() => {
-                onToggleStatus(place.id);
-                setStatusNum((prev) => (prev === 3 ? 1 : 3));
-              }}
-              className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl cursor-pointer transition-colors"
+              disabled={isTogglingStatus}
+              onClick={handleToggleStatusClick}
+              className={`flex items-center gap-1.5 px-3 py-2 disabled:opacity-50 font-semibold rounded-xl cursor-pointer transition-colors ${statusNum === 1
+                ? "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                : "bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-xs"
+                }`}
             >
-              {statusNum === 3 ? <Eye size={14} /> : <EyeOff size={14} />}
-              <span>{statusNum === 3 ? "Hiện lại trên web" : "Tạm ẩn địa điểm"}</span>
+              {statusNum === 1 ? <EyeOff size={14} /> : <Eye size={14} />}
+              <span>{statusNum === 1 ? "Ẩn địa điểm" : "Công khai địa điểm"}</span>
             </button>
           )}
+
+          {/* Nút Hủy có dirty tracking */}
           <button
             type="button"
-            onClick={onBack}
-            className="flex-1 sm:flex-none px-5 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer transition-all text-center"
+            disabled={!hasChanges || isSaving}
+            onClick={handleCancel}
+            className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${hasChanges
+                ? "bg-slate-200 hover:bg-slate-300 text-slate-800 cursor-pointer shadow-2xs border border-slate-300"
+                : "bg-slate-100 text-slate-400 cursor-not-allowed opacity-50 border border-slate-200/60"
+              }`}
+            title={
+              hasChanges
+                ? "Hủy bỏ các thay đổi và khôi phục dữ liệu ban đầu"
+                : "Chưa có thay đổi nào để hủy"
+            }
           >
-            Hủy
+            <RotateCcw size={13} className={hasChanges ? "text-slate-700" : "text-slate-400"} />
+            <span>Hủy</span>
           </button>
 
+          {/* Nút Lưu thay đổi */}
           <button
             type="button"
             onClick={handleFormSubmit}
-            disabled={isSaving}
-            className="flex items-center gap-1.5 px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl cursor-pointer shadow-xs transition-colors disabled:opacity-50"
+            disabled={isSaving || !hasChanges}
+            className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold shadow-xs transition-colors ${hasChanges
+                ? "bg-emerald-700 hover:bg-emerald-800 text-white cursor-pointer"
+                : "bg-emerald-700/50 text-white/80 cursor-not-allowed opacity-60"
+              }`}
+            title={hasChanges ? "Lưu lại các thay đổi" : "Chưa có thay đổi mới để lưu"}
           >
             {isSaving ? (
               <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -505,32 +958,74 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
         </div>
       </div>
 
-      {/* Notifications */}
-      {errorMsg && (
-        <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium flex items-center gap-2 animate-in fade-in">
-          <AlertCircle className="w-4 h-4 shrink-0" />
-          <span>{errorMsg}</span>
-        </div>
-      )}
+      {/* Navigation Tabs */}
+      <div className="flex items-center gap-2 border-b border-slate-200/80 pb-3">
+        <button
+          type="button"
+          onClick={() => setActiveEditorTab("info")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
+            activeEditorTab === "info"
+              ? "bg-emerald-700 text-white shadow-xs"
+              : "bg-white hover:bg-slate-100 text-slate-600 border border-slate-200"
+          }`}
+        >
+          <FileText className="w-4 h-4" />
+          <span>Thông tin & Đa phương tiện</span>
+        </button>
 
-      {saveSuccessMsg && (
-        <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-2 animate-in fade-in">
-          <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
-          <span>{saveSuccessMsg}</span>
-        </div>
-      )}
+        <button
+          type="button"
+          onClick={() => setActiveEditorTab("reviews")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
+            activeEditorTab === "reviews"
+              ? "bg-emerald-700 text-white shadow-xs"
+              : "bg-white hover:bg-slate-100 text-slate-600 border border-slate-200"
+          }`}
+        >
+          <MessageSquare className="w-4 h-4" />
+          <span>Đánh giá & Bình luận</span>
+          {reviewsCount > 0 && (
+            <span
+              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                activeEditorTab === "reviews"
+                  ? "bg-emerald-800 text-white"
+                  : "bg-emerald-100 text-emerald-800"
+              }`}
+            >
+              {reviewsCount}
+            </span>
+          )}
+        </button>
+      </div>
 
-      {/* Main Grid Layout - 12 Columns */}
-      <form onSubmit={handleFormSubmit}>
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Left Column (8 cols): All Form Sections */}
-          <div className="lg:col-span-8 space-y-6">
-            {/* Section 1: Basic Information */}
-            <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-5">
-              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
-                <FileText className="w-4 h-4 text-emerald-700" />
-                <span>1. Thông tin cơ bản & Phân loại</span>
-              </h3>
+      {activeEditorTab === "info" ? (
+        <>
+          {/* Notifications */}
+          {errorMsg && (
+            <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium flex items-center gap-2 animate-in fade-in">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{errorMsg}</span>
+            </div>
+          )}
+
+          {saveSuccessMsg && (
+            <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-2 animate-in fade-in">
+              <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+              <span>{saveSuccessMsg}</span>
+            </div>
+          )}
+
+          {/* Main Grid Layout - 12 Columns */}
+          <form onSubmit={handleFormSubmit}>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              {/* Left Column (8 cols): All Form Sections */}
+              <div className="lg:col-span-8 space-y-6">
+                {/* Section 1: Basic Information */}
+                <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-5">
+                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
+                    <FileText className="w-4 h-4 text-emerald-700" />
+                    <span>1. Thông tin cơ bản & Phân loại</span>
+                  </h3>
 
               <div className="space-y-4">
                 <div>
@@ -808,51 +1303,55 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
             </div>
 
             {/* Section 4: Image Gallery & Uploads */}
-            <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-4">
-              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
-                <ImageIcon className="w-4 h-4 text-emerald-700" />
-                <span>4. Hình ảnh địa điểm thực tế</span>
-              </h3>
+            <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-6">
+              <div className="space-y-4">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleFileInputChange}
+                  className="hidden"
+                />
 
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handleFileInputChange}
-                className="hidden"
-              />
+                <div
+                  onClick={() => !isUploadingImages && fileInputRef.current?.click()}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsDragging(true);
+                  }}
+                  onDragLeave={() => setIsDragging(false)}
+                  onDrop={handleDropFiles}
+                  className={`p-6 border-2 border-dashed rounded-2xl text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2.5 ${isDragging
+                    ? "border-emerald-600 bg-emerald-50/80 text-emerald-800 ring-2 ring-emerald-500/30"
+                    : isUploadingImages
+                      ? "border-emerald-500 bg-emerald-50/50 cursor-wait"
+                      : "border-slate-300 hover:border-emerald-600 hover:bg-slate-50 text-slate-600"
+                    }`}
+                >
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center shadow-xs">
+                    {isUploadingImages ? (
+                      <div className="w-6 h-6 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <UploadCloud className="w-6 h-6" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-xs sm:text-sm font-bold text-slate-800">
+                      {isUploadingImages
+                        ? "Đang nạp ảnh vào bộ sưu tập"
+                        : "Thêm nhiều ảnh vào bộ sưu tập"}
+                    </p>
+                  </div>
+                </div>
 
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setIsDragging(true);
-                }}
-                onDragLeave={() => setIsDragging(false)}
-                onDrop={handleDropFiles}
-                className={`p-6 border-2 border-dashed rounded-2xl text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2.5 ${isDragging
-                  ? "border-emerald-600 bg-emerald-50/80 text-emerald-800 ring-2 ring-emerald-500/30"
-                  : "border-slate-300 hover:border-emerald-600 hover:bg-slate-50 text-slate-600"
-                  }`}
-              >
-                <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center shadow-xs">
-                  <UploadCloud className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="text-xs sm:text-sm font-bold text-slate-800">
-                    Tải ảnh từ máy tính (Click hoặc kéo thả file ảnh vào đây)
-                  </p>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
-                    Hỗ trợ định dạng JPG, PNG, WEBP, JPEG
-                  </p>
-                </div>
-              </div>
-              <div className="space-y-4 pt-2">
-                <div>
-                  <span className="text-xs font-bold text-slate-700 mb-2 block">
-                    Danh sách hình ảnh ({images.length})
-                  </span>
+                <div className="space-y-3 pt-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-700">
+                      Bộ sưu tập hình ảnh ({images.length})
+                    </span>
+                  </div>
+
                   {images.length > 0 ? (
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                       {images.map((img, idx) => (
@@ -873,7 +1372,7 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
                             <button
                               type="button"
                               onClick={() => handleSetCoverImage(idx)}
-                              className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-slate-900/70 hover:bg-emerald-700 text-white text-[10px] font-semibold transition-colors cursor-pointer opacity-0 group-hover:opacity-100 shadow-xs"
+                              className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-slate-900/75 hover:bg-emerald-700 text-white text-[10px] font-semibold transition-colors cursor-pointer opacity-0 group-hover:opacity-100 shadow-xs"
                             >
                               Đặt làm ảnh bìa
                             </button>
@@ -883,7 +1382,7 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
                             type="button"
                             onClick={() => handleRemoveImage(idx)}
                             className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 hover:bg-rose-600 text-white transition-colors cursor-pointer opacity-0 group-hover:opacity-100 shadow-xs"
-                            title="Xóa ảnh này"
+                            title="Xóa ảnh này khỏi địa điểm"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -892,7 +1391,7 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
                     </div>
                   ) : (
                     <div className="p-4 rounded-2xl bg-slate-50 border border-dashed border-slate-200 text-center text-xs text-slate-400">
-                      Chưa có ảnh nào được thêm. Hãy chọn hoặc kéo thả ảnh vào khung phía trên.
+                      Chưa có ảnh nào trong bộ sưu tập. Hãy chọn hoặc kéo thả ảnh vào khung phía trên.
                     </div>
                   )}
                 </div>
@@ -974,7 +1473,7 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
 
                   <div className="flex items-center gap-1.5 text-xs text-slate-900 font-bold">
                     <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 shrink-0" />
-                    <span>{rating.toFixed(1)}</span>
+                    <span>{(Number(rating) || 4.8).toFixed(1)}</span>
                     <span className="text-slate-400 font-normal">·</span>
                     <span className="text-slate-500 font-normal">{currentCategoryName}</span>
                   </div>
@@ -1004,7 +1503,15 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
           </div>
         </div>
       </form>
-    </div>
+    </>
+  ) : (
+    <PlaceAdminReviews
+      placeId={Number(place.id)}
+      placeName={name || place.name}
+      onReviewsCountChange={setReviewsCount}
+    />
+  )}
+</div>
   );
 };
 

@@ -269,25 +269,31 @@ public class UserPersonalizationRepository : IUserPersonalizationRepository
                 pr.Id,
                 pr.UserId,
                 CAST(pr.ProposalType AS INT) AS ProposalType,
-                pr.TargetPlaceId,
+                COALESCE(pr.TargetPlaceId, p.Id) AS TargetPlaceId,
                 pr.CategoryId,
-                cat.Name AS CategoryName,
+                COALESCE(cat.Name, pCat.Name) AS CategoryName,
                 pr.ProvinceId,
-                prov.Name AS ProvinceName,
+                COALESCE(prov.Name, pProv.Name) AS ProvinceName,
                 pr.ProposedDataJSON,
                 CAST(pr.Status AS INT) AS Status,
                 pr.AdminNote,
                 pr.RejectReason,
                 pr.CreatedAt,
                 pr.UpdatedAt,
+                p.CoverImageUrl AS PlaceCoverImageUrl,
+                p.Address AS PlaceAddress,
                 COUNT(1) OVER() AS TotalCount
             FROM dbo.Proposals pr
+            LEFT JOIN dbo.Places p ON pr.TargetPlaceId = p.Id
             LEFT JOIN dbo.Categories cat ON (pr.CategoryId IS NOT NULL AND pr.CategoryId = cat.Id) 
                 OR (pr.CategoryId IS NULL AND JSON_VALUE(pr.ProposedDataJSON, '$.categoryId') = CAST(cat.Id AS NVARCHAR(10)))
+            LEFT JOIN dbo.Categories pCat ON p.CategoryId = pCat.Id
             LEFT JOIN dbo.Provinces prov ON (pr.ProvinceId IS NOT NULL AND pr.ProvinceId = prov.Id) 
                 OR (pr.ProvinceId IS NULL AND JSON_VALUE(pr.ProposedDataJSON, '$.provinceId') = CAST(prov.Id AS NVARCHAR(10)))
+            LEFT JOIN dbo.Provinces pProv ON p.ProvinceId = pProv.Id
             WHERE pr.UserId = @UserId
               AND (@Status IS NULL OR pr.Status = @Status)
+              AND (pr.Status <> 1 OR COALESCE(pr.TargetPlaceId, p.Id) IS NOT NULL)
             ORDER BY pr.CreatedAt DESC
             OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 
@@ -357,6 +363,15 @@ public class UserPersonalizationRepository : IUserPersonalizationRepository
             catch
             {
                 // Fallback on JSON parse error
+            }
+
+            if (string.IsNullOrWhiteSpace(coverImg))
+            {
+                coverImg = (string?)r.PlaceCoverImageUrl;
+            }
+            if (string.IsNullOrWhiteSpace(address))
+            {
+                address = (string?)r.PlaceAddress ?? string.Empty;
             }
 
             items.Add(new UserProposalItemDto

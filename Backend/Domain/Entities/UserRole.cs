@@ -23,4 +23,14 @@ public class UserRole
         AssignedAt = DateTime.UtcNow;
         ExpiresAt = expiresAt;
     }
+
+    public UserRole(User user, byte roleId, long? assignedBy = null, DateTime? expiresAt = null)
+    {
+        User = user;
+        UserId = user?.Id ?? 0;
+        RoleId = roleId;
+        AssignedBy = assignedBy;
+        AssignedAt = DateTime.UtcNow;
+        ExpiresAt = expiresAt;
+    }
 }

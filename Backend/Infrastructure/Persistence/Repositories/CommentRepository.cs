@@ -27,11 +27,11 @@ public class CommentRepository : ICommentRepository
             .FirstOrDefaultAsync(c => c.Id == id && c.Status == CommentStatus.Active, ct);
     }
 
-    public async Task<IReadOnlyList<Comment>> GetByReviewIdAsync(long reviewId, CancellationToken ct = default)
+    public async Task<IReadOnlyList<Comment>> GetByReviewIdAsync(long reviewId, bool includeHidden = false, CancellationToken ct = default)
     {
         return await _dbContext.Comments
             .AsNoTracking()
-            .Where(c => c.ReviewId == reviewId && c.Status == CommentStatus.Active)
+            .Where(c => c.ReviewId == reviewId && (includeHidden || c.Status == CommentStatus.Active))
             .Include(c => c.User)
                 .ThenInclude(u => u.Profile)
             .OrderBy(c => c.CreatedAt)

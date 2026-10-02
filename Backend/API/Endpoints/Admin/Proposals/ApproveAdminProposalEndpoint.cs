@@ -12,6 +12,8 @@ public class ApproveAdminProposalRequest
 {
     public long Id { get; set; }
     public long? TargetPlaceId { get; set; }
+    public string? AdminNote { get; set; }
+    public string? AdminNotes { get => AdminNote; set => AdminNote = value; }
 }
 
 public class ApproveAdminProposalEndpoint : Endpoint<ApproveAdminProposalRequest, ApiSuccessResponse<bool>>
@@ -39,7 +41,9 @@ public class ApproveAdminProposalEndpoint : Endpoint<ApproveAdminProposalRequest
             return;
         }
 
-        var result = await Mediator.Send(new ApproveAdminProposalCommand(req.Id, adminId.Value, req.TargetPlaceId), ct);
+        var result = await Mediator.Send(
+            new ApproveAdminProposalCommand(req.Id, adminId.Value, req.TargetPlaceId, req.AdminNote ?? req.AdminNotes),
+            ct);
         await this.SendApiResponseAsync(result, ct);
     }
 }

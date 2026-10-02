@@ -146,7 +146,7 @@ public class AdminPlaceRepository : IAdminPlaceRepository
             return null;
         }
 
-        const string mediaSql = "SELECT MediaUrl FROM dbo.PlaceMedia WHERE PlaceId = @Id ORDER BY DisplayOrder, Id;";
+        const string mediaSql = "SELECT Url FROM dbo.PlaceMedia WHERE PlaceId = @Id ORDER BY DisplayOrder, Id;";
         var photos = (await connection.QueryAsync<string>(mediaSql, new { Id = id })).ToList();
         detail.Photos = photos;
 
@@ -268,5 +268,91 @@ public class AdminPlaceRepository : IAdminPlaceRepository
         place.UpdateStatus(PlaceStatus.Hidden);
         await _dbContext.SaveChangesAsync(ct);
         return true;
+    }
+
+    public async Task<(bool Success, string? OldCoverUrl)> UpdateCoverImageAsync(long placeId, string newCoverImageUrl, CancellationToken ct = default)
+    {
+        if (!await AdminScopeFilterHelper.IsPlaceInScopeAsync(_currentUserService, _dbContext.Database.GetDbConnection(), placeId))
+            return (false, null);
+
+        var place = await _dbContext.Places.FirstOrDefaultAsync(p => p.Id == placeId, ct);
+        if (place == null) return (false, null);
+
+        var oldCoverUrl = place.CoverImageUrl;
+        place.UpdateCoverImage(newCoverImageUrl);
+        await _dbContext.SaveChangesAsync(ct);
+
+        return (true, oldCoverUrl);
+    }
+
+    public async Task<List<PlaceMediaItemDto>> AddPlaceMediaAsync(long placeId, IEnumerable<string> mediaUrls, long? uploaderId, CancellationToken ct = default)
+    {
+        if (!await AdminScopeFilterHelper.IsPlaceInScopeAsync(_currentUserService, _dbContext.Database.GetDbConnection(), placeId))
+            return new List<PlaceMediaItemDto>();
+
+        var place = await _dbContext.Places.FirstOrDefaultAsync(p => p.Id == placeId, ct);
+        if (place == null) return new List<PlaceMediaItemDto>();
+
+        var maxOrder = await _dbContext.PlaceMedia
+            .Where(pm => pm.PlaceId == placeId)
+            .Select(pm => (int?)pm.DisplayOrder)
+            .MaxAsync(ct) ?? -1;
+
+        var addedItems = new List<PlaceMediaItemDto>();
+        foreach (var url in mediaUrls)
+        {
+            if (string.IsNullOrWhiteSpace(url)) continue;
+            maxOrder++;
+            var media = new PlaceMedia(placeId, url.Trim(), MediaType.Image, maxOrder, uploaderId, isVerified: true);
+            _dbContext.PlaceMedia.Add(media);
+            addedItems.Add(new PlaceMediaItemDto
+            {
+                PlaceId = placeId,
+                Url = url.Trim(),
+                DisplayOrder = maxOrder,
+                IsVerified = true,
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+
+        await _dbContext.SaveChangesAsync(ct);
+        return addedItems;
+    }
+
+    public async Task<(bool Success, string? MediaUrl)> DeletePlaceMediaAsync(long placeId, long mediaId, CancellationToken ct = default)
+    {
+        if (!await AdminScopeFilterHelper.IsPlaceInScopeAsync(_currentUserService, _dbContext.Database.GetDbConnection(), placeId))
+            return (false, null);
+
+        var media = await _dbContext.PlaceMedia.FirstOrDefaultAsync(pm => pm.Id == mediaId && pm.PlaceId == placeId, ct);
+        if (media == null) return (false, null);
+
+        var url = media.Url;
+        _dbContext.PlaceMedia.Remove(media);
+        await _dbContext.SaveChangesAsync(ct);
+
+        return (true, url);
+    }
+
+    public async Task<List<PlaceMediaItemDto>> GetPlaceMediaListAsync(long placeId, CancellationToken ct = default)
+    {
+        var connection = _dbContext.Database.GetDbConnection();
+        if (!await AdminScopeFilterHelper.IsPlaceInScopeAsync(_currentUserService, connection, placeId))
+            return new List<PlaceMediaItemDto>();
+
+        const string sql = @"
+            SELECT 
+                Id,
+                PlaceId,
+                Url,
+                DisplayOrder,
+                IsVerified,
+                CreatedAt
+            FROM dbo.PlaceMedia
+            WHERE PlaceId = @PlaceId
+            ORDER BY DisplayOrder, Id;";
+
+        var list = await connection.QueryAsync<PlaceMediaItemDto>(sql, new { PlaceId = placeId });
+        return list.ToList();
     }
 }

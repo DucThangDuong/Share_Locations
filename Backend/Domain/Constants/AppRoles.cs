@@ -9,6 +9,10 @@ public static class AppRoles
     public const string DbSystemAdmin = "SYSTEM_ADMIN";
     public const string DbCategoryAdmin = "CATEGORY_ADMIN";
     public const string DbUser = "USER";
+
+    public const byte UserRoleId = 1;
+    public const byte CategoryAdminRoleId = 2;
+    public const byte SystemAdminRoleId = 3;
     
     public static readonly string[] SuperAdminOnly = 
     { 

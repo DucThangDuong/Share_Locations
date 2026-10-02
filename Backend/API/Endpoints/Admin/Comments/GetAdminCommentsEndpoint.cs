@@ -11,6 +11,8 @@ namespace API.Endpoints.Admin.Comments;
 
 public class GetAdminCommentsRequest
 {
+    public long? ReviewId { get; set; }
+    public long? PlaceId { get; set; }
     public bool? HasReportsOnly { get; set; }
     public string? Status { get; set; }
     public string? Keyword { get; set; }
@@ -30,7 +32,7 @@ public class GetAdminCommentsEndpoint : Endpoint<GetAdminCommentsRequest, ApiSuc
         Summary(s =>
         {
             s.Summary = "Lấy danh sách bình luận (Admin)";
-            s.Description = "Danh sách bình luận phục vụ kiểm duyệt nội dung phản cảm hoặc spam.";
+            s.Description = "Danh sách bình luận phục vụ kiểm duyệt nội dung (lấy tất cả bình luận kể cả bị ẩn, trừ khi có bộ lọc trạng thái).";
         });
     }
 
@@ -38,6 +40,8 @@ public class GetAdminCommentsEndpoint : Endpoint<GetAdminCommentsRequest, ApiSuc
     {
         var result = await Mediator.Send(
             new GetAdminCommentsQuery(
+                req.ReviewId,
+                req.PlaceId,
                 req.HasReportsOnly,
                 req.Status,
                 req.Keyword,

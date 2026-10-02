@@ -9,6 +9,11 @@ public interface IBlobService
         string containerName = "images",
         CancellationToken ct = default);
 
+    Task<string> UploadBase64ImageAsync(
+        string base64Data,
+        string containerName = "places",
+        CancellationToken ct = default);
+
     Task<string> UploadVideoAsync(
         Stream stream,
         string fileName,

@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import type { AdminUserItem } from '@/types/admin.types'
 import { isUserSystemAdmin } from '@/utils/authUtils'
 import { UserDetailDashboardView } from './UserDetailDashboardView'
@@ -68,6 +69,8 @@ export const UsersTab: React.FC<UsersTabProps> = ({
   currentFilters = {},
   showToast: _showToast
 }) => {
+  const navigate = useNavigate()
+  const location = useLocation()
   const isSystemAdmin = isUserSystemAdmin()
   const [activeSubTab, setActiveSubTab] = useState<'all' | 'user' | 'admins'>(
     isSystemAdmin ? 'all' : 'user'
@@ -75,6 +78,29 @@ export const UsersTab: React.FC<UsersTabProps> = ({
   const [searchText, setSearchText] = useState(currentFilters.keyword || '')
   const [statusFilter, setStatusFilter] = useState(currentFilters.status || 'all')
   const [selectedUserForDetail, setSelectedUserForDetail] = useState<AdminUserItem | null>(null)
+
+  // Match /admin/users/:userId from URL path
+  const userPathMatch = location.pathname.match(/\/admin\/users\/(\d+)/i)
+  const urlUserId = userPathMatch ? Number(userPathMatch[1]) : null
+
+  // Find user in list or fallback to placeholder (UserDetailDashboardView will fetch full details via API)
+  const activeDetailUser = useMemo(() => {
+    if (!urlUserId) return null
+    const found = usersList.find((u) => (u.userId || (u as any).id) === urlUserId)
+    if (found) return found
+    if (selectedUserForDetail && (selectedUserForDetail.userId || (selectedUserForDetail as any).id) === urlUserId) {
+      return selectedUserForDetail
+    }
+    return {
+      id: urlUserId,
+      userId: urlUserId,
+      email: '',
+      fullName: '',
+      roles: [],
+      status: 1,
+      createdAt: new Date().toISOString()
+    } as AdminUserItem
+  }, [urlUserId, usersList, selectedUserForDetail])
 
   // Subtab click handler with backend API call
   const handleSubTabClick = (tab: 'all' | 'user' | 'admins') => {
@@ -227,14 +253,22 @@ export const UsersTab: React.FC<UsersTabProps> = ({
     )
   }
 
-  if (selectedUserForDetail) {
+  if (activeDetailUser) {
     return (
       <UserDetailDashboardView
-        user={selectedUserForDetail}
-        onBack={() => setSelectedUserForDetail(null)}
+        user={activeDetailUser}
+        onBack={() => {
+          setSelectedUserForDetail(null)
+          navigate('/admin/users')
+        }}
         showToast={_showToast}
       />
     )
+  }
+
+  const handleSelectUser = (u: AdminUserItem) => {
+    setSelectedUserForDetail(u)
+    navigate(`/admin/users/${u.userId || (u as any).id}`)
   }
 
   return (
@@ -303,38 +337,35 @@ export const UsersTab: React.FC<UsersTabProps> = ({
               <button
                 type="button"
                 onClick={() => handleSubTabClick('all')}
-                className={`px-3.5 py-1.5 rounded-lg transition-all cursor-pointer ${
-                  activeSubTab === 'all'
-                    ? 'bg-white text-slate-900 shadow-2xs font-bold'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
+                className={`px-3.5 py-1.5 rounded-lg transition-all cursor-pointer ${activeSubTab === 'all'
+                  ? 'bg-white text-slate-900 shadow-2xs font-bold'
+                  : 'text-slate-600 hover:text-slate-900'
+                  }`}
               >
-                Tất cả tài khoản ({totalUsersCount})
+                Tất cả tài khoản
               </button>
             )}
             <button
               type="button"
               onClick={() => handleSubTabClick('user')}
-              className={`px-3.5 py-1.5 rounded-lg transition-all cursor-pointer ${
-                activeSubTab === 'user'
-                  ? 'bg-white text-blue-900 shadow-2xs font-bold'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
+              className={`px-3.5 py-1.5 rounded-lg transition-all cursor-pointer ${activeSubTab === 'user'
+                ? 'bg-white text-blue-900 shadow-2xs font-bold'
+                : 'text-slate-600 hover:text-slate-900'
+                }`}
             >
-              Người dùng thường ({regularUsersCount})
+              Người dùng thường
             </button>
             {isSystemAdmin && (
               <button
                 type="button"
                 onClick={() => handleSubTabClick('admins')}
-                className={`px-3.5 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
-                  activeSubTab === 'admins'
-                    ? 'bg-white text-emerald-900 shadow-2xs font-bold'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
+                className={`px-3.5 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${activeSubTab === 'admins'
+                  ? 'bg-white text-emerald-900 shadow-2xs font-bold'
+                  : 'text-slate-600 hover:text-slate-900'
+                  }`}
               >
                 <Shield size={13} className="text-emerald-700" />
-                <span>Quản trị viên ({categoryAdminsCount + systemAdminsCount})</span>
+                <span>Quản trị viên</span>
               </button>
             )}
           </div>
@@ -438,7 +469,7 @@ export const UsersTab: React.FC<UsersTabProps> = ({
                 filteredUsers.map((u) => (
                   <tr
                     key={u.userId || (u as any).id}
-                    onClick={() => setSelectedUserForDetail(u)}
+                    onClick={() => handleSelectUser(u)}
                     className="hover:bg-slate-50/80 transition-colors cursor-pointer group"
                   >
                     {/* User profile & contact */}
@@ -493,7 +524,7 @@ export const UsersTab: React.FC<UsersTabProps> = ({
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation()
-                          setSelectedUserForDetail(u)
+                          handleSelectUser(u)
                         }}
                         className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-2xs transition-colors cursor-pointer"
                       >
@@ -545,11 +576,10 @@ export const UsersTab: React.FC<UsersTabProps> = ({
                   key={`page-${item}`}
                   type="button"
                   onClick={() => onPageChange?.(item)}
-                  className={`w-7 h-7 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    isActive
-                      ? 'bg-emerald-600 text-white shadow-xs'
-                      : 'border border-slate-200 hover:bg-slate-50 text-slate-700'
-                  }`}
+                  className={`w-7 h-7 rounded-lg text-xs font-bold transition-all cursor-pointer ${isActive
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'border border-slate-200 hover:bg-slate-50 text-slate-700'
+                    }`}
                 >
                   {item}
                 </button>

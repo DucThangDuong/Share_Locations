@@ -10,6 +10,9 @@ public class PagedResult<T>
     public int CategoryAdminsCount { get; set; }
     public int SystemAdminsCount { get; set; }
     public int RegularUsersCount { get; set; }
+    public int PendingCount { get; set; }
+    public int ApprovedCount { get; set; }
+    public int RejectedCount { get; set; }
 
     public PagedResult(IReadOnlyList<T> items, long totalCount, int pageIndex, int pageSize)
     {

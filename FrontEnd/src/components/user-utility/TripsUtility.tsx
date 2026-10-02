@@ -12,12 +12,10 @@ import {
   Globe,
   Loader2,
   ArrowRight,
-  Users
+  Edit3
 } from 'lucide-react'
 import { tripService } from '@/services/tripService'
-import { useAuth } from '@/context/AuthContext'
-import { ItineraryMemberModal } from '@/components/itinerary/ItineraryMemberModal'
-import type { UserTripSummaryDto, TripMemberDetailDto } from '@/types/models/trip.model'
+import type { UserTripSummaryDto } from '@/types/models/trip.model'
 import type { PagedResultDto } from '@/types/models/userProfile.model'
 
 interface TripsUtilityProps {
@@ -32,16 +30,16 @@ export const TripsUtility: React.FC<TripsUtilityProps> = ({
   onToast
 }) => {
   const navigate = useNavigate()
-  const { user: currentUser } = useAuth()
   const [trips, setTrips] = useState<UserTripSummaryDto[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
 
-  // Member management state
-  const [selectedTripForMembers, setSelectedTripForMembers] = useState<UserTripSummaryDto | null>(null)
-  const [tripMembers, setTripMembers] = useState<TripMemberDetailDto[]>([])
-  const [currentUserRoleInTrip, setCurrentUserRoleInTrip] = useState<string>('Owner')
-  const [isMemberModalOpen, setIsMemberModalOpen] = useState(false)
+  const formatDuration = (days?: number, nights?: number) => {
+    const d = days && days > 0 ? days : 1
+    const n = nights !== undefined && nights !== null ? nights : Math.max(0, d - 1)
+    if (n === 0) return `${d} ngày`
+    return `${d} ngày ${n} đêm`
+  }
 
   const fetchTrips = useCallback(async () => {
     setIsLoading(true)
@@ -83,92 +81,6 @@ export const TripsUtility: React.FC<TripsUtilityProps> = ({
       }
     } catch (err: any) {
       onToast?.(err?.response?.data?.message || 'Có lỗi xảy ra khi xóa chuyến đi.')
-    }
-  }
-
-  // Open Member Management Modal for a trip
-  const handleOpenMembersModal = async (e: React.MouseEvent, trip: UserTripSummaryDto) => {
-    e.stopPropagation()
-    e.preventDefault()
-    setSelectedTripForMembers(trip)
-    setCurrentUserRoleInTrip(trip.userRole || 'Owner')
-    setIsMemberModalOpen(true)
-
-    try {
-      const res = await tripService.getTripDetail(trip.id)
-      if (res.success && res.data) {
-        setTripMembers(res.data.members || [])
-        if (res.data.currentUserRole) {
-          setCurrentUserRoleInTrip(res.data.currentUserRole)
-        }
-      }
-    } catch {
-      setTripMembers([])
-    }
-  }
-
-  // Handle Invite Member via API
-  const handleInviteMember = async (email: string, role: string) => {
-    if (!selectedTripForMembers) return
-    try {
-      const res = await tripService.inviteMember(selectedTripForMembers.id, { email, role })
-      if (res.success) {
-        onToast?.(res.message || `Đã thêm thành viên: ${email}`)
-        // Refresh members list
-        const detailRes = await tripService.getTripDetail(selectedTripForMembers.id)
-        if (detailRes.success && detailRes.data?.members) {
-          setTripMembers(detailRes.data.members)
-          // Increment members count in local trips list
-          setTrips((prev) =>
-            prev.map((t) =>
-              t.id === selectedTripForMembers.id
-                ? { ...t, membersCount: detailRes.data.members.length }
-                : t
-            )
-          )
-        }
-      } else {
-        onToast?.(res.message || 'Không thể thêm thành viên lúc này.')
-      }
-    } catch (err: any) {
-      console.error('Failed to invite member:', err)
-      const errorMsg = err?.response?.data?.message || err?.message || 'Có lỗi xảy ra khi mời thành viên.'
-      onToast?.(errorMsg)
-    }
-  }
-
-  // Handle Remove Member or Leave Trip via API
-  const handleRemoveMember = async (userId: number, isSelf: boolean = false) => {
-    if (!selectedTripForMembers) return
-    try {
-      const res = await tripService.removeMember(selectedTripForMembers.id, userId)
-      if (res.success) {
-        if (isSelf) {
-          onToast?.(res.message || 'Bạn đã rời khỏi chuyến đi.')
-          setIsMemberModalOpen(false)
-          // Remove trip from user's trip list
-          setTrips((prev) => prev.filter((t) => t.id !== selectedTripForMembers.id))
-          setSelectedTripForMembers(null)
-          return
-        }
-
-        onToast?.(res.message || 'Đã xóa thành viên khỏi chuyến đi.')
-        setTripMembers((prev) => prev.filter((m) => m.userId !== userId))
-        // Decrement members count in local trips list
-        setTrips((prev) =>
-          prev.map((t) =>
-            t.id === selectedTripForMembers.id
-              ? { ...t, membersCount: Math.max(1, (t.membersCount || 1) - 1) }
-              : t
-          )
-        )
-      } else {
-        onToast?.(res.message || 'Không thể xóa thành viên lúc này.')
-      }
-    } catch (err: any) {
-      console.error('Failed to remove member:', err)
-      const errorMsg = err?.response?.data?.message || err?.message || 'Có lỗi xảy ra khi xóa thành viên.'
-      onToast?.(errorMsg)
     }
   }
 
@@ -279,166 +191,179 @@ export const TripsUtility: React.FC<TripsUtilityProps> = ({
         ) : isDrawer ? (
           /* Drawer Compact Clean Layout */
           <div className="space-y-2.5">
-            {filteredTrips.map((trip) => (
-              <div
-                key={trip.id}
-                onClick={() => handleSelectTrip(trip.id)}
-                className="group relative flex items-center gap-3 p-3 rounded-2xl border border-slate-100 hover:border-blue-200 hover:bg-slate-50/80 transition-all cursor-pointer shadow-2xs hover:shadow-xs bg-white"
-              >
-                <div className="w-11 h-11 rounded-2xl bg-blue-50 text-blue-800 flex items-center justify-center shrink-0 border border-blue-100/80 transition-colors">
-                  <Luggage size={20} />
-                </div>
-                <div className="flex-1 min-w-0 pr-16">
-                  <h4 className="text-xs font-bold text-slate-900 truncate group-hover:text-blue-800 transition-colors">
-                    {trip.title}
-                  </h4>
-                  <p className="text-[11px] text-slate-400 truncate mt-0.5 flex items-center gap-1">
-                    <Clock size={11} />
-                    <span>
-                      {trip.startDate ? new Date(trip.startDate).toLocaleDateString('vi-VN') : 'Chưa định ngày'}
-                    </span>
-                    {trip.province && (
-                      <>
-                        <span className="mx-0.5">·</span>
-                        <MapPin size={11} />
-                        <span>{trip.province}</span>
-                      </>
+            {filteredTrips.map((trip) => {
+              const isPublished =
+                trip.privacy === 0 ||
+                String(trip.privacy).toLowerCase() === 'public' ||
+                trip.status === 1 ||
+                String(trip.status).toLowerCase() === 'published'
+
+              return (
+                <div
+                  key={trip.id}
+                  onClick={() => handleSelectTrip(trip.id)}
+                  className="group relative flex items-center gap-3 p-3 rounded-2xl border border-slate-100 hover:border-emerald-300 hover:bg-slate-50/80 transition-all cursor-pointer shadow-2xs hover:shadow-xs bg-white"
+                >
+                  <div className="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-800 flex items-center justify-center shrink-0 border border-emerald-100/80 transition-colors">
+                    <Luggage size={20} />
+                  </div>
+                  <div className="flex-1 min-w-0 pr-28">
+                    <h4 className="text-xs font-bold text-slate-900 truncate group-hover:text-emerald-800 transition-colors">
+                      {trip.title}
+                    </h4>
+                    <p className="text-[11px] text-slate-500 truncate mt-0.5 flex items-center gap-1.5 flex-wrap">
+                      <span className="font-bold text-emerald-800">
+                        {formatDuration(trip.durationDays, trip.nightsCount)}
+                      </span>
+                      <span className="text-slate-300">·</span>
+                      <span className="flex items-center gap-0.5 text-slate-400">
+                        <Clock size={10} />
+                        <span>
+                          {trip.startDate ? new Date(trip.startDate).toLocaleDateString('vi-VN') : 'Chưa định ngày'}
+                        </span>
+                      </span>
+                      {trip.province && (
+                        <>
+                          <span className="text-slate-300">·</span>
+                          <span className="flex items-center gap-0.5 text-slate-400">
+                            <MapPin size={10} />
+                            <span>{trip.province}</span>
+                          </span>
+                        </>
+                      )}
+                    </p>
+                  </div>
+
+                  <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5">
+                    {/* Published / Privacy Status Badge */}
+                    {isPublished ? (
+                      <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold flex items-center gap-1 shrink-0">
+                        <Globe size={10} />
+                        <span>Đã công bố</span>
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200 text-[10px] font-semibold flex items-center gap-1 shrink-0">
+                        <Lock size={10} />
+                        <span>Riêng tư</span>
+                      </span>
                     )}
-                  </p>
-                </div>
 
-                <div className="absolute top-2.5 right-2.5 flex items-center gap-1">
-                  {/* Members button in Drawer */}
-                  <button
-                    type="button"
-                    onClick={(e) => handleOpenMembersModal(e, trip)}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer flex items-center gap-1 text-[10px] font-bold"
-                    title="Quản lý thành viên chuyến đi"
-                  >
-                    <Users size={12} className="text-emerald-600" />
-                    <span>{trip.membersCount || 1}</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={(e) => handleDeleteTrip(e, trip.id)}
-                    className="p-1.5 rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-colors cursor-pointer"
-                    title="Xóa chuyến đi"
-                  >
-                    <Trash2 size={13} />
-                  </button>
+                    <button
+                      type="button"
+                      onClick={(e) => handleDeleteTrip(e, trip.id)}
+                      className="p-1.5 rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-colors cursor-pointer shrink-0"
+                      title="Xóa chuyến đi"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         ) : (
           /* Full Page Clean Grid Layout */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {filteredTrips.map((trip) => (
-              <div
-                key={trip.id}
-                onClick={() => handleSelectTrip(trip.id)}
-                className="group bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs hover:shadow-md hover:border-blue-300 transition-all flex flex-col justify-between cursor-pointer"
-              >
-                <div className="space-y-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-800 flex items-center justify-center shrink-0 border border-blue-100">
-                      <Luggage size={24} />
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span
-                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${trip.status === 1
-                          ? 'bg-emerald-50 text-emerald-800'
-                          : trip.status === 2
-                            ? 'bg-slate-100 text-slate-700'
-                            : 'bg-blue-50 text-blue-800'
+            {filteredTrips.map((trip) => {
+              const isPublished =
+                trip.privacy === 0 ||
+                String(trip.privacy).toLowerCase() === 'public' ||
+                trip.status === 1 ||
+                String(trip.status).toLowerCase() === 'published'
+
+              return (
+                <div
+                  key={trip.id}
+                  onClick={() => handleSelectTrip(trip.id)}
+                  className="group bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs hover:shadow-md hover:border-emerald-300 transition-all flex flex-col justify-between cursor-pointer"
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-800 flex items-center justify-center shrink-0 border border-emerald-100">
+                        <Luggage size={24} />
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                        {/* Published Status Badge */}
+                        {isPublished ? (
+                          <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold flex items-center gap-1.5">
+                            <Globe size={12} />
+                            <span>Đã công bố</span>
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 border border-slate-200 text-xs font-semibold flex items-center gap-1.5">
+                            <Lock size={12} />
+                            <span>Riêng tư</span>
+                          </span>
+                        )}
+
+                        <span
+                          className={`px-2.5 py-1 rounded-lg text-xs font-bold border ${
+                            trip.status === 1
+                              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                              : trip.status === 2
+                                ? 'bg-slate-100 text-slate-700 border-slate-200'
+                                : 'bg-slate-50 text-slate-600 border-slate-200'
                           }`}
-                      >
-                        {trip.status === 0 ? 'Đang lên kế hoạch' : trip.status === 1 ? 'Đang đi' : 'Hoàn thành'}
-                      </span>
-                      <span className="p-1.5 rounded-lg bg-slate-100 text-slate-500 text-xs">
-                        {trip.privacy === 1 ? <Lock size={12} /> : <Globe size={12} />}
-                      </span>
+                        >
+                          {trip.status === 0 ? 'Đang lên kế hoạch' : trip.status === 1 ? 'Đang đi' : 'Hoàn thành'}
+                        </span>
 
-                      {/* Members button in full card */}
-                      <button
-                        type="button"
-                        onClick={(e) => handleOpenMembersModal(e, trip)}
-                        className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100 hover:bg-emerald-50 hover:text-emerald-800 text-slate-700 text-xs font-semibold transition-colors cursor-pointer border border-transparent hover:border-emerald-200"
-                        title="Quản lý thành viên chuyến đi"
-                      >
-                        <Users size={12} className="text-emerald-700" />
-                        <span>{trip.membersCount || 1}</span>
-                      </button>
+                        <button
+                          type="button"
+                          onClick={(e) => handleDeleteTrip(e, trip.id)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                          title="Xóa chuyến đi"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </div>
 
-                      <button
-                        type="button"
-                        onClick={(e) => handleDeleteTrip(e, trip.id)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                        title="Xóa chuyến đi"
-                      >
-                        <Trash2 size={13} />
-                      </button>
+                    <div>
+                      <h4 className="text-base font-bold text-slate-900 group-hover:text-emerald-800 transition-colors line-clamp-1">
+                        {trip.title}
+                      </h4>
+                      {trip.description && (
+                        <p className="text-xs text-slate-500 line-clamp-2 mt-1">
+                          {trip.description}
+                        </p>
+                      )}
                     </div>
                   </div>
 
-                  <div>
-                    <h4 className="text-base font-bold text-slate-900 group-hover:text-blue-800 transition-colors line-clamp-1">
-                      {trip.title}
-                    </h4>
-                    {trip.description && (
-                      <p className="text-xs text-slate-500 line-clamp-2 mt-1">
-                        {trip.description}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-                  <div className="flex items-center gap-2">
-                    <span className="flex items-center gap-1">
-                      <Clock size={12} />
-                      <span>{trip.durationDays || 1} ngày {trip.nightsCount ? `· ${trip.nightsCount} đêm` : ''}</span>
-                    </span>
-                    {trip.province && (
-                      <span className="flex items-center gap-1">
-                        <MapPin size={12} className="text-slate-400" />
-                        <span>{trip.province}</span>
+                  <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="px-2.5 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold">
+                        {formatDuration(trip.durationDays, trip.nightsCount)}
                       </span>
-                    )}
-                  </div>
+                      <span className="flex items-center gap-1 text-slate-400">
+                        <Clock size={12} />
+                        <span>{trip.startDate ? new Date(trip.startDate).toLocaleDateString('vi-VN') : 'Chưa định ngày'}</span>
+                      </span>
+                      {trip.province && (
+                        <span className="flex items-center gap-1 text-slate-400">
+                          <MapPin size={12} />
+                          <span>{trip.province}</span>
+                        </span>
+                      )}
+                    </div>
 
-                  <span className="font-bold text-blue-800 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
-                    <span>Chỉnh sửa lịch trình</span>
-                    <ArrowRight size={13} />
-                  </span>
+                    <span className="font-bold text-emerald-800 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+                      <Edit3 size={13} />
+                      <span>Chỉnh sửa lịch trình</span>
+                      <ArrowRight size={13} />
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>
-
-      {/* Trip Member Management Modal */}
-      {selectedTripForMembers && (
-        <ItineraryMemberModal
-          isOpen={isMemberModalOpen}
-          tripId={selectedTripForMembers.id}
-          tripTitle={selectedTripForMembers.title}
-          members={tripMembers}
-          currentUserRole={currentUserRoleInTrip}
-          currentUserId={currentUser?.id ? Number(currentUser.id) : undefined}
-          onClose={() => {
-            setIsMemberModalOpen(false)
-            setSelectedTripForMembers(null)
-          }}
-          onInviteMember={handleInviteMember}
-          onRemoveMember={handleRemoveMember}
-        />
-      )}
     </div>
   )
 }
 
 export default TripsUtility
+
 

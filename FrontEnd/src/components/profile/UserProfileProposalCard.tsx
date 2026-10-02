@@ -3,9 +3,7 @@ import { Link } from 'react-router-dom'
 import {
   MapPin,
   Calendar,
-  CheckCircle2,
   ArrowRight,
-  Sparkles
 } from 'lucide-react'
 import type { ProposalItem } from '@/types/models/userProfile.model'
 
@@ -30,10 +28,6 @@ export const UserProfileProposalCard: React.FC<UserProfileProposalCardProps> = (
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-white/0 group-hover:bg-white/15 transition-colors duration-300 pointer-events-none" />
-        <div className="absolute top-2.5 left-2.5 bg-emerald-600/90 backdrop-blur-md text-white px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1 shadow-sm">
-          <CheckCircle2 size={12} />
-          <span>Đã duyệt & Đưa vào bản đồ</span>
-        </div>
       </div>
 
       <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between">
@@ -77,7 +71,6 @@ export const UserProfileProposalCard: React.FC<UserProfileProposalCardProps> = (
 
         <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-3 text-xs">
           <span className="inline-flex items-center gap-1 text-emerald-600 font-semibold">
-            <Sparkles size={13} />
             Đóng góp bởi thành viên
           </span>
 

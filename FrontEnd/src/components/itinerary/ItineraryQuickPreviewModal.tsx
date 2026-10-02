@@ -15,6 +15,7 @@ interface ItineraryQuickPreviewModalProps {
   isApplied?: boolean
   onClose: () => void
   onApply: (itinerary: DetailedItineraryItem) => void
+  actionLabel?: string
 }
 
 export const ItineraryQuickPreviewModal: React.FC<ItineraryQuickPreviewModalProps> = ({
@@ -22,7 +23,8 @@ export const ItineraryQuickPreviewModal: React.FC<ItineraryQuickPreviewModalProp
   itinerary,
   isApplied = false,
   onClose,
-  onApply
+  onApply,
+  actionLabel
 }) => {
   useEffect(() => {
     if (!isOpen) return
@@ -215,7 +217,7 @@ export const ItineraryQuickPreviewModal: React.FC<ItineraryQuickPreviewModalProp
             ) : (
               <>
                 <Plus size={14} strokeWidth={2.5} />
-                <span>Áp dụng chuyến đi này</span>
+                <span>{actionLabel || 'Áp dụng chuyến đi này'}</span>
               </>
             )}
           </button>

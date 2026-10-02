@@ -31,7 +31,6 @@ export const UserProfilePage: React.FC = () => {
   const [lightboxImage, setLightboxImage] = useState<string | null>(null)
   const [isReportModalOpen, setIsReportModalOpen] = useState(false)
 
-  // Profile info state ONLY
   const [profile, setProfile] = useState<PublicUserProfileDto | null>(null)
 
   const showToast = (msg: string) => {
@@ -42,20 +41,17 @@ export const UserProfilePage: React.FC = () => {
   const locationState = location.state as { authorName?: string; authorAvatar?: string; authorRole?: string } | undefined
   const nameFromQuery = searchParams.get('name') || locationState?.authorName
 
-  // Determine target User ID
   const currentUserId = currentUser?.id ? Number(currentUser.id) : null
   const hasExplicitId = Boolean(id && id !== 'me')
   const targetUserId = hasExplicitId ? Number(id) || 1 : (nameFromQuery ? null : (currentUserId || 1))
   const isCurrentUser = Boolean(currentUserId && targetUserId && currentUserId === targetUserId && !nameFromQuery)
 
-  // ── Fetch Profile Info ONLY on mount / params change ──
   useEffect(() => {
     let isMounted = true
 
     const loadProfile = async () => {
       setLoading(true)
 
-      // Case 1: An explicit target ID is present
       if (targetUserId) {
         try {
           const res = await userService.getUserPublicProfile(targetUserId)
@@ -98,7 +94,6 @@ export const UserProfilePage: React.FC = () => {
         return
       }
 
-      // Case 2: No explicit ID but author name is provided -> Look up user by name
       if (nameFromQuery) {
         try {
           const searchRes = await friendService.searchUsers(nameFromQuery.trim())
@@ -118,7 +113,6 @@ export const UserProfilePage: React.FC = () => {
             }
           }
         } catch {
-          // search error fallback
         }
 
         if (isMounted) {
@@ -138,7 +132,6 @@ export const UserProfilePage: React.FC = () => {
         return
       }
 
-      // Case 3: Default current user profile
       if (isMounted) {
         setProfile({
           id: currentUserId || 1,
@@ -237,20 +230,17 @@ export const UserProfilePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans pb-16">
-      {/* Toast notification */}
       {toastMessage && (
         <div className="fixed top-20 right-5 z-50 bg-slate-900 text-white text-sm font-medium px-4 py-2.5 rounded-xl shadow-2xl animate-in slide-in-from-top-3 fade-in duration-200">
           {toastMessage}
         </div>
       )}
 
-      {/* Lightbox Modal */}
       <ChatLightbox
         imageUrl={lightboxImage}
         onClose={() => setLightboxImage(null)}
       />
 
-      {/* Report Modal */}
       {isReportModalOpen && (
         <ReportModal
           placeName={profile.fullName}
@@ -270,7 +260,6 @@ export const UserProfilePage: React.FC = () => {
         />
       )}
 
-      {/* ── HEADER HERO SECTION (Tripadvisor Style) ── */}
       <UserProfileHeader
         profile={profile}
         activeTab={activeTab}
@@ -281,15 +270,12 @@ export const UserProfilePage: React.FC = () => {
         onUnfriend={handleUnfriend}
       />
 
-      {/* ── 2-COLUMN MAIN CONTENT (Intro Sidebar + Feed) ── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Left Column: Intro Sidebar */}
           <div className="lg:col-span-4 space-y-6">
             <UserProfileSidebar profile={profile} />
           </div>
 
-          {/* Right Column: Tab Activities Feed (Isolated Component per Tab) */}
           <div className="lg:col-span-8 space-y-5">
             {activeTab === 'reviews' && (
               <UserProfileReviewsTab

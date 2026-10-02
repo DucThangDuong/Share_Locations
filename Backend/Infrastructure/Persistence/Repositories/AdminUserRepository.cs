@@ -36,13 +36,6 @@ public class AdminUserRepository : IAdminUserRepository
 
         var whereClauses = new List<string> { "u.IsDeleted = 0" };
         var parameters = new DynamicParameters();
-
-        // PHÂN QUYỀN ĐẶC BIỆT:
-        // - Nếu người gọi là CATEGORY_ADMIN (Admin cấp 1):
-        //   -> TUYỆT ĐỐI KHÔNG được lấy tài khoản CATEGORY_ADMIN hay SYSTEM_ADMIN!
-        //   -> Cưỡng chế chỉ lấy USER thường.
-        // - Nếu người gọi là SYSTEM_ADMIN (Admin tổng):
-        //   -> Được lấy toàn bộ: USER, CATEGORY_ADMIN, SYSTEM_ADMIN theo filter.
         if (!_currentUserService.IsSystemAdmin && _currentUserService.IsCategoryAdmin)
         {
             whereClauses.Add(@"EXISTS (
@@ -596,7 +589,7 @@ public class AdminUserRepository : IAdminUserRepository
         var connection = _dbContext.Database.GetDbConnection();
         var result = new UserActivitiesDto();
 
-        // 1. Reviews (Top 20)
+        // 1. Reviews (Top 20) - Chỉ lấy đánh giá công khai (Status = 1: Active)
         const string reviewsSql = @"
             SELECT TOP 20
                 r.Id,
@@ -608,34 +601,36 @@ public class AdminUserRepository : IAdminUserRepository
                 r.Content,
                 r.CreatedAt,
                 ISNULL(r.LikesCount, 0) AS Likes,
-                CASE r.Status WHEN 1 THEN 'active' ELSE 'hidden' END AS Status
+                'active' AS Status
             FROM dbo.Reviews r
             LEFT JOIN dbo.Places p ON r.PlaceId = p.Id
             LEFT JOIN dbo.Categories c ON p.CategoryId = c.Id
             LEFT JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id
             WHERE r.UserId = @UserId
+              AND r.Status = 1
             ORDER BY r.CreatedAt DESC;";
 
         result.Reviews = (await connection.QueryAsync<UserReviewActivityDto>(reviewsSql, new { UserId = targetUserId })).ToList();
 
-        // 2. Blogs (Top 20)
+        // 2. Blogs (Top 20) - Chỉ lấy bài viết đã publish (Status = 1: Published), không lấy bản nháp (Draft = 0) hoặc bị ẩn
         const string blogsSql = @"
             SELECT TOP 20
                 b.Id,
                 b.Title,
                 c.Name AS Category,
                 ISNULL(b.ViewCount, 0) AS Views,
-                ISNULL(b.LikeCount, 0) AS Likes,
-                b.PublishedAt,
-                CASE b.Status WHEN 1 THEN 'published' ELSE 'draft' END AS Status
+                0 AS Likes,
+                b.CreatedAt AS PublishedAt,
+                'published' AS Status
             FROM dbo.Blogs b
             LEFT JOIN dbo.Categories c ON b.CategoryId = c.Id
             WHERE b.AuthorId = @UserId
+              AND b.Status = 1
             ORDER BY b.CreatedAt DESC;";
 
         result.Blogs = (await connection.QueryAsync<UserBlogActivityDto>(blogsSql, new { UserId = targetUserId })).ToList();
 
-        // 3. Trips (Top 20)
+        // 3. Trips (Top 20) - Chỉ lấy chuyến đi công khai (Privacy = 0: Public), không lấy riêng tư (Private) hoặc bạn bè
         const string tripsSql = @"
             SELECT TOP 20
                 t.Id,
@@ -652,20 +647,24 @@ public class AdminUserRepository : IAdminUserRepository
                     WHERE td.TripId = t.Id
                 ) AS PlacesCount,
                 t.CreatedAt,
-                CASE t.Privacy WHEN 1 THEN 'public' ELSE 'private' END AS Status
+                'public' AS Status
             FROM dbo.Trips t
             WHERE t.UserId = @UserId
+              AND t.Privacy = 0
             ORDER BY t.CreatedAt DESC;";
 
         result.Trips = (await connection.QueryAsync<UserTripActivityDto>(tripsSql, new { UserId = targetUserId })).ToList();
 
-        // 4. Proposals (Top 20)
         const string proposalsSql = @"
             SELECT TOP 20
                 pr.Id,
                 ISNULL(
                     p.Name, 
-                    ISNULL(JSON_VALUE(pr.ProposedDataJSON, '$.Name'), N'Đề xuất địa điểm mới')
+                    COALESCE(
+                        JSON_VALUE(pr.ProposedDataJSON, '$.name'),
+                        JSON_VALUE(pr.ProposedDataJSON, '$.Name'),
+                        N'Đề xuất địa điểm mới'
+                    )
                 ) AS PlaceName,
                 c.Name AS Category,
                 prov.Name AS Province,

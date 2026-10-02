@@ -53,7 +53,6 @@ export const PlaceDetailOverview = ({
                 ({totalReviews} đánh giá)
               </span>
             </div>
-            <span>•</span>
             <span className="text-gray-600">{place.address}</span>
           </div>
         </div>

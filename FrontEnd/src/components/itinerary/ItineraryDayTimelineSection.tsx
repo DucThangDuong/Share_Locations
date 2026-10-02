@@ -20,7 +20,7 @@ import type {
   ItineraryStop,
   TripRole
 } from '@/types/models/itinerary.model'
-import { getCategoryBadgeStyle, getDayTheme } from '@/utils/itineraryStyles'
+import { getCategoryBadgeStyle, getDayTheme, normalizeTimeToHHmm } from '@/utils/itineraryStyles'
 
 interface ItineraryDayTimelineSectionProps {
   day: ItineraryDayData
@@ -161,15 +161,10 @@ export const ItineraryDayTimelineSection: React.FC<ItineraryDayTimelineSectionPr
             </div>
           ) : (
             <div className="min-w-0">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <h3 className="text-sm sm:text-base font-extrabold text-slate-900 truncate">
                   {day.title || `Ngày ${day.dayNumber}`}
                 </h3>
-                {day.date && (
-                  <span className="hidden sm:inline-block text-xs text-slate-600 font-semibold">
-                    • {day.date}
-                  </span>
-                )}
                 {canEdit && (
                   <button
                     type="button"
@@ -179,7 +174,7 @@ export const ItineraryDayTimelineSection: React.FC<ItineraryDayTimelineSectionPr
                       setTempDate(day.date || '')
                       setIsEditingInfo(true)
                     }}
-                    className="p-1 text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+                    className="p-1 text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer shrink-0"
                     title="Đổi tên & ngày"
                   >
                     <Pencil size={13} />
@@ -193,6 +188,12 @@ export const ItineraryDayTimelineSection: React.FC<ItineraryDayTimelineSectionPr
                 <span className="font-extrabold text-emerald-800">
                   {dayCost.toLocaleString('vi-VN')} đ
                 </span>
+                {day.date && (
+                  <>
+                    <span className="text-slate-300">•</span>
+                    <span className="text-slate-500 font-semibold">{day.date}</span>
+                  </>
+                )}
               </p>
             </div>
           )}
@@ -307,8 +308,8 @@ export const ItineraryDayTimelineSection: React.FC<ItineraryDayTimelineSectionPr
                         <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 border border-blue-200 text-blue-900 font-bold text-[10px]">
                           <Clock size={11} className="text-blue-700" />
                           <span>
-                            {stop.startTime || stop.time}
-                            {stop.endTime ? ` - ${stop.endTime}` : ''}
+                            {normalizeTimeToHHmm(stop.startTime || stop.time) || stop.startTime || stop.time}
+                            {stop.endTime ? ` - ${normalizeTimeToHHmm(stop.endTime) || stop.endTime}` : ''}
                           </span>
                         </span>
                       )}

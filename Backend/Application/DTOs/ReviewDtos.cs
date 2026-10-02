@@ -39,6 +39,9 @@ public class ReviewItemDto
 
     [JsonPropertyName("createdAt")]
     public DateTime CreatedAt { get; set; }
+
+    [JsonPropertyName("status")]
+    public string Status { get; set; } = "active";
 }
 
 public class ReviewLikeResponseDto
@@ -75,6 +78,9 @@ public class CommentDto
 
     [JsonPropertyName("createdAt")]
     public DateTime CreatedAt { get; set; }
+
+    [JsonPropertyName("status")]
+    public string Status { get; set; } = "active";
 
     [JsonPropertyName("replies")]
     public List<CommentDto> Replies { get; set; } = [];

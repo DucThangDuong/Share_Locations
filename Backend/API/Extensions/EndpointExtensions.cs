@@ -10,7 +10,7 @@ public static class EndpointExtensions
     public static Task SendApiResponseAsync<T>(this IEndpoint endpoint, Result<T> result, CancellationToken ct = default)
     {
         return result.IsSuccess
-            ? endpoint.HttpContext.Response.SendAsync(new ApiSuccessResponse<T>(result.Data, result.Message), (int)result.StatusCode, cancellation: ct)
+            ? endpoint.HttpContext.Response.SendAsync(new ApiSuccessResponse<T>(result.Data, result.Message, statusCode: (int)result.StatusCode), (int)result.StatusCode, cancellation: ct)
             : SendErrorAsync(endpoint.HttpContext, result, ct);
     }
 
@@ -24,8 +24,13 @@ public static class EndpointExtensions
                 result.Data.TotalCount,
                 result.Data.CategoryAdminsCount,
                 result.Data.SystemAdminsCount,
-                result.Data.RegularUsersCount);
-            return endpoint.HttpContext.Response.SendAsync(new ApiSuccessResponse<IReadOnlyList<T>>(result.Data.Items, result.Message, meta), (int)result.StatusCode, cancellation: ct);
+                result.Data.RegularUsersCount)
+            {
+                PendingCount = result.Data.PendingCount,
+                ApprovedCount = result.Data.ApprovedCount,
+                RejectedCount = result.Data.RejectedCount
+            };
+            return endpoint.HttpContext.Response.SendAsync(new ApiSuccessResponse<IReadOnlyList<T>>(result.Data.Items, result.Message, meta, statusCode: (int)result.StatusCode), (int)result.StatusCode, cancellation: ct);
         }
 
         return SendErrorAsync(endpoint.HttpContext, result, ct);
@@ -34,7 +39,7 @@ public static class EndpointExtensions
     public static Task SendApiResponseAsync(this IEndpoint endpoint, Result result, CancellationToken ct = default)
     {
         return result.IsSuccess
-            ? endpoint.HttpContext.Response.SendAsync(new ApiSuccessResponse<object?>(null, result.Message), (int)result.StatusCode, cancellation: ct)
+            ? endpoint.HttpContext.Response.SendAsync(new ApiSuccessResponse<object?>(null, result.Message, statusCode: (int)result.StatusCode), (int)result.StatusCode, cancellation: ct)
             : SendErrorAsync(endpoint.HttpContext, result, ct);
     }
 

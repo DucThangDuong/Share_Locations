@@ -1,4 +1,4 @@
-﻿using Application.Common;
+using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
@@ -27,7 +27,7 @@ public class GetProvinceLandingQueryHandler : IRequestHandler<GetProvinceLanding
         }
 
         var normalizedKey = request.IdOrSlug.Trim().ToLowerInvariant();
-        var cacheKey = $"geography:provinces:landing:v6:{normalizedKey}";
+        var cacheKey = $"geography:provinces:landing:v7:{normalizedKey}";
 
         var cached = await _cacheService.GetAsync<ProvinceLandingDto>(cacheKey, ct);
         if (cached != null)
@@ -41,7 +41,7 @@ public class GetProvinceLandingQueryHandler : IRequestHandler<GetProvinceLanding
             return Result<ProvinceLandingDto>.NotFound($"Không tìm thấy dữ liệu cho tỉnh thành '{request.IdOrSlug}'.");
         }
 
-        await _cacheService.SetAsync(cacheKey, landingData, TimeSpan.FromMinutes(30), ct);
+        await _cacheService.SetAsync(cacheKey, landingData, TimeSpan.FromMinutes(5), ct);
 
         return Result<ProvinceLandingDto>.Success(landingData, "Lấy dữ liệu tỉnh thành thành công");
     }

@@ -10,10 +10,11 @@ namespace API.Endpoints.Admin.Proposals;
 
 public class GetAdminProposalDetailRequest
 {
+    [BindFrom("id")]
     public long Id { get; set; }
 }
 
-public class GetAdminProposalDetailEndpoint : Endpoint<GetAdminProposalDetailRequest, ApiSuccessResponse<AdminProposalDto>>
+public class GetAdminProposalDetailEndpoint : Endpoint<GetAdminProposalDetailRequest, ApiSuccessResponse<AdminProposalDetailDto>>
 {
     public IMediator Mediator { get; set; } = null!;
 

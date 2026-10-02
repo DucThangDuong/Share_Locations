@@ -7,7 +7,6 @@ import { RegionSearchBar } from '@/components/region/RegionSearchBar'
 import { RegionCollections } from '@/components/region/RegionCollections'
 import { RegionLandmarks } from '@/components/region/RegionLandmarks'
 import { RegionFoodSpecialties } from '@/components/region/RegionFoodSpecialties'
-import { RegionBlogSection } from '@/components/region/RegionBlogSection'
 import { RegionSpotlightReviews } from '@/components/region/RegionSpotlightReviews'
 import { AlertCircle, RefreshCw } from 'lucide-react'
 
@@ -131,13 +130,6 @@ export const RegionPage: React.FC = () => {
         {regionData.foods && regionData.foods.length > 0 && (
           <RegionFoodSpecialties
             foods={regionData.foods}
-            regionName={regionData.name}
-          />
-        )}
-
-        {regionData.blogPosts && regionData.blogPosts.length > 0 && (
-          <RegionBlogSection
-            posts={regionData.blogPosts}
             regionName={regionData.name}
           />
         )}

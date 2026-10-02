@@ -9,17 +9,32 @@ export interface BlogAuthorDto {
 
 export interface BlogListItemDto {
   id: number
-  slug: string
+  slug?: string
   title: string
   excerpt?: string | null
+  summary?: string | null
   content: string
   category: string
-  readTime: string
+  categoryId?: number
+  categoryName?: string
+  readTime?: string
   coverUrl?: string | null
-  author: BlogAuthorDto
-  publishedAt: string
-  tags: string[]
-  featured: boolean
+  coverImg?: string | null
+  coverImageUrl?: string | null
+  author?: BlogAuthorDto
+  authorId?: number
+  authorName?: string
+  authorAvatar?: string | null
+  publishedAt?: string
+  createdAt?: string
+  updatedAt?: string
+  tags?: string[]
+  featured?: boolean
+  views?: number
+  viewCount?: number
+  likes?: number
+  likesCount?: number
+  status?: string | number
 }
 
 export interface BlogDetailDto extends BlogListItemDto {}

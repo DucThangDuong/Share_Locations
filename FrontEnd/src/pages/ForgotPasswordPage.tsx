@@ -302,7 +302,6 @@ export const ForgotPasswordPage: React.FC = () => {
       }}
     >
       <div className="w-full max-w-[460px] glass-card p-7 sm:p-9 rounded-3xl animate-in fade-in zoom-in-95 duration-200 relative z-10 border border-white/70 shadow-2xl">
-        {/* Brand Header */}
         <div className="text-center mb-6 space-y-1.5">
           <Link to="/" className="inline-flex items-center gap-1.5 group mb-1">
             <span className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
@@ -310,10 +309,8 @@ export const ForgotPasswordPage: React.FC = () => {
             </span>
           </Link>
 
-          {/* Stepper Progress Indicator */}
           {step !== 'success' && (
             <div className="pt-2 pb-1 flex items-center justify-center gap-2">
-              {/* Step 1 Pill */}
               <div
                 className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all ${step === 'email'
                   ? 'bg-emerald-800 text-white shadow-xs ring-2 ring-emerald-800/20'
@@ -326,7 +323,6 @@ export const ForgotPasswordPage: React.FC = () => {
 
               <div className="w-4 h-0.5 bg-slate-200 rounded-full" />
 
-              {/* Step 2 Pill */}
               <div
                 className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all ${step === 'otp'
                   ? 'bg-emerald-800 text-white shadow-xs ring-2 ring-emerald-800/20'
@@ -341,7 +337,6 @@ export const ForgotPasswordPage: React.FC = () => {
 
               <div className="w-4 h-0.5 bg-slate-200 rounded-full" />
 
-              {/* Step 3 Pill */}
               <div
                 className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all ${step === 'new-password'
                   ? 'bg-emerald-800 text-white shadow-xs ring-2 ring-emerald-800/20'
@@ -355,7 +350,6 @@ export const ForgotPasswordPage: React.FC = () => {
           )}
         </div>
 
-        {/* Global Feedback Banner */}
         {errorMessage && (
           <div className="mb-4 p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium leading-relaxed animate-in fade-in flex items-start gap-2">
             <span className="shrink-0 text-rose-500 font-bold">•</span>
@@ -363,7 +357,6 @@ export const ForgotPasswordPage: React.FC = () => {
           </div>
         )}
 
-        {/* ===================== STEP 1: EMAIL INPUT ===================== */}
         {step === 'email' && (
           <div className="space-y-4 animate-in fade-in duration-150">
             <div className="text-center space-y-1">
@@ -430,7 +423,6 @@ export const ForgotPasswordPage: React.FC = () => {
           </div>
         )}
 
-        {/* ===================== STEP 2: 6-DIGIT OTP & 6-MINUTE TIMER ===================== */}
         {step === 'otp' && (
           <div className="space-y-4 animate-in fade-in duration-150">
             <div className="text-center space-y-1">
@@ -448,7 +440,6 @@ export const ForgotPasswordPage: React.FC = () => {
             </div>
 
             <form onSubmit={handleVerifyOtp} className="space-y-4 pt-1">
-              {/* 6 Digit Input Boxes */}
               <div className="space-y-2">
                 <label className="block text-center text-xs font-bold text-slate-700">
                   Nhập mã xác thực (OTP)
@@ -474,7 +465,6 @@ export const ForgotPasswordPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* 6-Minute Countdown Timer Box */}
               <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between gap-2 text-xs">
                 <div className="flex items-center gap-1.5">
                   <Clock
@@ -559,7 +549,6 @@ export const ForgotPasswordPage: React.FC = () => {
           </div>
         )}
 
-        {/* ===================== STEP 3: NEW PASSWORD ===================== */}
         {step === 'new-password' && (
           <div className="space-y-4 animate-in fade-in duration-150">
             <div className="text-center space-y-1">
@@ -575,7 +564,6 @@ export const ForgotPasswordPage: React.FC = () => {
             </div>
 
             <form onSubmit={handleResetPassword} className="space-y-3.5 pt-1">
-              {/* New Password */}
               <div>
                 <label className="block text-xs font-bold text-slate-800 mb-1.5" htmlFor="new-pass">
                   Mật khẩu mới <span className="text-rose-500">*</span>
@@ -606,7 +594,6 @@ export const ForgotPasswordPage: React.FC = () => {
                   </button>
                 </div>
 
-                {/* Password strength visual indicator */}
                 {newPassword && (
                   <div className="mt-1.5 space-y-1">
                     <div className="flex gap-1 h-1 w-full bg-slate-200 rounded-full overflow-hidden">
@@ -636,7 +623,6 @@ export const ForgotPasswordPage: React.FC = () => {
                 )}
               </div>
 
-              {/* Confirm Password */}
               <div>
                 <label className="block text-xs font-bold text-slate-800 mb-1.5" htmlFor="confirm-pass">
                   Xác nhận mật khẩu mới <span className="text-rose-500">*</span>
@@ -704,7 +690,6 @@ export const ForgotPasswordPage: React.FC = () => {
           </div>
         )}
 
-        {/* ===================== STEP 4: SUCCESS SCREEN ===================== */}
         {step === 'success' && (
           <div className="text-center space-y-4 py-3 animate-in fade-in zoom-in-95 duration-200">
             <div className="w-16 h-16 rounded-full bg-emerald-50 border-2 border-emerald-300 text-emerald-600 flex items-center justify-center mx-auto shadow-lg animate-bounce">
@@ -736,7 +721,6 @@ export const ForgotPasswordPage: React.FC = () => {
           </div>
         )}
 
-        {/* Footer info */}
         <p className="text-center text-xs text-slate-500 pt-4 mt-4 border-t border-slate-200/70">
           Cần hỗ trợ?{' '}
           <a

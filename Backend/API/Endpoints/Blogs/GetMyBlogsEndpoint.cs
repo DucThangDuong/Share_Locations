@@ -2,7 +2,7 @@ using API.DTOs;
 using API.Extensions;
 using Application.Common;
 using Application.DTOs;
-using Application.Features.Users.Queries;
+using Application.Features.Blogs.Queries;
 using FastEndpoints;
 using FluentValidation;
 using MediatR;
@@ -65,7 +65,7 @@ public class GetMyBlogsEndpoint : Endpoint<GetMyBlogsRequest, ApiSuccessResponse
         }
 
         var result = await Mediator.Send(
-            new GetUserBlogsQuery(userId.Value, req.Status, req.Page, req.PageSize),
+            new GetMyBlogsQuery(userId.Value, req.Status, req.Page, req.PageSize),
             ct);
 
         await this.SendPagedApiResponseAsync(result, ct);

@@ -1,4 +1,4 @@
-﻿using API.DTOs;
+using API.DTOs;
 using API.Extensions;
 using Application.DTOs;
 using Application.Features.Reviews.Queries;
@@ -31,7 +31,8 @@ public class GetReviewCommentsEndpoint : Endpoint<GetReviewCommentsRequest, ApiS
 
     public override async Task HandleAsync(GetReviewCommentsRequest req, CancellationToken ct)
     {
-        var result = await Mediator.Send(new GetReviewCommentsQuery(req.ReviewId), ct);
+        var isAdmin = User.IsInRole("SystemAdmin") || User.IsInRole("CategoryAdmin");
+        var result = await Mediator.Send(new GetReviewCommentsQuery(req.ReviewId, isAdmin), ct);
         await this.SendApiResponseAsync(result, ct);
     }
 }

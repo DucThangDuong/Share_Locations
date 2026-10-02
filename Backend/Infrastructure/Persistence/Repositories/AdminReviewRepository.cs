@@ -20,6 +20,7 @@ public class AdminReviewRepository : IAdminReviewRepository
     }
 
     public async Task<PagedResult<AdminReviewItemDto>> GetAdminReviewsAsync(
+        long? placeId,
         bool? hasReportsOnly,
         int? rating,
         string? status,
@@ -36,6 +37,12 @@ public class AdminReviewRepository : IAdminReviewRepository
         // Áp dụng giới hạn phân quyền theo Scope của Admin cấp 1
         AdminScopeFilterHelper.ApplyPlaceScope(_currentUserService, whereClauses, parameters, "p", "prov");
 
+        if (placeId.HasValue && placeId.Value > 0)
+        {
+            whereClauses.Add("r.PlaceId = @PlaceId");
+            parameters.Add("PlaceId", placeId.Value);
+        }
+
         if (hasReportsOnly == true)
         {
             whereClauses.Add("EXISTS (SELECT 1 FROM dbo.ReviewReports rr WHERE rr.ReviewId = r.Id AND rr.Status = 0)");
@@ -49,8 +56,19 @@ public class AdminReviewRepository : IAdminReviewRepository
 
         if (!string.IsNullOrWhiteSpace(status) && status.ToLowerInvariant() != "all")
         {
-            var isHidden = status.Equals("hidden", StringComparison.OrdinalIgnoreCase);
-            whereClauses.Add(isHidden ? "r.Status = 0" : "r.Status = 1");
+            var cleanStatus = status.Trim().ToLowerInvariant();
+            if (cleanStatus == "hidden" || cleanStatus == "0")
+            {
+                whereClauses.Add("r.Status = 0");
+            }
+            else if (cleanStatus == "active" || cleanStatus == "1")
+            {
+                whereClauses.Add("r.Status = 1");
+            }
+            else if (cleanStatus == "reported" || cleanStatus == "2")
+            {
+                whereClauses.Add("r.Status = 2");
+            }
         }
 
         if (!string.IsNullOrWhiteSpace(keyword))
@@ -81,6 +99,10 @@ public class AdminReviewRepository : IAdminReviewRepository
                 r.Id,
                 r.PlaceId,
                 p.Name AS PlaceName,
+                COALESCE(
+                    p.CoverImageUrl,
+                    (SELECT TOP 1 pm.Url FROM dbo.PlaceMedia pm WHERE pm.PlaceId = p.Id ORDER BY pm.DisplayOrder)
+                ) AS PlaceCoverImg,
                 cat.Name AS Category,
                 prov.Name AS Province,
                 r.UserId,
@@ -89,7 +111,11 @@ public class AdminReviewRepository : IAdminReviewRepository
                 r.Rating,
                 r.Content,
                 r.CreatedAt,
-                CASE WHEN r.Status = 1 THEN 'active' ELSE 'hidden' END AS Status,
+                CASE 
+                    WHEN r.Status = 0 THEN 'hidden'
+                    WHEN r.Status = 2 THEN 'reported'
+                    ELSE 'active'
+                END AS Status,
                 (SELECT COUNT(1) FROM dbo.ReviewReports rr WHERE rr.ReviewId = r.Id) AS ReportCount
             FROM dbo.Reviews r
             LEFT JOIN dbo.Places p ON r.PlaceId = p.Id
@@ -115,6 +141,12 @@ public class AdminReviewRepository : IAdminReviewRepository
                 if (mediaLookup.Contains(item.Id))
                 {
                     item.Images = mediaLookup[item.Id].ToList();
+                }
+
+                // Nếu review không có ảnh riêng đính kèm, dùng ảnh chính của địa điểm để không bị trống
+                if (item.Images.Count == 0 && !string.IsNullOrWhiteSpace(item.PlaceCoverImg))
+                {
+                    item.Images.Add(item.PlaceCoverImg);
                 }
             }
         }
@@ -154,6 +186,8 @@ public class AdminReviewRepository : IAdminReviewRepository
     }
 
     public async Task<PagedResult<AdminCommentItemDto>> GetAdminCommentsAsync(
+        long? reviewId,
+        long? placeId,
         bool? hasReportsOnly,
         string? status,
         string? keyword,
@@ -169,6 +203,18 @@ public class AdminReviewRepository : IAdminReviewRepository
         // Áp dụng giới hạn phân quyền theo Scope của Admin cấp 1
         AdminScopeFilterHelper.ApplyPlaceScope(_currentUserService, whereClauses, parameters, "p", "prov");
 
+        if (reviewId.HasValue && reviewId.Value > 0)
+        {
+            whereClauses.Add("c.ReviewId = @ReviewId");
+            parameters.Add("ReviewId", reviewId.Value);
+        }
+
+        if (placeId.HasValue && placeId.Value > 0)
+        {
+            whereClauses.Add("r.PlaceId = @PlaceId");
+            parameters.Add("PlaceId", placeId.Value);
+        }
+
         if (hasReportsOnly == true)
         {
             whereClauses.Add("EXISTS (SELECT 1 FROM dbo.CommentReports cr WHERE cr.CommentId = c.Id AND cr.Status = 0)");
@@ -176,8 +222,15 @@ public class AdminReviewRepository : IAdminReviewRepository
 
         if (!string.IsNullOrWhiteSpace(status) && status.ToLowerInvariant() != "all")
         {
-            var isHidden = status.Equals("hidden", StringComparison.OrdinalIgnoreCase);
-            whereClauses.Add(isHidden ? "c.Status = 0" : "c.Status = 1");
+            var cleanStatus = status.Trim().ToLowerInvariant();
+            if (cleanStatus == "hidden" || cleanStatus == "0")
+            {
+                whereClauses.Add("c.Status = 0");
+            }
+            else if (cleanStatus == "active" || cleanStatus == "1")
+            {
+                whereClauses.Add("c.Status = 1");
+            }
         }
 
         if (!string.IsNullOrWhiteSpace(keyword))
@@ -210,6 +263,8 @@ public class AdminReviewRepository : IAdminReviewRepository
                 NULL AS BlogId,
                 NULL AS BlogTitle,
                 c.ReviewId,
+                r.PlaceId,
+                p.Name AS PlaceName,
                 c.UserId,
                 COALESCE(prof.FullName, u.Email, N'Người dùng') AS UserName,
                 prof.AvatarUrl AS UserAvatar,

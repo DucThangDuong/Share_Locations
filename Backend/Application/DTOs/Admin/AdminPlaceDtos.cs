@@ -28,12 +28,39 @@ public class AdminPlaceListItemDto
     public decimal Rating { get; set; }
     public int ReviewsCount { get; set; }
     public string? Img { get; set; }
+
+    // Frontend compatibility aliases
+    public string Address
+    {
+        get => Location;
+        set => Location = value;
+    }
+    public string CategoryName
+    {
+        get => Category;
+        set => Category = value;
+    }
+    public string ProvinceName
+    {
+        get => Province;
+        set => Province = value;
+    }
+    public string? CoverImg
+    {
+        get => Img;
+        set => Img = value;
+    }
 }
 
 public class AdminPlaceDetailDto : AdminPlaceListItemDto
 {
     public string? Description { get; set; }
     public List<string> Photos { get; set; } = new();
+    public List<string> Images
+    {
+        get => Photos;
+        set => Photos = value;
+    }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }
@@ -215,3 +242,14 @@ public class UpdatePlaceStatusInput
     public int StatusNum { get; set; } // 1: Approved, 3: Hidden, 0: Pending, 2: Rejected
     public string? Reason { get; set; }
 }
+
+public class PlaceMediaItemDto
+{
+    public long Id { get; set; }
+    public long PlaceId { get; set; }
+    public string Url { get; set; } = string.Empty;
+    public int DisplayOrder { get; set; }
+    public bool IsVerified { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+

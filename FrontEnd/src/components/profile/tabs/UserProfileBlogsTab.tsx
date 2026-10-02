@@ -39,7 +39,7 @@ export const UserProfileBlogsTab: React.FC<UserProfileBlogsTabProps> = ({ userId
     return (
       <div className="bg-white rounded-3xl p-12 flex flex-col items-center justify-center border border-slate-200/90 shadow-2xs">
         <Loader2 className="w-8 h-8 text-emerald-600 animate-spin mb-2" />
-        <span className="text-xs text-slate-500 font-medium">Đang tải bài viết...</span>
+        <span className="text-xs text-slate-500 font-medium">Đang tải cẩm nang...</span>
       </div>
     )
   }
@@ -48,8 +48,8 @@ export const UserProfileBlogsTab: React.FC<UserProfileBlogsTabProps> = ({ userId
     return (
       <div className="bg-white rounded-2xl p-8 text-center border border-slate-200">
         <BookOpen className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-        <div className="text-sm font-bold text-slate-800">Chưa có bài viết nào</div>
-        <p className="text-xs text-slate-500 mt-1">Người dùng chưa đăng bài viết chia sẻ nào.</p>
+        <div className="text-sm font-bold text-slate-800">Chưa có cẩm nang nào</div>
+        <p className="text-xs text-slate-500 mt-1">Người dùng chưa đăng cẩm nang chia sẻ nào.</p>
       </div>
     )
   }

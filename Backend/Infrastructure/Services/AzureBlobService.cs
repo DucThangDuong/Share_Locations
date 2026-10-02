@@ -70,7 +70,8 @@ public class AzureBlobService : IBlobService
 
         var blobHttpHeaders = new BlobHttpHeaders
         {
-            ContentType = verifiedContentType
+            ContentType = verifiedContentType,
+            CacheControl = "public, max-age=31536000, immutable"
         };
 
         if (stream.CanSeek)
@@ -95,6 +96,76 @@ public class AzureBlobService : IBlobService
 
         await using var stream = file.OpenReadStream();
         return await UploadImageAsync(stream, file.FileName, file.ContentType, containerName);
+    }
+
+    public async Task<string> UploadBase64ImageAsync(
+        string base64Data,
+        string containerName = "places",
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(base64Data))
+        {
+            throw new ArgumentException("Dữ liệu Base64 không được để trống.", nameof(base64Data));
+        }
+
+        // Nếu đã là link URL tuyệt đối (http/https), giữ nguyên
+        if (base64Data.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+            base64Data.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            return base64Data;
+        }
+
+        string rawBase64 = base64Data;
+        string contentType = "image/jpeg";
+        string fileExtension = ".jpg";
+
+        // Xử lý data URI scheme (data:image/webp;base64,xxxx)
+        if (base64Data.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+        {
+            var commaIndex = base64Data.IndexOf(',');
+            if (commaIndex >= 0)
+            {
+                var header = base64Data[..commaIndex];
+                rawBase64 = base64Data[(commaIndex + 1)..];
+
+                if (header.Contains("image/webp", StringComparison.OrdinalIgnoreCase))
+                {
+                    contentType = "image/webp";
+                    fileExtension = ".webp";
+                }
+                else if (header.Contains("image/png", StringComparison.OrdinalIgnoreCase))
+                {
+                    contentType = "image/png";
+                    fileExtension = ".png";
+                }
+                else if (header.Contains("image/jpeg", StringComparison.OrdinalIgnoreCase) ||
+                         header.Contains("image/jpg", StringComparison.OrdinalIgnoreCase))
+                {
+                    contentType = "image/jpeg";
+                    fileExtension = ".jpg";
+                }
+            }
+        }
+
+        byte[] bytes;
+        try
+        {
+            bytes = Convert.FromBase64String(rawBase64.Trim());
+        }
+        catch (FormatException ex)
+        {
+            throw new ArgumentException("Chuỗi Base64 không đúng định dạng.", ex);
+        }
+
+        if (bytes.Length == 0)
+        {
+            throw new ArgumentException("Dữ liệu hình ảnh sau khi giải mã Base64 bị rỗng.");
+        }
+
+        using var memoryStream = new MemoryStream(bytes);
+        string uniqueFileName = $"proposal_{Guid.NewGuid():N}{fileExtension}";
+
+        return await UploadImageAsync(memoryStream, uniqueFileName, contentType, containerName, ct);
     }
 
     public async Task<string> UploadVideoAsync(

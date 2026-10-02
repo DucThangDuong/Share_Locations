@@ -148,6 +148,12 @@ public class Place
         UpdatedAt = DateTime.UtcNow;
     }
 
+    public void UpdateCoverImage(string? coverImageUrl)
+    {
+        CoverImageUrl = coverImageUrl?.Trim();
+        UpdatedAt = DateTime.UtcNow;
+    }
+
     public void Approve(long? reviewerId = null)
     {
         Status = PlaceStatus.Approved;

@@ -238,7 +238,6 @@ export const MapPage = () => {
           />
 
           <div className="flex-1 h-full relative bg-slate-900">
-            {/* Floating Expand Sidebar Button when collapsed */}
             {!isSidebarOpen && (
               <button
                 type="button"

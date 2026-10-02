@@ -84,6 +84,10 @@ export interface CreateProposalRequest {
   description?: string
   coverImg?: string
   mediaUrls?: string[]
+  photos?: File[]
+  images?: (string | File)[]
+  files?: File[]
+  coverImageFile?: File
 }
 
 export interface UserReviewItem {

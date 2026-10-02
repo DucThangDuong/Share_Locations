@@ -223,6 +223,9 @@ public class UserProposalItemDto
     [JsonPropertyName("targetPlaceId")]
     public long? TargetPlaceId { get; set; }
 
+    [JsonPropertyName("placeId")]
+    public long? PlaceId => TargetPlaceId;
+
     [JsonPropertyName("status")]
     public int Status { get; set; }
 
@@ -310,6 +313,9 @@ public class CreateProposalRequestDto
 
     [JsonPropertyName("mediaUrls")]
     public List<string>? MediaUrls { get; set; }
+
+    [JsonPropertyName("images")]
+    public List<string>? Images { get; set; }
 }
 
 public class UserBlogItemDto

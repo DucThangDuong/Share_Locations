@@ -5,7 +5,7 @@ using MediatR;
 
 namespace Application.Features.Reviews.Queries;
 
-public record GetReviewCommentsQuery(long ReviewId) : IRequest<Result<ReviewCommentsDto>>;
+public record GetReviewCommentsQuery(long ReviewId, bool IncludeHidden = false) : IRequest<Result<ReviewCommentsDto>>;
 
 public class GetReviewCommentsQueryHandler : IRequestHandler<GetReviewCommentsQuery, Result<ReviewCommentsDto>>
 {
@@ -18,7 +18,7 @@ public class GetReviewCommentsQueryHandler : IRequestHandler<GetReviewCommentsQu
 
     public async Task<Result<ReviewCommentsDto>> Handle(GetReviewCommentsQuery request, CancellationToken ct)
     {
-        var comments = await _unitOfWork.Comments.GetByReviewIdAsync(request.ReviewId, ct);
+        var comments = await _unitOfWork.Comments.GetByReviewIdAsync(request.ReviewId, request.IncludeHidden, ct);
 
         var dtoList = comments.Select(c => new CommentDto
         {
@@ -30,6 +30,7 @@ public class GetReviewCommentsQueryHandler : IRequestHandler<GetReviewCommentsQu
             Content = c.Content,
             ParentId = c.ParentId,
             CreatedAt = c.CreatedAt,
+            Status = c.Status == Domain.Enums.CommentStatus.Active ? "active" : "hidden",
             Replies = new List<CommentDto>()
         }).ToList();
 

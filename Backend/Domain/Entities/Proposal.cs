@@ -47,12 +47,16 @@ public class Proposal
         UpdatedAt = DateTime.UtcNow;
     }
 
-    public void Approve(long reviewerId, string? adminNote = null)
+    public void Approve(long reviewerId, string? adminNote = null, long? targetPlaceId = null)
     {
         Status = ProposalStatus.Approved;
         ReviewedBy = reviewerId;
         ReviewedAt = DateTime.UtcNow;
         AdminNote = adminNote;
+        if (targetPlaceId.HasValue && targetPlaceId.Value > 0)
+        {
+            TargetPlaceId = targetPlaceId.Value;
+        }
         UpdatedAt = DateTime.UtcNow;
     }
 
