@@ -1,17 +1,18 @@
 import React from "react";
 import type { AdminMainTab, AdminAssignmentInfo } from "@/types/admin.types";
-import { Search, Bell, Menu } from "lucide-react";
+import { Bell, Menu } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 interface AdminTopbarProps {
   isSidebarOpen: boolean;
   setIsSidebarOpen: (v: boolean) => void;
   mainTab: AdminMainTab;
-  selectedPlaceId: number | null;
+  selectedPlaceId?: number | null;
   currentPlaceName?: string;
-  searchText: string;
-  setSearchText: (v: string) => void;
-  currentAdminInfo: AdminAssignmentInfo;
-  showToast: (msg: string) => void;
+  searchText?: string;
+  setSearchText?: (v: string) => void;
+  currentAdminInfo?: AdminAssignmentInfo;
+  showToast?: (msg: string) => void;
 }
 
 export const AdminTopbar: React.FC<AdminTopbarProps> = ({
@@ -20,11 +21,53 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
   mainTab,
   selectedPlaceId,
   currentPlaceName,
-  searchText,
-  setSearchText,
   currentAdminInfo,
   showToast,
 }) => {
+  const { user } = useAuth();
+
+  const storedUser = (() => {
+    try {
+      return JSON.parse(localStorage.getItem("user_info") || "{}");
+    } catch {
+      return {};
+    }
+  })();
+
+  const adminName =
+    user?.fullName ||
+    currentAdminInfo?.adminName ||
+    storedUser?.fullName ||
+    storedUser?.name ||
+    "Quản trị viên";
+
+  const adminAvatar =
+    user?.avatarUrl ||
+    currentAdminInfo?.avatar ||
+    storedUser?.avatarUrl ||
+    storedUser?.avatar ||
+    null;
+
+  const rawRole =
+    user?.role ??
+    currentAdminInfo?.roleId ??
+    currentAdminInfo?.role ??
+    storedUser?.roleId ??
+    storedUser?.role;
+
+  const getRoleDisplayName = (r: any) => {
+    const s = String(r ?? "").trim().toUpperCase();
+    if (s === "3" || s === "SYSTEM_ADMIN" || s === "SYSTEMADMIN" || s === "SUPERADMIN" || s === "ADMIN") {
+      return "Admin tổng";
+    }
+    if (s === "2" || s === "CATEGORY_ADMIN" || s === "CATEGORYADMIN") {
+      return "Admin cấp 1";
+    }
+    return "Admin tổng";
+  };
+
+  const roleTitle = getRoleDisplayName(rawRole);
+
   return (
     <header className="h-16 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-6 flex items-center justify-between sticky top-0 z-20">
       <div className="flex items-center gap-3">
@@ -46,7 +89,7 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
             {mainTab === "proposals" && "Đề xuất đóng góp"}
             {mainTab === "reviews_comments" && "Đánh giá & Bình luận"}
             {mainTab === "reports" && "Báo cáo vi phạm"}
-            {mainTab === "foods" && "Ẩm thực & Đặc sản"}
+            {mainTab === "foods" && "Ẩm thực"}
             {mainTab === "collections" && "Bộ sưu tập"}
             {mainTab === "blogs" && "Blog & Cẩm nang"}
             {mainTab === "categories" && "Danh mục hệ thống"}
@@ -56,25 +99,10 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
         </div>
       </div>
 
-      <div className="flex items-center gap-3 sm:gap-5">
-        {/* Search input */}
-        <div className="relative hidden sm:block w-64 lg:w-80">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Tìm kiếm nhanh mã ID, địa điểm, nội dung..."
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            className="w-full pl-8.5 pr-10 py-1.5 rounded-xl bg-slate-50 border border-slate-200/80 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-emerald-500 outline-none transition-all"
-          />
-          <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] bg-slate-200/70 text-slate-500 px-1.5 py-0.5 rounded font-mono font-medium">
-            ⌘K
-          </span>
-        </div>
-
+      <div className="flex items-center gap-3 sm:gap-4">
         {/* Notifications */}
         <button
-          onClick={() => showToast("Bạn có 3 báo cáo vi phạm mới cần thẩm định.")}
+          onClick={() => showToast && showToast("Bạn có 3 báo cáo vi phạm mới cần thẩm định.")}
           className="relative p-2 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
           title="Thông báo kiểm duyệt"
         >
@@ -84,15 +112,23 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
 
         {/* Admin profile chip */}
         <div className="flex items-center gap-2.5 pl-3 border-l border-slate-200">
-          <div className="w-8 h-8 rounded-full bg-slate-900 text-white font-bold text-xs flex items-center justify-center ring-2 ring-slate-100 shadow-2xs">
-            {(currentAdminInfo.adminName || "A").charAt(0).toUpperCase()}
-          </div>
-          <div className="leading-tight hidden md:block">
-            <span className="font-bold text-xs text-slate-900 block truncate max-w-[120px]">
-              {currentAdminInfo.adminName}
+          {adminAvatar ? (
+            <img
+              src={adminAvatar}
+              alt={adminName}
+              className="w-8 h-8 rounded-full object-cover ring-2 ring-slate-100 shadow-2xs shrink-0"
+            />
+          ) : (
+            <div className="w-8 h-8 rounded-full bg-slate-900 text-white font-bold text-xs flex items-center justify-center ring-2 ring-slate-100 shadow-2xs shrink-0">
+              {(adminName || "A").charAt(0).toUpperCase()}
+            </div>
+          )}
+          <div className="leading-tight">
+            <span className="font-bold text-xs text-slate-900 block truncate max-w-[130px]">
+              {adminName}
             </span>
             <span className="text-[10px] text-emerald-700 font-semibold block">
-              {currentAdminInfo.role}
+              {roleTitle}
             </span>
           </div>
         </div>

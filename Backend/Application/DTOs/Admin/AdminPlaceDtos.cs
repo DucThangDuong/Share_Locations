@@ -1,3 +1,6 @@
+using System.Text.Json.Serialization;
+using Application.Common.Converters;
+
 namespace Application.DTOs.Admin;
 
 public class AdminPlaceListItemDto
@@ -63,6 +66,31 @@ public class AdminPlaceDetailDto : AdminPlaceListItemDto
     }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
+
+    public List<AdminPlaceFoodDto> Foods { get; set; } = new();
+    public List<long> FoodIds => Foods.Select(f => f.Id).ToList();
+}
+
+public class AdminPlaceFoodDto
+{
+    public long Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public decimal? MinPrice { get; set; }
+    public decimal? MaxPrice { get; set; }
+    public string? CoverImg { get; set; }
+    public string? CoverImageUrl
+    {
+        get => CoverImg;
+        set => CoverImg = value;
+    }
+    public string? Description { get; set; }
+    public string? Desc
+    {
+        get => Description;
+        set => Description = value;
+    }
+    public string Status { get; set; } = "active";
+    public int StatusNum { get; set; } = 1;
 }
 
 public class CreateAdminPlaceInput
@@ -147,6 +175,26 @@ public class CreateAdminPlaceInput
     {
         get => _photos;
         set => _photos = value ?? _photos;
+    }
+
+    private List<long>? _foodIds;
+    [JsonConverter(typeof(FlexibleLongListConverter))]
+    public List<long>? FoodIds
+    {
+        get => _foodIds;
+        set => _foodIds = value;
+    }
+    [JsonConverter(typeof(FlexibleLongListConverter))]
+    public List<long>? Foods
+    {
+        get => _foodIds;
+        set => _foodIds = value ?? _foodIds;
+    }
+    [JsonConverter(typeof(FlexibleLongListConverter))]
+    public List<long>? FoodIdList
+    {
+        get => _foodIds;
+        set => _foodIds = value ?? _foodIds;
     }
 
     public bool AutoApprove { get; set; } = true;
@@ -234,6 +282,26 @@ public class UpdateAdminPlaceInput
     {
         get => _photos;
         set => _photos = value ?? _photos;
+    }
+
+    private List<long>? _foodIds;
+    [JsonConverter(typeof(FlexibleLongListConverter))]
+    public List<long>? FoodIds
+    {
+        get => _foodIds;
+        set => _foodIds = value;
+    }
+    [JsonConverter(typeof(FlexibleLongListConverter))]
+    public List<long>? Foods
+    {
+        get => _foodIds;
+        set => _foodIds = value ?? _foodIds;
+    }
+    [JsonConverter(typeof(FlexibleLongListConverter))]
+    public List<long>? FoodIdList
+    {
+        get => _foodIds;
+        set => _foodIds = value ?? _foodIds;
     }
 }
 

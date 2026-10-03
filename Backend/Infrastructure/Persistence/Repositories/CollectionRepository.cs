@@ -1,4 +1,5 @@
 using Application.Common;
+using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
 using Dapper;
@@ -12,10 +13,14 @@ namespace Infrastructure.Persistence.Repositories;
 public class CollectionRepository : ICollectionRepository
 {
     private readonly TravelReviewDbContext _dbContext;
+    private readonly ICurrentUserService _currentUserService;
 
-    public CollectionRepository(TravelReviewDbContext dbContext)
+    public CollectionRepository(
+        TravelReviewDbContext dbContext,
+        ICurrentUserService currentUserService)
     {
         _dbContext = dbContext;
+        _currentUserService = currentUserService;
     }
 
     public async Task<IReadOnlyList<CollectionDto>> GetFeaturedCollectionsAsync(int count, CancellationToken ct = default)
@@ -81,6 +86,12 @@ public class CollectionRepository : ICollectionRepository
         string? title = null,
         CancellationToken ct = default)
     {
+        var connection = _dbContext.Database.GetDbConnection();
+        if (!await AdminScopeFilterHelper.IsCollectionInScopeAsync(_currentUserService, connection, collectionId))
+        {
+            return Result<UpdateCollectionPlacesResultDto>.Failure("Bạn không có quyền cập nhật bộ sưu tập này.", System.Net.HttpStatusCode.Forbidden);
+        }
+
         var collection = await _dbContext.Collections.FirstOrDefaultAsync(c => c.Id == collectionId, ct);
         if (collection == null)
         {
@@ -115,6 +126,15 @@ public class CollectionRepository : ICollectionRepository
         }
 
         var requestedPlaceIds = places.Select(p => p.PlaceId).Distinct().ToList();
+        
+        foreach (var pId in requestedPlaceIds)
+        {
+            if (!await AdminScopeFilterHelper.IsPlaceInScopeAsync(_currentUserService, connection, pId))
+            {
+                return Result<UpdateCollectionPlacesResultDto>.Failure($"Bạn không có quyền thao tác với địa điểm ID {pId}.", System.Net.HttpStatusCode.Forbidden);
+            }
+        }
+
         var validPlaces = await _dbContext.Places
             .Where(p => requestedPlaceIds.Contains(p.Id))
             .Select(p => p.Id)
@@ -262,7 +282,14 @@ public class CollectionRepository : ICollectionRepository
     {
         var connection = _dbContext.Database.GetDbConnection();
 
-        const string sql = @"
+        var whereClauses = new List<string> { "1=1" };
+        var parameters = new DynamicParameters();
+
+        AdminScopeFilterHelper.ApplyCollectionScope(_currentUserService, whereClauses, parameters, "c");
+
+        var whereSql = " WHERE " + string.Join(" AND ", whereClauses);
+
+        var sql = $@"
             SELECT 
                 c.Id, 
                 c.ProvinceId, 
@@ -275,15 +302,21 @@ public class CollectionRepository : ICollectionRepository
                 (SELECT COUNT(1) FROM dbo.CollectionPlaces cp WHERE cp.CollectionId = c.Id) AS PlaceCount
             FROM dbo.Collections c
             LEFT JOIN dbo.Provinces prov ON c.ProvinceId = prov.Id
+            {whereSql}
             ORDER BY c.DisplayOrder, c.Id;";
 
-        var rows = await connection.QueryAsync<AdminCollectionSummaryDto>(sql);
+        var rows = await connection.QueryAsync<AdminCollectionSummaryDto>(sql, parameters);
         return rows.ToList();
     }
 
     public async Task<Result<AdminCollectionDetailPlacesDto>> GetCollectionPlacesDetailAsync(int collectionId, CancellationToken ct = default)
     {
         var connection = _dbContext.Database.GetDbConnection();
+
+        if (!await AdminScopeFilterHelper.IsCollectionInScopeAsync(_currentUserService, connection, collectionId))
+        {
+            return Result<AdminCollectionDetailPlacesDto>.Failure("Bạn không có quyền xem bộ sưu tập này.", System.Net.HttpStatusCode.Forbidden);
+        }
 
         const string sql = @"
             SELECT 
@@ -346,6 +379,15 @@ public class CollectionRepository : ICollectionRepository
         if (string.IsNullOrWhiteSpace(title))
         {
             return Result<AdminCollectionCreatedDto>.Failure("Tiêu đề bộ sưu tập không được để trống.");
+        }
+
+        if (!_currentUserService.IsSystemAdmin)
+        {
+            var provScopes = _currentUserService.ProvinceScopes;
+            if (provScopes.Count > 0 && (!provinceId.HasValue || !provScopes.Contains(provinceId.Value)))
+            {
+                return Result<AdminCollectionCreatedDto>.Failure("Bạn không có quyền tạo bộ sưu tập ngoài phạm vi tỉnh thành quản lý.", System.Net.HttpStatusCode.Forbidden);
+            }
         }
 
         string? provinceName = null;
@@ -436,6 +478,12 @@ public class CollectionRepository : ICollectionRepository
 
     public async Task<Result<UpdateCollectionStatusResultDto>> UpdateStatusAsync(int id, int status, CancellationToken ct = default)
     {
+        var connection = _dbContext.Database.GetDbConnection();
+        if (!await AdminScopeFilterHelper.IsCollectionInScopeAsync(_currentUserService, connection, id))
+        {
+            return Result<UpdateCollectionStatusResultDto>.Failure("Bạn không có quyền cập nhật bộ sưu tập này.", System.Net.HttpStatusCode.Forbidden);
+        }
+
         var collection = await _dbContext.Collections.FirstOrDefaultAsync(c => c.Id == id, ct);
         if (collection == null)
         {

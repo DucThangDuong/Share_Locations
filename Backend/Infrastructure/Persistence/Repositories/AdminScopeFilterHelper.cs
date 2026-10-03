@@ -169,4 +169,87 @@ public static class AdminScopeFilterHelper
         var catScopes = currentUser.CategoryScopes;
         return catScopes.Contains(categoryId.Value);
     }
+    public static void ApplyCollectionScope(
+        ICurrentUserService currentUser,
+        List<string> whereClauses,
+        DynamicParameters parameters,
+        string collectionAlias = "c")
+    {
+        if (currentUser.IsSystemAdmin) return;
+
+        var provScopes = currentUser.ProvinceScopes;
+        if (provScopes.Count > 0)
+        {
+            whereClauses.Add($"{collectionAlias}.ProvinceId IN @ScopeProvinceIds");
+            parameters.Add("ScopeProvinceIds", provScopes);
+        }
+        else
+        {
+            whereClauses.Add("1 = 0");
+        }
+    }
+
+    public static async Task<bool> IsCollectionInScopeAsync(
+        ICurrentUserService currentUser,
+        IDbConnection connection,
+        int collectionId)
+    {
+        if (currentUser.IsSystemAdmin) return true;
+
+        const string sql = "SELECT ProvinceId FROM dbo.Collections WHERE Id = @Id;";
+        var provinceId = await connection.QueryFirstOrDefaultAsync<int?>(sql, new { Id = collectionId });
+        if (!provinceId.HasValue) return false;
+
+        var provScopes = currentUser.ProvinceScopes;
+        return provScopes.Count == 0 || provScopes.Contains(provinceId.Value);
+    }
+
+    public static bool ValidatePlaceInputScope(
+        ICurrentUserService currentUser,
+        int categoryId,
+        int provinceId)
+    {
+        if (currentUser.IsSystemAdmin) return true;
+
+        var catScopes = currentUser.CategoryScopes;
+        var provScopes = currentUser.ProvinceScopes;
+
+        if (catScopes.Count == 0 && provScopes.Count == 0) return false;
+
+        if (catScopes.Count > 0 && !catScopes.Contains(categoryId)) return false;
+        if (provScopes.Count > 0 && !provScopes.Contains(provinceId)) return false;
+
+        return true;
+    }
+
+    public static bool ValidateFoodInputScope(
+        ICurrentUserService currentUser,
+        int? provinceId)
+    {
+        if (currentUser.IsSystemAdmin) return true;
+
+        var catScopes = currentUser.CategoryScopes;
+        var provScopes = currentUser.ProvinceScopes;
+
+        if (catScopes.Count == 0 && provScopes.Count == 0) return false;
+
+        if (provinceId.HasValue && provScopes.Count > 0 && !provScopes.Contains(provinceId.Value)) return false;
+
+        return true;
+    }
+
+    public static bool ValidateBlogInputScope(
+        ICurrentUserService currentUser,
+        int? categoryId)
+    {
+        if (currentUser.IsSystemAdmin) return true;
+
+        var catScopes = currentUser.CategoryScopes;
+        
+        if (catScopes.Count == 0) return false;
+
+        if (categoryId.HasValue && catScopes.Count > 0 && !catScopes.Contains(categoryId.Value)) return false;
+
+        return true;
+    }
 }

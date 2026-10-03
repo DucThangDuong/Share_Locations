@@ -150,11 +150,33 @@ public class AdminPlaceRepository : IAdminPlaceRepository
         var photos = (await connection.QueryAsync<string>(mediaSql, new { Id = id })).ToList();
         detail.Photos = photos;
 
+        const string foodsSql = @"
+            SELECT 
+                f.Id,
+                f.Name,
+                f.MinPrice,
+                f.MaxPrice,
+                f.CoverImageUrl AS CoverImg,
+                f.Description,
+                CASE WHEN f.Status = 1 THEN 'active' ELSE 'hidden' END AS Status,
+                CAST(f.Status AS INT) AS StatusNum
+            FROM dbo.FoodPlaces fp
+            INNER JOIN dbo.Foods f ON fp.FoodId = f.Id
+            WHERE fp.PlaceId = @Id
+            ORDER BY f.Name ASC;";
+        var foods = (await connection.QueryAsync<AdminPlaceFoodDto>(foodsSql, new { Id = id })).ToList();
+        detail.Foods = foods;
+
         return detail;
     }
 
     public async Task<long> CreateAdminPlaceAsync(CreateAdminPlaceInput input, long? creatorId, CancellationToken ct = default)
     {
+        if (!AdminScopeFilterHelper.ValidatePlaceInputScope(_currentUserService, input.CategoryId, input.ProvinceId))
+        {
+            throw new UnauthorizedAccessException("Bạn không có quyền tạo địa điểm ngoài danh mục/tỉnh thành quản lý.");
+        }
+
         var place = new Place(
             provinceId: input.ProvinceId,
             categoryId: input.CategoryId,
@@ -179,12 +201,36 @@ public class AdminPlaceRepository : IAdminPlaceRepository
         _dbContext.Places.Add(place);
         await _dbContext.SaveChangesAsync(ct);
 
+        var hasAdditionalChanges = false;
         if (input.Photos != null && input.Photos.Count > 0)
         {
             for (int i = 0; i < input.Photos.Count; i++)
             {
                 place.AddMedia(input.Photos[i], MediaType.Image, i == 0);
             }
+            hasAdditionalChanges = true;
+        }
+
+        if (input.FoodIds != null && input.FoodIds.Count > 0)
+        {
+            var distinctFoodIds = input.FoodIds.Where(fid => fid > 0).Distinct().ToList();
+            if (distinctFoodIds.Count > 0)
+            {
+                var validFoodIds = await _dbContext.Foods
+                    .Where(f => distinctFoodIds.Contains(f.Id))
+                    .Select(f => f.Id)
+                    .ToListAsync(ct);
+
+                foreach (var fid in validFoodIds)
+                {
+                    _dbContext.FoodPlaces.Add(new FoodPlace(fid, place.Id));
+                }
+                hasAdditionalChanges = true;
+            }
+        }
+
+        if (hasAdditionalChanges)
+        {
             await _dbContext.SaveChangesAsync(ct);
         }
 
@@ -203,6 +249,12 @@ public class AdminPlaceRepository : IAdminPlaceRepository
         var address = !string.IsNullOrWhiteSpace(input.Address) ? input.Address : place.Address;
         var provinceId = (input.ProvinceId.HasValue && input.ProvinceId.Value > 0) ? input.ProvinceId.Value : place.ProvinceId;
         var categoryId = (input.CategoryId.HasValue && input.CategoryId.Value > 0) ? input.CategoryId.Value : place.CategoryId;
+
+        if (!AdminScopeFilterHelper.ValidatePlaceInputScope(_currentUserService, categoryId, provinceId))
+        {
+            return false;
+        }
+
         var description = input.Description ?? place.Description;
         var phone = input.Phone ?? place.Phone;
         var website = input.Website ?? place.Website;
@@ -236,6 +288,25 @@ public class AdminPlaceRepository : IAdminPlaceRepository
             for (int i = 0; i < input.Photos.Count; i++)
             {
                 place.AddMedia(input.Photos[i], MediaType.Image, i == 0);
+            }
+        }
+
+        if (input.FoodIds != null)
+        {
+            var distinctFoodIds = input.FoodIds.Where(fid => fid > 0).Distinct().ToList();
+            var validFoodIds = distinctFoodIds.Count > 0
+                ? await _dbContext.Foods.Where(f => distinctFoodIds.Contains(f.Id)).Select(f => f.Id).ToListAsync(ct)
+                : new List<long>();
+
+            var existingFoodPlaces = await _dbContext.FoodPlaces
+                .Where(fp => fp.PlaceId == id)
+                .ToListAsync(ct);
+
+            _dbContext.FoodPlaces.RemoveRange(existingFoodPlaces);
+
+            foreach (var foodId in validFoodIds)
+            {
+                _dbContext.FoodPlaces.Add(new FoodPlace(foodId, id));
             }
         }
 

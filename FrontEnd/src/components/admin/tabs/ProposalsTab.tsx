@@ -174,7 +174,7 @@ export const ProposalsTab: React.FC<ProposalsTabProps> = ({
                 <th className="p-3.5">Tỉnh / Thành</th>
                 <th className="p-3.5">Người gửi</th>
                 <th className="p-3.5">Trạng thái</th>
-                <th className="p-3.5 text-right pr-4">Hành động</th>
+                <th className="p-3.5 text-center">Xem chi tiết</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -278,7 +278,7 @@ export const ProposalsTab: React.FC<ProposalsTabProps> = ({
                           : "Đã từ chối"}
                       </span>
                     </td>
-                    <td className="p-3.5 text-right pr-4" onClick={(e) => e.stopPropagation()}>
+                    <td className="p-3.5 text-center" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() => {
                           setSelectedProposalId(prop.id);

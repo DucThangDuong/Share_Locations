@@ -13,11 +13,16 @@ public class AdminFoodRepository : IAdminFoodRepository
 {
     private readonly TravelReviewDbContext _dbContext;
     private readonly ICurrentUserService _currentUserService;
+    private readonly IBlobService? _blobService;
 
-    public AdminFoodRepository(TravelReviewDbContext dbContext, ICurrentUserService currentUserService)
+    public AdminFoodRepository(
+        TravelReviewDbContext dbContext, 
+        ICurrentUserService currentUserService,
+        IBlobService? blobService = null)
     {
         _dbContext = dbContext;
         _currentUserService = currentUserService;
+        _blobService = blobService;
     }
 
     public async Task<PagedResult<AdminFoodItemDto>> GetAdminFoodsAsync(
@@ -87,6 +92,11 @@ public class AdminFoodRepository : IAdminFoodRepository
 
     public async Task<long> CreateAdminFoodAsync(CreateAdminFoodInput input, CancellationToken ct = default)
     {
+        if (!AdminScopeFilterHelper.ValidateFoodInputScope(_currentUserService, input.ProvinceId))
+        {
+            throw new UnauthorizedAccessException("Bạn không có quyền tạo món ăn ngoài phạm vi quản lý.");
+        }
+
         var status = input.Status.Equals("hidden", StringComparison.OrdinalIgnoreCase)
             ? RecordStatus.Inactive
             : RecordStatus.Active;
@@ -120,8 +130,14 @@ public class AdminFoodRepository : IAdminFoodRepository
         var food = await _dbContext.Foods.FirstOrDefaultAsync(f => f.Id == id, ct);
         if (food == null) return false;
 
-        food.UpdateDetails(input.Name, input.Desc, input.HistoryInfo, input.CoverImg);
+        var oldCoverUrl = food.CoverImageUrl;
+        var effectiveCoverImg = !string.IsNullOrWhiteSpace(input.CoverImg) ? input.CoverImg : oldCoverUrl;
+
+        food.UpdateDetails(input.Name, input.Desc, input.HistoryInfo, effectiveCoverImg);
         food.UpdatePrice(input.MinPrice, input.MaxPrice);
+
+        // Đồng bộ lại URL thực tế vào input để caller nắm được giá trị cuối cùng
+        input.CoverImg = effectiveCoverImg;
 
         var status = input.Status.Equals("hidden", StringComparison.OrdinalIgnoreCase)
             ? RecordStatus.Inactive
@@ -130,6 +146,11 @@ public class AdminFoodRepository : IAdminFoodRepository
 
         if (input.ProvinceId.HasValue && input.ProvinceId.Value > 0)
         {
+            if (!AdminScopeFilterHelper.ValidateFoodInputScope(_currentUserService, input.ProvinceId.Value))
+            {
+                return false;
+            }
+
             var existing = await _dbContext.FoodProvinces.FirstOrDefaultAsync(fp => fp.FoodId == id, ct);
             if (existing == null)
             {
@@ -143,6 +164,27 @@ public class AdminFoodRepository : IAdminFoodRepository
         }
 
         await _dbContext.SaveChangesAsync(ct);
+
+        // Tự động dọn dẹp blob cũ nếu đã được thay thế bằng ảnh mới
+        if (_blobService != null && 
+            !string.IsNullOrWhiteSpace(oldCoverUrl) && 
+            !string.IsNullOrWhiteSpace(input.CoverImg) && 
+            !string.Equals(oldCoverUrl, input.CoverImg, StringComparison.OrdinalIgnoreCase) && 
+            oldCoverUrl.Contains(".blob.core.windows.net/"))
+        {
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await _blobService.DeleteImageAsync(oldCoverUrl, "foods", CancellationToken.None);
+                }
+                catch
+                {
+                    // Ignore background cleanup failure
+                }
+            });
+        }
+
         return true;
     }
 

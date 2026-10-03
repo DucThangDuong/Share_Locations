@@ -27,7 +27,7 @@ public class UpdateAdminPlaceEndpoint : Endpoint<UpdateAdminPlaceRequest, ApiSuc
         Summary(s =>
         {
             s.Summary = "Cập nhật thông tin địa điểm (Admin)";
-            s.Description = "Cập nhật toàn diện thông tin địa điểm.";
+            s.Description = "Cập nhật toàn diện thông tin địa điểm bao gồm hình ảnh và danh sách món ăn đặc sản liên kết.";
         });
     }
 

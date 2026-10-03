@@ -175,6 +175,11 @@ public class AdminBlogRepository : IAdminBlogRepository
 
     public async Task<long> CreateAdminBlogAsync(CreateAdminBlogInput input, long authorId, CancellationToken ct = default)
     {
+        if (!AdminScopeFilterHelper.ValidateBlogInputScope(_currentUserService, input.CategoryId))
+        {
+            throw new UnauthorizedAccessException("Bạn không có quyền tạo cẩm nang ngoài danh mục quản lý.");
+        }
+
         var status = input.Status.Equals("draft", StringComparison.OrdinalIgnoreCase)
             ? BlogStatus.Draft
             : (input.Status.Equals("hidden", StringComparison.OrdinalIgnoreCase) ? BlogStatus.Archived : BlogStatus.Published);
@@ -197,6 +202,9 @@ public class AdminBlogRepository : IAdminBlogRepository
     public async Task<bool> UpdateAdminBlogAsync(long id, UpdateAdminBlogInput input, CancellationToken ct = default)
     {
         if (!await AdminScopeFilterHelper.IsBlogInScopeAsync(_currentUserService, _dbContext.Database.GetDbConnection(), id))
+            return false;
+
+        if (!AdminScopeFilterHelper.ValidateBlogInputScope(_currentUserService, input.CategoryId))
             return false;
 
         var blog = await _dbContext.Blogs.FirstOrDefaultAsync(b => b.Id == id, ct);

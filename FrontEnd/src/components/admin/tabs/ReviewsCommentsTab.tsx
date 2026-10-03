@@ -13,7 +13,6 @@ import {
   Calendar,
   MessageSquare,
   AlertTriangle,
-  BookOpen,
   User,
   MapPin,
 } from "lucide-react";
@@ -234,11 +233,10 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
                 setRevComTab("reviews");
                 setCurrentPage(1);
               }}
-              className={`px-3.5 py-1.5 rounded-lg transition-all cursor-pointer font-semibold ${
-                revComTab === "reviews"
-                  ? "bg-white text-slate-900 shadow-2xs font-bold"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
+              className={`px-3.5 py-1.5 rounded-lg transition-all cursor-pointer font-semibold ${revComTab === "reviews"
+                ? "bg-white text-slate-900 shadow-2xs font-bold"
+                : "text-slate-600 hover:text-slate-900"
+                }`}
             >
               Đánh giá địa điểm ({reviewsList.length})
               {reportedReviewsCount > 0 && (
@@ -253,13 +251,12 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
                 setRevComTab("comments");
                 setCurrentPage(1);
               }}
-              className={`px-3.5 py-1.5 rounded-lg transition-all cursor-pointer font-semibold ${
-                revComTab === "comments"
-                  ? "bg-white text-slate-900 shadow-2xs font-bold"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
+              className={`px-3.5 py-1.5 rounded-lg transition-all cursor-pointer font-semibold ${revComTab === "comments"
+                ? "bg-white text-slate-900 shadow-2xs font-bold"
+                : "text-slate-600 hover:text-slate-900"
+                }`}
             >
-              Bình luận bài viết ({commentsList.length})
+              Bình luận ({commentsList.length})
             </button>
           </div>
 
@@ -318,15 +315,16 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-bold text-[11px] uppercase tracking-wider">
-                <th className="p-3.5 pl-5 min-w-[320px]">
+                <th className="p-3.5 pl-5 min-w-[280px]">
                   {revComTab === "reviews" ? "Review" : "Bình luận"}
                 </th>
-                <th className="p-3.5 min-w-[200px]">
-                  {revComTab === "reviews" ? "Địa điểm" : "Bài viết / Địa điểm"}
+                <th className="p-3.5 min-w-[180px]">
+                  {revComTab === "reviews" ? "Địa điểm" : "Bài viết"}
                 </th>
                 {revComTab === "reviews" && (
-                  <th className="p-3.5 min-w-[140px]">Rating</th>
+                  <th className="p-3.5 min-w-[120px]">Rating</th>
                 )}
+                <th className="p-3.5 min-w-[120px]">Trạng thái</th>
                 <th className="p-3.5 text-right pr-5 min-w-[100px]">Tác vụ</th>
               </tr>
             </thead>
@@ -339,13 +337,13 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
                     (rev as any).coverImg ||
                     (rev.images && rev.images[0]) ||
                     "";
+                  const isHidden = rev.status === "hidden";
 
                   return (
                     <tr
                       key={rev.id}
-                      className={`hover:bg-slate-50/60 transition-colors ${
-                        rev.reportCount > 0 ? "bg-rose-50/20" : ""
-                      }`}
+                      className={`hover:bg-slate-50/60 transition-colors ${rev.reportCount > 0 ? "bg-rose-50/20" : ""
+                        }`}
                     >
                       {/* Review Column (User Avatar + Name + Date + Snippet) */}
                       <td className="p-3.5 pl-5">
@@ -373,11 +371,6 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
                                 <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-md bg-rose-100 text-rose-700 text-[10px] font-bold">
                                   <ShieldAlert size={10} />
                                   <span>{rev.reportCount} phản ánh</span>
-                                </span>
-                              )}
-                              {rev.status === "hidden" && (
-                                <span className="px-1.5 py-0.2 rounded-md bg-slate-100 text-slate-500 text-[10px] font-bold">
-                                  Đang ẩn
                                 </span>
                               )}
                             </div>
@@ -421,6 +414,21 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
                           </span>
                           {renderStars(rev.rating)}
                         </div>
+                      </td>
+
+                      {/* Status Column */}
+                      <td className="p-3.5">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleHideReview(rev.id)}
+                          className={`inline-flex items-center justify-center px-3.5 py-1 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${isHidden
+                            ? "bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200"
+                            : "bg-[#e6fcf5] text-[#087f5b] border-[#63e6be] hover:bg-[#d3f9ec]"
+                            }`}
+                          title={isHidden ? "Bấm để công khai đánh giá" : "Bấm để tạm ẩn đánh giá"}
+                        >
+                          {isHidden ? "Tạm ẩn" : "Công khai"}
+                        </button>
                       </td>
 
                       {/* Action Column ("..." Menu with View Details) */}
@@ -485,59 +493,66 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
                   );
                 })
               ) : (
-                displayedComments.map((comm) => (
-                  <tr key={comm.id} className="hover:bg-slate-50/60 transition-colors">
-                    {/* Comment User & Content */}
-                    <td className="p-3.5 pl-5">
-                      <div className="flex items-center gap-3">
-                        {comm.authorAvatar || comm.userAvatar ? (
-                          <img
-                            src={comm.authorAvatar || comm.userAvatar}
-                            alt=""
-                            className="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0"
-                          />
-                        ) : (
-                          <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 shrink-0">
-                            <User size={16} />
-                          </div>
-                        )}
-                        <div className="space-y-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-bold text-slate-900 text-xs sm:text-sm">
-                              {comm.authorName || comm.userName}
-                            </span>
-                            <span className="text-[11px] text-slate-400 font-normal">
-                              {formatDateTime(comm.createdAt)}
-                            </span>
-                            {comm.status === "hidden" && (
-                              <span className="px-1.5 py-0.2 rounded-md bg-slate-100 text-slate-500 text-[10px] font-bold">
-                                Đang ẩn
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-xs text-slate-600 line-clamp-1 max-w-lg font-normal">
-                            {comm.content}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
+                displayedComments.map((comm) => {
+                  const isHidden = comm.status === "hidden";
 
-                    {/* Target Blog / Article */}
-                    <td className="p-3.5">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-200/60">
-                          <BookOpen size={16} />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="font-bold text-slate-800 text-xs truncate max-w-[180px]">
-                            {comm.placeName || "Cẩm nang du lịch"}
+                  return (
+                    <tr key={comm.id} className="hover:bg-slate-50/60 transition-colors">
+                      {/* Comment User & Content */}
+                      <td className="p-3.5 pl-5">
+                        <div className="flex items-center gap-3">
+                          {comm.authorAvatar || comm.userAvatar ? (
+                            <img
+                              src={comm.authorAvatar || comm.userAvatar}
+                              alt=""
+                              className="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 shrink-0">
+                              <User size={16} />
+                            </div>
+                          )}
+                          <div className="space-y-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-bold text-slate-900 text-xs sm:text-sm">
+                                {comm.authorName || comm.userName}
+                              </span>
+                              <span className="text-[11px] text-slate-400 font-normal">
+                                {formatDateTime(comm.createdAt)}
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-600 line-clamp-1 max-w-lg font-normal">
+                              {comm.content}
+                            </p>
                           </div>
-                          <div className="text-[10px] text-slate-400 truncate">
-                            Blog bài viết #{comm.blogId || 1}
+                        </div>
+                      </td>
+
+                      {/* Target Blog / Article */}
+                      <td className="p-3.5">
+                        <div className="flex items-center gap-2.5">
+                          <div className="min-w-0">
+                            <div className="font-bold text-slate-800 text-xs truncate max-w-[180px]">
+                              {comm.placeName || "Cẩm nang du lịch"}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </td>
+                      </td>
+
+                      {/* Status Column */}
+                      <td className="p-3.5">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleHideComment(comm.id)}
+                          className={`inline-flex items-center justify-center px-3.5 py-1 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${isHidden
+                            ? "bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200"
+                            : "bg-[#e6fcf5] text-[#087f5b] border-[#63e6be] hover:bg-[#d3f9ec]"
+                            }`}
+                          title={isHidden ? "Bấm để công khai bình luận" : "Bấm để tạm ẩn bình luận"}
+                        >
+                          {isHidden ? "Tạm ẩn" : "Công khai"}
+                        </button>
+                      </td>
 
                     {/* Action Column */}
                     <td className="p-3.5 pr-5 text-right relative">
@@ -598,8 +613,9 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
                       </div>
                     </td>
                   </tr>
-                ))
-              )}
+                );
+              })
+            )}
             </tbody>
           </table>
 
@@ -629,11 +645,10 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
                   key={pageNum}
                   type="button"
                   onClick={() => setCurrentPage(pageNum)}
-                  className={`w-8 h-8 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    isActive
-                      ? "bg-emerald-700 text-white shadow-xs"
-                      : "border border-transparent hover:border-slate-200 text-slate-700 hover:bg-slate-50"
-                  }`}
+                  className={`w-8 h-8 rounded-lg text-xs font-bold transition-all cursor-pointer ${isActive
+                    ? "bg-emerald-700 text-white shadow-xs"
+                    : "border border-transparent hover:border-slate-200 text-slate-700 hover:bg-slate-50"
+                    }`}
                 >
                   {pageNum}
                 </button>
@@ -733,41 +748,6 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
                 </div>
               </div>
             )}
-
-            {/* Modal Actions */}
-            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => handleDeleteReview(selectedReview.id)}
-                className="px-4 py-2 rounded-xl text-rose-600 hover:bg-rose-50 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors"
-              >
-                <Trash2 size={14} />
-                <span>Xóa vĩnh viễn</span>
-              </button>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleToggleHideReview(selectedReview.id);
-                    setSelectedReview((prev) =>
-                      prev ? { ...prev, status: prev.status === "active" ? "hidden" : "active" } : null
-                    );
-                  }}
-                  className="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-bold cursor-pointer transition-colors"
-                >
-                  {selectedReview.status === "hidden" ? "Khôi phục hiển thị" : "Tạm ẩn đánh giá"}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setSelectedReview(null)}
-                  className="px-5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold cursor-pointer transition-colors"
-                >
-                  Đóng
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       )}

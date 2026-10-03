@@ -15,6 +15,10 @@ import {
   Link as LinkIcon,
   Sparkles,
   BarChart3,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  X,
 } from "lucide-react";
 import type { AdminBlogItem } from "@/types/admin.types";
 import { adminService } from "@/services/adminService";
@@ -28,6 +32,21 @@ import {
 interface BlogsTabProps {
   blogsList: AdminBlogItem[];
   setBlogsList?: React.Dispatch<React.SetStateAction<AdminBlogItem[]>>;
+  isLoading?: boolean;
+  pagination?: {
+    page: number;
+    pageSize: number;
+    totalElements: number;
+    totalPages: number;
+  };
+  onPageChange?: (page: number) => void;
+  onFilterChange?: (filters: {
+    keyword?: string;
+    category?: string;
+    status?: string;
+    page?: number;
+    pageSize?: number;
+  }) => void;
   addAuditLog?: (
     action: string,
     targetName: string,
@@ -49,8 +68,17 @@ const CATEGORY_OPTIONS = [
 ];
 
 export const BlogsTab: React.FC<BlogsTabProps> = ({
-  blogsList,
+  blogsList = [],
   setBlogsList,
+  isLoading = false,
+  pagination = {
+    page: 1,
+    pageSize: 10,
+    totalElements: blogsList.length,
+    totalPages: 1,
+  },
+  onPageChange,
+  onFilterChange,
   addAuditLog,
   showToast,
 }) => {
@@ -58,6 +86,7 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
   const [blogSearchText, setBlogSearchText] = useState("");
   const [blogFilterCategory, setBlogFilterCategory] = useState("all");
   const [blogFilterStatus, setBlogFilterStatus] = useState("all");
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 
   const currentBlog = selectedBlogId
@@ -185,6 +214,26 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
     );
   }
 
+  const handleSearchChange = (val: string) => {
+    setBlogSearchText(val);
+    if (onFilterChange) {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = setTimeout(() => {
+        onFilterChange({ keyword: val, page: 1 });
+      }, 350);
+    }
+  };
+
+  const handleCategoryChange = (val: string) => {
+    setBlogFilterCategory(val);
+    onFilterChange?.({ category: val, page: 1 });
+  };
+
+  const handleStatusChange = (val: string) => {
+    setBlogFilterStatus(val);
+    onFilterChange?.({ status: val, page: 1 });
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-150 text-xs font-sans">
       <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
@@ -199,15 +248,24 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
               type="text"
               placeholder="Tìm kiếm theo tiêu đề, tác giả, danh mục, nội dung..."
               value={blogSearchText}
-              onChange={(e) => setBlogSearchText(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:bg-white outline-none focus:border-emerald-500"
+              onChange={(e) => handleSearchChange(e.target.value)}
+              className="w-full pl-9 pr-8 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:bg-white outline-none focus:border-emerald-500"
             />
+            {blogSearchText && (
+              <button
+                type="button"
+                onClick={() => handleSearchChange("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <X size={14} />
+              </button>
+            )}
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
             <select
               value={blogFilterCategory}
-              onChange={(e) => setBlogFilterCategory(e.target.value)}
+              onChange={(e) => handleCategoryChange(e.target.value)}
               className="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 font-medium text-slate-800 outline-none focus:border-emerald-500 cursor-pointer"
             >
               <option value="all">Tất cả danh mục</option>
@@ -220,7 +278,7 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
 
             <select
               value={blogFilterStatus}
-              onChange={(e) => setBlogFilterStatus(e.target.value)}
+              onChange={(e) => handleStatusChange(e.target.value)}
               className="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 font-medium text-slate-800 outline-none focus:border-emerald-500 cursor-pointer"
             >
               <option value="all">Tất cả trạng thái</option>
@@ -228,8 +286,6 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
               <option value="hidden">Đang tạm ẩn</option>
               <option value="draft">Bản nháp</option>
             </select>
-
-
           </div>
         </div>
 
@@ -330,18 +386,12 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
                     {/* Status */}
                     <td className="p-3.5">
                       <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${isHidden
-                          ? "bg-slate-100 text-slate-600"
-                          : isDraft
-                            ? "bg-blue-100 text-blue-800"
-                            : "bg-emerald-100 text-emerald-800"
+                        className={`inline-flex items-center justify-center px-3.5 py-1 rounded-xl text-xs font-bold border transition-colors ${isHidden || isDraft
+                          ? "bg-slate-100 text-slate-700 border-slate-300"
+                          : "bg-[#e6fcf5] text-[#087f5b] border-[#63e6be]"
                           }`}
                       >
-                        {isHidden
-                          ? "Đang tạm ẩn"
-                          : isDraft
-                            ? "Bản nháp"
-                            : "Đang công khai"}
+                        {isHidden || isDraft ? "Tạm ẩn" : "Công khai"}
                       </span>
                     </td>
 
@@ -396,12 +446,80 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
             </tbody>
           </table>
 
-          {filteredBlogs.length === 0 && (
-            <div className="p-8 text-center text-slate-400">
+          {isLoading ? (
+            <div className="p-12 text-center text-slate-400">
+              <div className="flex flex-col items-center justify-center gap-2">
+                <Loader2 size={24} className="animate-spin text-emerald-600" />
+                <span>Đang tải danh sách bài viết từ máy chủ...</span>
+              </div>
+            </div>
+          ) : (onFilterChange ? blogsList.length === 0 : filteredBlogs.length === 0) ? (
+            <div className="p-8 text-center text-slate-400 font-medium">
               Không tìm thấy bài viết cẩm nang nào phù hợp với bộ lọc.
             </div>
-          )}
+          ) : null}
         </div>
+
+        {/* Pagination Bar */}
+        {pagination && pagination.totalElements > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 px-1 border-t border-slate-100 text-xs text-slate-500 font-medium">
+            <div>
+              Hiển thị <strong>{blogsList.length}</strong> / <strong>{pagination.totalElements}</strong> bài viết (Trang <strong>{pagination.page}</strong> / {pagination.totalPages || 1})
+            </div>
+
+            {pagination.totalPages > 1 && (
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  disabled={pagination.page <= 1 || isLoading}
+                  onClick={() => onPageChange?.(pagination.page - 1)}
+                  className="px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-bold text-slate-700 transition-colors flex items-center gap-1 cursor-pointer"
+                >
+                  <ChevronLeft size={14} />
+                  <span>Trước</span>
+                </button>
+
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                    let pNum = pagination.page - 2 + i;
+                    if (pagination.page <= 3) {
+                      pNum = i + 1;
+                    } else if (pagination.page >= pagination.totalPages - 2) {
+                      pNum = pagination.totalPages - 4 + i;
+                    }
+                    if (pNum < 1 || pNum > pagination.totalPages) return null;
+
+                    return (
+                      <button
+                        key={pNum}
+                        type="button"
+                        disabled={isLoading}
+                        onClick={() => onPageChange?.(pNum)}
+                        className={`w-7 h-7 rounded-xl font-bold text-xs transition-colors flex items-center justify-center cursor-pointer ${
+                          pagination.page === pNum
+                            ? "bg-emerald-700 text-white shadow-xs"
+                            : "bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200"
+                        }`}
+                      >
+                        {pNum}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button
+                  type="button"
+                  disabled={pagination.page >= pagination.totalPages || isLoading}
+                  onClick={() => onPageChange?.(pagination.page + 1)}
+                  className="px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-bold text-slate-700 transition-colors flex items-center gap-1 cursor-pointer"
+                >
+                  <span>Sau</span>
+                  <ChevronRight size={14} />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Add Blog Modal */}
@@ -596,18 +714,12 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
                 {title || blog.title}
               </h2>
               <span
-                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${isHidden
-                  ? "bg-slate-200 text-slate-700"
-                  : isDraft
-                    ? "bg-blue-100 text-blue-800"
-                    : "bg-emerald-100 text-emerald-800"
+                className={`inline-flex items-center justify-center px-3.5 py-1 rounded-xl text-xs font-bold border transition-colors shrink-0 ${isHidden || isDraft
+                  ? "bg-slate-100 text-slate-700 border-slate-300"
+                  : "bg-[#e6fcf5] text-[#087f5b] border-[#63e6be]"
                   }`}
               >
-                {isHidden
-                  ? "Đang tạm ẩn"
-                  : isDraft
-                    ? "Bản nháp"
-                    : "Đang công khai"}
+                {isHidden || isDraft ? "Tạm ẩn" : "Công khai"}
               </span>
             </div>
             <p className="text-[11px] text-slate-400 mt-0.5 truncate">
@@ -622,7 +734,7 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
             type="button"
             onClick={() => {
               onToggleStatus();
-              setStatus((prev) => (prev === "published" ? "hidden" : "published"));
+              setStatus((prev: string) => (prev === "published" ? "hidden" : "published"));
             }}
             className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl cursor-pointer transition-colors"
           >

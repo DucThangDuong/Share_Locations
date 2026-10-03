@@ -595,6 +595,11 @@ public class AdminProposalRepository : IAdminProposalRepository
 
         long? effectiveTargetPlaceId = targetPlaceId ?? proposal.TargetPlaceId;
 
+        if (!AdminScopeFilterHelper.ValidatePlaceInputScope(_currentUserService, categoryId, provinceId))
+        {
+            return false;
+        }
+
         // Trường hợp 1: Cập nhật địa điểm đã có
         if (effectiveTargetPlaceId.HasValue && effectiveTargetPlaceId.Value > 0)
         {

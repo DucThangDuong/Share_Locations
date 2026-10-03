@@ -96,7 +96,8 @@ export const AdminPage: React.FC = () => {
   const currentAdminInfo = {
     adminId: Number(storedAdmin.id || storedAdmin.userId || 0),
     adminName: storedAdmin.fullName || storedAdmin.name || "Quản trị viên",
-    role: storedAdmin.role || "Admin",
+    role: storedAdmin.roleId ?? storedAdmin.role ?? "Admin tổng",
+    roleId: storedAdmin.roleId ?? storedAdmin.role,
     avatar: storedAdmin.avatarUrl || storedAdmin.avatar,
   };
 
@@ -226,7 +227,45 @@ export const AdminPage: React.FC = () => {
   const [proposals, setProposals] = useState<AdminProposalItem[]>([]);
   const [reports, setReports] = useState<AdminReportItem[]>([]);
   const [foodsList, setFoodsList] = useState<AdminFoodItem[]>([]);
+  const [isFoodsLoading, setIsFoodsLoading] = useState(false);
+  const [foodsPagination, setFoodsPagination] = useState<{
+    page: number;
+    pageSize: number;
+    totalElements: number;
+    totalPages: number;
+  }>({
+    page: 1,
+    pageSize: 10,
+    totalElements: 0,
+    totalPages: 1,
+  });
+  const [foodFilters, setFoodFilters] = useState<{
+    keyword?: string;
+    province?: string;
+    status?: string;
+    page?: number;
+    pageSize?: number;
+  }>({ page: 1, pageSize: 10 });
   const [blogsList, setBlogsList] = useState<AdminBlogItem[]>([]);
+  const [isBlogsLoading, setIsBlogsLoading] = useState(false);
+  const [blogsPagination, setBlogsPagination] = useState<{
+    page: number;
+    pageSize: number;
+    totalElements: number;
+    totalPages: number;
+  }>({
+    page: 1,
+    pageSize: 10,
+    totalElements: 0,
+    totalPages: 1,
+  });
+  const [blogFilters, setBlogFilters] = useState<{
+    keyword?: string;
+    category?: string;
+    status?: string;
+    page?: number;
+    pageSize?: number;
+  }>({ page: 1, pageSize: 10 });
   const [auditLogs] = useState<AdminAuditLog[]>([]);
 
   // Places Filter & Details State
@@ -235,6 +274,26 @@ export const AdminPage: React.FC = () => {
   const [placeFilterProvince, setPlaceFilterProvince] = useState("all");
   const [placeFilterCategory, setPlaceFilterCategory] = useState("all");
   const [placeFilterStatus, setPlaceFilterStatus] = useState("all");
+  const [isPlacesLoading, setIsPlacesLoading] = useState(false);
+  const [placesPagination, setPlacesPagination] = useState<{
+    page: number;
+    pageSize: number;
+    totalElements: number;
+    totalPages: number;
+  }>({
+    page: 1,
+    pageSize: 10,
+    totalElements: 0,
+    totalPages: 1,
+  });
+  const [placeFilters, setPlaceFilters] = useState<{
+    keyword?: string;
+    province?: string;
+    category?: string;
+    status?: string;
+    page?: number;
+    pageSize?: number;
+  }>({ page: 1, pageSize: 10 });
 
   // Proposals Filter
   const [proposalStatusFilter, setProposalStatusFilter] = useState<"all" | "0" | "1" | "2">("all");
@@ -355,59 +414,100 @@ export const AdminPage: React.FC = () => {
             break;
           }
           case "places": {
-            const result = await adminService.getPlaces(page);
-            if (!cancelled) {
-              const rawPlaces = extractList(result?.data);
-              setPlacesList(
-                rawPlaces.map((item: any) => {
-                  const isVis =
-                    item.status === 1 ||
-                    item.status === "1" ||
-                    item.statusNum === 1 ||
-                    String(item.status || "").toLowerCase() === "active" ||
-                    String(item.status || "").toLowerCase() === "approved" ||
-                    item.status === "Đang hiển thị" ||
-                    item.status === "Đã duyệt";
-                  const statusNum = isVis ? 1 : 0;
-                  const statusStr = isVis ? "Đang hiển thị" : "Đang ẩn";
+            setIsPlacesLoading(true);
+            try {
+              const cleanParams: Record<string, any> = {
+                page: placeFilters.page || 1,
+                pageSize: placeFilters.pageSize || 10,
+              };
+              if (placeFilters.keyword?.trim()) {
+                cleanParams.keyword = placeFilters.keyword.trim();
+              }
+              if (placeFilters.province && placeFilters.province !== "all") {
+                cleanParams.province = placeFilters.province;
+              }
+              if (placeFilters.category && placeFilters.category !== "all") {
+                cleanParams.category = placeFilters.category;
+              }
+              if (placeFilters.status && placeFilters.status !== "all") {
+                cleanParams.status = placeFilters.status;
+              }
 
-                  return {
-                    ...item,
-                    id: item.id,
-                    name: item.name || item.title || "",
-                    province: item.provinceName || item.province || "",
-                    provinceName: item.provinceName || item.province || "",
-                    provinceId: item.provinceId,
-                    category: item.categoryName || item.category || "Nhà hàng & Quán ăn",
-                    categoryName: item.categoryName || item.category || "Nhà hàng & Quán ăn",
-                    categoryId: item.categoryId,
-                    location: item.address || item.location || "",
-                    address: item.address || item.location || "",
-                    img:
-                      item.coverImg ||
-                      item.thumbnailUrl ||
-                      item.img ||
-                      item.image ||
-                      "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&h=400&fit=crop",
-                    coverImg:
-                      item.coverImg ||
-                      item.thumbnailUrl ||
-                      item.img ||
-                      item.image ||
-                      "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&h=400&fit=crop",
-                    rating: Number(item.avgRating ?? item.rating ?? 0),
-                    avgRating: Number(item.avgRating ?? item.rating ?? 0),
-                    reviewCount: Number(item.reviewCount ?? item.reviewsCount ?? 0),
-                    price: item.priceLevel || item.price || "",
-                    hours: item.openingHours || item.hours || "",
-                    latitude: item.latitude ?? item.lat,
-                    longitude: item.longitude ?? item.lng,
-                    desc: item.desc || item.description || "",
-                    status: statusStr,
-                    statusNum: statusNum,
-                  };
-                })
-              );
+              const result: any = await adminService.getPlaces(cleanParams);
+              if (!cancelled) {
+                const rawPlaces = extractList(result?.data || result);
+                setPlacesList(
+                  rawPlaces.map((item: any) => {
+                    const isVis =
+                      item.status === 1 ||
+                      item.status === "1" ||
+                      item.statusNum === 1 ||
+                      String(item.status || "").toLowerCase() === "active" ||
+                      String(item.status || "").toLowerCase() === "approved" ||
+                      item.status === "Đang hiển thị" ||
+                      item.status === "Đã duyệt";
+                    const statusNum = isVis ? 1 : 0;
+                    const statusStr = isVis ? "Đang hiển thị" : "Đang ẩn";
+
+                    return {
+                      ...item,
+                      id: item.id,
+                      name: item.name || item.title || "",
+                      province: item.provinceName || item.province || "",
+                      provinceName: item.provinceName || item.province || "",
+                      provinceId: item.provinceId,
+                      category: item.categoryName || item.category || "Nhà hàng & Quán ăn",
+                      categoryName: item.categoryName || item.category || "Nhà hàng & Quán ăn",
+                      categoryId: item.categoryId,
+                      location: item.address || item.location || "",
+                      address: item.address || item.location || "",
+                      img:
+                        item.coverImg ||
+                        item.thumbnailUrl ||
+                        item.img ||
+                        item.image ||
+                        "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&h=400&fit=crop",
+                      coverImg:
+                        item.coverImg ||
+                        item.thumbnailUrl ||
+                        item.img ||
+                        item.image ||
+                        "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&h=400&fit=crop",
+                      rating: Number(item.avgRating ?? item.rating ?? 0),
+                      avgRating: Number(item.avgRating ?? item.rating ?? 0),
+                      reviewCount: Number(item.reviewCount ?? item.reviewsCount ?? 0),
+                      price: item.priceLevel || item.price || "",
+                      hours: item.openingHours || item.hours || "",
+                      latitude: item.latitude ?? item.lat,
+                      longitude: item.longitude ?? item.lng,
+                      desc: item.desc || item.description || "",
+                      status: statusStr,
+                      statusNum: statusNum,
+                    };
+                  })
+                );
+
+                const meta = result?.meta || result?.pagination || {};
+                const page = Number(meta.page || placeFilters.page || 1);
+                const pageSize = Number(meta.size || meta.pageSize || placeFilters.pageSize || 10);
+                const totalElements = Number(
+                  meta.totalElements ?? meta.totalCount ?? meta.total ?? result?.total ?? rawPlaces.length
+                );
+                const totalPages = Number(
+                  meta.totalPages ?? Math.max(1, Math.ceil(totalElements / pageSize))
+                );
+
+                setPlacesPagination({
+                  page,
+                  pageSize,
+                  totalElements,
+                  totalPages,
+                });
+              }
+            } catch {
+              if (!cancelled) setPlacesList([]);
+            } finally {
+              if (!cancelled) setIsPlacesLoading(false);
             }
             break;
           }
@@ -541,6 +641,17 @@ export const AdminPage: React.FC = () => {
                     targetType: rawType as any,
                     targetId: item.targetId || item.placeId || item.reviewId || item.commentId || item.blogId || 0,
                     targetTitle: item.targetTitle || item.title || "Đối tượng báo cáo",
+                    targetContent:
+                      item.targetContent ||
+                      item.content ||
+                      item.commentContent ||
+                      item.reviewContent ||
+                      item.comment ||
+                      item.review ||
+                      item.targetText ||
+                      item.text ||
+                      item.targetDescription ||
+                      "",
                     reporterId: item.reporterId || 0,
                     reporterName:
                       item.reporterName || item.reporter || "Người dùng ẩn danh",
@@ -609,81 +720,157 @@ export const AdminPage: React.FC = () => {
             break;
           }
           case "foods": {
-            const result = await adminService.getFoods(page);
-            if (!cancelled) {
-              const rawFoods = extractList(result?.data);
-              setFoodsList(
-                rawFoods.map((item: any) => ({
-                  ...item,
-                  id: item.id,
-                  name: item.name || "",
-                  province: item.provinceName || item.province || "",
-                  provinceName: item.provinceName || item.province || "",
-                  provinceId: item.provinceId,
-                  specialtyType:
-                    item.specialtyType || item.category || "Món đặc sản",
-                  desc: item.desc || item.description || "",
-                  historyInfo: item.historyInfo || "",
-                  status: String(item.status || "active").toLowerCase(),
-                  coverImg:
-                    item.coverImg ||
-                    item.img ||
-                    item.image ||
-                    item.imageUrl ||
-                    "https://images.unsplash.com/photo-1541544741938-0af808871cc0?w=600&h=400&fit=crop",
-                  minPrice: item.minPrice ? Number(item.minPrice) : 0,
-                  maxPrice: item.maxPrice ? Number(item.maxPrice) : 0,
-                  priceRange:
-                    item.priceRange ||
-                    (item.minPrice
-                      ? `${Number(item.minPrice).toLocaleString("vi-VN")}đ – ${Number(
-                        item.maxPrice || item.minPrice
-                      ).toLocaleString("vi-VN")}đ`
-                      : ""),
-                  createdAt: item.createdAt || "",
-                } as AdminFoodItem))
-              );
+            setIsFoodsLoading(true);
+            try {
+              const cleanParams: Record<string, any> = {
+                page: foodFilters.page || 1,
+                pageSize: foodFilters.pageSize || 10,
+              };
+              if (foodFilters.keyword?.trim()) {
+                cleanParams.keyword = foodFilters.keyword.trim();
+              }
+              if (foodFilters.province && foodFilters.province !== "all") {
+                cleanParams.province = foodFilters.province;
+              }
+              if (foodFilters.status && foodFilters.status !== "all") {
+                cleanParams.status = foodFilters.status;
+              }
+
+              const result: any = await adminService.getFoods(cleanParams);
+              if (!cancelled) {
+                const rawFoods = extractList(result?.data || result);
+                setFoodsList(
+                  rawFoods.map((item: any) => ({
+                    ...item,
+                    id: item.id,
+                    name: item.name || "",
+                    province: item.provinceName || item.province || "",
+                    provinceName: item.provinceName || item.province || "",
+                    provinceId: item.provinceId,
+                    specialtyType:
+                      item.specialtyType || item.category || "Món đặc sản",
+                    desc: item.desc || item.description || "",
+                    historyInfo: item.historyInfo || "",
+                    status: String(item.status || "active").toLowerCase(),
+                    coverImg:
+                      item.coverImg ||
+                      item.img ||
+                      item.image ||
+                      item.imageUrl ||
+                      "https://images.unsplash.com/photo-1541544741938-0af808871cc0?w=600&h=400&fit=crop",
+                    minPrice: item.minPrice ? Number(item.minPrice) : 0,
+                    maxPrice: item.maxPrice ? Number(item.maxPrice) : 0,
+                    priceRange:
+                      item.priceRange ||
+                      (item.minPrice
+                        ? `${Number(item.minPrice).toLocaleString("vi-VN")}đ – ${Number(
+                          item.maxPrice || item.minPrice
+                        ).toLocaleString("vi-VN")}đ`
+                        : ""),
+                    createdAt: item.createdAt || "",
+                  } as AdminFoodItem))
+                );
+
+                const meta = result?.meta || result?.pagination || {};
+                const page = Number(meta.page || foodFilters.page || 1);
+                const pageSize = Number(meta.size || meta.pageSize || foodFilters.pageSize || 10);
+                const totalElements = Number(
+                  meta.totalElements ?? meta.totalCount ?? meta.total ?? result?.total ?? rawFoods.length
+                );
+                const totalPages = Number(
+                  meta.totalPages ?? Math.max(1, Math.ceil(totalElements / pageSize))
+                );
+
+                setFoodsPagination({
+                  page,
+                  pageSize,
+                  totalElements,
+                  totalPages,
+                });
+              }
+            } catch {
+              if (!cancelled) setFoodsList([]);
+            } finally {
+              if (!cancelled) setIsFoodsLoading(false);
             }
             break;
           }
           case "blogs": {
-            const result = await adminService.getBlogs(page);
-            if (!cancelled) {
-              const rawBlogs = extractList(result?.data);
-              setBlogsList(
-                rawBlogs.map((item: any) => ({
-                  ...item,
-                  id: item.id,
-                  title: item.title || "",
-                  authorName:
-                    item.authorName ||
-                    item.author ||
-                    "Ban Biên Tập LangThang",
-                  authorAvatar:
-                    item.authorAvatar ||
-                    item.avatar ||
-                    "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&h=80&fit=crop",
-                  category:
-                    item.category || item.categoryName || "Lịch trình ăn uống",
-                  categoryId: item.categoryId,
-                  publishedAt: item.publishedAt || item.createdAt || "Vừa xong",
-                  createdAt: item.createdAt || item.publishedAt || "",
-                  views: Number(item.views ?? item.viewCount ?? 0),
-                  viewCount: Number(item.viewCount ?? item.views ?? 0),
-                  likes: Number(item.likes ?? item.likeCount ?? 0),
-                  likeCount: Number(item.likeCount ?? item.likes ?? 0),
-                  readTime: item.readTime || "5 phút đọc",
-                  summary: item.summary || item.desc || item.description || "",
-                  content: item.content || item.body || item.summary || "",
-                  coverImg:
-                    item.coverImg ||
-                    item.img ||
-                    item.image ||
-                    item.thumbnailUrl ||
-                    "https://images.unsplash.com/photo-1505474975305-453b4ac9b972?w=600&h=400&fit=crop",
-                  status: String(item.status || "draft").toLowerCase(),
-                } as AdminBlogItem))
-              );
+            setIsBlogsLoading(true);
+            try {
+              const cleanParams: Record<string, any> = {
+                page: blogFilters.page || 1,
+                pageSize: blogFilters.pageSize || 10,
+              };
+              if (blogFilters.keyword?.trim()) {
+                cleanParams.keyword = blogFilters.keyword.trim();
+              }
+              if (blogFilters.category && blogFilters.category !== "all") {
+                cleanParams.category = blogFilters.category;
+              }
+              if (blogFilters.status && blogFilters.status !== "all") {
+                cleanParams.status = blogFilters.status;
+              }
+
+              const result: any = await adminService.getBlogs(cleanParams);
+              if (!cancelled) {
+                const rawBlogs = extractList(result?.data || result);
+                setBlogsList(
+                  rawBlogs.map((item: any) => ({
+                    ...item,
+                    id: item.id,
+                    title: item.title || "",
+                    authorName:
+                      item.authorName ||
+                      item.author ||
+                      "Ban Biên Tập LangThang",
+                    authorAvatar:
+                      item.authorAvatar ||
+                      item.avatar ||
+                      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&h=80&fit=crop",
+                    category:
+                      item.category || item.categoryName || "Lịch trình ăn uống",
+                    categoryId: item.categoryId,
+                    publishedAt: item.publishedAt || item.createdAt || "Vừa xong",
+                    createdAt: item.createdAt || item.publishedAt || "",
+                    views: Number(item.views ?? item.viewCount ?? 0),
+                    viewCount: Number(item.viewCount ?? item.views ?? 0),
+                    likes: Number(item.likes ?? item.likeCount ?? 0),
+                    likeCount: Number(item.likeCount ?? item.likes ?? 0),
+                    readTime: item.readTime || "5 phút đọc",
+                    summary: item.summary || item.desc || item.description || "",
+                    content: item.content || item.body || item.summary || "",
+                    coverImg:
+                      item.coverImg ||
+                      item.img ||
+                      item.image ||
+                      item.thumbnailUrl ||
+                      "https://images.unsplash.com/photo-1505474975305-453b4ac9b972?w=600&h=400&fit=crop",
+                    status: String(item.status || "draft").toLowerCase(),
+                  } as AdminBlogItem))
+                );
+
+                const meta = result?.meta || result?.pagination || {};
+                const page = Number(meta.page || blogFilters.page || 1);
+                const pageSize = Number(meta.size || meta.pageSize || blogFilters.pageSize || 10);
+                const totalElements = Number(
+                  meta.totalElements ?? meta.totalCount ?? meta.total ?? result?.total ?? rawBlogs.length
+                );
+                const totalPages = Number(
+                  meta.totalPages ?? Math.max(1, Math.ceil(totalElements / pageSize))
+                );
+
+                setBlogsPagination({
+                  page,
+                  pageSize,
+                  totalElements,
+                  totalPages,
+                });
+              }
+            } catch {
+              if (!cancelled) setBlogsList([]);
+            } finally {
+              if (!cancelled) setIsBlogsLoading(false);
             }
             break;
           }
@@ -709,7 +896,7 @@ export const AdminPage: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [mainTab, userFilters, reportTargetTypeFilter, reportSubTab, reportSearchText]);
+  }, [mainTab, userFilters, placeFilters, foodFilters, blogFilters, reportTargetTypeFilter, reportSubTab, reportSearchText]);
 
   // ── AUDIT LOG HELPER ──
   const addAuditLog = (
@@ -769,6 +956,8 @@ export const AdminPage: React.FC = () => {
       primaryImageUrl: updatedPlace.coverImg || updatedPlace.img,
       phone: updatedPlace.phone,
       website: updatedPlace.website,
+      foodIds: updatedPlace.foodIds,
+      foods: updatedPlace.foods,
       photos: updatedPlace.images || updatedPlace.photos || updatedPlace.mediaUrls,
     });
     setPlacesList((prev) =>
@@ -1076,6 +1265,14 @@ export const AdminPage: React.FC = () => {
               {mainTab === "places" && (
                 <PlacesTab
                   placesList={placesList}
+                  isLoading={isPlacesLoading}
+                  pagination={placesPagination}
+                  onPageChange={(p) => {
+                    setPlaceFilters((prev) => ({ ...prev, page: p }));
+                  }}
+                  onFilterChange={(newFilters) => {
+                    setPlaceFilters((prev) => ({ ...prev, ...newFilters, page: 1 }));
+                  }}
                   selectedPlaceId={selectedPlaceId}
                   setSelectedPlaceId={setSelectedPlaceId}
                   placeSearchText={placeSearchText}
@@ -1146,6 +1343,14 @@ export const AdminPage: React.FC = () => {
                 <FoodsTab
                   foodsList={foodsList}
                   setFoodsList={setFoodsList}
+                  isLoading={isFoodsLoading}
+                  pagination={foodsPagination}
+                  onPageChange={(p) => {
+                    setFoodFilters((prev) => ({ ...prev, page: p }));
+                  }}
+                  onFilterChange={(newFilters) => {
+                    setFoodFilters((prev) => ({ ...prev, ...newFilters, page: 1 }));
+                  }}
                   addAuditLog={addAuditLog}
                   showToast={showToast}
                 />
@@ -1156,6 +1361,14 @@ export const AdminPage: React.FC = () => {
                 <BlogsTab
                   blogsList={blogsList}
                   setBlogsList={setBlogsList}
+                  isLoading={isBlogsLoading}
+                  pagination={blogsPagination}
+                  onPageChange={(p) => {
+                    setBlogFilters((prev) => ({ ...prev, page: p }));
+                  }}
+                  onFilterChange={(newFilters) => {
+                    setBlogFilters((prev) => ({ ...prev, ...newFilters, page: 1 }));
+                  }}
                   addAuditLog={addAuditLog}
                   showToast={showToast}
                 />

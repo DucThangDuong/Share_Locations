@@ -117,9 +117,10 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
       const q = reportSearchText.toLowerCase();
       const matchId = (r.codeId || `#${r.id}`).toLowerCase().includes(q);
       const matchTitle = r.targetTitle.toLowerCase().includes(q);
+      const matchContent = ((r.targetContent || (r as any).content || (r as any).reviewContent || (r as any).commentContent) || "").toLowerCase().includes(q);
       const matchReporter = r.reporterName.toLowerCase().includes(q);
       const matchReason = (r.reportReasonCategory || r.reportTypeName).toLowerCase().includes(q);
-      if (!matchId && !matchTitle && !matchReporter && !matchReason) return false;
+      if (!matchId && !matchTitle && !matchContent && !matchReporter && !matchReason) return false;
     }
 
     return true;
@@ -199,19 +200,38 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
             <tbody className="divide-y divide-slate-100">
               {paginatedReports.map((r) => {
                 const groupKey = `${r.targetType}_${r.targetId}`;
+                const normType = normalizeType(r.targetType);
+                const isReviewOrComment = normType === "review" || normType === "comment";
+                const contentText =
+                  r.targetContent ||
+                  (r as any).content ||
+                  (r as any).reviewContent ||
+                  (r as any).commentContent ||
+                  (r as any).comment ||
+                  (r as any).text ||
+                  (r as any).targetDescription;
+
                 return (
                   <tr
                     key={r.id}
                     className="hover:bg-slate-50/60 transition-colors"
                   >
                     <td className="p-3.5 pl-4 w-[30%]">
-                      <div className="space-y-0.5">
+                      <div className="space-y-1">
                         <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
                           <span className="font-bold text-slate-700">{getTargetTypeLabel(r.targetType)}</span>
                         </div>
-                        <div className="font-bold text-slate-900 text-xs line-clamp-2">
-                          {r.targetTitle}
-                        </div>
+                        {isReviewOrComment && contentText ? (
+                          <div className="space-y-1">
+                            <div className="font-semibold text-slate-900 text-xs line-clamp-3 bg-slate-50/90 border border-slate-200/70 rounded-lg px-2.5 py-1.5 text-slate-800 italic">
+                              "{contentText}"
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="font-bold text-slate-900 text-xs line-clamp-2">
+                            {r.targetTitle}
+                          </div>
+                        )}
                       </div>
                     </td>
                     <td className="p-3.5">

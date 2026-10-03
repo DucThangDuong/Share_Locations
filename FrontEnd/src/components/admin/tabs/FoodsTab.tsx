@@ -1,6 +1,5 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
-  Utensils,
   Search,
   Plus,
   ArrowLeft,
@@ -14,16 +13,34 @@ import {
   UploadCloud,
   CheckCircle2,
   AlertCircle,
+  BookOpen,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
   X,
-  Link as LinkIcon,
-  Sparkles,
 } from "lucide-react";
 import type { AdminFoodItem } from "@/types/admin.types";
 import { adminService } from "@/services/adminService";
+import { geographyService, type ProvinceDto } from "@/services/geographyService";
 
 interface FoodsTabProps {
   foodsList: AdminFoodItem[];
   setFoodsList?: React.Dispatch<React.SetStateAction<AdminFoodItem[]>>;
+  isLoading?: boolean;
+  pagination?: {
+    page: number;
+    pageSize: number;
+    totalElements: number;
+    totalPages: number;
+  };
+  onPageChange?: (page: number) => void;
+  onFilterChange?: (filters: {
+    keyword?: string;
+    province?: string;
+    status?: string;
+    page?: number;
+    pageSize?: number;
+  }) => void;
   addAuditLog?: (
     action: string,
     targetName: string,
@@ -33,7 +50,7 @@ interface FoodsTabProps {
   showToast?: (msg: string) => void;
 }
 
-const PROVINCE_OPTIONS = [
+const DEFAULT_PROVINCES = [
   "Đà Nẵng",
   "Quảng Nam",
   "Thừa Thiên Huế",
@@ -56,27 +73,43 @@ const SPECIALTY_TYPES = [
 ];
 
 export const FoodsTab: React.FC<FoodsTabProps> = ({
-  foodsList,
+  foodsList = [],
   setFoodsList,
+  isLoading = false,
+  pagination = {
+    page: 1,
+    pageSize: 10,
+    totalElements: foodsList.length,
+    totalPages: 1,
+  },
+  onPageChange,
+  onFilterChange,
   addAuditLog,
   showToast,
 }) => {
   const [selectedFoodId, setSelectedFoodId] = useState<number | null>(null);
+  const [isCreatingFood, setIsCreatingFood] = useState(false);
   const [foodSearchText, setFoodSearchText] = useState("");
   const [foodFilterProvince, setFoodFilterProvince] = useState("all");
   const [foodFilterStatus, setFoodFilterStatus] = useState("all");
+  const [provincesList, setProvincesList] = useState<ProvinceDto[]>([]);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Add Food Modal state
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [newFoodForm, setNewFoodForm] = useState({
-    name: "",
-    province: "Đà Nẵng",
-    specialtyType: "Món nước đặc sản",
-    minPrice: "35000",
-    maxPrice: "65000",
-    coverImg: "https://images.unsplash.com/photo-1541544741938-0af808871cc0?w=600&h=400&fit=crop",
-    desc: "",
-  });
+  // Fetch provinces on mount
+  useEffect(() => {
+    geographyService
+      .getProvinces()
+      .then((res) => {
+        if (res.data && res.data.length > 0) {
+          setProvincesList(res.data);
+        }
+      })
+      .catch(() => { });
+  }, []);
+
+  const provinceNames = provincesList.length > 0
+    ? provincesList.map((p: any) => p.name || p.provinceName || String(p))
+    : DEFAULT_PROVINCES;
 
   const currentFood = selectedFoodId ? foodsList.find((f) => f.id === selectedFoodId) : null;
 
@@ -147,82 +180,48 @@ export const FoodsTab: React.FC<FoodsTabProps> = ({
   };
 
   const handleSaveFood = async (updatedFood: AdminFoodItem) => {
-    await adminService.updateFood(updatedFood.id, updatedFood);
     if (setFoodsList) {
       setFoodsList((prev) =>
         prev.map((f) => (f.id === updatedFood.id ? { ...f, ...updatedFood } : f))
       );
     }
     if (addAuditLog) {
-      addAuditLog("Cập nhật thông tin món ăn", updatedFood.name, "Chỉnh sửa thông tin đặc sản", "edit");
+      addAuditLog("Cập nhật thông tin món ăn", updatedFood.name, `Chỉnh sửa thông tin đặc sản ${updatedFood.name}`, "edit");
     }
     if (showToast) {
       showToast(`Đã cập nhật món "${updatedFood.name}".`);
     }
   };
 
-  const handleAddFoodSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newFoodForm.name.trim()) {
-      alert("Vui lòng nhập tên món ăn.");
-      return;
-    }
+  // If create mode is triggered, render FoodDetailEditor in create mode
+  if (isCreatingFood) {
+    return (
+      <FoodDetailEditor
+        isCreateMode={true}
+        provincesList={provincesList}
+        onBack={() => setIsCreatingFood(false)}
+        onSave={async (createdFood) => {
+          if (setFoodsList) {
+            setFoodsList((prev) => [createdFood, ...prev]);
+          }
+          if (addAuditLog) {
+            addAuditLog("Thêm món ăn đặc sản mới", createdFood.name, "Số hóa món đặc sản vùng miền", "create");
+          }
+          if (showToast) {
+            showToast(`Đã thêm món "${createdFood.name}" thành công.`);
+          }
+          setIsCreatingFood(false);
+        }}
+      />
+    );
+  }
 
-    const response = await adminService.createFood({
-      name: newFoodForm.name.trim(),
-      desc: newFoodForm.desc.trim(),
-      coverImg: newFoodForm.coverImg.trim(),
-      minPrice: parseInt(newFoodForm.minPrice, 10) || 30000,
-      maxPrice: parseInt(newFoodForm.maxPrice, 10) || 60000,
-      status: "active",
-      provinceId: undefined,
-    });
-    const newFood: AdminFoodItem = {
-      id: response.data,
-      name: newFoodForm.name.trim(),
-      province: newFoodForm.province,
-      specialtyType: newFoodForm.specialtyType,
-      minPrice: parseInt(newFoodForm.minPrice, 10) || 30000,
-      maxPrice: parseInt(newFoodForm.maxPrice, 10) || 60000,
-      coverImg:
-        newFoodForm.coverImg.trim() ||
-        "https://images.unsplash.com/photo-1541544741938-0af808871cc0?w=600&h=400&fit=crop",
-      imageUrl:
-        newFoodForm.coverImg.trim() ||
-        "https://images.unsplash.com/photo-1541544741938-0af808871cc0?w=600&h=400&fit=crop",
-      desc: newFoodForm.desc.trim() || "Món ăn đặc sản địa phương đặc sắc.",
-      status: "active",
-      statusNum: 1,
-      placesCount: 1,
-    };
-
-    if (setFoodsList) {
-      setFoodsList((prev) => [newFood, ...prev]);
-    }
-    if (addAuditLog) {
-      addAuditLog("Thêm món ăn đặc sản mới", newFood.name, "Số hóa món đặc sản vùng miền", "create");
-    }
-    if (showToast) {
-      showToast(`Đã thêm món "${newFood.name}" thành công.`);
-    }
-
-    setIsAddModalOpen(false);
-    setNewFoodForm({
-      name: "",
-      province: "Đà Nẵng",
-      specialtyType: "Món nước đặc sản",
-      minPrice: "35000",
-      maxPrice: "65000",
-      coverImg: "https://images.unsplash.com/photo-1541544741938-0af808871cc0?w=600&h=400&fit=crop",
-      desc: "",
-    });
-  };
-
-  // If a food item is selected, render full FoodDetailEditor
+  // If a food item is selected, render full FoodDetailEditor in edit mode
   if (selectedFoodId && currentFood) {
     return (
       <FoodDetailEditor
         food={currentFood}
+        provincesList={provincesList}
         onBack={() => setSelectedFoodId(null)}
         onSave={handleSaveFood}
         onToggleStatus={() => handleToggleHideFood(currentFood.id)}
@@ -230,6 +229,26 @@ export const FoodsTab: React.FC<FoodsTabProps> = ({
       />
     );
   }
+
+  const handleSearchChange = (val: string) => {
+    setFoodSearchText(val);
+    if (onFilterChange) {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = setTimeout(() => {
+        onFilterChange({ keyword: val, page: 1 });
+      }, 350);
+    }
+  };
+
+  const handleProvinceChange = (val: string) => {
+    setFoodFilterProvince(val);
+    onFilterChange?.({ province: val, page: 1 });
+  };
+
+  const handleStatusChange = (val: string) => {
+    setFoodFilterStatus(val);
+    onFilterChange?.({ status: val, page: 1 });
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-150 text-xs font-sans">
@@ -242,19 +261,28 @@ export const FoodsTab: React.FC<FoodsTabProps> = ({
               type="text"
               placeholder="Tìm kiếm theo tên món ăn, đặc sản, tỉnh thành..."
               value={foodSearchText}
-              onChange={(e) => setFoodSearchText(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:bg-white outline-none focus:border-emerald-500"
+              onChange={(e) => handleSearchChange(e.target.value)}
+              className="w-full pl-9 pr-8 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:bg-white outline-none focus:border-emerald-500"
             />
+            {foodSearchText && (
+              <button
+                type="button"
+                onClick={() => handleSearchChange("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <X size={14} />
+              </button>
+            )}
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
             <select
               value={foodFilterProvince}
-              onChange={(e) => setFoodFilterProvince(e.target.value)}
+              onChange={(e) => handleProvinceChange(e.target.value)}
               className="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 font-medium text-slate-800 outline-none focus:border-emerald-500 cursor-pointer"
             >
               <option value="all">Tất cả tỉnh thành</option>
-              {PROVINCE_OPTIONS.map((prov) => (
+              {provinceNames.map((prov: string) => (
                 <option key={prov} value={prov}>
                   {prov}
                 </option>
@@ -263,7 +291,7 @@ export const FoodsTab: React.FC<FoodsTabProps> = ({
 
             <select
               value={foodFilterStatus}
-              onChange={(e) => setFoodFilterStatus(e.target.value)}
+              onChange={(e) => handleStatusChange(e.target.value)}
               className="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 font-medium text-slate-800 outline-none focus:border-emerald-500 cursor-pointer"
             >
               <option value="all">Tất cả trạng thái</option>
@@ -272,7 +300,11 @@ export const FoodsTab: React.FC<FoodsTabProps> = ({
             </select>
 
             <button
-              onClick={() => setIsAddModalOpen(true)}
+              type="button"
+              onClick={() => {
+                setSelectedFoodId(null);
+                setIsCreatingFood(true);
+              }}
               className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold cursor-pointer transition-all shadow-sm shadow-emerald-600/20"
             >
               <Plus size={14} />
@@ -339,12 +371,12 @@ export const FoodsTab: React.FC<FoodsTabProps> = ({
                     {/* Status */}
                     <td className="p-3.5">
                       <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${isHidden
-                            ? "bg-slate-100 text-slate-600"
-                            : "bg-emerald-100 text-emerald-800"
+                        className={`inline-flex items-center justify-center px-3.5 py-1 rounded-xl text-xs font-bold border transition-colors ${isHidden
+                          ? "bg-slate-100 text-slate-700 border-slate-300"
+                          : "bg-[#e6fcf5] text-[#087f5b] border-[#63e6be]"
                           }`}
                       >
-                        {isHidden ? "Đang tạm ẩn" : "Đang công khai"}
+                        {isHidden ? "Tạm ẩn" : "Công khai"}
                       </span>
                     </td>
 
@@ -365,8 +397,8 @@ export const FoodsTab: React.FC<FoodsTabProps> = ({
                           type="button"
                           onClick={() => handleToggleHideFood(food.id)}
                           className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${isHidden
-                              ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                              : "border-slate-200 hover:bg-slate-100 text-slate-600"
+                            ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                            : "border-slate-200 hover:bg-slate-100 text-slate-600"
                             }`}
                           title={isHidden ? "Hiện lại món ăn" : "Tạm ẩn món ăn"}
                         >
@@ -389,182 +421,123 @@ export const FoodsTab: React.FC<FoodsTabProps> = ({
             </tbody>
           </table>
 
-          {filteredFoods.length === 0 && (
-            <div className="p-8 text-center text-slate-400">
+          {isLoading ? (
+            <div className="p-12 text-center text-slate-400">
+              <div className="flex flex-col items-center justify-center gap-2">
+                <Loader2 size={24} className="animate-spin text-emerald-600" />
+                <span>Đang tải danh sách món ăn từ máy chủ...</span>
+              </div>
+            </div>
+          ) : (onFilterChange ? foodsList.length === 0 : filteredFoods.length === 0) ? (
+            <div className="p-8 text-center text-slate-400 font-medium">
               Không tìm thấy món ăn đặc sản nào phù hợp với bộ lọc.
             </div>
-          )}
+          ) : null}
         </div>
-      </div>
 
-      {/* Add Food Modal */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-5 shadow-2xl border border-slate-200 animate-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2">
-                <Utensils className="w-5 h-5 text-emerald-700" />
-                <h3 className="font-bold text-base text-slate-900">Thêm món ăn / Đặc sản mới</h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsAddModalOpen(false)}
-                className="p-1 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
-              >
-                <X size={18} />
-              </button>
+        {/* Pagination Bar */}
+        {pagination && pagination.totalElements > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 px-1 border-t border-slate-100 text-xs text-slate-500 font-medium">
+            <div>
+              Hiển thị <strong>{foodsList.length}</strong> / <strong>{pagination.totalElements}</strong> món ăn (Trang <strong>{pagination.page}</strong> / {pagination.totalPages || 1})
             </div>
 
-            <form onSubmit={handleAddFoodSubmit} className="space-y-4 text-xs">
-              <div>
-                <label className="block font-bold text-slate-800 mb-1">
-                  Tên món ăn đặc sản <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ví dụ: Mì Quảng Ếch, Bánh Xèo Tôm Nhảy..."
-                  value={newFoodForm.name}
-                  onChange={(e) => setNewFoodForm({ ...newFoodForm, name: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-900 focus:bg-white focus:border-emerald-600 outline-none"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-slate-800 mb-1">Tỉnh / Thành phố</label>
-                  <select
-                    value={newFoodForm.province}
-                    onChange={(e) => setNewFoodForm({ ...newFoodForm, province: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-900 focus:bg-white focus:border-emerald-600 outline-none cursor-pointer"
-                  >
-                    {PROVINCE_OPTIONS.map((p) => (
-                      <option key={p} value={p}>
-                        {p}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-800 mb-1">Phân loại đặc sản</label>
-                  <select
-                    value={newFoodForm.specialtyType}
-                    onChange={(e) =>
-                      setNewFoodForm({ ...newFoodForm, specialtyType: e.target.value })
-                    }
-                    className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-900 focus:bg-white focus:border-emerald-600 outline-none cursor-pointer"
-                  >
-                    {SPECIALTY_TYPES.map((t) => (
-                      <option key={t} value={t}>
-                        {t}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-slate-800 mb-1">Giá tối thiểu (VNĐ)</label>
-                  <input
-                    type="number"
-                    value={newFoodForm.minPrice}
-                    onChange={(e) =>
-                      setNewFoodForm({ ...newFoodForm, minPrice: e.target.value })
-                    }
-                    className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:bg-white focus:border-emerald-600 outline-none font-medium"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-800 mb-1">Giá tối đa (VNĐ)</label>
-                  <input
-                    type="number"
-                    value={newFoodForm.maxPrice}
-                    onChange={(e) =>
-                      setNewFoodForm({ ...newFoodForm, maxPrice: e.target.value })
-                    }
-                    className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:bg-white focus:border-emerald-600 outline-none font-medium"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-800 mb-1">URL hình ảnh món ăn</label>
-                <input
-                  type="text"
-                  placeholder="https://images.unsplash.com/..."
-                  value={newFoodForm.coverImg}
-                  onChange={(e) => setNewFoodForm({ ...newFoodForm, coverImg: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:bg-white focus:border-emerald-600 outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-800 mb-1">Mô tả món ăn</label>
-                <textarea
-                  rows={3}
-                  placeholder="Chia sẻ hương vị, nguồn gốc, cách thưởng thức đặc sản..."
-                  value={newFoodForm.desc}
-                  onChange={(e) => setNewFoodForm({ ...newFoodForm, desc: e.target.value })}
-                  className="w-full p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:bg-white focus:border-emerald-600 outline-none leading-relaxed"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+            {pagination.totalPages > 1 && (
+              <div className="flex items-center gap-1.5">
                 <button
                   type="button"
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 font-bold cursor-pointer"
+                  disabled={pagination.page <= 1 || isLoading}
+                  onClick={() => onPageChange?.(pagination.page - 1)}
+                  className="px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-bold text-slate-700 transition-colors flex items-center gap-1 cursor-pointer"
                 >
-                  Hủy bỏ
+                  <ChevronLeft size={14} />
+                  <span>Trước</span>
                 </button>
+
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                    let pNum = pagination.page - 2 + i;
+                    if (pagination.page <= 3) {
+                      pNum = i + 1;
+                    } else if (pagination.page >= pagination.totalPages - 2) {
+                      pNum = pagination.totalPages - 4 + i;
+                    }
+                    if (pNum < 1 || pNum > pagination.totalPages) return null;
+
+                    return (
+                      <button
+                        key={pNum}
+                        type="button"
+                        disabled={isLoading}
+                        onClick={() => onPageChange?.(pNum)}
+                        className={`w-7 h-7 rounded-xl font-bold text-xs transition-colors flex items-center justify-center cursor-pointer ${
+                          pagination.page === pNum
+                            ? "bg-emerald-700 text-white shadow-xs"
+                            : "bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200"
+                        }`}
+                      >
+                        {pNum}
+                      </button>
+                    );
+                  })}
+                </div>
+
                 <button
-                  type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold shadow-sm cursor-pointer"
+                  type="button"
+                  disabled={pagination.page >= pagination.totalPages || isLoading}
+                  onClick={() => onPageChange?.(pagination.page + 1)}
+                  className="px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-bold text-slate-700 transition-colors flex items-center gap-1 cursor-pointer"
                 >
-                  Tạo món ăn mới
+                  <span>Sau</span>
+                  <ChevronRight size={14} />
                 </button>
               </div>
-            </form>
+            )}
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
 
-/* ── DETAIL & EDIT VIEW FOR FOOD (MATCHING ProposePlacePage & PlaceDetailEditor) ── */
+/* ── DETAIL & EDIT VIEW FOR FOOD (SUPPORTING AZURE BLOB FILE UPLOAD & CREATE MODE) ── */
 interface FoodDetailEditorProps {
-  food: AdminFoodItem;
+  food?: AdminFoodItem;
+  isCreateMode?: boolean;
+  provincesList?: ProvinceDto[];
   onBack: () => void;
-  onSave: (updatedFood: AdminFoodItem) => void;
-  onToggleStatus: () => void;
-  onDelete: () => void;
+  onSave: (food: AdminFoodItem) => Promise<void> | void;
+  onToggleStatus?: () => void;
+  onDelete?: () => void;
 }
 
 const FoodDetailEditor: React.FC<FoodDetailEditorProps> = ({
   food,
+  isCreateMode = false,
+  provincesList = [],
   onBack,
   onSave,
   onToggleStatus,
   onDelete,
 }) => {
-  const [name, setName] = useState(food.name || "");
-  const [province, setProvince] = useState(food.province || "Đà Nẵng");
+  const [name, setName] = useState(food?.name || "");
+  const [province, setProvince] = useState(food?.province || "Đà Nẵng");
+  const [provinceId, setProvinceId] = useState<number | undefined>(food?.provinceId);
   const [specialtyType, setSpecialtyType] = useState(
-    food.specialtyType || "Món nước đặc sản"
+    food?.specialtyType || "Món nước đặc sản"
   );
-  const [minPrice, setMinPrice] = useState(String(food.minPrice || 35000));
-  const [maxPrice, setMaxPrice] = useState(String(food.maxPrice || 65000));
+  const [minPrice, setMinPrice] = useState(String(food?.minPrice || 35000));
+  const [maxPrice, setMaxPrice] = useState(String(food?.maxPrice || 65000));
   const [coverImg, setCoverImg] = useState(
-    food.coverImg ||
-    food.imageUrl ||
+    food?.coverImg ||
+    food?.imageUrl ||
     "https://images.unsplash.com/photo-1541544741938-0af808871cc0?w=600&h=400&fit=crop"
   );
-  const [desc, setDesc] = useState(food.desc || food.description || "");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [desc, setDesc] = useState(food?.desc || food?.description || "");
+  const [historyInfo, setHistoryInfo] = useState(food?.historyInfo || "");
   const [status, setStatus] = useState<"active" | "hidden">(
-    food.status || (food.statusNum === 3 ? "hidden" : "active")
+    food?.status || (food?.statusNum === 3 ? "hidden" : "active")
   );
 
   const [isSaving, setIsSaving] = useState(false);
@@ -572,50 +545,210 @@ const FoodDetailEditor: React.FC<FoodDetailEditorProps> = ({
   const [errorMsg, setErrorMsg] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Initialize provinceId if missing
+  useEffect(() => {
+    if (provincesList && provincesList.length > 0) {
+      if (provinceId) {
+        const matched = provincesList.find((p) => p.id === provinceId);
+        if (matched && !province) {
+          setProvince(matched.name);
+        }
+      } else if (province) {
+        const matched = provincesList.find(
+          (p) => p.name.toLowerCase() === province.toLowerCase()
+        );
+        if (matched) {
+          setProvinceId(matched.id);
+        }
+      }
+    }
+  }, [provincesList, province, provinceId]);
+
+  const handleProvinceChange = (selectedVal: string) => {
+    if (provincesList && provincesList.length > 0) {
+      const matched = provincesList.find(
+        (p) => String(p.id) === selectedVal || p.name.toLowerCase() === selectedVal.toLowerCase()
+      );
+      if (matched) {
+        setProvinceId(matched.id);
+        setProvince(matched.name);
+        return;
+      }
+    }
+    setProvince(selectedVal);
+  };
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") {
-        setCoverImg(reader.result);
-      }
-    };
-    reader.readAsDataURL(file);
+
+    // Validate size (<= 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      setErrorMsg("Dung lượng ảnh vượt quá giới hạn cho phép (tối đa 10MB).");
+      return;
+    }
+
+    // Validate type (.jpg, .jpeg, .png, .webp)
+    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+    if (!allowedTypes.includes(file.type.toLowerCase())) {
+      setErrorMsg("Định dạng ảnh không hợp lệ. Vui lòng chọn tệp .jpg, .jpeg, .png hoặc .webp.");
+      return;
+    }
+
+    setImageFile(file);
+    setErrorMsg("");
+    const previewUrl = URL.createObjectURL(file);
+    setCoverImg(previewUrl);
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
+    setSaveSuccessMsg("");
 
     if (!name.trim()) {
       setErrorMsg("Vui lòng nhập tên món ăn đặc sản.");
       return;
     }
 
+    const minVal = parseInt(minPrice, 10) || 0;
+    const maxVal = parseInt(maxPrice, 10) || 0;
+    if (minVal > 0 && maxVal > 0 && minVal > maxVal) {
+      setErrorMsg("Mức giá tối thiểu không được lớn hơn mức giá tối đa.");
+      return;
+    }
+
     setIsSaving(true);
 
-    const updatedFood: AdminFoodItem = {
-      ...food,
-      name: name.trim(),
-      province,
-      specialtyType,
-      minPrice: parseInt(minPrice, 10) || 0,
-      maxPrice: parseInt(maxPrice, 10) || 0,
-      coverImg,
-      imageUrl: coverImg,
-      desc: desc.trim(),
-      description: desc.trim(),
-      status,
-      statusNum: status === "active" ? 1 : 3,
-    };
+    try {
+      // 1. Upload new image file if selected
+      let serverCoverImg = coverImg && !coverImg.startsWith("blob:") ? coverImg : "";
+      if (imageFile) {
+        try {
+          const uploadRes = await adminService.uploadPlaceImages([imageFile]);
+          if (uploadRes && uploadRes.length > 0) {
+            serverCoverImg = uploadRes[0];
+          }
+        } catch {
+          // Fallback to existing coverImg
+        }
+      }
 
-    setTimeout(() => {
-      onSave(updatedFood);
+      // 2. Build JSON payload matching backend UpdateAdminFoodInput DTO
+      const jsonPayload = {
+        name: name.trim(),
+        provinceId: provinceId ? Number(provinceId) : null,
+        minPrice: minVal > 0 ? minVal : null,
+        maxPrice: maxVal > 0 ? maxVal : null,
+        coverImg: serverCoverImg || (coverImg.startsWith("blob:") ? "" : coverImg),
+        desc: desc.trim() || null,
+        historyInfo: historyInfo.trim() || null,
+        status: status || "active",
+      };
+
+      // Also prepare fallback FormData in case backend endpoint expects multipart
+      const formData = new FormData();
+      formData.append("name", name.trim());
+      if (provinceId) {
+        formData.append("provinceId", String(provinceId));
+      }
+      if (minPrice) {
+        formData.append("minPrice", String(minVal));
+      }
+      if (maxPrice) {
+        formData.append("maxPrice", String(maxVal));
+      }
+      if (desc.trim()) {
+        formData.append("desc", desc.trim());
+      }
+      if (historyInfo.trim()) {
+        formData.append("historyInfo", historyInfo.trim());
+      }
+      if (status) {
+        formData.append("status", status);
+      }
+      if (imageFile) {
+        formData.append("image", imageFile);
+      } else if (serverCoverImg) {
+        formData.append("coverImg", serverCoverImg);
+      }
+
+      if (isCreateMode) {
+        let res: any;
+        try {
+          res = await adminService.createFood(jsonPayload);
+        } catch {
+          res = await adminService.createFood(formData);
+        }
+
+        const createdId = typeof res?.data === "number" ? res.data : res?.data?.id || Date.now();
+        const finalImg = res?.data?.coverImg || res?.coverImg || serverCoverImg || (coverImg.startsWith("blob:") ? "" : coverImg);
+
+        const newFood: AdminFoodItem = {
+          id: createdId,
+          name: name.trim(),
+          province,
+          provinceId: provinceId ? Number(provinceId) : undefined,
+          specialtyType,
+          minPrice: minVal,
+          maxPrice: maxVal,
+          coverImg: finalImg,
+          imageUrl: finalImg,
+          desc: desc.trim() || "Món ăn đặc sản địa phương đặc sắc.",
+          description: desc.trim() || "Món ăn đặc sản địa phương đặc sắc.",
+          historyInfo: historyInfo.trim(),
+          status,
+          statusNum: status === "active" ? 1 : 3,
+          placesCount: 1,
+        };
+
+        await onSave(newFood);
+      } else if (food) {
+        let res: any;
+        try {
+          res = await adminService.updateFood(food.id, jsonPayload);
+        } catch (updateErr: any) {
+          if (updateErr?.response?.status === 415) {
+            res = await adminService.updateFood(food.id, formData);
+          } else {
+            throw updateErr;
+          }
+        }
+
+        const finalImg = res?.data?.coverImg || res?.coverImg || serverCoverImg || coverImg;
+
+        const updatedFood: AdminFoodItem = {
+          ...food,
+          name: name.trim(),
+          province,
+          provinceId: provinceId ? Number(provinceId) : undefined,
+          specialtyType,
+          minPrice: minVal,
+          maxPrice: maxVal,
+          coverImg: finalImg,
+          imageUrl: finalImg,
+          desc: desc.trim(),
+          description: desc.trim(),
+          historyInfo: historyInfo.trim(),
+          status,
+          statusNum: status === "active" ? 1 : 3,
+        };
+
+        await onSave(updatedFood);
+        setCoverImg(finalImg);
+        setImageFile(null);
+        setSaveSuccessMsg("Đã lưu thông tin món ăn & cập nhật tỉnh thành thành công!");
+        setTimeout(() => setSaveSuccessMsg(""), 5000);
+      }
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        (isCreateMode ? "Có lỗi xảy ra khi tạo món ăn mới. Vui lòng kiểm tra lại." : "Có lỗi xảy ra khi cập nhật món ăn. Vui lòng kiểm tra lại.");
+      setErrorMsg(msg);
+    } finally {
       setIsSaving(false);
-      setSaveSuccessMsg("Đã lưu chỉnh sửa thông tin món ăn thành công!");
-      setTimeout(() => setSaveSuccessMsg(""), 4000);
-    }, 400);
+    }
   };
 
   const isHidden = status === "hidden";
@@ -641,43 +774,53 @@ const FoodDetailEditor: React.FC<FoodDetailEditorProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-base sm:text-lg font-bold text-slate-900 truncate max-w-md">
-                {name || food.name}
+                {isCreateMode ? (name || "Thêm món ăn / Đặc sản mới") : (name || food?.name)}
               </h2>
               <span
-                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold ${isHidden ? "bg-slate-200 text-slate-700" : "bg-emerald-100 text-emerald-800"
+                className={`inline-flex items-center justify-center px-3.5 py-1 rounded-xl text-xs font-bold border transition-colors ${isCreateMode
+                  ? "bg-emerald-100 text-emerald-800 border-emerald-300"
+                  : isHidden
+                    ? "bg-slate-100 text-slate-700 border-slate-300"
+                    : "bg-[#e6fcf5] text-[#087f5b] border-[#63e6be]"
                   }`}
               >
-                {isHidden ? "Đang tạm ẩn" : "Đang công khai"}
+                {isCreateMode ? "Món mới" : isHidden ? "Tạm ẩn" : "Công khai"}
               </span>
             </div>
             <p className="text-[11px] text-slate-400 mt-0.5">
-              Mã đặc sản #{food.id} • Tỉnh thành: {province} • Phân loại: {specialtyType}
+              {isCreateMode
+                ? "Nhập thông tin chi tiết và tải ảnh đại diện để thêm món ăn đặc sản vào hệ thống"
+                : `Mã đặc sản #${food?.id} • Tỉnh thành: ${province}`}
             </p>
           </div>
         </div>
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2 flex-wrap">
-          <button
-            type="button"
-            onClick={() => {
-              onToggleStatus();
-              setStatus((prev) => (prev === "active" ? "hidden" : "active"));
-            }}
-            className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl cursor-pointer transition-colors"
-          >
-            {isHidden ? <Eye size={14} /> : <EyeOff size={14} />}
-            <span>{isHidden ? "Hiện lại trên web" : "Tạm ẩn món ăn"}</span>
-          </button>
+          {!isCreateMode && onToggleStatus && (
+            <button
+              type="button"
+              onClick={() => {
+                onToggleStatus();
+                setStatus((prev: string) => (prev === "active" ? "hidden" : "active"));
+              }}
+              className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl cursor-pointer transition-colors"
+            >
+              {isHidden ? <Eye size={14} /> : <EyeOff size={14} />}
+              <span>{isHidden ? "Hiện lại trên web" : "Tạm ẩn món ăn"}</span>
+            </button>
+          )}
 
-          <button
-            type="button"
-            onClick={onDelete}
-            className="flex items-center gap-1.5 px-3 py-2 border border-rose-200 text-rose-600 hover:bg-rose-50 font-bold rounded-xl cursor-pointer transition-colors"
-          >
-            <Trash2 size={14} />
-            <span>Xóa món ăn</span>
-          </button>
+          {!isCreateMode && onDelete && (
+            <button
+              type="button"
+              onClick={onDelete}
+              className="flex items-center gap-1.5 px-3 py-2 border border-rose-200 text-rose-600 hover:bg-rose-50 font-bold rounded-xl cursor-pointer transition-colors"
+            >
+              <Trash2 size={14} />
+              <span>Xóa món ăn</span>
+            </button>
+          )}
 
           <button
             type="button"
@@ -690,7 +833,7 @@ const FoodDetailEditor: React.FC<FoodDetailEditorProps> = ({
             ) : (
               <Save size={14} />
             )}
-            <span>{isSaving ? "Đang lưu..." : "Lưu thay đổi"}</span>
+            <span>{isSaving ? "Đang lưu..." : isCreateMode ? "Tạo món ăn mới" : "Lưu thay đổi"}</span>
           </button>
         </div>
       </div>
@@ -742,15 +885,22 @@ const FoodDetailEditor: React.FC<FoodDetailEditorProps> = ({
                       Tỉnh / Thành phố đặc trưng <span className="text-rose-500">*</span>
                     </label>
                     <select
-                      value={province}
-                      onChange={(e) => setProvince(e.target.value)}
+                      value={provinceId ? String(provinceId) : province}
+                      onChange={(e) => handleProvinceChange(e.target.value)}
                       className="w-full px-3.5 py-3 rounded-2xl bg-slate-50/80 border border-slate-200 text-xs font-medium text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-700 cursor-pointer"
                     >
-                      {PROVINCE_OPTIONS.map((p) => (
-                        <option key={p} value={p}>
-                          {p}
-                        </option>
-                      ))}
+                      <option value="">-- Chọn Tỉnh / Thành phố --</option>
+                      {provincesList && provincesList.length > 0
+                        ? provincesList.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name}
+                          </option>
+                        ))
+                        : DEFAULT_PROVINCES.map((pName) => (
+                          <option key={pName} value={pName}>
+                            {pName}
+                          </option>
+                        ))}
                     </select>
                   </div>
 
@@ -781,6 +931,20 @@ const FoodDetailEditor: React.FC<FoodDetailEditorProps> = ({
                     placeholder="Mô tả hương vị, nguyên liệu đặc trưng, cách chế biến và cảm nhận khi thưởng thức món ăn này..."
                     value={desc}
                     onChange={(e) => setDesc(e.target.value)}
+                    className="w-full p-3.5 rounded-2xl bg-slate-50/80 border border-slate-200 text-xs sm:text-sm text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-700 leading-relaxed"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-800 mb-1.5 flex items-center gap-1.5">
+                    <BookOpen className="w-3.5 h-3.5 text-emerald-700" />
+                    <span>Nguồn gốc, lịch sử & văn hóa truyền thống</span>
+                  </label>
+                  <textarea
+                    rows={3}
+                    placeholder="Nguồn gốc hình thành, câu chuyện lịch sử hoặc nét đẹp văn hóa gắn liền với món ăn đặc sản..."
+                    value={historyInfo}
+                    onChange={(e) => setHistoryInfo(e.target.value)}
                     className="w-full p-3.5 rounded-2xl bg-slate-50/80 border border-slate-200 text-xs sm:text-sm text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-700 leading-relaxed"
                   />
                 </div>
@@ -823,99 +987,76 @@ const FoodDetailEditor: React.FC<FoodDetailEditorProps> = ({
               </div>
             </div>
 
-            {/* Section 3: Image Management */}
+            {/* Section 3: Image Management (Direct Azure Blob Upload) */}
             <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-4">
-              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
-                <UploadCloud className="w-4 h-4 text-emerald-700" />
-                <span>3. Hình ảnh món ăn đại diện</span>
-              </h3>
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <UploadCloud className="w-4 h-4 text-emerald-700" />
+                  <span>3. Hình ảnh món ăn đại diện</span>
+                </h3>
+                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
+                  Tối đa 10MB
+                </span>
+              </div>
 
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp"
                 onChange={handleFileUpload}
                 className="hidden"
               />
 
-              <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
+              <div className="space-y-4">
                 <div
                   onClick={() => fileInputRef.current?.click()}
-                  className="sm:col-span-8 p-6 border-2 border-dashed border-slate-300 hover:border-emerald-600 rounded-2xl text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2 hover:bg-slate-50"
+                  className={`w-full p-6 border-2 border-dashed rounded-2xl text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2 ${imageFile
+                    ? "border-emerald-600 bg-emerald-50/30"
+                    : "border-slate-300 hover:border-emerald-600 hover:bg-slate-50"
+                    }`}
                 >
                   <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shadow-2xs">
                     <UploadCloud className="w-5 h-5" />
                   </div>
                   <div>
                     <p className="text-xs font-bold text-slate-800">
-                      Tải ảnh mới từ máy tính (Click để chọn ảnh)
+                      {imageFile
+                        ? `Đã chọn tệp: ${imageFile.name}`
+                        : "Tải ảnh mới từ máy tính (Click để chọn ảnh)"}
                     </p>
                     <p className="text-[11px] text-slate-400 mt-0.5">
-                      Định dạng JPG, PNG, WEBP độ phân giải cao
+                      {imageFile
+                        ? `Kích thước: ${(imageFile.size / 1024).toFixed(0)} KB • Định dạng ${imageFile.type}`
+                        : "Định dạng JPG, PNG, WEBP"}
                     </p>
                   </div>
                 </div>
 
-                <div className="sm:col-span-4 aspect-4/3 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 relative group shadow-2xs">
-                  <img src={coverImg} alt={name} className="w-full h-full object-cover" />
-                  <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-slate-950/70 text-white text-[10px] font-bold">
-                    Ảnh hiện tại
-                  </span>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
-                  <LinkIcon className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Hoặc dán URL hình ảnh trực tuyến</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="https://..."
-                  value={coverImg}
-                  onChange={(e) => setCoverImg(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-700"
-                />
-              </div>
-            </div>
-
-            {/* Bottom Action Bar */}
-            <div className="p-6 bg-white rounded-3xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="text-xs text-slate-500">
-                Thông tin chỉnh sửa sẽ được lưu trực tiếp vào danh mục Ẩm thực & Đặc sản hệ thống.
-              </div>
-
-              <div className="flex items-center gap-2.5 w-full sm:w-auto">
-                <button
-                  type="button"
-                  onClick={onBack}
-                  className="flex-1 sm:flex-none px-5 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer transition-all text-center"
-                >
-                  Quay lại
-                </button>
-
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="flex-1 sm:flex-none px-7 py-3 rounded-2xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 cursor-pointer transition-all shadow-md disabled:opacity-50"
-                >
-                  {isSaving ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Đang lưu...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Save className="w-4 h-4" />
-                      <span>Lưu thông tin món ăn</span>
-                    </>
-                  )}
-                </button>
+                {coverImg && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-700">
+                        {imageFile ? "Ảnh mới xem trước:" : "Ảnh hiện tại:"}
+                      </span>
+                      {imageFile && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setImageFile(null);
+                            setCoverImg(food?.coverImg || food?.imageUrl || "");
+                          }}
+                          className="text-rose-600 hover:text-rose-700 font-bold text-xs hover:underline cursor-pointer"
+                        >
+                          Hủy chọn ảnh mới
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Right Column (4 cols, sticky): Live Preview Card */}
           <div className="lg:col-span-4 space-y-6 sticky top-6">
             <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -957,30 +1098,6 @@ const FoodDetailEditor: React.FC<FoodDetailEditorProps> = ({
                   <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed font-normal">
                     {desc.trim() || "Mô tả về món ăn đặc sản sẽ hiển thị tại đây..."}
                   </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Status Control */}
-            <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-3.5">
-              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
-                <Sparkles className="w-4 h-4 text-emerald-700" />
-                <span>Trạng thái hiển thị</span>
-              </h3>
-
-              <div className="space-y-2 text-xs">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Chế độ phát hành
-                  </label>
-                  <select
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value as "active" | "hidden")}
-                    className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 font-semibold text-slate-800 outline-none focus:border-emerald-600 cursor-pointer"
-                  >
-                    <option value="active">Đang công khai (Hiển thị cho người dùng)</option>
-                    <option value="hidden">Đang tạm ẩn (Ẩn khỏi trang ẩm thực)</option>
-                  </select>
                 </div>
               </div>
             </div>

@@ -254,7 +254,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               )}
 
               {[
-                { id: "foods", label: "Ẩm thực & Đặc sản", icon: Utensils },
+                { id: "foods", label: "Ẩm thực", icon: Utensils },
                 { id: "collections", label: "Bộ sưu tập", icon: FolderHeart },
                 { id: "blogs", label: "Cẩm nang", icon: BookOpen },
                 { id: "categories", label: "Danh mục hệ thống", icon: Layers },

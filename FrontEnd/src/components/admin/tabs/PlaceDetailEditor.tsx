@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import {
   MapPin,
   Clock,
@@ -28,6 +28,8 @@ import { catalogService } from "@/services/catalogService";
 import { geographyService } from "@/services/geographyService";
 import { adminService } from "@/services/adminService";
 import { PlaceAdminReviews } from "./PlaceAdminReviews";
+import { PlaceAdminFoods, type AdminPlaceFoodDto } from "./PlaceAdminFoods";
+import { UtensilsCrossed } from "lucide-react";
 import type { PlaceTypeDto } from "@/types/models/place.model";
 import type { ProvinceDto } from "@/types/models/geography.model";
 
@@ -342,19 +344,74 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
   });
   const rating = place?.rating;
 
-  // Active Editor Tab ('info' for place info/media, 'reviews' for reviews & comments management)
-  const [activeEditorTab, setActiveEditorTab] = useState<"info" | "reviews">("info");
+  // Active Editor Tab ('info' for place info/media, 'foods' for specialties/foods, 'reviews' for reviews & comments)
+  const [activeEditorTab, setActiveEditorTab] = useState<"info" | "foods" | "reviews">("info");
+  const [foodsCount, setFoodsCount] = useState<number>(
+    Array.isArray(place?.foods) ? place.foods.length : (Array.isArray(place?.foodIds) ? place.foodIds.length : 0)
+  );
   const [reviewsCount, setReviewsCount] = useState<number>(
     place?.reviewCount || place?.reviewsCount || (Array.isArray(place?.reviews) ? place.reviews.length : 0)
   );
+
+  // Associated Foods State
+  const [associatedFoods, setAssociatedFoods] = useState<AdminPlaceFoodDto[]>(() => {
+    const rawFoods = (place?.foods || place?.Foods || []) as any[];
+    return rawFoods.map((f: any) => ({
+      id: Number(f.id ?? f.Id),
+      name: f.name ?? f.Name ?? "Món ăn đặc sản",
+      minPrice: f.minPrice ?? f.MinPrice ?? null,
+      maxPrice: f.maxPrice ?? f.MaxPrice ?? null,
+      coverImg: f.coverImg ?? f.CoverImg ?? f.coverImageUrl ?? f.CoverImageUrl ?? "",
+      coverImageUrl: f.coverImg ?? f.CoverImg ?? f.coverImageUrl ?? f.CoverImageUrl ?? "",
+      description: f.description ?? f.Description ?? f.desc ?? f.Desc ?? "",
+      desc: f.description ?? f.Description ?? f.desc ?? f.Desc ?? "",
+      status: f.status ?? f.Status ?? "active",
+      statusNum: f.statusNum ?? f.StatusNum ?? 1,
+      province: f.province ?? f.Province ?? place?.province ?? "",
+      provinceId: f.provinceId ?? f.ProvinceId ?? place?.provinceId ?? undefined,
+      specialtyType: f.specialtyType ?? f.SpecialtyType ?? "",
+    }));
+  });
+  const [initialFoodsSnapshot, setInitialFoodsSnapshot] = useState<AdminPlaceFoodDto[]>(() => {
+    const rawFoods = (place?.foods || place?.Foods || []) as any[];
+    return rawFoods.map((f: any) => ({
+      id: Number(f.id ?? f.Id),
+      name: f.name ?? f.Name ?? "Món ăn đặc sản",
+      minPrice: f.minPrice ?? f.MinPrice ?? null,
+      maxPrice: f.maxPrice ?? f.MaxPrice ?? null,
+      coverImg: f.coverImg ?? f.CoverImg ?? f.coverImageUrl ?? f.CoverImageUrl ?? "",
+      coverImageUrl: f.coverImg ?? f.CoverImg ?? f.coverImageUrl ?? f.CoverImageUrl ?? "",
+      description: f.description ?? f.Description ?? f.desc ?? f.Desc ?? "",
+      desc: f.description ?? f.Description ?? f.desc ?? f.Desc ?? "",
+      status: f.status ?? f.Status ?? "active",
+      statusNum: f.statusNum ?? f.StatusNum ?? 1,
+      province: f.province ?? f.Province ?? place?.province ?? "",
+      provinceId: f.provinceId ?? f.ProvinceId ?? place?.provinceId ?? undefined,
+      specialtyType: f.specialtyType ?? f.SpecialtyType ?? "",
+    }));
+  });
 
   // Initial snapshot to track dirty changes
   const [initialSnapshot, setInitialSnapshot] = useState<PlaceFormSnapshot>(() =>
     buildInitialSnapshot(place)
   );
 
+  // Check if foods differ from initial snapshot
+  const hasFoodChanges = useMemo(() => {
+    if (associatedFoods.length !== initialFoodsSnapshot.length) return true;
+    for (let i = 0; i < associatedFoods.length; i++) {
+      if (associatedFoods[i].id !== initialFoodsSnapshot[i].id) return true;
+    }
+    return false;
+  }, [associatedFoods, initialFoodsSnapshot]);
+
+  const handleFoodsChange = useCallback((updatedFoods: AdminPlaceFoodDto[]) => {
+    setAssociatedFoods(updatedFoods);
+    setFoodsCount(updatedFoods.length);
+  }, []);
+
   // Check if current form values differ from initialSnapshot
-  const hasChanges = useMemo(() => {
+  const hasInfoChanges = useMemo(() => {
     if (!initialSnapshot) return false;
     if (name.trim() !== initialSnapshot.name.trim()) return true;
     if (categoryId !== initialSnapshot.categoryId) return true;
@@ -402,30 +459,35 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
     images,
   ]);
 
+  const hasChanges = hasInfoChanges || hasFoodChanges;
+
   // Handle Cancel / Reset to initialSnapshot
   const handleCancel = () => {
-    if (!initialSnapshot) return;
-    setName(initialSnapshot.name);
-    setCategoryId(initialSnapshot.categoryId);
-    setProvinceId(initialSnapshot.provinceId);
-    setProvinceName(initialSnapshot.provinceName);
-    setAddress(initialSnapshot.address);
-    setPhone(initialSnapshot.phone);
-    setWebsite(initialSnapshot.website);
-    setLat(initialSnapshot.lat);
-    setLng(initialSnapshot.lng);
-    updateMapPosition(initialSnapshot.lat, initialSnapshot.lng);
-    setIs24Hours(initialSnapshot.is24Hours);
-    setOpenTime(initialSnapshot.openTime);
-    setCloseTime(initialSnapshot.closeTime);
-    setIsFree(initialSnapshot.isFree);
-    setMinPrice(initialSnapshot.minPrice);
-    setMaxPrice(initialSnapshot.maxPrice);
-    setDescription(initialSnapshot.description);
-    setStatusNum(initialSnapshot.statusNum);
-    setImages([...initialSnapshot.images]);
-    setMediaItems([...initialSnapshot.mediaItems]);
-    setActivePreviewImgIndex(0);
+    if (initialSnapshot) {
+      setName(initialSnapshot.name);
+      setCategoryId(initialSnapshot.categoryId);
+      setProvinceId(initialSnapshot.provinceId);
+      setProvinceName(initialSnapshot.provinceName);
+      setAddress(initialSnapshot.address);
+      setPhone(initialSnapshot.phone);
+      setWebsite(initialSnapshot.website);
+      setLat(initialSnapshot.lat);
+      setLng(initialSnapshot.lng);
+      updateMapPosition(initialSnapshot.lat, initialSnapshot.lng);
+      setIs24Hours(initialSnapshot.is24Hours);
+      setOpenTime(initialSnapshot.openTime);
+      setCloseTime(initialSnapshot.closeTime);
+      setIsFree(initialSnapshot.isFree);
+      setMinPrice(initialSnapshot.minPrice);
+      setMaxPrice(initialSnapshot.maxPrice);
+      setDescription(initialSnapshot.description);
+      setStatusNum(initialSnapshot.statusNum);
+      setImages([...initialSnapshot.images]);
+      setMediaItems([...initialSnapshot.mediaItems]);
+      setActivePreviewImgIndex(0);
+    }
+    setAssociatedFoods([...initialFoodsSnapshot]);
+    setFoodsCount(initialFoodsSnapshot.length);
     setErrorMsg("");
     setSaveSuccessMsg("Đã khôi phục dữ liệu ban đầu!");
     setTimeout(() => setSaveSuccessMsg(""), 3000);
@@ -484,6 +546,28 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
           } else if (cover) {
             setMediaItems([{ url: cover }]);
             setImages([cover]);
+          }
+
+          const rawFoods = (pData as any).foods || (pData as any).Foods || [];
+          if (Array.isArray(rawFoods) && rawFoods.length > 0) {
+            const mappedFoods: AdminPlaceFoodDto[] = rawFoods.map((f: any) => ({
+              id: Number(f.id ?? f.Id),
+              name: f.name ?? f.Name ?? "Món ăn đặc sản",
+              minPrice: f.minPrice ?? f.MinPrice ?? null,
+              maxPrice: f.maxPrice ?? f.MaxPrice ?? null,
+              coverImg: f.coverImg ?? f.CoverImg ?? f.coverImageUrl ?? f.CoverImageUrl ?? "",
+              coverImageUrl: f.coverImg ?? f.CoverImg ?? f.coverImageUrl ?? f.CoverImageUrl ?? "",
+              description: f.description ?? f.Description ?? f.desc ?? f.Desc ?? "",
+              desc: f.description ?? f.Description ?? f.desc ?? f.Desc ?? "",
+              status: f.status ?? f.Status ?? "active",
+              statusNum: f.statusNum ?? f.StatusNum ?? 1,
+              province: f.province ?? f.Province ?? pData.province ?? "",
+              provinceId: f.provinceId ?? f.ProvinceId ?? pData.provinceId ?? undefined,
+              specialtyType: f.specialtyType ?? f.SpecialtyType ?? "",
+            }));
+            setAssociatedFoods(mappedFoods);
+            setInitialFoodsSnapshot(mappedFoods);
+            setFoodsCount(mappedFoods.length);
           }
 
           const freshSnapshot = buildInitialSnapshot({
@@ -828,6 +912,8 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
         statusNum: statusNum === 1 ? 1 : 0,
         status: statusStr,
         rating: Number(rating) || 4.8,
+        foodIds: associatedFoods.map((f) => f.id),
+        foods: associatedFoods,
       };
 
       if (onSave) {
@@ -854,6 +940,7 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
         images: [...images],
         mediaItems: [...mediaItems],
       });
+      setInitialFoodsSnapshot([...associatedFoods]);
       setSaveSuccessMsg("Đã lưu các thay đổi của địa điểm thành công!");
       setTimeout(() => setSaveSuccessMsg(""), 4000);
     } catch (err: any) {
@@ -887,12 +974,12 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
                 {name || place.name}
               </h2>
               <span
-                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold ${statusNum === 1
-                  ? "bg-emerald-100 text-emerald-800"
-                  : "bg-slate-200 text-slate-700"
+                className={`inline-flex items-center justify-center px-3.5 py-1 rounded-xl text-xs font-bold border transition-colors ${statusNum === 1
+                  ? "bg-[#e6fcf5] text-[#087f5b] border-[#63e6be]"
+                  : "bg-slate-100 text-slate-700 border-slate-300"
                   }`}
               >
-                {statusNum === 1 ? "Công khai" : "Đang ẩn"}
+                {statusNum === 1 ? "Công khai" : "Tạm ẩn"}
               </span>
             </div>
             <p className="text-[11px] text-slate-400 mt-0.5">
@@ -914,7 +1001,7 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
                 }`}
             >
               {statusNum === 1 ? <EyeOff size={14} /> : <Eye size={14} />}
-              <span>{statusNum === 1 ? "Ẩn địa điểm" : "Công khai địa điểm"}</span>
+              <span>{statusNum === 1 ? "Tạm ẩn địa điểm" : "Công khai địa điểm"}</span>
             </button>
           )}
 
@@ -924,8 +1011,8 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
             disabled={!hasChanges || isSaving}
             onClick={handleCancel}
             className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${hasChanges
-                ? "bg-slate-200 hover:bg-slate-300 text-slate-800 cursor-pointer shadow-2xs border border-slate-300"
-                : "bg-slate-100 text-slate-400 cursor-not-allowed opacity-50 border border-slate-200/60"
+              ? "bg-slate-200 hover:bg-slate-300 text-slate-800 cursor-pointer shadow-2xs border border-slate-300"
+              : "bg-slate-100 text-slate-400 cursor-not-allowed opacity-50 border border-slate-200/60"
               }`}
             title={
               hasChanges
@@ -943,8 +1030,8 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
             onClick={handleFormSubmit}
             disabled={isSaving || !hasChanges}
             className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold shadow-xs transition-colors ${hasChanges
-                ? "bg-emerald-700 hover:bg-emerald-800 text-white cursor-pointer"
-                : "bg-emerald-700/50 text-white/80 cursor-not-allowed opacity-60"
+              ? "bg-emerald-700 hover:bg-emerald-800 text-white cursor-pointer"
+              : "bg-emerald-700/50 text-white/80 cursor-not-allowed opacity-60"
               }`}
             title={hasChanges ? "Lưu lại các thay đổi" : "Chưa có thay đổi mới để lưu"}
           >
@@ -959,15 +1046,14 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
       </div>
 
       {/* Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200/80 pb-3">
+      <div className="flex items-center gap-2 border-b border-slate-200/80 pb-3 flex-wrap">
         <button
           type="button"
           onClick={() => setActiveEditorTab("info")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
-            activeEditorTab === "info"
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${activeEditorTab === "info"
               ? "bg-emerald-700 text-white shadow-xs"
               : "bg-white hover:bg-slate-100 text-slate-600 border border-slate-200"
-          }`}
+            }`}
         >
           <FileText className="w-4 h-4" />
           <span>Thông tin & Đa phương tiện</span>
@@ -975,22 +1061,42 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
 
         <button
           type="button"
-          onClick={() => setActiveEditorTab("reviews")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
-            activeEditorTab === "reviews"
+          onClick={() => setActiveEditorTab("foods")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${activeEditorTab === "foods"
               ? "bg-emerald-700 text-white shadow-xs"
               : "bg-white hover:bg-slate-100 text-slate-600 border border-slate-200"
-          }`}
+            }`}
+        >
+          <UtensilsCrossed className="w-4 h-4" />
+          <span>Món ăn & Đặc sản</span>
+          {foodsCount > 0 && (
+            <span
+              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${activeEditorTab === "foods"
+                  ? "bg-emerald-800 text-white"
+                  : "bg-emerald-100 text-emerald-800"
+                }`}
+            >
+              {foodsCount}
+            </span>
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveEditorTab("reviews")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${activeEditorTab === "reviews"
+              ? "bg-emerald-700 text-white shadow-xs"
+              : "bg-white hover:bg-slate-100 text-slate-600 border border-slate-200"
+            }`}
         >
           <MessageSquare className="w-4 h-4" />
           <span>Đánh giá & Bình luận</span>
           {reviewsCount > 0 && (
             <span
-              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                activeEditorTab === "reviews"
+              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${activeEditorTab === "reviews"
                   ? "bg-emerald-800 text-white"
                   : "bg-emerald-100 text-emerald-800"
-              }`}
+                }`}
             >
               {reviewsCount}
             </span>
@@ -1027,491 +1133,501 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
                     <span>1. Thông tin cơ bản & Phân loại</span>
                   </h3>
 
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                    Tên địa điểm <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Ví dụ: Mì Quảng Ếch Bếp Trang, Cà phê Mây Lang Thang..."
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full px-4 py-3 rounded-2xl bg-slate-50/80 border border-slate-200 text-xs sm:text-sm text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-700 transition-all font-semibold"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                      Danh mục / Thể loại <span className="text-rose-500">*</span>
-                    </label>
-                    <select
-                      value={categoryId}
-                      onChange={(e) => setCategoryId(Number(e.target.value))}
-                      className="w-full px-3.5 py-3 rounded-2xl bg-slate-50/80 border border-slate-200 text-xs font-medium text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-700 cursor-pointer"
-                    >
-                      {categories.map((cat) => (
-                        <option key={cat.id} value={cat.id}>
-                          {cat.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                      Tỉnh / Thành phố <span className="text-rose-500">*</span>
-                    </label>
-                    <select
-                      value={provinceId}
-                      onChange={(e) => {
-                        const newProvId = Number(e.target.value);
-                        setProvinceId(newProvId);
-                        const prov = provinces.find((p) => p.id === newProvId);
-                        if (prov) setProvinceName(prov.name);
-                      }}
-                      className="w-full px-3.5 py-3 rounded-2xl bg-slate-50/80 border border-slate-200 text-xs font-medium text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-700 cursor-pointer"
-                    >
-                      {provinces.map((prov) => (
-                        <option key={prov.id} value={prov.id}>
-                          {prov.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                    Địa chỉ chi tiết <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Số nhà, tên đường, phường/xã, quận/huyện..."
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    className="w-full px-4 py-3 rounded-2xl bg-slate-50/80 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-700 font-medium"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-800 mb-1.5 flex items-center gap-1.5">
-                      <Phone className="w-3.5 h-3.5 text-slate-500" />
-                      <span>Số điện thoại liên hệ</span>
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Ví dụ: 0905 123 456 / 0236 3888 999"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="w-full px-4 py-3 rounded-2xl bg-slate-50/80 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-700"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-800 mb-1.5 flex items-center gap-1.5">
-                      <Globe className="w-3.5 h-3.5 text-slate-500" />
-                      <span>Website / Fanpage</span>
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="https://facebook.com/... hoặc https://quanan.vn"
-                      value={website}
-                      onChange={(e) => setWebsite(e.target.value)}
-                      className="w-full px-4 py-3 rounded-2xl bg-slate-50/80 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-700"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Section 2: Interactive Map & Coordinates */}
-            <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
-                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-emerald-700" />
-                  <span>2. Vị trí trên bản đồ & Tọa độ GPS</span>
-                </h3>
-
-                <button
-                  type="button"
-                  onClick={handleGetGPSLocation}
-                  disabled={isLocating}
-                  className="text-xs font-bold text-emerald-700 hover:text-emerald-800 transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50 self-start sm:self-auto bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200/70"
-                >
-                  <Navigation className="w-3.5 h-3.5" />
-                  <span>{isLocating ? "Đang lấy tọa độ GPS..." : "Lấy vị trí GPS của tôi"}</span>
-                </button>
-              </div>
-
-              <p className="text-xs text-slate-500">
-                Click chuột vào bất kỳ vị trí nào trên bản đồ hoặc kéo thả ghim màu xanh lá để cập nhật tọa độ chính xác.
-              </p>
-
-              <div className="relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 h-72 sm:h-80 w-full shadow-inner">
-                <div ref={mapContainerRef} className="w-full h-full" />
-
-                <div className="absolute bottom-3 left-3 bg-slate-900/85 backdrop-blur-md text-white text-[11px] font-mono px-3 py-1.5 rounded-xl flex items-center gap-2 shadow-lg border border-slate-700 z-10">
-                  <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                  <span>Lat: {lat} | Lng: {lng}</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 pt-1">
-                <div>
-                  <label className="block text-[11px] text-slate-500 mb-1 font-medium">Vĩ độ (Latitude)</label>
-                  <input
-                    type="text"
-                    value={lat}
-                    onChange={(e) => {
-                      setLat(e.target.value);
-                      updateMapPosition(e.target.value, lng);
-                    }}
-                    className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-slate-800 focus:outline-none focus:bg-white focus:border-emerald-700 font-semibold"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] text-slate-500 mb-1 font-medium">Kinh độ (Longitude)</label>
-                  <input
-                    type="text"
-                    value={lng}
-                    onChange={(e) => {
-                      setLng(e.target.value);
-                      updateMapPosition(lat, e.target.value);
-                    }}
-                    className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-slate-800 focus:outline-none focus:bg-white focus:border-emerald-700 font-semibold"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Section 3: Operating Hours & Ticket / Price */}
-            <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-5">
-              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
-                <Clock className="w-4 h-4 text-emerald-700" />
-                <span>3. Thời gian hoạt động & Khung giá dịch vụ</span>
-              </h3>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/80 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5 text-emerald-700" />
-                      Giờ mở cửa
-                    </span>
-                    <label className="flex items-center gap-1.5 cursor-pointer">
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                        Tên địa điểm <span className="text-rose-500">*</span>
+                      </label>
                       <input
-                        type="checkbox"
-                        checked={is24Hours}
-                        onChange={(e) => setIs24Hours(e.target.checked)}
-                        className="rounded text-emerald-700 focus:ring-emerald-700"
+                        type="text"
+                        placeholder="Ví dụ: Mì Quảng Ếch Bếp Trang, Cà phê Mây Lang Thang..."
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className="w-full px-4 py-3 rounded-2xl bg-slate-50/80 border border-slate-200 text-xs sm:text-sm text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-700 transition-all font-semibold"
                       />
-                      <span className="text-xs text-slate-700 font-semibold">Mở 24/7</span>
-                    </label>
-                  </div>
+                    </div>
 
-                  {!is24Hours ? (
-                    <div className="grid grid-cols-2 gap-2.5 pt-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <span className="text-[10px] text-slate-500 font-medium">Mở cửa</span>
-                        <input
-                          type="time"
-                          value={openTime}
-                          onChange={(e) => setOpenTime(e.target.value)}
-                          className="w-full p-2 mt-1 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-emerald-700 cursor-pointer font-medium"
-                        />
+                        <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                          Danh mục / Thể loại <span className="text-rose-500">*</span>
+                        </label>
+                        <select
+                          value={categoryId}
+                          onChange={(e) => setCategoryId(Number(e.target.value))}
+                          className="w-full px-3.5 py-3 rounded-2xl bg-slate-50/80 border border-slate-200 text-xs font-medium text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-700 cursor-pointer"
+                        >
+                          {categories.map((cat) => (
+                            <option key={cat.id} value={cat.id}>
+                              {cat.name}
+                            </option>
+                          ))}
+                        </select>
                       </div>
+
                       <div>
-                        <span className="text-[10px] text-slate-500 font-medium">Đóng cửa</span>
-                        <input
-                          type="time"
-                          value={closeTime}
-                          onChange={(e) => setCloseTime(e.target.value)}
-                          className="w-full p-2 mt-1 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-emerald-700 cursor-pointer font-medium"
-                        />
+                        <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                          Tỉnh / Thành phố <span className="text-rose-500">*</span>
+                        </label>
+                        <select
+                          value={provinceId}
+                          onChange={(e) => {
+                            const newProvId = Number(e.target.value);
+                            setProvinceId(newProvId);
+                            const prov = provinces.find((p) => p.id === newProvId);
+                            if (prov) setProvinceName(prov.name);
+                          }}
+                          className="w-full px-3.5 py-3 rounded-2xl bg-slate-50/80 border border-slate-200 text-xs font-medium text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-700 cursor-pointer"
+                        >
+                          {provinces.map((prov) => (
+                            <option key={prov.id} value={prov.id}>
+                              {prov.name}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                     </div>
-                  ) : (
-                    <div className="text-xs text-emerald-800 bg-emerald-50 p-2.5 rounded-xl font-medium">
-                      Địa điểm đón khách liên tục cả ngày lẫn đêm.
-                    </div>
-                  )}
-                </div>
 
-                <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/80 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                      <DollarSign className="w-3.5 h-3.5 text-emerald-700" />
-                      Giá vé / Mức giá (VNĐ)
-                    </span>
-                    <label className="flex items-center gap-1.5 cursor-pointer">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                        Địa chỉ chi tiết <span className="text-rose-500">*</span>
+                      </label>
                       <input
-                        type="checkbox"
-                        checked={isFree}
-                        onChange={(e) => setIsFree(e.target.checked)}
-                        className="rounded text-emerald-700 focus:ring-emerald-700"
+                        type="text"
+                        placeholder="Số nhà, tên đường, phường/xã, quận/huyện..."
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
+                        className="w-full px-4 py-3 rounded-2xl bg-slate-50/80 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-700 font-medium"
                       />
-                      <span className="text-xs text-slate-700 font-semibold">Miễn phí vé</span>
-                    </label>
-                  </div>
+                    </div>
 
-                  {!isFree ? (
-                    <div className="grid grid-cols-2 gap-2.5 pt-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <span className="text-[10px] text-slate-500 font-medium">Giá tối thiểu</span>
+                        <label className="block text-xs font-bold text-slate-800 mb-1.5 flex items-center gap-1.5">
+                          <Phone className="w-3.5 h-3.5 text-slate-500" />
+                          <span>Số điện thoại liên hệ</span>
+                        </label>
                         <input
-                          type="number"
-                          value={minPrice}
-                          onChange={(e) => setMinPrice(e.target.value)}
-                          placeholder="35000"
-                          className="w-full p-2 mt-1 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-emerald-700 font-medium"
+                          type="text"
+                          placeholder="Ví dụ: 0905 123 456 / 0236 3888 999"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          className="w-full px-4 py-3 rounded-2xl bg-slate-50/80 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-700"
                         />
                       </div>
+
                       <div>
-                        <span className="text-[10px] text-slate-500 font-medium">Giá tối đa</span>
+                        <label className="block text-xs font-bold text-slate-800 mb-1.5 flex items-center gap-1.5">
+                          <Globe className="w-3.5 h-3.5 text-slate-500" />
+                          <span>Website / Fanpage</span>
+                        </label>
                         <input
-                          type="number"
-                          value={maxPrice}
-                          onChange={(e) => setMaxPrice(e.target.value)}
-                          placeholder="75000"
-                          className="w-full p-2 mt-1 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-emerald-700 font-medium"
+                          type="text"
+                          placeholder="https://facebook.com/... hoặc https://quanan.vn"
+                          value={website}
+                          onChange={(e) => setWebsite(e.target.value)}
+                          className="w-full px-4 py-3 rounded-2xl bg-slate-50/80 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-700"
                         />
                       </div>
                     </div>
-                  ) : (
-                    <div className="text-xs text-emerald-800 bg-emerald-50 p-2.5 rounded-xl font-medium">
-                      Địa điểm không thu phí tham quan hoặc vé vào cửa.
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                  Mô tả chi tiết & Giới thiệu <span className="text-rose-500">*</span>
-                </label>
-                <textarea
-                  rows={4}
-                  placeholder="Chia sẻ lý do nơi này đặc biệt, món ăn nên thử, góc chụp ảnh đẹp hoặc thời điểm lý tưởng để ghé thăm..."
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="w-full p-3.5 rounded-2xl bg-slate-50/80 border border-slate-200 text-xs sm:text-sm text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-700 leading-relaxed"
-                />
-              </div>
-            </div>
-
-            {/* Section 4: Image Gallery & Uploads */}
-            <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-6">
-              <div className="space-y-4">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleFileInputChange}
-                  className="hidden"
-                />
-
-                <div
-                  onClick={() => !isUploadingImages && fileInputRef.current?.click()}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setIsDragging(true);
-                  }}
-                  onDragLeave={() => setIsDragging(false)}
-                  onDrop={handleDropFiles}
-                  className={`p-6 border-2 border-dashed rounded-2xl text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2.5 ${isDragging
-                    ? "border-emerald-600 bg-emerald-50/80 text-emerald-800 ring-2 ring-emerald-500/30"
-                    : isUploadingImages
-                      ? "border-emerald-500 bg-emerald-50/50 cursor-wait"
-                      : "border-slate-300 hover:border-emerald-600 hover:bg-slate-50 text-slate-600"
-                    }`}
-                >
-                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center shadow-xs">
-                    {isUploadingImages ? (
-                      <div className="w-6 h-6 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <UploadCloud className="w-6 h-6" />
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-xs sm:text-sm font-bold text-slate-800">
-                      {isUploadingImages
-                        ? "Đang nạp ảnh vào bộ sưu tập"
-                        : "Thêm nhiều ảnh vào bộ sưu tập"}
-                    </p>
                   </div>
                 </div>
 
-                <div className="space-y-3 pt-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-700">
-                      Bộ sưu tập hình ảnh ({images.length})
-                    </span>
+                {/* Section 2: Interactive Map & Coordinates */}
+                <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-emerald-700" />
+                      <span>2. Vị trí trên bản đồ & Tọa độ GPS</span>
+                    </h3>
+
+                    <button
+                      type="button"
+                      onClick={handleGetGPSLocation}
+                      disabled={isLocating}
+                      className="text-xs font-bold text-emerald-700 hover:text-emerald-800 transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50 self-start sm:self-auto bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200/70"
+                    >
+                      <Navigation className="w-3.5 h-3.5" />
+                      <span>{isLocating ? "Đang lấy tọa độ GPS..." : "Lấy vị trí GPS của tôi"}</span>
+                    </button>
                   </div>
 
-                  {images.length > 0 ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                      {images.map((img, idx) => (
-                        <div
-                          key={idx}
-                          className="relative aspect-4/3 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 group shadow-2xs"
-                        >
-                          <img
-                            src={img}
-                            alt={`Ảnh ${idx + 1}`}
-                            className="w-full h-full object-cover"
-                          />
-                          {idx === 0 ? (
-                            <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-emerald-800/90 backdrop-blur-xs text-white text-[10px] font-bold shadow-xs">
-                              Ảnh bìa chính
-                            </span>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => handleSetCoverImage(idx)}
-                              className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-slate-900/75 hover:bg-emerald-700 text-white text-[10px] font-semibold transition-colors cursor-pointer opacity-0 group-hover:opacity-100 shadow-xs"
-                            >
-                              Đặt làm ảnh bìa
-                            </button>
-                          )}
-
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveImage(idx)}
-                            className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 hover:bg-rose-600 text-white transition-colors cursor-pointer opacity-0 group-hover:opacity-100 shadow-xs"
-                            title="Xóa ảnh này khỏi địa điểm"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="p-4 rounded-2xl bg-slate-50 border border-dashed border-slate-200 text-center text-xs text-slate-400">
-                      Chưa có ảnh nào trong bộ sưu tập. Hãy chọn hoặc kéo thả ảnh vào khung phía trên.
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column (4 cols, sticky): Live Preview Card & Admin Meta */}
-          <div className="lg:col-span-4 space-y-6 sticky top-6">
-            {/* Live Preview Card */}
-            <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <Eye className="w-4 h-4 text-emerald-700" />
-                  <span>Bản xem trước trực tiếp</span>
-                </h3>
-              </div>
-
-              {/* Discovery Card Component Replica */}
-              <div className="group flex flex-col select-none bg-white rounded-2xl border border-slate-200/80 p-3 shadow-2xs space-y-3">
-                {images.length > 0 ? (
-                  <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-slate-100">
-                    <img
-                      src={images[activePreviewImgIndex] || images[0]}
-                      alt={name || "Bản xem trước"}
-                      className="w-full h-full object-cover transition-opacity duration-300"
-                    />
-                    <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors duration-300 pointer-events-none" />
-
-                    {images.length > 1 && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setActivePreviewImgIndex((prev) =>
-                              prev === 0 ? images.length - 1 : prev - 1
-                            );
-                          }}
-                          aria-label="Ảnh trước"
-                          className="absolute left-2.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-slate-900/60 hover:bg-slate-900/85 text-white flex items-center justify-center transition-all opacity-85 hover:opacity-100 z-10 cursor-pointer"
-                        >
-                          <ChevronLeft className="w-4 h-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setActivePreviewImgIndex((prev) =>
-                              prev === images.length - 1 ? 0 : prev + 1
-                            );
-                          }}
-                          aria-label="Ảnh sau"
-                          className="absolute right-2.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-slate-900/60 hover:bg-slate-900/85 text-white flex items-center justify-center transition-all opacity-85 hover:opacity-100 z-10 cursor-pointer"
-                        >
-                          <ChevronRight className="w-4 h-4" />
-                        </button>
-
-                        <div className="absolute bottom-2.5 right-2.5 px-2 py-0.5 rounded-full bg-slate-950/70 backdrop-blur-xs text-[10px] font-bold text-white z-10">
-                          {activePreviewImgIndex + 1}/{images.length}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                ) : (
-                  <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-slate-200 animate-pulse flex flex-col items-center justify-center text-slate-400 gap-2 border border-slate-200/80">
-                    <div className="w-12 h-12 rounded-2xl bg-slate-300/80 flex items-center justify-center text-slate-400">
-                      <ImageIcon className="w-6 h-6" />
-                    </div>
-                    <span className="text-xs font-medium text-slate-500">Chưa có ảnh địa điểm</span>
-                    <span className="text-[10px] text-slate-400">Tải ảnh lên để xem trước</span>
-                  </div>
-                )}
-
-                <div className="space-y-2 pt-1">
-                  <h4 className="font-bold text-[15px] sm:text-base text-slate-900 group-hover:text-emerald-900 transition-colors line-clamp-2 leading-snug tracking-tight">
-                    {name.trim() || "Tên địa điểm"}
-                  </h4>
-
-                  <div className="flex items-center gap-1.5 text-xs text-slate-900 font-bold">
-                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 shrink-0" />
-                    <span>{(Number(rating) || 4.8).toFixed(1)}</span>
-                    <span className="text-slate-400 font-normal">·</span>
-                    <span className="text-slate-500 font-normal">{currentCategoryName}</span>
-                  </div>
-
-                  <div className="flex items-center gap-1 text-xs text-slate-500">
-                    <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <span className="truncate">
-                      {address.trim() ? `${address.trim()}, ${currentProvinceName}` : currentProvinceName}
-                    </span>
-                  </div>
-
-                  <p className="text-xs text-slate-600 line-clamp-2 font-normal leading-relaxed">
-                    {description.trim() || "Mô tả về địa điểm sẽ cập nhật trực tiếp tại đây..."}
+                  <p className="text-xs text-slate-500">
+                    Click chuột vào bất kỳ vị trí nào trên bản đồ hoặc kéo thả ghim màu xanh lá để cập nhật tọa độ chính xác.
                   </p>
 
-                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-                    <span>{is24Hours ? "Mở cửa 24/7" : `${openTime} - ${closeTime}`}</span>
-                    <span className="font-bold text-emerald-800">
-                      {isFree
-                        ? "Miễn phí"
-                        : `${parseInt(minPrice || "0", 10).toLocaleString("vi-VN")} đ`}
-                    </span>
+                  <div className="relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 h-72 sm:h-80 w-full shadow-inner">
+                    <div ref={mapContainerRef} className="w-full h-full" />
+
+                    <div className="absolute bottom-3 left-3 bg-slate-900/85 backdrop-blur-md text-white text-[11px] font-mono px-3 py-1.5 rounded-xl flex items-center gap-2 shadow-lg border border-slate-700 z-10">
+                      <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <span>Lat: {lat} | Lng: {lng}</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 pt-1">
+                    <div>
+                      <label className="block text-[11px] text-slate-500 mb-1 font-medium">Vĩ độ (Latitude)</label>
+                      <input
+                        type="text"
+                        value={lat}
+                        onChange={(e) => {
+                          setLat(e.target.value);
+                          updateMapPosition(e.target.value, lng);
+                        }}
+                        className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-slate-800 focus:outline-none focus:bg-white focus:border-emerald-700 font-semibold"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] text-slate-500 mb-1 font-medium">Kinh độ (Longitude)</label>
+                      <input
+                        type="text"
+                        value={lng}
+                        onChange={(e) => {
+                          setLng(e.target.value);
+                          updateMapPosition(lat, e.target.value);
+                        }}
+                        className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-slate-800 focus:outline-none focus:bg-white focus:border-emerald-700 font-semibold"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 3: Operating Hours & Ticket / Price */}
+                <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-5">
+                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
+                    <Clock className="w-4 h-4 text-emerald-700" />
+                    <span>3. Thời gian hoạt động & Khung giá dịch vụ</span>
+                  </h3>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/80 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-emerald-700" />
+                          Giờ mở cửa
+                        </span>
+                        <label className="flex items-center gap-1.5 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={is24Hours}
+                            onChange={(e) => setIs24Hours(e.target.checked)}
+                            className="rounded text-emerald-700 focus:ring-emerald-700"
+                          />
+                          <span className="text-xs text-slate-700 font-semibold">Mở 24/7</span>
+                        </label>
+                      </div>
+
+                      {!is24Hours ? (
+                        <div className="grid grid-cols-2 gap-2.5 pt-1">
+                          <div>
+                            <span className="text-[10px] text-slate-500 font-medium">Mở cửa</span>
+                            <input
+                              type="time"
+                              value={openTime}
+                              onChange={(e) => setOpenTime(e.target.value)}
+                              className="w-full p-2 mt-1 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-emerald-700 cursor-pointer font-medium"
+                            />
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-slate-500 font-medium">Đóng cửa</span>
+                            <input
+                              type="time"
+                              value={closeTime}
+                              onChange={(e) => setCloseTime(e.target.value)}
+                              className="w-full p-2 mt-1 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-emerald-700 cursor-pointer font-medium"
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-xs text-emerald-800 bg-emerald-50 p-2.5 rounded-xl font-medium">
+                          Địa điểm đón khách liên tục cả ngày lẫn đêm.
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/80 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                          <DollarSign className="w-3.5 h-3.5 text-emerald-700" />
+                          Giá vé / Mức giá (VNĐ)
+                        </span>
+                        <label className="flex items-center gap-1.5 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={isFree}
+                            onChange={(e) => setIsFree(e.target.checked)}
+                            className="rounded text-emerald-700 focus:ring-emerald-700"
+                          />
+                          <span className="text-xs text-slate-700 font-semibold">Miễn phí vé</span>
+                        </label>
+                      </div>
+
+                      {!isFree ? (
+                        <div className="grid grid-cols-2 gap-2.5 pt-1">
+                          <div>
+                            <span className="text-[10px] text-slate-500 font-medium">Giá tối thiểu</span>
+                            <input
+                              type="number"
+                              value={minPrice}
+                              onChange={(e) => setMinPrice(e.target.value)}
+                              placeholder="35000"
+                              className="w-full p-2 mt-1 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-emerald-700 font-medium"
+                            />
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-slate-500 font-medium">Giá tối đa</span>
+                            <input
+                              type="number"
+                              value={maxPrice}
+                              onChange={(e) => setMaxPrice(e.target.value)}
+                              placeholder="75000"
+                              className="w-full p-2 mt-1 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-emerald-700 font-medium"
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-xs text-emerald-800 bg-emerald-50 p-2.5 rounded-xl font-medium">
+                          Địa điểm không thu phí tham quan hoặc vé vào cửa.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                      Mô tả chi tiết & Giới thiệu <span className="text-rose-500">*</span>
+                    </label>
+                    <textarea
+                      rows={4}
+                      placeholder="Chia sẻ lý do nơi này đặc biệt, món ăn nên thử, góc chụp ảnh đẹp hoặc thời điểm lý tưởng để ghé thăm..."
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      className="w-full p-3.5 rounded-2xl bg-slate-50/80 border border-slate-200 text-xs sm:text-sm text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-700 leading-relaxed"
+                    />
+                  </div>
+                </div>
+
+                {/* Section 4: Image Gallery & Uploads */}
+                <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-6">
+                  <div className="space-y-4">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleFileInputChange}
+                      className="hidden"
+                    />
+
+                    <div
+                      onClick={() => !isUploadingImages && fileInputRef.current?.click()}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        setIsDragging(true);
+                      }}
+                      onDragLeave={() => setIsDragging(false)}
+                      onDrop={handleDropFiles}
+                      className={`p-6 border-2 border-dashed rounded-2xl text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2.5 ${isDragging
+                        ? "border-emerald-600 bg-emerald-50/80 text-emerald-800 ring-2 ring-emerald-500/30"
+                        : isUploadingImages
+                          ? "border-emerald-500 bg-emerald-50/50 cursor-wait"
+                          : "border-slate-300 hover:border-emerald-600 hover:bg-slate-50 text-slate-600"
+                        }`}
+                    >
+                      <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center shadow-xs">
+                        {isUploadingImages ? (
+                          <div className="w-6 h-6 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <UploadCloud className="w-6 h-6" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-xs sm:text-sm font-bold text-slate-800">
+                          {isUploadingImages
+                            ? "Đang nạp ảnh vào bộ sưu tập"
+                            : "Thêm nhiều ảnh vào bộ sưu tập"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 pt-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-700">
+                          Bộ sưu tập hình ảnh ({images.length})
+                        </span>
+                      </div>
+
+                      {images.length > 0 ? (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                          {images.map((img, idx) => (
+                            <div
+                              key={idx}
+                              className="relative aspect-4/3 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 group shadow-2xs"
+                            >
+                              <img
+                                src={img}
+                                alt={`Ảnh ${idx + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                              {idx === 0 ? (
+                                <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-emerald-800/90 backdrop-blur-xs text-white text-[10px] font-bold shadow-xs">
+                                  Ảnh bìa chính
+                                </span>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => handleSetCoverImage(idx)}
+                                  className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-slate-900/75 hover:bg-emerald-700 text-white text-[10px] font-semibold transition-colors cursor-pointer opacity-0 group-hover:opacity-100 shadow-xs"
+                                >
+                                  Đặt làm ảnh bìa
+                                </button>
+                              )}
+
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveImage(idx)}
+                                className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 hover:bg-rose-600 text-white transition-colors cursor-pointer opacity-0 group-hover:opacity-100 shadow-xs"
+                                title="Xóa ảnh này khỏi địa điểm"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="p-4 rounded-2xl bg-slate-50 border border-dashed border-slate-200 text-center text-xs text-slate-400">
+                          Chưa có ảnh nào trong bộ sưu tập. Hãy chọn hoặc kéo thả ảnh vào khung phía trên.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column (4 cols, sticky): Live Preview Card & Admin Meta */}
+              <div className="lg:col-span-4 space-y-6 sticky top-6">
+                {/* Live Preview Card */}
+                <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                      <Eye className="w-4 h-4 text-emerald-700" />
+                      <span>Bản xem trước trực tiếp</span>
+                    </h3>
+                  </div>
+
+                  {/* Discovery Card Component Replica */}
+                  <div className="group flex flex-col select-none bg-white rounded-2xl border border-slate-200/80 p-3 shadow-2xs space-y-3">
+                    {images.length > 0 ? (
+                      <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-slate-100">
+                        <img
+                          src={images[activePreviewImgIndex] || images[0]}
+                          alt={name || "Bản xem trước"}
+                          className="w-full h-full object-cover transition-opacity duration-300"
+                        />
+                        <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors duration-300 pointer-events-none" />
+
+                        {images.length > 1 && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActivePreviewImgIndex((prev) =>
+                                  prev === 0 ? images.length - 1 : prev - 1
+                                );
+                              }}
+                              aria-label="Ảnh trước"
+                              className="absolute left-2.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-slate-900/60 hover:bg-slate-900/85 text-white flex items-center justify-center transition-all opacity-85 hover:opacity-100 z-10 cursor-pointer"
+                            >
+                              <ChevronLeft className="w-4 h-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActivePreviewImgIndex((prev) =>
+                                  prev === images.length - 1 ? 0 : prev + 1
+                                );
+                              }}
+                              aria-label="Ảnh sau"
+                              className="absolute right-2.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-slate-900/60 hover:bg-slate-900/85 text-white flex items-center justify-center transition-all opacity-85 hover:opacity-100 z-10 cursor-pointer"
+                            >
+                              <ChevronRight className="w-4 h-4" />
+                            </button>
+
+                            <div className="absolute bottom-2.5 right-2.5 px-2 py-0.5 rounded-full bg-slate-950/70 backdrop-blur-xs text-[10px] font-bold text-white z-10">
+                              {activePreviewImgIndex + 1}/{images.length}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-slate-200 animate-pulse flex flex-col items-center justify-center text-slate-400 gap-2 border border-slate-200/80">
+                        <div className="w-12 h-12 rounded-2xl bg-slate-300/80 flex items-center justify-center text-slate-400">
+                          <ImageIcon className="w-6 h-6" />
+                        </div>
+                        <span className="text-xs font-medium text-slate-500">Chưa có ảnh địa điểm</span>
+                        <span className="text-[10px] text-slate-400">Tải ảnh lên để xem trước</span>
+                      </div>
+                    )}
+
+                    <div className="space-y-2 pt-1">
+                      <h4 className="font-bold text-[15px] sm:text-base text-slate-900 group-hover:text-emerald-900 transition-colors line-clamp-2 leading-snug tracking-tight">
+                        {name.trim() || "Tên địa điểm"}
+                      </h4>
+
+                      <div className="flex items-center gap-1.5 text-xs text-slate-900 font-bold">
+                        <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 shrink-0" />
+                        <span>{(Number(rating) || 4.8).toFixed(1)}</span>
+                        <span className="text-slate-400 font-normal">·</span>
+                        <span className="text-slate-500 font-normal">{currentCategoryName}</span>
+                      </div>
+
+                      <div className="flex items-center gap-1 text-xs text-slate-500">
+                        <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span className="truncate">
+                          {address.trim() ? `${address.trim()}, ${currentProvinceName}` : currentProvinceName}
+                        </span>
+                      </div>
+
+                      <p className="text-xs text-slate-600 line-clamp-2 font-normal leading-relaxed">
+                        {description.trim() || "Mô tả về địa điểm sẽ cập nhật trực tiếp tại đây..."}
+                      </p>
+
+                      <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                        <span>{is24Hours ? "Mở cửa 24/7" : `${openTime} - ${closeTime}`}</span>
+                        <span className="font-bold text-emerald-800">
+                          {isFree
+                            ? "Miễn phí"
+                            : `${parseInt(minPrice || "0", 10).toLocaleString("vi-VN")} đ`}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      </form>
-    </>
-  ) : (
-    <PlaceAdminReviews
-      placeId={Number(place.id)}
-      placeName={name || place.name}
-      onReviewsCountChange={setReviewsCount}
-    />
-  )}
-</div>
+          </form>
+        </>
+      ) : activeEditorTab === "foods" ? (
+        <PlaceAdminFoods
+          placeId={Number(place.id)}
+          placeName={name || place.name}
+          placeProvinceId={provinceId}
+          placeProvinceName={provinceName}
+          associatedFoods={associatedFoods}
+          onFoodsChange={handleFoodsChange}
+          onFoodsCountChange={setFoodsCount}
+        />
+      ) : (
+        <PlaceAdminReviews
+          placeId={Number(place.id)}
+          placeName={name || place.name}
+          onReviewsCountChange={setReviewsCount}
+        />
+      )}
+    </div>
   );
 };
 

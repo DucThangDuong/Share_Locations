@@ -39,3 +39,11 @@ public class UpdateAdminFoodInput
     public string? HistoryInfo { get; set; }
     public string Status { get; set; } = "active";
 }
+
+public class AdminFoodUpdatedResultDto
+{
+    public long Id { get; set; }
+    public string? CoverImg { get; set; }
+    public bool Success { get; set; } = true;
+}
+

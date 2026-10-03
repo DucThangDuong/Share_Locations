@@ -21,7 +21,7 @@ public class CreateAdminPlaceEndpoint : Endpoint<CreateAdminPlaceInput, ApiSucce
         Summary(s =>
         {
             s.Summary = "Tạo mới địa điểm du lịch (Admin)";
-            s.Description = "Thêm mới một địa điểm vào hệ thống với toạ độ GPS, giờ hoạt động và mức giá.";
+            s.Description = "Thêm mới một địa điểm vào hệ thống với toạ độ GPS, giờ hoạt động, mức giá và danh sách món ăn đặc sản liên kết.";
         });
     }
 

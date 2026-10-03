@@ -447,7 +447,7 @@ export const UsersTab: React.FC<UsersTabProps> = ({
                 <th className="py-3 px-4 bg-slate-50/90 backdrop-blur-xs">Vai trò</th>
                 <th className="py-3 px-4 bg-slate-50/90 backdrop-blur-xs">Trạng thái</th>
                 <th className="py-3 px-4 bg-slate-50/90 backdrop-blur-xs">Ngày tạo</th>
-                <th className="py-3 px-4 text-right bg-slate-50/90 backdrop-blur-xs">Thao tác</th>
+                <th className="py-3 px-4 text-center bg-slate-50/90 backdrop-blur-xs">Xem chi tiết</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium text-slate-700 bg-white">
@@ -519,16 +519,16 @@ export const UsersTab: React.FC<UsersTabProps> = ({
                     </td>
 
                     {/* Actions */}
-                    <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                    <td className="py-3.5 px-4 text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation()
                           handleSelectUser(u)
                         }}
-                        className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-2xs transition-colors cursor-pointer"
+                        className="px-2.5 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
                       >
-                        Chi tiết
+                        Chi tiết →
                       </button>
                     </td>
                   </tr>

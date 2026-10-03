@@ -25,7 +25,7 @@ public class GetAdminPlaceDetailEndpoint : Endpoint<GetAdminPlaceDetailRequest, 
         Summary(s =>
         {
             s.Summary = "Lấy chi tiết địa điểm quản trị (Admin)";
-            s.Description = "Lấy thông tin chi tiết toàn diện của địa điểm bao gồm toạ độ Mapbox, media, giờ mở cửa.";
+            s.Description = "Lấy thông tin chi tiết toàn diện của địa điểm bao gồm toạ độ Mapbox, media, giờ mở cửa và danh sách món ăn đặc sản liên kết.";
         });
     }
 

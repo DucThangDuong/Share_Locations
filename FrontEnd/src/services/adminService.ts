@@ -315,7 +315,33 @@ export const adminService = {
 
   getFoods: (params: Record<string, unknown>) => get<AdminPage<Record<string, unknown>>>("/api/admin/foods", params),
   createFood: (data: unknown) => write<number>("post", "/api/admin/foods", data),
-  updateFood: (id: number, data: unknown) => write<boolean>("put", `/api/admin/foods/${id}`, data),
+  updateFood: async (id: number, data: unknown) => {
+    try {
+      return await write<{ id: number; coverImg?: string; success?: boolean } | boolean>(
+        "put",
+        `/api/admin/foods/${id}`,
+        data
+      );
+    } catch (err: any) {
+      if (err?.response?.status === 405) {
+        // Fallback for Method Not Allowed: Try PATCH or POST
+        try {
+          return await write<{ id: number; coverImg?: string; success?: boolean } | boolean>(
+            "patch",
+            `/api/admin/foods/${id}`,
+            data
+          );
+        } catch {
+          return await write<{ id: number; coverImg?: string; success?: boolean } | boolean>(
+            "post",
+            `/api/admin/foods/${id}`,
+            data
+          );
+        }
+      }
+      throw err;
+    }
+  },
   updateFoodStatus: (id: number, status: string) =>
     write<boolean>("patch", `/api/admin/foods/${id}/status`, { status }),
   deleteFood: (id: number) => write<boolean>("delete", `/api/admin/foods/${id}`),

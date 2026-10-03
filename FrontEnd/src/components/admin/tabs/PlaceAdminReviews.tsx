@@ -206,8 +206,12 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
   // 3. Admin: Toggle Review Status (Ẩn / Hiện Review)
   const handleToggleReviewStatus = async (review: ReviewItemDto, e?: React.MouseEvent) => {
     e?.stopPropagation()
-    const currentStatus = reviewStatusOverrides[review.id] || 'active'
-    const nextStatus = currentStatus === 'active' ? 'hidden' : 'active'
+    const currentStatus: 'active' | 'hidden' =
+      reviewStatusOverrides[review.id] ||
+      (review.status === 'hidden' || review.status === 3 || review.status === 'inactive' || review.is_hidden
+        ? 'hidden'
+        : 'active')
+    const nextStatus: 'active' | 'hidden' = currentStatus === 'active' ? 'hidden' : 'active'
 
     setReviewStatusOverrides((prev) => ({
       ...prev,
@@ -223,6 +227,69 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
         [review.id]: currentStatus
       }))
       alert('Không thể cập nhật trạng thái đánh giá trên máy chủ.')
+    }
+  }
+
+  // 3.1 Admin: Toggle Comment Status (Ẩn / Hiện Comment)
+  const handleToggleCommentStatus = async (reviewId: number, commentId: number, e?: React.MouseEvent) => {
+    e?.stopPropagation()
+    const list = commentsByReviewId[reviewId] || []
+    let currentStatus: 'active' | 'hidden' = 'active'
+
+    const findComment = (items: CommentDto[]): CommentDto | undefined => {
+      for (const item of items) {
+        if (item.id === commentId) return item
+        if (item.replies) {
+          const sub = findComment(item.replies)
+          if (sub) return sub
+        }
+      }
+      return undefined
+    }
+
+    const targetComment = findComment(list)
+    if (targetComment) {
+      currentStatus = targetComment.status === 'hidden' ? 'hidden' : 'active'
+    }
+
+    const nextStatus: 'active' | 'hidden' = currentStatus === 'active' ? 'hidden' : 'active'
+
+    setCommentsByReviewId((prev) => {
+      const currentList = prev[reviewId] || []
+      const updateList = (items: CommentDto[]): CommentDto[] => {
+        return items.map((c) => {
+          if (c.id === commentId) {
+            return { ...c, status: nextStatus }
+          }
+          if (c.replies && c.replies.length > 0) {
+            return { ...c, replies: updateList(c.replies) }
+          }
+          return c
+        })
+      }
+      return { ...prev, [reviewId]: updateList(currentList) }
+    })
+
+    try {
+      await adminService.updateCommentStatus(commentId, nextStatus)
+      showNotification(`Đã ${nextStatus === 'active' ? 'công khai' : 'tạm ẩn'} bình luận.`)
+    } catch {
+      setCommentsByReviewId((prev) => {
+        const currentList = prev[reviewId] || []
+        const updateList = (items: CommentDto[]): CommentDto[] => {
+          return items.map((c) => {
+            if (c.id === commentId) {
+              return { ...c, status: currentStatus }
+            }
+            if (c.replies && c.replies.length > 0) {
+              return { ...c, replies: updateList(c.replies) }
+            }
+            return c
+          })
+        }
+        return { ...prev, [reviewId]: updateList(currentList) }
+      })
+      alert('Không thể cập nhật trạng thái bình luận trên máy chủ.')
     }
   }
 
@@ -713,7 +780,9 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
       ) : (
         <div className="space-y-4">
           {filteredAndSortedReviews.map((rev) => {
-            const isHidden = reviewStatusOverrides[rev.id] === 'hidden'
+            const isHidden = reviewStatusOverrides[rev.id]
+              ? reviewStatusOverrides[rev.id] === 'hidden'
+              : (rev.status === 'hidden' || rev.status === 'inactive' || (rev as any).is_hidden)
             const isCommentsOpen = openCommentsReviewId === rev.id
             const commentsList = commentsByReviewId[rev.id] || []
             const isLoadingComments = loadingCommentsReviewId === rev.id
@@ -751,12 +820,12 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
                             #{rev.id}
                           </span>
                           <span
-                            className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${isHidden
-                              ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                              : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                            className={`inline-flex items-center justify-center px-3.5 py-1 rounded-xl text-xs font-bold border transition-colors ${isHidden
+                              ? 'bg-slate-100 text-slate-700 border-slate-300'
+                              : 'bg-[#e6fcf5] text-[#087f5b] border-[#63e6be]'
                               }`}
                           >
-                            {isHidden ? 'Đang tạm ẩn' : 'Công khai'}
+                            {isHidden ? 'Tạm ẩn' : 'Công khai'}
                           </span>
                         </div>
 
@@ -964,18 +1033,26 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
                                   <div className="w-7 h-7 rounded-full bg-slate-200 text-slate-700 font-extrabold text-[11px] flex items-center justify-center shrink-0">
                                     {(comment.userName || 'U').charAt(0).toUpperCase()}
                                   </div>
-                                  <div>
+                                  <div className="flex items-center gap-2 flex-wrap">
                                     <span className="font-extrabold text-xs text-slate-900">
                                       {comment.userName}
                                     </span>
-                                    <span className="text-[10px] text-slate-400 ml-2">
+                                    <span
+                                      className={`inline-flex items-center justify-center px-2 py-0.5 rounded-lg text-[10px] font-bold border transition-colors ${comment.status === 'hidden'
+                                        ? 'bg-slate-100 text-slate-700 border-slate-300'
+                                        : 'bg-[#e6fcf5] text-[#087f5b] border-[#63e6be]'
+                                        }`}
+                                    >
+                                      {comment.status === 'hidden' ? 'Tạm ẩn' : 'Công khai'}
+                                    </span>
+                                    <span className="text-[10px] text-slate-400">
                                       {comment.createdAt ? new Date(comment.createdAt).toLocaleDateString('vi-VN') : ''}
                                     </span>
                                   </div>
                                 </div>
 
                                 {/* Admin Action Toolbar on Comment */}
-                                <div className="flex items-center gap-1">
+                                <div className="flex items-center gap-1.5">
                                   <button
                                     type="button"
                                     onClick={() => {
@@ -988,6 +1065,20 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
                                     title="Trả lời bình luận này"
                                   >
                                     Phản hồi
+                                  </button>
+
+                                  {/* Toggle Comment Visibility */}
+                                  <button
+                                    type="button"
+                                    onClick={(e) => handleToggleCommentStatus(rev.id, comment.id, e)}
+                                    className={`px-2 py-1 text-[11px] font-bold rounded-lg border transition-colors cursor-pointer flex items-center gap-1 ${comment.status === 'hidden'
+                                      ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200'
+                                      : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+                                      }`}
+                                    title={comment.status === 'hidden' ? 'Bấm để công khai lại bình luận này' : 'Bấm để tạm ẩn bình luận này'}
+                                  >
+                                    {comment.status === 'hidden' ? <Eye size={12} /> : <EyeOff size={12} />}
+                                    <span>{comment.status === 'hidden' ? 'Hiện' : 'Ẩn'}</span>
                                   </button>
 
                                   <button
@@ -1096,12 +1187,20 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
                                     className="p-3 rounded-2xl bg-white border border-slate-200/80 shadow-2xs space-y-1.5"
                                   >
                                     <div className="flex items-center justify-between gap-2">
-                                      <div className="flex items-center gap-2">
+                                      <div className="flex items-center gap-2 flex-wrap">
                                         <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px] flex items-center justify-center shrink-0">
                                           {(reply.userName || 'U').charAt(0).toUpperCase()}
                                         </div>
                                         <span className="font-extrabold text-[11px] text-slate-900">
                                           {reply.userName}
+                                        </span>
+                                        <span
+                                          className={`inline-flex items-center justify-center px-2 py-0.2 rounded-md text-[9px] font-bold border transition-colors ${reply.status === 'hidden'
+                                            ? 'bg-slate-100 text-slate-700 border-slate-300'
+                                            : 'bg-[#e6fcf5] text-[#087f5b] border-[#63e6be]'
+                                            }`}
+                                        >
+                                          {reply.status === 'hidden' ? 'Tạm ẩn' : 'Công khai'}
                                         </span>
                                         <span className="text-[9px] text-slate-400">
                                           {reply.createdAt ? new Date(reply.createdAt).toLocaleDateString('vi-VN') : ''}
@@ -1109,6 +1208,20 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
                                       </div>
 
                                       <div className="flex items-center gap-1">
+                                        {/* Toggle Reply Visibility */}
+                                        <button
+                                          type="button"
+                                          onClick={(e) => handleToggleCommentStatus(rev.id, reply.id, e)}
+                                          className={`px-1.5 py-0.5 text-[10px] font-bold rounded-md border transition-colors cursor-pointer flex items-center gap-1 ${reply.status === 'hidden'
+                                            ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200'
+                                            : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+                                            }`}
+                                          title={reply.status === 'hidden' ? 'Bấm để công khai lại phản hồi này' : 'Bấm để tạm ẩn phản hồi này'}
+                                        >
+                                          {reply.status === 'hidden' ? <Eye size={10} /> : <EyeOff size={10} />}
+                                          <span>{reply.status === 'hidden' ? 'Hiện' : 'Ẩn'}</span>
+                                        </button>
+
                                         <button
                                           type="button"
                                           onClick={() => {

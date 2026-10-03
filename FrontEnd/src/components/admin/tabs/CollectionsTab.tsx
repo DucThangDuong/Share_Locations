@@ -967,15 +967,13 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
                   <button
                     type="button"
                     onClick={() => handleToggleCollectionStatus(activeCollection.id)}
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[10px] font-bold border transition-colors cursor-pointer ${
-                      activeCollection.status === 1
-                        ? "bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100"
-                        : "bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200"
-                    }`}
-                    title={activeCollection.status === 1 ? "Bấm để chuyển sang Tạm ẩn" : "Bấm để chuyển sang Đang hoạt động"}
+                    className={`inline-flex items-center justify-center px-3.5 py-1 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${activeCollection.status === 1
+                        ? "bg-[#e6fcf5] text-[#087f5b] border-[#63e6be] hover:bg-[#d3f9ec]"
+                        : "bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200"
+                      }`}
+                    title={activeCollection.status === 1 ? "Bấm để chuyển sang Tạm ẩn" : "Bấm để chuyển sang Công khai"}
                   >
-                    {activeCollection.status === 1 ? <Eye size={11} /> : <EyeOff size={11} />}
-                    <span>{activeCollection.status === 1 ? "Đang hoạt động" : "Tạm ẩn"}</span>
+                    <span>{activeCollection.status === 1 ? "Công khai" : "Tạm ẩn"}</span>
                   </button>
 
                   <span className="text-slate-300">•</span>
@@ -1796,6 +1794,7 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
                 <th className="p-3.5">Số lượng địa điểm</th>
                 <th className="p-3.5">Thứ tự</th>
                 <th className="p-3.5">Trạng thái</th>
+                <th className="p-3.5 text-center">Xem chi tiết</th>
                 <th className="p-3.5 text-right pr-4">Hành động</th>
               </tr>
             </thead>
@@ -1834,28 +1833,26 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
                     </span>
                   </td>
                   <td className="p-3.5">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold ${col.status === 1
-                          ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-                          : "bg-slate-100 text-slate-500 border border-slate-200"
-                          }`}
-                      >
-                        {col.status === 1 ? "Hoạt động" : "Tạm ẩn"}
-                      </span>
-                    </div>
+                    <span
+                      className={`inline-flex items-center justify-center px-3.5 py-1 rounded-xl text-xs font-bold border transition-colors ${col.status === 1
+                        ? "bg-[#e6fcf5] text-[#087f5b] border-[#63e6be]"
+                        : "bg-slate-100 text-slate-700 border-slate-300"
+                        }`}
+                    >
+                      {col.status === 1 ? "Công khai" : "Tạm ẩn"}
+                    </span>
+                  </td>
+                  <td className="p-3.5 text-center" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      onClick={() => setActiveCollectionId(col.id)}
+                      className="px-2.5 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+                    >
+                      Chi tiết →
+                    </button>
                   </td>
                   <td className="p-3.5 text-right pr-4">
                     <div className="flex items-center justify-end gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => setActiveCollectionId(col.id)}
-                        className="px-3.5 py-1.5 bg-emerald-800 hover:bg-emerald-900 text-white font-bold rounded-xl text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
-                        title="Vào giao diện chi tiết & thiết kế địa điểm"
-                      >
-                        <Eye size={13} />
-                        <span>Chi tiết</span>
-                      </button>
                       <button
                         type="button"
                         onClick={(e) => {

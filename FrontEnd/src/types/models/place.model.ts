@@ -132,6 +132,8 @@ export interface ReviewItemDto {
   isLiked?: boolean
   commentsCount: number
   createdAt: string
+  status?: string | number
+  is_hidden?: boolean
 }
 
 export interface ReviewLikeResponseDto {
@@ -148,6 +150,8 @@ export interface CommentDto {
   content: string
   parentId?: number | null
   createdAt: string
+  status?: string
+  is_hidden?: boolean
   replies?: CommentDto[]
 }
 

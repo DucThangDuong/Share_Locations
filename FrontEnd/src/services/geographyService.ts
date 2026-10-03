@@ -4,6 +4,8 @@ import type { RegionDto, ProvinceDto } from '@/types/models/geography.model'
 import type { RegionLandingData } from '@/types/models/region.model'
 import type { ProvinceLandingData } from '@/types/models/province.model'
 
+export type { RegionDto, ProvinceDto }
+
 export const geographyService = {
   async getRegions(): Promise<ApiSuccessResponse<RegionDto[]>> {
     const response = await apiClient.get<ApiSuccessResponse<RegionDto[]>>('/api/regions')
