@@ -269,12 +269,8 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
           ref={dragRef}
           className="fixed bottom-4 right-4 sm:bottom-5 sm:right-5 z-[999] font-sans flex flex-col items-end select-none"
         >
-          {/* ═══════════════════════════════════════════════════════════════
-              TRƯỜNG HỢP 1: THU NHỎ THÀNH BONG BÓNG CHAT TRÒN (NHIỀU LIGHTICONS)
-          ═══════════════════════════════════════════════════════════════ */}
           {isFloatingChatMinimized ? (
             <div className="chat-draggable-handle flex flex-col items-end gap-3 cursor-move animate-in zoom-in-75 duration-200">
-              {/* Danh sách các Lighticon (Chat heads) xếp dọc */}
               <div className="flex flex-col items-end gap-2.5">
                 {chatHeadRooms.map((room) => {
                   const isToastTarget = incomingToast && incomingToast.roomId === room.roomId
@@ -291,7 +287,6 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                       key={room.roomId}
                       className="relative flex items-center justify-end gap-3 group/chathead"
                     >
-                      {/* ── BONG BÓNG TIN NHẮN (HƯỚNG CHÍNH GIỮA KẾ BÊN LIGHTICON) ── */}
                       {isToastTarget && (
                         <div
                           onClick={(e) => {
@@ -320,7 +315,6 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                         </div>
                       )}
 
-                      {/* ── VÒNG TRÒN LIGHTICON ── */}
                       <div className="relative group/icon">
                         <button
                           type="button"
@@ -348,7 +342,6 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                           </span>
                         )}
 
-                        {/* Nút 'X' đóng riêng lighticon này khi hover */}
                         <button
                           type="button"
                           onClick={(e) => {
@@ -367,7 +360,6 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                 })}
               </div>
 
-              {/* Vòng tròn Soạn tin nhắn mới màu trắng bên dưới */}
               <button
                 type="button"
                 onClick={() => {
@@ -409,7 +401,6 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                     <ChevronDown size={14} className="text-pink-600 shrink-0" />
                   </button>
 
-                  {/* Dropdown chuyển đổi cuộc trò chuyện */}
                   {showConvPicker && (
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => setShowConvPicker(false)} />
@@ -451,7 +442,6 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                   )}
                 </div>
 
-                {/* Right: Nút Gọi thoại, Gọi video, Nút '-' (thu nhỏ) và Nút 'X' (đóng) */}
                 <div className="flex items-center gap-1 text-[#E11D48]">
                   <button
                     type="button"
@@ -472,7 +462,6 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                 </div>
               </div>
 
-              {/* ── MESSAGES BODY ── */}
               <div
                 ref={scrollContainerRef}
                 onScroll={handleScroll}
@@ -481,10 +470,8 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                   background: 'radial-gradient(circle at 60% 50%, #FFF4D0 0%, #FFE99E 45%, #FFDF7E 100%)',
                 }}
               >
-                {/* Subtle watermark background */}
                 <div className="absolute inset-0 opacity-15 pointer-events-none bg-[radial-gradient(#d97706_1px,transparent_1px)] [background-size:16px_16px]" />
 
-                {/* ── NÚT TẢI TIN NHẮN CŨ HƠN ── */}
                 {hasMoreMessages && (
                   <div className="py-1 flex justify-center sticky top-0 z-10">
                     <button
@@ -525,14 +512,12 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                     const isPrevSameSender = idx > 0 && messages[idx - 1]?.senderId === m.senderId
                     const isEditingThis = editingMessageId === m.id
                     const isMenuOpen = activeMenuMessageId === m.id
-                    // Action Toolbar (3-dots, reply)
                     const actionToolbar = (
                       <div
                         className={`relative flex items-center gap-1 mb-1 shrink-0 transition-all ${isMenuOpen ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
                           }`}
                         onClick={(e) => e.stopPropagation()}
                       >
-                        {/* 1. Nút 3 chấm (More Options) */}
                         <div className="relative">
                           <button
                             type="button"
@@ -572,7 +557,6 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                                 <span>Phản hồi</span>
                               </button>
 
-                              {/* Sao chép văn bản */}
                               {m.content && (
                                 <button
                                   type="button"
@@ -593,7 +577,6 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                                 </button>
                               )}
 
-                              {/* Sửa & Xóa (Chỉ cho tin nhắn của chính mình) */}
                               {isMe && (
                                 <>
                                   <div className="my-1 border-t border-slate-100" />
@@ -624,7 +607,6 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                           )}
                         </div>
 
-                        {/* 2. Nút Phản hồi (Reply) */}
                         <button
                           type="button"
                           onClick={(e) => {
@@ -656,18 +638,15 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                           />
                         )}
 
-                        {/* Action Toolbar on LEFT for my messages */}
                         {isMe && !isEditingThis && actionToolbar}
 
                         <div className={`flex flex-col max-w-[82%] ${isMe ? 'items-end' : 'items-start'}`}>
-                          {/* Tên người gửi trong nhóm chat */}
                           {activeRoom?.isGroup && !isMe && !isPrevSameSender && (
                             <span className="text-[11px] font-semibold text-amber-900/80 mb-0.5 ml-1 select-none">
                               {m.senderName}
                             </span>
                           )}
 
-                          {/* QUOTE REPLY */}
                           {m.replyToMessageSnippet && (
                             <div className="mb-1 flex flex-col items-start text-xs max-w-full">
                               <div className="flex items-center gap-1 text-amber-900/80 text-[11px] font-medium pl-1 mb-0.5">
@@ -680,7 +659,6 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                             </div>
                           )}
 
-                          {/* INLINE EDIT UI */}
                           {isEditingThis ? (
                             <div className="w-full min-w-[200px] max-w-xs bg-white p-2.5 rounded-2xl border-2 border-amber-400 shadow-md">
                               <textarea
@@ -745,7 +723,6 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                             )
                           )}
 
-                          {/* ATTACHMENTS */}
                           {m.attachments?.map((att) => {
                             if (att.attachmentType === MessageAttachmentType.Image && att.mediaUrl) {
                               return (
@@ -790,7 +767,6 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                             return null
                           })}
 
-                          {/* REACTIONS */}
                           {m.reactions && m.reactions.length > 0 && (
                             <div className="flex items-center gap-0.5 -mt-1 bg-white/90 px-1.5 py-0.5 rounded-full border border-amber-200 shadow-2xs text-[11px]">
                               {m.reactions.slice(0, 3).map((r, ri) => (
@@ -803,14 +779,12 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                           )}
                         </div>
 
-                        {/* Action Toolbar on RIGHT for other's messages */}
                         {!isMe && !isEditingThis && actionToolbar}
                       </div>
                     )
                   })
                 )}
 
-                {/* Real-time typing indicator */}
                 {partnerTyping && (
                   <div className="flex items-center gap-1.5 p-2 bg-amber-100/90 rounded-[18px] w-28 text-amber-900 text-xs font-medium animate-pulse">
                     <span>Đang nhập</span>
@@ -823,7 +797,6 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* ── BANNER QUOTE ĐANG TRẢ LỜI ── */}
               {replyingTo && (
                 <div className="px-3 py-1.5 bg-[#FFF2CD] border-t border-amber-200 flex items-center justify-between text-xs text-amber-900">
                   <div className="flex items-center gap-1.5 truncate">
@@ -840,9 +813,7 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                 </div>
               )}
 
-              {/* ── FOOTER INPUT BAR ── */}
               <div className="p-2.5 bg-[#FFF8DE] border-t border-amber-200/80 flex items-center gap-2 relative z-10">
-                {/* Icon Đính kèm ảnh */}
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
@@ -852,7 +823,6 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                   <ImageIcon size={19} />
                 </button>
 
-                {/* Ô nhập tin nhắn */}
                 <div className="flex-1 relative flex items-center min-w-0">
                   <input
                     type="text"
@@ -866,7 +836,6 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                   />
                 </div>
 
-                {/* Nút Gửi */}
                 <button
                   type="button"
                   disabled={!inputText.trim() || isSending}
@@ -885,7 +854,6 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
         </div>
       </Draggable>
 
-      {/* ── SIMULATED CALL MODAL ── */}
       {activeCall && (
         <div className="fixed inset-0 z-[9999] bg-slate-950/80 backdrop-blur-md flex items-center justify-center animate-in fade-in duration-200">
           <div className="bg-slate-900 border border-slate-700 text-white rounded-3xl p-6 w-[340px] flex flex-col items-center text-center shadow-2xl space-y-4">

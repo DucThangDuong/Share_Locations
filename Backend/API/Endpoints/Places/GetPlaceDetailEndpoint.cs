@@ -25,7 +25,7 @@ public class GetPlaceDetailEndpoint : Endpoint<GetPlaceDetailRequest, ApiSuccess
         Summary(s =>
         {
             s.Summary = "Lấy thông tin chi tiết địa điểm";
-            s.Description = "Lấy đầy đủ thông tin chi tiết địa điểm bao gồm mô tả, địa chỉ, ảnh đại diện, danh sách ảnh (ảnh địa điểm và ảnh từ đánh giá), tiện ích và đánh giá sao.";
+            s.Description = "Lấy đầy đủ thông tin chi tiết địa điểm bao gồm mô tả, địa chỉ, ảnh đại diện, danh sách ảnh, tiện ích, đánh giá sao và danh sách món ăn đặc sản kèm hình ảnh.";
         });
     }
 

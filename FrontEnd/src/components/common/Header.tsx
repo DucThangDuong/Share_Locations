@@ -218,14 +218,12 @@ export const Header: React.FC = () => {
             : 'opacity-0 pointer-events-none invisible'
             }`}
         >
-          {/* Backdrop with smooth fade */}
           <div
             className={`fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity duration-300 ease-in-out ${isNavDrawerOpen ? 'opacity-100' : 'opacity-0'
               }`}
             onClick={() => setIsNavDrawerOpen(false)}
           />
 
-          {/* Sidebar Drawer with smooth slide in/out */}
           <aside
             ref={drawerRef}
             className={`${isNavDrawerOpen ? 'translate-x-0' : '-translate-x-full'

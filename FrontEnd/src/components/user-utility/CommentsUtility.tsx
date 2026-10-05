@@ -61,7 +61,6 @@ export const CommentsUtility: React.FC<CommentsUtilityProps> = ({
 
   return (
     <div className={`flex flex-col ${isDrawer ? 'flex-1 overflow-hidden' : 'space-y-5'}`}>
-      {/* Top Header / Search in Full-page */}
       {!isDrawer && (
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
           <div className="flex items-center gap-2">
@@ -92,7 +91,6 @@ export const CommentsUtility: React.FC<CommentsUtilityProps> = ({
         </div>
       )}
 
-      {/* Main Content */}
       <div className={isDrawer ? 'p-4 flex-1 overflow-y-auto space-y-2.5' : ''}>
         {isLoading ? (
           <div className="py-20 flex flex-col items-center justify-center text-slate-400 gap-2">

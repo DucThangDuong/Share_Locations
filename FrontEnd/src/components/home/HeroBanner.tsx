@@ -40,16 +40,13 @@ export const HeroBanner: React.FC = () => {
   return (
     <header className="relative w-full overflow-hidden mx-auto max-w-7xl md:mt-4 md:rounded-3xl border border-slate-200/60 shadow-md">
       <div className="relative min-h-[580px] sm:min-h-[640px] md:min-h-[680px] flex flex-col justify-between items-center text-center p-6 sm:p-10 lg:p-12">
-        {/* Background Scenery Image */}
         <img
           alt="Việt Nam ngút ngàn"
           className="absolute inset-0 w-full h-full object-cover"
           src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1920&auto=format&fit=crop"
         />
-        {/* Gradient Overlay for high readability: subtle light sky on top, soft focus on scenery, grounded bottom */}
         <div className="absolute inset-0 bg-gradient-to-b from-sky-50/90 via-sky-50/25 to-slate-900/40 pointer-events-none" />
 
-        {/* ── TOP: Centered Heading & Subtitle ── */}
         <div className="relative z-10 max-w-3xl sm:max-w-4xl space-y-3.5 pt-3 sm:pt-6 md:pt-8">
           <h1 className="text-3xl sm:text-5xl md:text-6xl text-slate-900 font-black tracking-tight leading-[1.18] sm:leading-[1.15]">
             Cảm Hứng Khám Phá & <br className="hidden sm:inline" />

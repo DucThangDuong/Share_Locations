@@ -185,26 +185,22 @@ export const UserUtilityDrawer: React.FC<UserUtilityDrawerProps> = ({
 
   const drawerPortal = (
     <div
-      className={`fixed inset-0 z-[9999] flex justify-end font-sans transition-all duration-300 ${
-        isOpen
-          ? 'opacity-100 pointer-events-auto visible'
-          : 'opacity-0 pointer-events-none invisible'
-      }`}
+      className={`fixed inset-0 z-[9999] flex justify-end font-sans transition-all duration-300 ${isOpen
+        ? 'opacity-100 pointer-events-auto visible'
+        : 'opacity-0 pointer-events-none invisible'
+        }`}
     >
       {/* Backdrop overlay */}
       <div
-        className={`fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity duration-300 ease-in-out ${
-          isOpen ? 'opacity-100' : 'opacity-0'
-        }`}
+        className={`fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity duration-300 ease-in-out ${isOpen ? 'opacity-100' : 'opacity-0'
+          }`}
         onClick={onClose}
       />
 
-      {/* Main Drawer Shell with smooth slide in/out */}
       <div
         ref={drawerRef}
-        className={`${
-          isOpen ? 'translate-x-0' : 'translate-x-full'
-        } relative w-full max-w-md sm:max-w-lg bg-white h-screen shadow-2xl flex flex-col z-10 transition-transform duration-300 ease-in-out border-l border-slate-200 overflow-hidden`}
+        className={`${isOpen ? 'translate-x-0' : 'translate-x-full'
+          } relative w-full max-w-md sm:max-w-lg bg-white h-screen shadow-2xl flex flex-col z-10 transition-transform duration-300 ease-in-out border-l border-slate-200 overflow-hidden`}
       >
         {/* Toast Alert */}
         {toastMsg && (
@@ -213,11 +209,6 @@ export const UserUtilityDrawer: React.FC<UserUtilityDrawerProps> = ({
             <span className="flex-1 truncate">{toastMsg}</span>
           </div>
         )}
-
-        {/* ══════════════════════════════════════════════════════════════════
-            VIEW 1: LEVEL 1 MAIN UTILITY MENU (8 TIỆN ÍCH)
-            Zero API calls until user selects a utility!
-        ══════════════════════════════════════════════════════════════════ */}
         {!activeUtility && (
           <div className="flex flex-col h-full overflow-y-auto">
             {/* User Profile Banner */}
@@ -272,7 +263,6 @@ export const UserUtilityDrawer: React.FC<UserUtilityDrawerProps> = ({
               </span>
             </div>
 
-            {/* List of 8 Utilities */}
             <div className="p-3 space-y-1.5 flex-1">
               {utilityMenuItems.map((item) => {
                 const IconComponent = item.icon
@@ -326,14 +316,8 @@ export const UserUtilityDrawer: React.FC<UserUtilityDrawerProps> = ({
             </div>
           </div>
         )}
-
-        {/* ══════════════════════════════════════════════════════════════════
-            VIEW 2: LEVEL 2 SUB-SIDEBAR
-            Loads ONLY the active utility component on demand!
-        ══════════════════════════════════════════════════════════════════ */}
         {activeUtility && (
           <div className="flex flex-col h-full bg-white animate-in slide-in-from-right-4 duration-200">
-            {/* Top Navigation Bar */}
             <div className="px-4 py-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
               <div className="flex items-center gap-2 min-w-0">
                 <button
@@ -362,7 +346,6 @@ export const UserUtilityDrawer: React.FC<UserUtilityDrawerProps> = ({
               </div>
             </div>
 
-            {/* Dynamic Modular Sub-Utility Component: On-demand only */}
             {activeUtility === 'favorites' && (
               <FavoritesUtility isDrawer onClose={onClose} onToast={showToast} />
             )}

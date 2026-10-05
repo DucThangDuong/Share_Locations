@@ -289,7 +289,6 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
           </div>
         </div>
 
-        {/* Blogs Table (Minimalist Row-by-Row Layout matching PlacesTab & FoodsTab) */}
         <div className="overflow-x-auto rounded-xl border border-slate-200/80">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -495,11 +494,10 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
                         type="button"
                         disabled={isLoading}
                         onClick={() => onPageChange?.(pNum)}
-                        className={`w-7 h-7 rounded-xl font-bold text-xs transition-colors flex items-center justify-center cursor-pointer ${
-                          pagination.page === pNum
-                            ? "bg-emerald-700 text-white shadow-xs"
-                            : "bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200"
-                        }`}
+                        className={`w-7 h-7 rounded-xl font-bold text-xs transition-colors flex items-center justify-center cursor-pointer ${pagination.page === pNum
+                          ? "bg-emerald-700 text-white shadow-xs"
+                          : "bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200"
+                          }`}
                       >
                         {pNum}
                       </button>
@@ -787,7 +785,6 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
         </div>
       )}
 
-      {/* ── MODE 1: EXACT BlogReaderView.tsx LAYOUT ── */}
       {activeMode === "reader" && (
         <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200/80 shadow-xs animate-in fade-in duration-150">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
@@ -927,7 +924,6 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
         </div>
       )}
 
-      {/* ── MODE 2: FORM EDITOR & LIVE PREVIEW ── */}
       {activeMode === "editor" && (
         <form onSubmit={handleFormSubmit}>
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">

@@ -48,7 +48,6 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
 
   return (
     <aside className="w-80 md:w-[360px] h-full bg-white border-r border-[#E4E6EB] flex flex-col flex-shrink-0 z-20 overflow-hidden select-none">
-      {/* Header: "Đoạn chat" + Create Group Button */}
       <div className="p-4 pb-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
           {onBack && (
@@ -102,27 +101,24 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
         <button
           type="button"
           onClick={() => setFilterTab('all')}
-          className={`px-3 py-1.5 rounded-full text-[13px] font-semibold transition-colors cursor-pointer whitespace-nowrap ${
-            filterTab === 'all' ? 'bg-[#EBF5FF] text-[#0084FF]' : 'text-[#050505] hover:bg-[#F0F2F5]'
-          }`}
+          className={`px-3 py-1.5 rounded-full text-[13px] font-semibold transition-colors cursor-pointer whitespace-nowrap ${filterTab === 'all' ? 'bg-[#EBF5FF] text-[#0084FF]' : 'text-[#050505] hover:bg-[#F0F2F5]'
+            }`}
         >
           Tất cả
         </button>
         <button
           type="button"
           onClick={() => setFilterTab('unread')}
-          className={`px-3 py-1.5 rounded-full text-[13px] font-semibold transition-colors cursor-pointer whitespace-nowrap ${
-            filterTab === 'unread' ? 'bg-[#EBF5FF] text-[#0084FF]' : 'text-[#050505] hover:bg-[#F0F2F5]'
-          }`}
+          className={`px-3 py-1.5 rounded-full text-[13px] font-semibold transition-colors cursor-pointer whitespace-nowrap ${filterTab === 'unread' ? 'bg-[#EBF5FF] text-[#0084FF]' : 'text-[#050505] hover:bg-[#F0F2F5]'
+            }`}
         >
           Chưa đọc
         </button>
         <button
           type="button"
           onClick={() => setFilterTab('groups')}
-          className={`px-3 py-1.5 rounded-full text-[13px] font-semibold transition-colors cursor-pointer whitespace-nowrap ${
-            filterTab === 'groups' ? 'bg-[#EBF5FF] text-[#0084FF]' : 'text-[#050505] hover:bg-[#F0F2F5]'
-          }`}
+          className={`px-3 py-1.5 rounded-full text-[13px] font-semibold transition-colors cursor-pointer whitespace-nowrap ${filterTab === 'groups' ? 'bg-[#EBF5FF] text-[#0084FF]' : 'text-[#050505] hover:bg-[#F0F2F5]'
+            }`}
         >
           Nhóm
         </button>
@@ -171,9 +167,8 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
               <div
                 key={item.roomId}
                 onClick={() => onSelectRoom(item.roomId)}
-                className={`flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition-colors ${
-                  isActive ? 'bg-[#EBF5FF]' : 'hover:bg-[#F2F2F2]'
-                }`}
+                className={`flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition-colors ${isActive ? 'bg-[#EBF5FF]' : 'hover:bg-[#F2F2F2]'
+                  }`}
               >
                 <div className="relative flex-shrink-0">
                   <img src={avatarUrl} alt="" className="w-12 h-12 rounded-full object-cover" />
@@ -182,9 +177,8 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-0.5">
                     <h3
-                      className={`text-[15px] truncate ${
-                        isUnread ? 'font-bold text-[#050505]' : 'font-semibold text-[#050505]'
-                      }`}
+                      className={`text-[15px] truncate ${isUnread ? 'font-bold text-[#050505]' : 'font-semibold text-[#050505]'
+                        }`}
                     >
                       {item.name}
                     </h3>

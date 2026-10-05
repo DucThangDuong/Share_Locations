@@ -68,7 +68,6 @@ export const ReviewsUtility: React.FC<ReviewsUtilityProps> = ({
 
   return (
     <div className={`flex flex-col ${isDrawer ? 'flex-1 overflow-hidden' : 'space-y-5'}`}>
-      {/* Top filter chips and search */}
       <div className={`flex flex-col gap-2.5 ${isDrawer ? 'px-4 py-3 border-b border-slate-200 bg-white' : 'pb-3 border-b border-slate-200'}`}>
         <div className="flex flex-wrap items-center gap-1.5">
           <button
@@ -126,7 +125,6 @@ export const ReviewsUtility: React.FC<ReviewsUtilityProps> = ({
         )}
       </div>
 
-      {/* Main Content */}
       <div className={isDrawer ? 'p-4 flex-1 overflow-y-auto space-y-2.5' : ''}>
         {isLoading ? (
           <div className="py-20 flex flex-col items-center justify-center text-slate-400 gap-2">
@@ -239,7 +237,6 @@ export const ReviewsUtility: React.FC<ReviewsUtilityProps> = ({
         )}
       </div>
 
-      {/* Modal Photo Zoom */}
       {selectedPhoto && (
         <div
           className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs animate-in fade-in"

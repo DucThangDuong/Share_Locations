@@ -238,7 +238,6 @@ export const UserProfileTravelMap: React.FC<UserProfileTravelMapProps> = ({
 
   return (
     <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/90 shadow-2xs">
-      {/* ── MAP HEADER & FILTERS ── */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 pb-4 border-b border-slate-100">
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
           <button
@@ -290,7 +289,6 @@ export const UserProfileTravelMap: React.FC<UserProfileTravelMapProps> = ({
         </div>
       </div>
 
-      {/* ── MAP CONTAINER ── */}
       <div className="relative w-full h-[420px] sm:h-[480px] rounded-2xl overflow-hidden border border-slate-200/90 shadow-inner bg-slate-100">
         <div ref={mapContainerRef} className="w-full h-full" />
 
@@ -306,7 +304,6 @@ export const UserProfileTravelMap: React.FC<UserProfileTravelMapProps> = ({
           </div>
         )}
 
-        {/* ── POPUP OVERLAY KHI CLICK VÀO MARKER ── */}
         {activePlace && (
           <div className="absolute bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-80 bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-2xl border border-slate-200 animate-in fade-in slide-in-from-bottom-2 duration-200 z-20">
             <div className="flex items-start justify-between gap-2 mb-2">

@@ -85,6 +85,17 @@ export interface PlaceFilterParams {
 }
 
 
+export interface FoodItemDto {
+  id: number
+  name: string
+  description?: string | null
+  minPrice?: number | null
+  maxPrice?: number | null
+  priceRange?: string | null
+  imageUrl?: string | null
+  mediaUrls?: string[]
+}
+
 export interface PlaceDetailDto {
   id: number
   name: string
@@ -117,6 +128,7 @@ export interface PlaceDetailDto {
   isSaved?: boolean
   isVisited?: boolean
   isCheckedIn?: boolean
+  foods?: FoodItemDto[]
 }
 
 export interface ReviewItemDto {

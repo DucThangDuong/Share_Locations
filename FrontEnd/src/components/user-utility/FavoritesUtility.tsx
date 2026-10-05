@@ -113,7 +113,6 @@ export const FavoritesUtility: React.FC<FavoritesUtilityProps> = ({
 
   return (
     <div className={`flex flex-col ${isDrawer ? 'flex-1 overflow-hidden' : 'space-y-5'}`}>
-      {/* Top filter chips and search */}
       <div className={`flex flex-col gap-2.5 ${isDrawer ? 'px-4 py-3 border-b border-slate-200 bg-white' : 'pb-3 border-b border-slate-200'}`}>
         <div className="flex flex-wrap items-center gap-1.5">
           {filterTabs.map((tab) => (
@@ -122,8 +121,8 @@ export const FavoritesUtility: React.FC<FavoritesUtilityProps> = ({
               type="button"
               onClick={() => setActiveFilter(tab.id)}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${activeFilter === tab.id
-                  ? 'bg-emerald-800 text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                ? 'bg-emerald-800 text-white shadow-xs'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
             >
               <span>{tab.label}</span>
@@ -157,7 +156,6 @@ export const FavoritesUtility: React.FC<FavoritesUtilityProps> = ({
         )}
       </div>
 
-      {/* Main Content Area */}
       <div className={isDrawer ? 'p-4 flex-1 overflow-y-auto space-y-2.5' : ''}>
         {isLoading ? (
           <div className="py-20 flex flex-col items-center justify-center text-slate-400 gap-2">

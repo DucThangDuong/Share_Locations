@@ -1,4 +1,3 @@
-// 12 TABS THEO ĐÚNG ĐẶC TẢ HỆ THỐNG
 export type AdminMainTab =
   | "dashboard"
   | "users"

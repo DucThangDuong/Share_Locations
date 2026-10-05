@@ -218,13 +218,11 @@ export const ItineraryMemberModal: React.FC<ItineraryMemberModalProps> = ({
 
         {/* Modal Body */}
         <div className="p-5 sm:p-6 space-y-5 overflow-y-auto">
-          {/* Invite Form (Owner Only) */}
           {isOwner ? (
             <form
               onSubmit={handleInviteSubmit}
               className="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4"
             >
-              {/* Field 1: Friend Selection & Suggestions */}
               <div className="space-y-2">
                 <label className="block text-xs font-bold text-slate-700">
                   Chọn bạn bè tham gia <span className="text-rose-500">*</span>
@@ -285,7 +283,6 @@ export const ItineraryMemberModal: React.FC<ItineraryMemberModalProps> = ({
                   Chỉ có thể mời những người có trong danh sách bạn bè của bạn
                 </p>
 
-                {/* Quick select chips with + icon */}
                 {suggestedFriends.length > 0 ? (
                   <div className="flex flex-wrap items-center gap-1.5 pt-0.5 max-h-24 overflow-y-auto">
                     {suggestedFriends.map((f) => (
@@ -325,7 +322,6 @@ export const ItineraryMemberModal: React.FC<ItineraryMemberModalProps> = ({
                 ) : null}
               </div>
 
-              {/* Field 2: Role Selector */}
               <div className="space-y-1.5">
                 <label className="block text-xs font-bold text-slate-700">
                   Vai trò trong chuyến đi <span className="text-rose-500">*</span>
@@ -435,7 +431,6 @@ export const ItineraryMemberModal: React.FC<ItineraryMemberModalProps> = ({
                         <span>{roleBadge.label}</span>
                       </span>
 
-                      {/* Owner can remove non-owners */}
                       {isOwner && !isMemberOwner && (
                         <button
                           type="button"
@@ -452,7 +447,6 @@ export const ItineraryMemberModal: React.FC<ItineraryMemberModalProps> = ({
                         </button>
                       )}
 
-                      {/* Non-owner can leave the trip themselves */}
                       {!isOwner && isSelf && (
                         <button
                           type="button"

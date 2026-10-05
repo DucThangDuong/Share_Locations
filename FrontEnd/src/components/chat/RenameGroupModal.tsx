@@ -100,7 +100,6 @@ export const RenameGroupModal: React.FC<RenameGroupModalProps> = ({
             />
           </div>
 
-          {/* Footer buttons */}
           <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
             <button
               type="button"

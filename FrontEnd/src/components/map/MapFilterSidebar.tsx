@@ -68,7 +68,6 @@ export const MapFilterSidebar: React.FC<MapFilterSidebarProps> = ({
 
         {/* Scrollable Filter Body */}
         <div className="flex-1 overflow-y-auto p-4 space-y-5">
-          {/* Section 1: Categories (Single-select) */}
           <div className="space-y-2.5">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
@@ -85,19 +84,17 @@ export const MapFilterSidebar: React.FC<MapFilterSidebarProps> = ({
               <button
                 type="button"
                 onClick={() => onSelectCategory(0)}
-                className={`w-full flex items-center justify-between text-xs cursor-pointer min-h-[36px] px-3 py-1.5 rounded-xl transition-colors text-left ${
-                  selectedCategoryId === 0
+                className={`w-full flex items-center justify-between text-xs cursor-pointer min-h-[36px] px-3 py-1.5 rounded-xl transition-colors text-left ${selectedCategoryId === 0
                     ? 'bg-emerald-50 text-emerald-900 font-bold border border-emerald-200 shadow-2xs'
                     : 'text-slate-700 hover:text-slate-900 hover:bg-slate-50'
-                }`}
+                  }`}
               >
                 <div className="flex items-center gap-2.5">
                   <div
-                    className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-all ${
-                      selectedCategoryId === 0
+                    className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-all ${selectedCategoryId === 0
                         ? 'border-emerald-600 bg-emerald-600'
                         : 'border-slate-300 bg-white'
-                    }`}
+                      }`}
                   >
                     {selectedCategoryId === 0 && (
                       <div className="w-1.5 h-1.5 rounded-full bg-white" />
@@ -115,19 +112,17 @@ export const MapFilterSidebar: React.FC<MapFilterSidebarProps> = ({
                     key={cat.id}
                     type="button"
                     onClick={() => onSelectCategory(isSelected ? 0 : cat.id)}
-                    className={`w-full flex items-center justify-between text-xs cursor-pointer min-h-[36px] px-3 py-1.5 rounded-xl transition-colors text-left ${
-                      isSelected
+                    className={`w-full flex items-center justify-between text-xs cursor-pointer min-h-[36px] px-3 py-1.5 rounded-xl transition-colors text-left ${isSelected
                         ? 'bg-emerald-50 text-emerald-900 font-bold border border-emerald-200 shadow-2xs'
                         : 'text-slate-700 hover:text-slate-900 hover:bg-slate-50'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-2.5 truncate pr-2">
                       <div
-                        className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-all ${
-                          isSelected
+                        className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-all ${isSelected
                             ? 'border-emerald-600 bg-emerald-600'
                             : 'border-slate-300 bg-white'
-                        }`}
+                          }`}
                       >
                         {isSelected && (
                           <div className="w-1.5 h-1.5 rounded-full bg-white" />
@@ -142,7 +137,6 @@ export const MapFilterSidebar: React.FC<MapFilterSidebarProps> = ({
             </div>
           </div>
 
-          {/* Section 2: Regions & Provinces (Single-select province) */}
           <div className="space-y-3 pt-4 border-t border-slate-100">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
@@ -158,19 +152,17 @@ export const MapFilterSidebar: React.FC<MapFilterSidebarProps> = ({
             <button
               type="button"
               onClick={() => onSelectProvince(0)}
-              className={`w-full flex items-center justify-between text-xs cursor-pointer min-h-[36px] px-3 py-1.5 rounded-xl transition-colors text-left ${
-                selectedProvinceId === 0
+              className={`w-full flex items-center justify-between text-xs cursor-pointer min-h-[36px] px-3 py-1.5 rounded-xl transition-colors text-left ${selectedProvinceId === 0
                   ? 'bg-emerald-50 text-emerald-900 font-bold border border-emerald-200 shadow-2xs'
                   : 'text-slate-700 hover:text-slate-900 hover:bg-slate-50'
-              }`}
+                }`}
             >
               <div className="flex items-center gap-2.5">
                 <div
-                  className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-all ${
-                    selectedProvinceId === 0
+                  className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-all ${selectedProvinceId === 0
                       ? 'border-emerald-600 bg-emerald-600'
                       : 'border-slate-300 bg-white'
-                  }`}
+                    }`}
                 >
                   {selectedProvinceId === 0 && (
                     <div className="w-1.5 h-1.5 rounded-full bg-white" />
@@ -203,9 +195,8 @@ export const MapFilterSidebar: React.FC<MapFilterSidebarProps> = ({
                       )}
                     </div>
                     <ChevronDown
-                      className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 shrink-0 ${
-                        isOpenAccordion ? 'rotate-180' : ''
-                      }`}
+                      className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 shrink-0 ${isOpenAccordion ? 'rotate-180' : ''
+                        }`}
                     />
                   </button>
 
@@ -218,19 +209,17 @@ export const MapFilterSidebar: React.FC<MapFilterSidebarProps> = ({
                             key={province.id}
                             type="button"
                             onClick={() => onSelectProvince(isSelected ? 0 : province.id)}
-                            className={`flex items-center justify-between text-xs cursor-pointer p-2 rounded-xl transition-colors text-left ${
-                              isSelected
+                            className={`flex items-center justify-between text-xs cursor-pointer p-2 rounded-xl transition-colors text-left ${isSelected
                                 ? 'bg-emerald-50 text-emerald-900 font-bold border border-emerald-200'
                                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                            }`}
+                              }`}
                           >
                             <div className="flex items-center gap-2 min-w-0 pr-1 truncate">
                               <div
-                                className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center shrink-0 transition-all ${
-                                  isSelected
+                                className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center shrink-0 transition-all ${isSelected
                                     ? 'border-emerald-600 bg-emerald-600'
                                     : 'border-slate-300 bg-white'
-                                }`}
+                                  }`}
                               >
                                 {isSelected && (
                                   <div className="w-1 h-1 rounded-full bg-white" />

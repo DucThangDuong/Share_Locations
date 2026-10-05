@@ -123,7 +123,6 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
       />
 
       <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh] z-10 animate-in zoom-in-95 duration-150">
-        {/* ── HEADER ── */}
         <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
           <div className="flex items-center gap-2 text-slate-900 font-bold text-base">
             <Users className="w-5 h-5 text-[#0084FF]" />
@@ -141,7 +140,6 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
         </div>
 
         <form onSubmit={handleCreate} className="flex flex-col flex-1 min-h-0">
-          {/* ── BODY ── */}
           <div className="p-5 space-y-4 flex-1 overflow-y-auto">
             {/* Tên nhóm */}
             <div>
@@ -262,8 +260,8 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                         {/* Checkbox circle */}
                         <div
                           className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-colors ${isSelected
-                              ? 'bg-[#0084FF] border-[#0084FF] text-white'
-                              : 'border-slate-300 bg-white'
+                            ? 'bg-[#0084FF] border-[#0084FF] text-white'
+                            : 'border-slate-300 bg-white'
                             }`}
                         >
                           {isSelected && <Check size={12} strokeWidth={3} />}
@@ -283,7 +281,6 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
             )}
           </div>
 
-          {/* ── FOOTER ACTIONS ── */}
           <div className="px-5 py-3.5 border-t border-slate-100 flex items-center justify-end gap-2 bg-slate-50/50">
             <button
               type="button"

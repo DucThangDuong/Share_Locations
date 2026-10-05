@@ -62,7 +62,6 @@ export const UserProfileReviewCard: React.FC<UserProfileReviewCardProps> = ({
 
   return (
     <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/90 shadow-2xs hover:shadow-xs transition-shadow">
-      {/* ── TOP HEADER: Author + Date + Star Rating Badge ── */}
       <div className="flex items-center justify-between gap-3 mb-3.5">
         <div className="flex items-center gap-3 min-w-0">
           <img
@@ -78,14 +77,12 @@ export const UserProfileReviewCard: React.FC<UserProfileReviewCardProps> = ({
           </div>
         </div>
 
-        {/* Star Rating Badge (as shown in reference image) */}
         <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 text-amber-800 px-3 py-1 rounded-xl text-xs font-bold shadow-2xs shrink-0">
           <Star size={14} className="fill-amber-400 text-amber-500" />
           <span>{ratingValue}</span>
         </div>
       </div>
 
-      {/* ── 5 STARS RATING ROW ── */}
       <div className="flex items-center gap-1.5 mb-2.5">
         <div className="flex items-center gap-0.5">
           {[1, 2, 3, 4, 5].map((starIndex) => {
@@ -106,21 +103,18 @@ export const UserProfileReviewCard: React.FC<UserProfileReviewCardProps> = ({
         <span className="text-xs font-bold text-amber-700 ml-1">{ratingValue}.0 / 5</span>
       </div>
 
-      {/* ── REVIEW TITLE ── */}
       {review.title && (
         <h3 className="text-base font-bold text-slate-900 mb-1.5 leading-snug">
           {review.title}
         </h3>
       )}
 
-      {/* ── REVIEW CONTENT / QUOTE ── */}
       {review.content && (
         <p className="text-slate-700 text-sm leading-relaxed mb-3 whitespace-pre-line font-normal">
           {review.content}
         </p>
       )}
 
-      {/* ── DATE OF EXPERIENCE ── */}
       {review.createdAt && (
         <div className="text-xs text-slate-500 font-medium mb-3.5 flex items-center gap-1.5">
           <Calendar size={13} className="text-slate-400" />
@@ -133,7 +127,6 @@ export const UserProfileReviewCard: React.FC<UserProfileReviewCardProps> = ({
         </div>
       )}
 
-      {/* ── REVIEW IMAGES (IF ANY) ── */}
       {review.images && review.images.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-4">
           {review.images.map((img, idx) => (
@@ -153,7 +146,6 @@ export const UserProfileReviewCard: React.FC<UserProfileReviewCardProps> = ({
         </div>
       )}
 
-      {/* ── EMBEDDED MINI PLACE CARD ── */}
       <div className="mt-3 mb-4 p-3 bg-slate-50 hover:bg-slate-100/90 rounded-2xl border border-slate-200/90 transition-colors flex items-center justify-between gap-3 group">
         <Link
           to={`/places/${review.placeId}`}
@@ -196,7 +188,6 @@ export const UserProfileReviewCard: React.FC<UserProfileReviewCardProps> = ({
         </Link>
       </div>
 
-      {/* ── FOOTER ACTIONS (HELPFUL) ── */}
       <div className="pt-3 border-t border-slate-100 flex items-center gap-4 text-xs font-semibold text-slate-600">
         <button
           type="button"

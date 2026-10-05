@@ -190,7 +190,6 @@ export const UserProfileTripCard: React.FC<UserProfileTripCardProps> = ({ trip }
         </div>
       </div>
 
-      {/* Itinerary Quick Preview Modal */}
       {previewTrip && (
         <ItineraryQuickPreviewModal
           itinerary={previewTrip}

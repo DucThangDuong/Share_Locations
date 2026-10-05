@@ -313,7 +313,6 @@ export const FoodsTab: React.FC<FoodsTabProps> = ({
           </div>
         </div>
 
-        {/* Foods Table (Minimalist Row-by-Row Layout matching PlacesTab) */}
         <div className="overflow-x-auto rounded-xl border border-slate-200/80">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -470,11 +469,10 @@ export const FoodsTab: React.FC<FoodsTabProps> = ({
                         type="button"
                         disabled={isLoading}
                         onClick={() => onPageChange?.(pNum)}
-                        className={`w-7 h-7 rounded-xl font-bold text-xs transition-colors flex items-center justify-center cursor-pointer ${
-                          pagination.page === pNum
+                        className={`w-7 h-7 rounded-xl font-bold text-xs transition-colors flex items-center justify-center cursor-pointer ${pagination.page === pNum
                             ? "bg-emerald-700 text-white shadow-xs"
                             : "bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200"
-                        }`}
+                          }`}
                       >
                         {pNum}
                       </button>

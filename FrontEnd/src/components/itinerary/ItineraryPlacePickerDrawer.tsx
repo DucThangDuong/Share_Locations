@@ -363,7 +363,6 @@ export const ItineraryPlacePickerDrawer: React.FC<ItineraryPlacePickerDrawerProp
               )}
             </div>
 
-            {/* Danh mục (Multi-select) */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <h4 className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">
@@ -378,11 +377,10 @@ export const ItineraryPlacePickerDrawer: React.FC<ItineraryPlacePickerDrawerProp
 
               <div className="space-y-1 max-h-56 overflow-y-auto pr-1">
                 <label
-                  className={`flex items-center justify-between text-xs cursor-pointer min-h-[32px] px-2.5 py-1.5 rounded-xl transition-colors ${
-                    selectedCategoryIds.length === 0
+                  className={`flex items-center justify-between text-xs cursor-pointer min-h-[32px] px-2.5 py-1.5 rounded-xl transition-colors ${selectedCategoryIds.length === 0
                       ? 'bg-emerald-50 text-emerald-900 font-bold border border-emerald-200/70'
                       : 'text-slate-700 hover:text-slate-900 hover:bg-slate-50'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center gap-2 truncate">
                     <input
@@ -400,11 +398,10 @@ export const ItineraryPlacePickerDrawer: React.FC<ItineraryPlacePickerDrawerProp
                   return (
                     <label
                       key={cat.id}
-                      className={`flex items-center justify-between text-xs cursor-pointer min-h-[32px] px-2.5 py-1.5 rounded-xl transition-colors ${
-                        isSelected
+                      className={`flex items-center justify-between text-xs cursor-pointer min-h-[32px] px-2.5 py-1.5 rounded-xl transition-colors ${isSelected
                           ? 'bg-emerald-50 text-emerald-900 font-bold border border-emerald-200/70'
                           : 'text-slate-700 hover:text-slate-900 hover:bg-slate-50'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center gap-2 truncate">
                         <input
@@ -421,7 +418,6 @@ export const ItineraryPlacePickerDrawer: React.FC<ItineraryPlacePickerDrawerProp
               </div>
             </div>
 
-            {/* Vùng miền & Tỉnh thành (Multi-select synced with child provinces) */}
             <div className="space-y-2.5 pt-4 border-t border-slate-100">
               <div className="flex items-center justify-between">
                 <h4 className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">
@@ -477,9 +473,8 @@ export const ItineraryPlacePickerDrawer: React.FC<ItineraryPlacePickerDrawerProp
                           className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-200/50 cursor-pointer"
                         >
                           <ChevronDown
-                            className={`w-3.5 h-3.5 transition-transform ${
-                              isAccordionOpen ? 'rotate-180' : ''
-                            }`}
+                            className={`w-3.5 h-3.5 transition-transform ${isAccordionOpen ? 'rotate-180' : ''
+                              }`}
                           />
                         </button>
                       </div>
@@ -491,11 +486,10 @@ export const ItineraryPlacePickerDrawer: React.FC<ItineraryPlacePickerDrawerProp
                             return (
                               <label
                                 key={prov.id}
-                                className={`flex items-center gap-1.5 text-[11px] cursor-pointer min-h-[24px] px-1.5 py-0.5 rounded-md truncate transition-colors ${
-                                  isProvSelected
+                                className={`flex items-center gap-1.5 text-[11px] cursor-pointer min-h-[24px] px-1.5 py-0.5 rounded-md truncate transition-colors ${isProvSelected
                                     ? 'bg-emerald-100/80 text-emerald-900 font-bold'
                                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/60'
-                                }`}
+                                  }`}
                               >
                                 <input
                                   type="checkbox"
@@ -515,7 +509,6 @@ export const ItineraryPlacePickerDrawer: React.FC<ItineraryPlacePickerDrawerProp
               </div>
             </div>
 
-            {/* Khoảng giá & Ngân sách */}
             <div className="space-y-2 pt-4 border-t border-slate-100">
               <h4 className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">
                 Khoảng giá & Ngân sách
@@ -524,11 +517,10 @@ export const ItineraryPlacePickerDrawer: React.FC<ItineraryPlacePickerDrawerProp
                 {PRICE_TIERS.map((tier, idx) => (
                   <label
                     key={tier.label}
-                    className={`flex items-center gap-2 text-xs cursor-pointer min-h-[28px] px-2 py-1 rounded-lg transition-colors ${
-                      selectedPriceTier === idx
+                    className={`flex items-center gap-2 text-xs cursor-pointer min-h-[28px] px-2 py-1 rounded-lg transition-colors ${selectedPriceTier === idx
                         ? 'bg-emerald-50 text-emerald-900 font-bold'
                         : 'text-slate-700 hover:text-slate-900 hover:bg-slate-50'
-                    }`}
+                      }`}
                   >
                     <input
                       type="radio"
@@ -546,7 +538,6 @@ export const ItineraryPlacePickerDrawer: React.FC<ItineraryPlacePickerDrawerProp
               </div>
             </div>
 
-            {/* Đánh giá tối thiểu */}
             <div className="space-y-2 pt-4 border-t border-slate-100">
               <h4 className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">
                 Đánh giá tối thiểu
@@ -562,11 +553,10 @@ export const ItineraryPlacePickerDrawer: React.FC<ItineraryPlacePickerDrawerProp
                         setSelectedMinRating(rating)
                         setCurrentPage(1)
                       }}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 border transition-all cursor-pointer ${
-                        active
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 border transition-all cursor-pointer ${active
                           ? 'bg-emerald-800 text-white border-emerald-800 shadow-2xs'
                           : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                      }`}
+                        }`}
                     >
                       {rating === 0 ? (
                         'Tất cả'
@@ -596,11 +586,10 @@ export const ItineraryPlacePickerDrawer: React.FC<ItineraryPlacePickerDrawerProp
                   <button
                     type="button"
                     onClick={() => setViewMode('grid')}
-                    className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                      viewMode === 'grid'
+                    className={`p-1.5 rounded-lg transition-colors cursor-pointer ${viewMode === 'grid'
                         ? 'bg-white text-emerald-900 shadow-2xs'
                         : 'text-slate-400 hover:text-slate-700'
-                    }`}
+                      }`}
                     title="Dạng lưới"
                   >
                     <LayoutGrid size={15} />
@@ -608,11 +597,10 @@ export const ItineraryPlacePickerDrawer: React.FC<ItineraryPlacePickerDrawerProp
                   <button
                     type="button"
                     onClick={() => setViewMode('list')}
-                    className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                      viewMode === 'list'
+                    className={`p-1.5 rounded-lg transition-colors cursor-pointer ${viewMode === 'list'
                         ? 'bg-white text-emerald-900 shadow-2xs'
                         : 'text-slate-400 hover:text-slate-700'
-                    }`}
+                      }`}
                     title="Dạng danh sách"
                   >
                     <List size={15} />
@@ -717,11 +705,10 @@ export const ItineraryPlacePickerDrawer: React.FC<ItineraryPlacePickerDrawerProp
                           <button
                             type="button"
                             onClick={() => handleAdd(place)}
-                            className={`w-full py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs ${
-                              isJustAdded
+                            className={`w-full py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs ${isJustAdded
                                 ? 'bg-emerald-700 text-white'
                                 : 'bg-emerald-800 hover:bg-emerald-900 text-white hover:shadow-xs'
-                            }`}
+                              }`}
                           >
                             {isJustAdded ? (
                               <>
@@ -813,11 +800,10 @@ export const ItineraryPlacePickerDrawer: React.FC<ItineraryPlacePickerDrawerProp
                           <button
                             type="button"
                             onClick={() => handleAdd(place)}
-                            className={`py-2 px-4 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs ${
-                              isJustAdded
+                            className={`py-2 px-4 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs ${isJustAdded
                                 ? 'bg-emerald-700 text-white'
                                 : 'bg-emerald-800 hover:bg-emerald-900 text-white'
-                            }`}
+                              }`}
                           >
                             {isJustAdded ? (
                               <>

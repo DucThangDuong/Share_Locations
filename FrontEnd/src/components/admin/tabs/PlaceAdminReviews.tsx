@@ -539,7 +539,6 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
         </div>
       )}
 
-      {/* ── SECTION 1: STATS & RATING BREAKDOWN OVERVIEW ── */}
       <div className="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-2xs space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
           <div>
@@ -645,7 +644,6 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
         </div>
       </div>
 
-      {/* ── CREATE REVIEW FORM ACCORDION ── */}
       {isCreateFormOpen && (
         <div className="bg-white rounded-3xl p-6 border border-emerald-300 shadow-md animate-in slide-in-from-top-4 space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -669,7 +667,6 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
         </div>
       )}
 
-      {/* ── SECTION 2: FILTER & SEARCH TOOLBAR ── */}
       <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/90 shadow-2xs space-y-3">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
           {/* Keyword Search */}
@@ -761,7 +758,6 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
         </div>
       </div>
 
-      {/* ── SECTION 3: REVIEWS LIST ── */}
       {isLoading ? (
         <div className="py-20 flex flex-col items-center justify-center text-slate-400 gap-2 bg-white rounded-3xl border border-slate-200">
           <Loader2 size={32} className="animate-spin text-emerald-700" />
@@ -952,7 +948,6 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
                   </div>
                 </div>
 
-                {/* ── COMMENTS THREAD ACCORDION (FULL ADMIN CONTROL) ── */}
                 {isCommentsOpen && (
                   <div className="bg-slate-50/90 border-t border-slate-200/90 p-5 sm:p-6 space-y-4 animate-in fade-in duration-150">
                     <div className="flex items-center justify-between border-b border-slate-200/80 pb-3">
@@ -1298,7 +1293,6 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
         </div>
       )}
 
-      {/* ── LIGHTBOX MODAL ── */}
       {lightboxMedia && (
         <MediaLightboxModal
           mediaUrl={lightboxMedia.url}
@@ -1307,7 +1301,6 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
         />
       )}
 
-      {/* ── DELETE CONFIRMATION MODAL ── */}
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in">
           <div

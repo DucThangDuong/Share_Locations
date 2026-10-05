@@ -291,10 +291,6 @@ export const SharePlaceModal: React.FC<SharePlaceModalProps> = ({
               className="w-full px-3.5 py-2 text-xs bg-slate-50 focus:bg-white border border-slate-200 focus:border-emerald-600 rounded-xl text-slate-900 outline-none transition-all placeholder:text-slate-400"
             />
           </div>
-
-          {/* ═══════════════════════════════════════════════════════════════
-              SECTION 1: GỬI BẰNG CHAT / TIN NHẮN TRỰC TIẾP
-          ═══════════════════════════════════════════════════════════════ */}
           <div>
             <div className="flex items-center justify-between mb-3">
               <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
@@ -340,7 +336,6 @@ export const SharePlaceModal: React.FC<SharePlaceModalProps> = ({
                   </div>
                 )}
 
-                {/* Horizontal / Grid list of Contacts (matching Messenger Share dialog) */}
                 <div className="grid grid-cols-4 sm:grid-cols-5 gap-3 py-1">
                   {filteredContacts.slice(0, 10).map((contact) => {
                     const isSent = sentContactIds.has(contact.id)
@@ -414,17 +409,12 @@ export const SharePlaceModal: React.FC<SharePlaceModalProps> = ({
               </div>
             )}
           </div>
-
-          {/* ═══════════════════════════════════════════════════════════════
-              SECTION 2: CHIA SẺ LÊN CÁC NỀN TẢNG KHÁC
-          ═══════════════════════════════════════════════════════════════ */}
           <div className="pt-2 border-t border-slate-100">
             <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-3">
               Chia sẻ lên
             </h4>
 
             <div className="grid grid-cols-4 sm:grid-cols-6 gap-3 text-center">
-              {/* Copy Link */}
               <button
                 type="button"
                 onClick={handleCopyLink}
@@ -443,7 +433,6 @@ export const SharePlaceModal: React.FC<SharePlaceModalProps> = ({
                 </span>
               </button>
 
-              {/* Facebook */}
               <button
                 type="button"
                 onClick={handleShareFacebook}
@@ -459,7 +448,6 @@ export const SharePlaceModal: React.FC<SharePlaceModalProps> = ({
                 </span>
               </button>
 
-              {/* Messenger */}
               <button
                 type="button"
                 onClick={handleShareMessenger}
@@ -475,7 +463,6 @@ export const SharePlaceModal: React.FC<SharePlaceModalProps> = ({
                 </span>
               </button>
 
-              {/* WhatsApp */}
               <button
                 type="button"
                 onClick={handleShareWhatsApp}
@@ -491,7 +478,6 @@ export const SharePlaceModal: React.FC<SharePlaceModalProps> = ({
                 </span>
               </button>
 
-              {/* X / Twitter */}
               <button
                 type="button"
                 onClick={handleShareTwitter}
@@ -507,7 +493,6 @@ export const SharePlaceModal: React.FC<SharePlaceModalProps> = ({
                 </span>
               </button>
 
-              {/* Email */}
               <button
                 type="button"
                 onClick={handleShareEmail}

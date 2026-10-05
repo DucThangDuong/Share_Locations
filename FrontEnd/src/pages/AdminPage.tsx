@@ -1174,7 +1174,6 @@ export const AdminPage: React.FC = () => {
 
   return (
     <div className="h-screen bg-slate-50 flex flex-col font-sans text-slate-900 overflow-hidden">
-      {/* Toast popup */}
       {toastMsg && (
         <div className="fixed bottom-6 right-6 z-[99999] bg-slate-900 text-white px-4 py-2.5 rounded-xl shadow-xl border border-slate-700 text-xs font-semibold flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2">
           <div className="w-2 h-2 rounded-full bg-emerald-400" />
@@ -1183,7 +1182,6 @@ export const AdminPage: React.FC = () => {
       )}
 
       <div className="flex flex-1 w-full overflow-hidden">
-        {/* Sidebar */}
         <AdminSidebar
           isSidebarOpen={isSidebarOpen}
           setIsSidebarOpen={setIsSidebarOpen}
@@ -1204,7 +1202,6 @@ export const AdminPage: React.FC = () => {
           onBackToUserView={() => navigate("/")}
         />
 
-        {/* Main Workspace Area */}
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           <AdminTopbar
             isSidebarOpen={isSidebarOpen}
@@ -1385,7 +1382,6 @@ export const AdminPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Moderation Action Drawer */}
       <ModerationDrawer
         activeReportGroup={activeReportGroup}
         selectedReportInDrawer={
@@ -1411,7 +1407,6 @@ export const AdminPage: React.FC = () => {
         onClose={() => setActiveReportGroupKey(null)}
       />
 
-      {/* Add Place Modal */}
       <AddPlaceModal
         isOpen={isAddPlaceModalOpen}
         onClose={() => setIsAddPlaceModalOpen(false)}

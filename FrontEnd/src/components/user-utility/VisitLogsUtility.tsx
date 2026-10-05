@@ -186,17 +186,15 @@ export const VisitLogsUtility: React.FC<VisitLogsUtilityProps> = ({
 
   return (
     <div className={`flex flex-col ${isDrawer ? 'flex-1 overflow-hidden' : 'space-y-5'}`}>
-      {/* Top filter chips and actions */}
       <div className={`flex flex-col gap-2.5 ${isDrawer ? 'px-4 py-3 border-b border-slate-200 bg-white' : 'pb-3 border-b border-slate-200'}`}>
         <div className="flex flex-wrap items-center gap-1.5">
           <button
             type="button"
             onClick={() => setPrivacyFilter('all')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${
-              privacyFilter === 'all'
-                ? 'bg-emerald-800 text-white shadow-xs'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            }`}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${privacyFilter === 'all'
+              ? 'bg-emerald-800 text-white shadow-xs'
+              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
           >
             <span>Tất cả</span>
             <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${privacyFilter === 'all' ? 'bg-emerald-900 text-emerald-100' : 'bg-slate-200 text-slate-600'}`}>
@@ -206,11 +204,10 @@ export const VisitLogsUtility: React.FC<VisitLogsUtilityProps> = ({
           <button
             type="button"
             onClick={() => setPrivacyFilter(0)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${
-              privacyFilter === 0
-                ? 'bg-emerald-800 text-white shadow-xs'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            }`}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${privacyFilter === 0
+              ? 'bg-emerald-800 text-white shadow-xs'
+              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
           >
             <Globe size={12} />
             <span>Công khai</span>
@@ -221,11 +218,10 @@ export const VisitLogsUtility: React.FC<VisitLogsUtilityProps> = ({
           <button
             type="button"
             onClick={() => setPrivacyFilter(1)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${
-              privacyFilter === 1
-                ? 'bg-emerald-800 text-white shadow-xs'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            }`}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${privacyFilter === 1
+              ? 'bg-emerald-800 text-white shadow-xs'
+              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
           >
             <Lock size={12} />
             <span>Riêng tư</span>
@@ -269,7 +265,6 @@ export const VisitLogsUtility: React.FC<VisitLogsUtilityProps> = ({
         </div>
       </div>
 
-      {/* Main Content List */}
       <div className={isDrawer ? 'p-4 flex-1 overflow-y-auto space-y-2.5' : ''}>
         {isLoading ? (
           <div className="py-20 flex flex-col items-center justify-center text-slate-400 gap-2">
@@ -329,11 +324,10 @@ export const VisitLogsUtility: React.FC<VisitLogsUtilityProps> = ({
                     <button
                       type="button"
                       onClick={(e) => handleTogglePrivacy(e, log.id, log.privacy)}
-                      className={`p-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
-                        log.privacy === 1
-                          ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                          : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
-                      }`}
+                      className={`p-1.5 rounded-lg text-xs transition-colors cursor-pointer ${log.privacy === 1
+                        ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+                        }`}
                       title={log.privacy === 1 ? 'Chuyển sang công khai' : 'Chuyển sang riêng tư'}
                     >
                       {log.privacy === 1 ? <Lock size={12} /> : <Globe size={12} />}
@@ -381,11 +375,10 @@ export const VisitLogsUtility: React.FC<VisitLogsUtilityProps> = ({
                       <button
                         type="button"
                         onClick={(e) => handleTogglePrivacy(e, log.id, log.privacy)}
-                        className={`p-1.5 rounded-full backdrop-blur-xs transition-colors cursor-pointer shadow-xs ${
-                          log.privacy === 1
-                            ? 'bg-slate-900/80 text-slate-300 hover:bg-slate-900'
-                            : 'bg-emerald-600 text-white hover:bg-emerald-700'
-                        }`}
+                        className={`p-1.5 rounded-full backdrop-blur-xs transition-colors cursor-pointer shadow-xs ${log.privacy === 1
+                          ? 'bg-slate-900/80 text-slate-300 hover:bg-slate-900'
+                          : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                          }`}
                         title={log.privacy === 1 ? 'Chỉ mình tôi (Bấm đổi sang Công khai)' : 'Công khai (Bấm đổi sang Riêng tư)'}
                       >
                         {log.privacy === 1 ? <Lock size={12} /> : <Globe size={12} />}
@@ -443,10 +436,6 @@ export const VisitLogsUtility: React.FC<VisitLogsUtilityProps> = ({
           </div>
         )}
       </div>
-
-      {/* ══════════════════════════════════════════════════════════════════
-          MODAL: SỬA NHẬT KÝ HÀNH TRÌNH
-      ══════════════════════════════════════════════════════════════════ */}
       {editingLog && (
         <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4 animate-in zoom-in-95">
@@ -500,11 +489,10 @@ export const VisitLogsUtility: React.FC<VisitLogsUtilityProps> = ({
                   <button
                     type="button"
                     onClick={() => setEditPrivacy(0)}
-                    className={`p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                      editPrivacy === 0
-                        ? 'border-emerald-600 bg-emerald-50 text-emerald-900'
-                        : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                    }`}
+                    className={`p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${editPrivacy === 0
+                      ? 'border-emerald-600 bg-emerald-50 text-emerald-900'
+                      : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                      }`}
                   >
                     <Globe size={14} />
                     <span>Công khai</span>
@@ -512,11 +500,10 @@ export const VisitLogsUtility: React.FC<VisitLogsUtilityProps> = ({
                   <button
                     type="button"
                     onClick={() => setEditPrivacy(1)}
-                    className={`p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                      editPrivacy === 1
-                        ? 'border-emerald-600 bg-emerald-50 text-emerald-900'
-                        : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                    }`}
+                    className={`p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${editPrivacy === 1
+                      ? 'border-emerald-600 bg-emerald-50 text-emerald-900'
+                      : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                      }`}
                   >
                     <Lock size={14} />
                     <span>Chỉ mình tôi</span>

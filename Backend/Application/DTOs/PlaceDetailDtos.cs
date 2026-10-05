@@ -1,4 +1,37 @@
 namespace Application.DTOs;
+
+public class PlaceFoodDto
+{
+    public long Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public decimal? MinPrice { get; set; }
+    public decimal? MaxPrice { get; set; }
+    public string? PriceRange { get; set; }
+    public string? ImageUrl { get; set; }
+    public string? CoverImageUrl
+    {
+        get => ImageUrl;
+        set => ImageUrl = value;
+    }
+    public string? CoverImg
+    {
+        get => ImageUrl;
+        set => ImageUrl = value;
+    }
+    public IReadOnlyList<string> MediaUrls { get; set; } = [];
+    public IReadOnlyList<string> Photos
+    {
+        get => MediaUrls;
+        set => MediaUrls = value;
+    }
+    public IReadOnlyList<string> Images
+    {
+        get => MediaUrls;
+        set => MediaUrls = value;
+    }
+}
+
 public class PlaceDetailDto
 {
     public long Id { get; set; }
@@ -32,4 +65,5 @@ public class PlaceDetailDto
     public bool IsSaved { get; set; }
     public bool IsVisited { get; set; }
     public bool IsCheckedIn => IsVisited;
+    public IReadOnlyList<PlaceFoodDto> Foods { get; set; } = [];
 }

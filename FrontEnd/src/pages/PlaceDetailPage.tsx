@@ -10,6 +10,7 @@ import { PlaceDetailGallery } from '@/components/place/PlaceDetailGallery'
 import { PlaceDetailOverview } from '@/components/place/PlaceDetailOverview'
 import { PlaceDetailReviews } from '@/components/place/PlaceDetailReviews'
 import { PlaceDetailSidebar } from '@/components/place/PlaceDetailSidebar'
+import { PlaceDetailFoods } from '@/components/place/PlaceDetailFoods'
 import type { PlaceDetailDto, ReviewItemDto } from '@/types/models/place.model'
 
 export const PlaceDetailPage = () => {
@@ -272,6 +273,10 @@ export const PlaceDetailPage = () => {
               onShare={handleShare}
               onOpenReport={() => setIsReportOpen(true)}
             />
+
+            {place.foods && place.foods.length > 0 && (
+              <PlaceDetailFoods foods={place.foods} />
+            )}
 
             <PlaceDetailReviews
               placeId={place.id}

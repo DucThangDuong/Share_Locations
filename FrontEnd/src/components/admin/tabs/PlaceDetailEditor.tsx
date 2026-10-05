@@ -955,7 +955,6 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200 text-xs font-sans pb-16">
-      {/* Top Header / Back Navigation & Quick Actions */}
       <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <button
@@ -1051,8 +1050,8 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
           type="button"
           onClick={() => setActiveEditorTab("info")}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${activeEditorTab === "info"
-              ? "bg-emerald-700 text-white shadow-xs"
-              : "bg-white hover:bg-slate-100 text-slate-600 border border-slate-200"
+            ? "bg-emerald-700 text-white shadow-xs"
+            : "bg-white hover:bg-slate-100 text-slate-600 border border-slate-200"
             }`}
         >
           <FileText className="w-4 h-4" />
@@ -1063,8 +1062,8 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
           type="button"
           onClick={() => setActiveEditorTab("foods")}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${activeEditorTab === "foods"
-              ? "bg-emerald-700 text-white shadow-xs"
-              : "bg-white hover:bg-slate-100 text-slate-600 border border-slate-200"
+            ? "bg-emerald-700 text-white shadow-xs"
+            : "bg-white hover:bg-slate-100 text-slate-600 border border-slate-200"
             }`}
         >
           <UtensilsCrossed className="w-4 h-4" />
@@ -1072,8 +1071,8 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
           {foodsCount > 0 && (
             <span
               className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${activeEditorTab === "foods"
-                  ? "bg-emerald-800 text-white"
-                  : "bg-emerald-100 text-emerald-800"
+                ? "bg-emerald-800 text-white"
+                : "bg-emerald-100 text-emerald-800"
                 }`}
             >
               {foodsCount}
@@ -1085,8 +1084,8 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
           type="button"
           onClick={() => setActiveEditorTab("reviews")}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${activeEditorTab === "reviews"
-              ? "bg-emerald-700 text-white shadow-xs"
-              : "bg-white hover:bg-slate-100 text-slate-600 border border-slate-200"
+            ? "bg-emerald-700 text-white shadow-xs"
+            : "bg-white hover:bg-slate-100 text-slate-600 border border-slate-200"
             }`}
         >
           <MessageSquare className="w-4 h-4" />
@@ -1094,8 +1093,8 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
           {reviewsCount > 0 && (
             <span
               className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${activeEditorTab === "reviews"
-                  ? "bg-emerald-800 text-white"
-                  : "bg-emerald-100 text-emerald-800"
+                ? "bg-emerald-800 text-white"
+                : "bg-emerald-100 text-emerald-800"
                 }`}
             >
               {reviewsCount}

@@ -180,12 +180,8 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
       </div>
 
       <div className="py-2 space-y-1">
-        {/* ═══════════════════════════════════════════════════════════════
-            ACCORDION 1: TÙY CHỈNH ĐOẠN CHAT (CHỈ HIỆN KHI LÀ GROUP)
-        ═══════════════════════════════════════════════════════════════ */}
         {isGroup && roomId && (
           <div className="border-b border-slate-100 pb-2">
-            {/* Header Nút Dropdown */}
             <button
               type="button"
               onClick={() => setIsCustomizationOpen((prev) => !prev)}
@@ -241,9 +237,6 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
           </div>
         )}
 
-        {/* ═══════════════════════════════════════════════════════════════
-            ACCORDION 2: THÀNH VIÊN TRONG ĐOẠN CHAT (CHỈ HIỆN KHI LÀ GROUP)
-        ═══════════════════════════════════════════════════════════════ */}
         {isGroup && roomId && (
           <div className="border-b border-slate-100 pb-2">
             {/* Header Nút Dropdown */}
@@ -395,10 +388,6 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
             )}
           </div>
         )}
-
-        {/* ═══════════════════════════════════════════════════════════════
-            ACCORDION 3: ẢNH ĐÃ CHIA SẺ
-        ═══════════════════════════════════════════════════════════════ */}
         <div className="border-b border-slate-100 pb-2">
           <button
             type="button"

@@ -102,7 +102,6 @@ export const HeaderChatDropdown: React.FC<HeaderChatDropdownProps> = ({ onClose 
       ref={dropdownRef}
       className="absolute right-0 top-full mt-2 w-[350px] sm:w-[370px] bg-white rounded-2xl shadow-2xl border border-slate-200/90 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150 flex flex-col font-sans"
     >
-      {/* ── HEADER: "Đoạn chat" + Actions ── */}
       <div className="px-4 pt-3.5 pb-2 flex items-center justify-between border-b border-slate-100">
         <h2 className="text-xl font-bold text-slate-900 tracking-tight">Đoạn chat</h2>
 
@@ -118,7 +117,6 @@ export const HeaderChatDropdown: React.FC<HeaderChatDropdownProps> = ({ onClose 
         </div>
       </div>
 
-      {/* ── SEARCH BAR ── */}
       <div className="px-4 py-2">
         <div className="relative">
           <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -141,7 +139,6 @@ export const HeaderChatDropdown: React.FC<HeaderChatDropdownProps> = ({ onClose 
         </div>
       </div>
 
-      {/* ── FILTER TABS (Tất cả, Chưa đọc, Nhóm) ── */}
       <div className="px-4 pb-2 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
         <button
           type="button"
@@ -187,7 +184,6 @@ export const HeaderChatDropdown: React.FC<HeaderChatDropdownProps> = ({ onClose 
         </button>
       </div>
 
-      {/* ── CONVERSATION LIST ── */}
       <div className="flex-1 max-h-[380px] overflow-y-auto px-2 py-1 space-y-0.5 divide-y divide-transparent">
         {!isAuthenticated ? (
           <div className="py-8 text-center text-slate-500 text-xs px-4">
@@ -279,7 +275,6 @@ export const HeaderChatDropdown: React.FC<HeaderChatDropdownProps> = ({ onClose 
                   </div>
                 </div>
 
-                {/* Status Indicator (Blue dot if unread) */}
                 <div className="flex items-center gap-1 shrink-0 pl-1">
                   {isUnread && (
                     <span className="w-2.5 h-2.5 bg-blue-600 rounded-full" />
@@ -291,7 +286,6 @@ export const HeaderChatDropdown: React.FC<HeaderChatDropdownProps> = ({ onClose 
         )}
       </div>
 
-      {/* ── FOOTER: "Xem tất cả trong Messenger" ── */}
       <div className="p-3 border-t border-slate-100 text-center bg-slate-50/50">
         <button
           type="button"
@@ -302,7 +296,6 @@ export const HeaderChatDropdown: React.FC<HeaderChatDropdownProps> = ({ onClose 
         </button>
       </div>
 
-      {/* Modal Tạo Nhóm */}
       <CreateGroupModal
         isOpen={isCreateGroupOpen}
         onClose={() => setIsCreateGroupOpen(false)}

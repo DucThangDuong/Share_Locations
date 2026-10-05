@@ -310,7 +310,6 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
           </div>
         </div>
 
-        {/* Table Layout - Exact layout without Chi tiết column, clean images & proper dates */}
         <div className="overflow-x-auto rounded-xl border border-slate-200/80 bg-white">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -554,68 +553,68 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
                         </button>
                       </td>
 
-                    {/* Action Column */}
-                    <td className="p-3.5 pr-5 text-right relative">
-                      <div className="inline-block text-left">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setOpenActionMenuId((prev) => (prev === comm.id ? null : comm.id))
-                          }
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
-                          title="Tác vụ"
-                        >
-                          <MoreHorizontal size={16} />
-                        </button>
+                      {/* Action Column */}
+                      <td className="p-3.5 pr-5 text-right relative">
+                        <div className="inline-block text-left">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setOpenActionMenuId((prev) => (prev === comm.id ? null : comm.id))
+                            }
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                            title="Tác vụ"
+                          >
+                            <MoreHorizontal size={16} />
+                          </button>
 
-                        {openActionMenuId === comm.id && (
-                          <div className="absolute right-5 mt-1 w-44 bg-white rounded-xl shadow-lg border border-slate-200 p-1 z-30 animate-in fade-in zoom-in-95 text-left">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSelectedComment(comm);
-                                setOpenActionMenuId(null);
-                              }}
-                              className="w-full px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 rounded-lg flex items-center gap-2 cursor-pointer"
-                            >
-                              <Eye size={13} className="text-emerald-700" />
-                              <span>Xem chi tiết</span>
-                            </button>
+                          {openActionMenuId === comm.id && (
+                            <div className="absolute right-5 mt-1 w-44 bg-white rounded-xl shadow-lg border border-slate-200 p-1 z-30 animate-in fade-in zoom-in-95 text-left">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedComment(comm);
+                                  setOpenActionMenuId(null);
+                                }}
+                                className="w-full px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 rounded-lg flex items-center gap-2 cursor-pointer"
+                              >
+                                <Eye size={13} className="text-emerald-700" />
+                                <span>Xem chi tiết</span>
+                              </button>
 
-                            <button
-                              type="button"
-                              onClick={() => handleToggleHideComment(comm.id)}
-                              className="w-full px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 rounded-lg flex items-center gap-2 cursor-pointer"
-                            >
-                              {comm.status === "hidden" ? (
-                                <>
-                                  <Eye size={13} className="text-emerald-600" />
-                                  <span>Hiện lại bình luận</span>
-                                </>
-                              ) : (
-                                <>
-                                  <EyeOff size={13} className="text-slate-500" />
-                                  <span>Tạm ẩn bình luận</span>
-                                </>
-                              )}
-                            </button>
+                              <button
+                                type="button"
+                                onClick={() => handleToggleHideComment(comm.id)}
+                                className="w-full px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 rounded-lg flex items-center gap-2 cursor-pointer"
+                              >
+                                {comm.status === "hidden" ? (
+                                  <>
+                                    <Eye size={13} className="text-emerald-600" />
+                                    <span>Hiện lại bình luận</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <EyeOff size={13} className="text-slate-500" />
+                                    <span>Tạm ẩn bình luận</span>
+                                  </>
+                                )}
+                              </button>
 
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteComment(comm.id)}
-                              className="w-full px-3 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 rounded-lg flex items-center gap-2 cursor-pointer"
-                            >
-                              <Trash2 size={13} />
-                              <span>Xóa vĩnh viễn</span>
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteComment(comm.id)}
+                                className="w-full px-3 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 rounded-lg flex items-center gap-2 cursor-pointer"
+                              >
+                                <Trash2 size={13} />
+                                <span>Xóa vĩnh viễn</span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
 

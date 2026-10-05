@@ -1,3 +1,4 @@
+using System.Globalization;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
 using Dapper;
@@ -205,7 +206,19 @@ public class PlaceRepository : IPlaceRepository
             FROM dbo.ReviewMedia rm
             INNER JOIN dbo.Reviews r ON rm.ReviewId = r.Id
             WHERE r.PlaceId = @Id AND r.Status = 1 AND rm.MediaType = 1
-            ORDER BY r.CreatedAt DESC, rm.Id ASC;";
+            ORDER BY r.CreatedAt DESC, rm.Id ASC;
+
+            SELECT f.Id, f.Name, f.Description, f.MinPrice, f.MaxPrice, f.CoverImageUrl AS ImageUrl
+            FROM dbo.FoodPlaces fp
+            INNER JOIN dbo.Foods f ON fp.FoodId = f.Id
+            WHERE fp.PlaceId = @Id AND f.Status = 1
+            ORDER BY f.Name ASC;
+
+            SELECT fm.FoodId, fm.Url
+            FROM dbo.FoodMedia fm
+            INNER JOIN dbo.FoodPlaces fp ON fm.FoodId = fp.FoodId
+            WHERE fp.PlaceId = @Id
+            ORDER BY fm.DisplayOrder, fm.Id ASC;";
 
         using var multi = await connection.QueryMultipleAsync(sql, new { Id = id });
         var place = await multi.ReadFirstOrDefaultAsync<PlaceDetailDto>();
@@ -213,6 +226,8 @@ public class PlaceRepository : IPlaceRepository
 
         var placeMediaUrls = (await multi.ReadAsync<string>()).ToList();
         var reviewMediaUrls = (await multi.ReadAsync<string>()).ToList();
+        var foodRows = (await multi.ReadAsync<RawPlaceFoodRow>()).ToList();
+        var foodMediaRows = (await multi.ReadAsync<RawFoodMediaRow>()).ToList();
 
         var allMediaUrls = placeMediaUrls
             .Concat(reviewMediaUrls)
@@ -225,6 +240,50 @@ public class PlaceRepository : IPlaceRepository
         {
             place.ThumbnailUrl = allMediaUrls[0];
         }
+
+        var foodMediaLookup = foodMediaRows
+            .Where(fm => !string.IsNullOrWhiteSpace(fm.Url))
+            .ToLookup(fm => fm.FoodId, fm => fm.Url);
+
+        var viCulture = CultureInfo.GetCultureInfo("vi-VN");
+        var foodsList = new List<PlaceFoodDto>();
+
+        foreach (var f in foodRows)
+        {
+            var mediaUrls = foodMediaLookup[f.Id].ToList();
+            if (!string.IsNullOrWhiteSpace(f.ImageUrl) && !mediaUrls.Contains(f.ImageUrl))
+            {
+                mediaUrls.Insert(0, f.ImageUrl);
+            }
+
+            string? priceRange = null;
+            if (f.MinPrice.HasValue && f.MaxPrice.HasValue)
+            {
+                priceRange = $"{f.MinPrice.Value.ToString("N0", viCulture)}đ - {f.MaxPrice.Value.ToString("N0", viCulture)}đ";
+            }
+            else if (f.MinPrice.HasValue)
+            {
+                priceRange = $"Từ {f.MinPrice.Value.ToString("N0", viCulture)}đ";
+            }
+            else if (f.MaxPrice.HasValue)
+            {
+                priceRange = $"Đến {f.MaxPrice.Value.ToString("N0", viCulture)}đ";
+            }
+
+            foodsList.Add(new PlaceFoodDto
+            {
+                Id = f.Id,
+                Name = f.Name,
+                Description = f.Description,
+                MinPrice = f.MinPrice,
+                MaxPrice = f.MaxPrice,
+                PriceRange = priceRange,
+                ImageUrl = f.ImageUrl ?? (mediaUrls.Count > 0 ? mediaUrls[0] : null),
+                MediaUrls = mediaUrls
+            });
+        }
+
+        place.Foods = foodsList;
 
         place.DetailedDescription = place.Description ?? string.Empty;
         place.Highlights =
@@ -464,4 +523,20 @@ public class PlaceRepository : IPlaceRepository
             .AsNoTracking()
             .AnyAsync(v => v.UserId == userId && v.PlaceId == placeId, ct);
     }
+}
+
+file sealed class RawPlaceFoodRow
+{
+    public long Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public decimal? MinPrice { get; set; }
+    public decimal? MaxPrice { get; set; }
+    public string? ImageUrl { get; set; }
+}
+
+file sealed class RawFoodMediaRow
+{
+    public long FoodId { get; set; }
+    public string Url { get; set; } = string.Empty;
 }

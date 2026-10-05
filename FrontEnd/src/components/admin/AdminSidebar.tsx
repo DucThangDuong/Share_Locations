@@ -105,7 +105,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
           {/* Navigation Items */}
           <div className="px-3 py-3 space-y-4 flex-1 overflow-y-auto text-xs">
-            {/* GROUP 1: CORE MODERATION */}
             <div className="space-y-1">
               {isSidebarOpen && (
                 <div className="px-3 pt-1 pb-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">

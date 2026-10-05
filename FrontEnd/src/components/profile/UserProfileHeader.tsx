@@ -42,7 +42,6 @@ export const UserProfileHeader: React.FC<UserProfileHeaderProps> = ({
   return (
     <div className="bg-white border-b border-slate-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6">
-        {/* Cover Banner (Constrained to main width with rounded corners) */}
         <div className="relative h-44 sm:h-56 md:h-64 lg:h-72 w-full rounded-2xl sm:rounded-3xl overflow-hidden bg-slate-900 shadow-xs">
           <img
             src={coverImage}
@@ -52,12 +51,9 @@ export const UserProfileHeader: React.FC<UserProfileHeaderProps> = ({
           <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
         </div>
 
-        {/* Profile Header Main Box */}
         <div className="relative pb-5 pt-3">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
-            {/* Left: Avatar (with -mt) + Names (in normal flow on white background) */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
-              {/* Avatar floating half on cover, half on white */}
               <div className="relative -mt-16 sm:-mt-20 shrink-0 group z-10">
                 <div className="relative w-28 h-28 sm:w-34 sm:h-34 md:w-36 md:h-36 rounded-full overflow-hidden border-4 border-white shadow-xl bg-slate-100 ring-2 ring-slate-200/90 shrink-0">
                   <img
@@ -143,7 +139,6 @@ export const UserProfileHeader: React.FC<UserProfileHeaderProps> = ({
           </div>
         </div>
 
-        {/* Navigation Tabs (Tripadvisor style with green indicator) */}
         <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar border-t border-slate-100 pt-1">
           <button
             type="button"

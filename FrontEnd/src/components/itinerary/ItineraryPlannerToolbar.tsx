@@ -392,7 +392,6 @@ export const ItineraryPlannerToolbar: React.FC<ItineraryPlannerToolbarProps> = (
               )}
             </div>
 
-            {/* Date Range Picker */}
             <div className="relative">
               <div
                 onClick={() => canEdit && setIsEditingDates(!isEditingDates)}

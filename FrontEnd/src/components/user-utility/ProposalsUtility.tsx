@@ -146,7 +146,6 @@ export const ProposalsUtility: React.FC<ProposalsUtilityProps> = ({
 
   return (
     <div className={`flex flex-col ${isDrawer ? 'flex-1 overflow-hidden' : 'space-y-5'}`}>
-      {/* Top Filter Chips and Actions */}
       <div className={`flex flex-col gap-2.5 ${isDrawer ? 'px-4 py-3 border-b border-slate-200 bg-white' : 'pb-3 border-b border-slate-200'}`}>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-1.5">
@@ -155,11 +154,10 @@ export const ProposalsUtility: React.FC<ProposalsUtilityProps> = ({
                 key={String(tab.id)}
                 type="button"
                 onClick={() => setStatusFilter(tab.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${
-                  statusFilter === tab.id
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${statusFilter === tab.id
                     ? 'bg-rose-700 text-white shadow-xs'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
+                  }`}
               >
                 <span>{tab.label}</span>
                 <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${statusFilter === tab.id ? 'bg-rose-900 text-rose-100' : 'bg-slate-200 text-slate-600'}`}>
@@ -200,7 +198,6 @@ export const ProposalsUtility: React.FC<ProposalsUtilityProps> = ({
         </div>
       </div>
 
-      {/* Main Content */}
       <div className={isDrawer ? 'p-4 flex-1 overflow-y-auto space-y-2.5' : ''}>
         {isLoading ? (
           <div className="py-20 flex flex-col items-center justify-center text-slate-400 gap-2">
@@ -265,7 +262,7 @@ export const ProposalsUtility: React.FC<ProposalsUtilityProps> = ({
                 p.mediaUrls && p.mediaUrls.length > 0
                   ? p.mediaUrls[0]
                   : p.coverImg ||
-                    'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=500&h=400&fit=crop'
+                  'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=500&h=400&fit=crop'
               return (
                 <div
                   key={p.id}

@@ -78,7 +78,6 @@ export const ExploreFilterSidebar: React.FC<ExploreFilterSidebarProps> = ({
           )}
         </div>
 
-        {/* Categories Section - Multi-select */}
         <div className="space-y-2.5 pt-2 border-t border-slate-100">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
@@ -134,7 +133,6 @@ export const ExploreFilterSidebar: React.FC<ExploreFilterSidebarProps> = ({
           </div>
         </div>
 
-        {/* Regions & Provinces Section - Multi-select */}
         <div className="space-y-3 pt-4 border-t border-slate-100">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">

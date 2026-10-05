@@ -169,7 +169,6 @@ export const FriendsUtility: React.FC<FriendsUtilityProps> = ({
     }
   }
 
-  // Filtered friends by local search
   const filteredFriends = useMemo(() => {
     if (!localSearch.trim()) return friends
     const q = localSearch.toLowerCase().trim()
@@ -185,7 +184,6 @@ export const FriendsUtility: React.FC<FriendsUtilityProps> = ({
 
   return (
     <div className={`flex flex-col ${isDrawer ? 'flex-1 overflow-hidden' : 'space-y-5'}`}>
-      {/* Sub Tabs */}
       <div className={`flex flex-col gap-2.5 ${isDrawer ? 'px-4 py-3 border-b border-slate-200 bg-white' : 'pb-3 border-b border-slate-200'}`}>
         <div className="flex flex-wrap items-center gap-1.5">
           {tabs.map((tab) => (
@@ -208,7 +206,6 @@ export const FriendsUtility: React.FC<FriendsUtilityProps> = ({
           ))}
         </div>
 
-        {/* Search input in Full-page mode */}
         {!isDrawer && activeTab === 'accepted' && (
           <div className="relative w-full sm:w-60">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -232,7 +229,6 @@ export const FriendsUtility: React.FC<FriendsUtilityProps> = ({
         )}
       </div>
 
-      {/* Main Tab Content */}
       <div className={isDrawer ? 'p-4 flex-1 overflow-y-auto space-y-2' : ''}>
         {isLoading ? (
           <div className="py-20 flex flex-col items-center justify-center text-slate-400 gap-2">
@@ -241,9 +237,6 @@ export const FriendsUtility: React.FC<FriendsUtilityProps> = ({
           </div>
         ) : (
           <>
-            {/* ══════════════════════════════════════════════════════════════════
-                1. DANH SÁCH BẠN BÈ (ACCEPTED)
-            ══════════════════════════════════════════════════════════════════ */}
             {activeTab === 'accepted' && (
               filteredFriends.length === 0 ? (
                 <div className="py-16 text-center text-slate-400 bg-white rounded-2xl border border-slate-200/80 p-6 flex flex-col items-center gap-2">
@@ -350,9 +343,6 @@ export const FriendsUtility: React.FC<FriendsUtilityProps> = ({
               )
             )}
 
-            {/* ══════════════════════════════════════════════════════════════════
-                2. LỜI MỜI NHẬN ĐƯỢC (INCOMING)
-            ══════════════════════════════════════════════════════════════════ */}
             {activeTab === 'incoming' && (
               incomingRequests.length === 0 ? (
                 <div className="py-16 text-center text-slate-400 bg-white rounded-2xl border border-slate-200/80 p-6 flex flex-col items-center gap-2">
@@ -406,9 +396,6 @@ export const FriendsUtility: React.FC<FriendsUtilityProps> = ({
               )
             )}
 
-            {/* ══════════════════════════════════════════════════════════════════
-                3. LỜI MỜI ĐÃ GỬI (OUTGOING)
-            ══════════════════════════════════════════════════════════════════ */}
             {activeTab === 'outgoing' && (
               outgoingRequests.length === 0 ? (
                 <div className="py-16 text-center text-slate-400 bg-white rounded-2xl border border-slate-200/80 p-6 flex flex-col items-center gap-2">
@@ -445,10 +432,6 @@ export const FriendsUtility: React.FC<FriendsUtilityProps> = ({
                 </div>
               )
             )}
-
-            {/* ══════════════════════════════════════════════════════════════════
-                4. TÌM BẠN MỚI (SEARCH)
-            ══════════════════════════════════════════════════════════════════ */}
             {activeTab === 'search' && (
               <div className="space-y-4">
                 <div className="relative">

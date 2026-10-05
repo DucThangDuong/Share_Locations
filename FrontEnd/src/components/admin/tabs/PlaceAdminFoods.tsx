@@ -50,6 +50,10 @@ interface PlaceAdminFoodsProps {
   showToast?: (msg: string) => void;
 }
 
+
+const DEFAULT_FOOD_COVER =
+  "https://images.unsplash.com/photo-1541544741938-0af808871cc0?w=600&h=400&fit=crop";
+
 export const PlaceAdminFoods: React.FC<PlaceAdminFoodsProps> = ({
   placeId,
   placeName,
@@ -101,13 +105,12 @@ export const PlaceAdminFoods: React.FC<PlaceAdminFoodsProps> = ({
   const [searchInput, setSearchInput] = useState("");
   const [searchKeyword, setSearchKeyword] = useState("");
   const [selectedProvince, setSelectedProvince] = useState<string>("all");
-  const [selectedSpecialtyType, setSelectedSpecialtyType] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
-  const [selectedPriceRange, setSelectedPriceRange] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
   const [totalElements, setTotalElements] = useState<number>(0);
   const [provincesList, setProvincesList] = useState<ProvinceDto[]>([]);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Fetch provinces for filter
   useEffect(() => {
@@ -135,13 +138,13 @@ export const PlaceAdminFoods: React.FC<PlaceAdminFoodsProps> = ({
           name: f.name ?? f.Name ?? "Món ăn đặc sản",
           minPrice: f.minPrice ?? f.MinPrice ?? null,
           maxPrice: f.maxPrice ?? f.MaxPrice ?? null,
-          coverImg: f.coverImg ?? f.CoverImg ?? f.coverImageUrl ?? f.CoverImageUrl ?? "",
-          coverImageUrl: f.coverImg ?? f.CoverImg ?? f.coverImageUrl ?? f.CoverImageUrl ?? "",
+          coverImg: f.coverImg || f.CoverImg || f.coverImageUrl || f.CoverImageUrl || f.imageUrl || f.ImageUrl || DEFAULT_FOOD_COVER,
+          coverImageUrl: f.coverImg || f.CoverImg || f.coverImageUrl || f.CoverImageUrl || f.imageUrl || f.ImageUrl || DEFAULT_FOOD_COVER,
           description: f.description ?? f.Description ?? f.desc ?? f.Desc ?? "",
           desc: f.description ?? f.Description ?? f.desc ?? f.Desc ?? "",
           status: f.status ?? f.Status ?? "active",
           statusNum: f.statusNum ?? f.StatusNum ?? 1,
-          province: f.province ?? f.Province ?? placeProvinceName ?? "",
+          province: f.province || f.Province || f.provinceName || placeProvinceName || "",
           provinceId: f.provinceId ?? f.ProvinceId ?? placeProvinceId ?? undefined,
           specialtyType: f.specialtyType ?? f.SpecialtyType ?? ""
         }));
@@ -162,51 +165,93 @@ export const PlaceAdminFoods: React.FC<PlaceAdminFoodsProps> = ({
     fetchPlaceFoods();
   }, [propAssociatedFoods, initialFoods, fetchPlaceFoods]);
 
-  // Fetch available foods for picker
+  // Fetch available foods for picker (matching FoodsTab and AdminPage API logic)
   const fetchAvailableFoods = useCallback(async () => {
     setIsLoadingAvailableFoods(true);
     try {
-      const res = await adminService.getFoods({
+      const cleanParams: any = {
         page: currentPage,
-        pageSize: 12,
-        keyword: searchKeyword || undefined,
-        province: selectedProvince !== "all" ? selectedProvince : undefined,
-      });
+        pageSize: 10,
+      };
+      if (searchKeyword.trim()) {
+        cleanParams.keyword = searchKeyword.trim();
+      }
+      if (selectedProvince !== "all") {
+        cleanParams.province = selectedProvince;
+      }
+      if (selectedStatus !== "all") {
+        cleanParams.status = selectedStatus;
+      }
+
+      const res = await adminService.getFoods(cleanParams);
 
       const rawItems = extractList(res?.data || res);
-      const mapped: AdminFoodItem[] = rawItems.map((f: any) => ({
-        id: Number(f.id ?? f.Id),
-        name: f.name ?? f.Name ?? "Món ăn",
-        province: f.province ?? f.Province ?? f.provinceName ?? "",
-        provinceId: f.provinceId ?? f.ProvinceId ?? undefined,
-        coverImg: f.coverImg ?? f.CoverImg ?? f.imageUrl ?? f.ImageUrl ?? "",
-        desc: f.desc ?? f.Desc ?? f.description ?? f.Description ?? "",
-        description: f.desc ?? f.Desc ?? f.description ?? f.Description ?? "",
-        historyInfo: f.historyInfo ?? f.HistoryInfo ?? "",
-        minPrice: f.minPrice ?? f.MinPrice ?? undefined,
-        maxPrice: f.maxPrice ?? f.MaxPrice ?? undefined,
-        priceRange: f.priceRange ?? f.PriceRange ?? "",
-        specialtyType: f.specialtyType ?? f.SpecialtyType ?? "",
-        status: f.status ?? f.Status ?? "active",
-        statusNum: f.statusNum ?? f.StatusNum ?? 1,
+      const mapped: AdminFoodItem[] = rawItems.map((item: any) => ({
+        ...item,
+        id: Number(item.id ?? item.Id),
+        name: item.name || item.Name || "Món ăn",
+        province: item.provinceName || item.province || item.Province || "",
+        provinceName: item.provinceName || item.province || item.Province || "",
+        provinceId: item.provinceId ?? item.ProvinceId,
+        specialtyType: item.specialtyType || item.SpecialtyType || item.category || "Món đặc sản",
+        desc: item.desc || item.Desc || item.description || item.Description || "",
+        description: item.desc || item.Desc || item.description || item.Description || "",
+        historyInfo: item.historyInfo || item.HistoryInfo || "",
+        status: String(item.status || item.Status || "active").toLowerCase(),
+        statusNum: item.statusNum ?? item.StatusNum ?? (item.status === "hidden" ? 3 : 1),
+        coverImg:
+          item.coverImg ||
+          item.CoverImg ||
+          item.img ||
+          item.image ||
+          item.imageUrl ||
+          item.ImageUrl ||
+          DEFAULT_FOOD_COVER,
+        minPrice: item.minPrice ? Number(item.minPrice) : (item.MinPrice ? Number(item.MinPrice) : 0),
+        maxPrice: item.maxPrice ? Number(item.maxPrice) : (item.MaxPrice ? Number(item.MaxPrice) : 0),
+        priceRange:
+          item.priceRange ||
+          (item.minPrice
+            ? `${Number(item.minPrice).toLocaleString("vi-VN")}đ – ${Number(
+              item.maxPrice || item.minPrice
+            ).toLocaleString("vi-VN")}đ`
+            : ""),
+        createdAt: item.createdAt || "",
       }));
 
       setAvailableFoods(mapped);
-      if ((res as any)?.total || (res as any)?.data?.total) {
-        const total = Number((res as any)?.total || (res as any)?.data?.total || mapped.length);
-        setTotalElements(total);
-        setTotalPages(Math.ceil(total / 12) || 1);
-      } else {
-        setTotalElements(mapped.length);
-        setTotalPages(1);
-      }
+
+      const meta = (res as any)?.meta || (res as any)?.pagination || {};
+      const total = Number(
+        meta.totalElements ??
+        meta.totalCount ??
+        meta.total ??
+        (res as any)?.totalElements ??
+        (res as any)?.totalCount ??
+        (res as any)?.total ??
+        (res as any)?.data?.totalElements ??
+        (res as any)?.data?.totalCount ??
+        (res as any)?.data?.total ??
+        mapped.length
+      );
+      setTotalElements(total);
+
+      const computedTotalPages = Number(
+        meta.totalPages ??
+        (res as any)?.totalPages ??
+        (res as any)?.data?.totalPages ??
+        Math.max(1, Math.ceil(total / 10))
+      );
+      setTotalPages(Math.max(1, computedTotalPages));
     } catch (err: any) {
       console.error("Error fetching available foods:", err);
       setAvailableFoods([]);
+      setTotalElements(0);
+      setTotalPages(1);
     } finally {
       setIsLoadingAvailableFoods(false);
     }
-  }, [currentPage, searchKeyword, selectedProvince]);
+  }, [currentPage, searchKeyword, selectedProvince, selectedStatus]);
 
   useEffect(() => {
     fetchAvailableFoods();
@@ -217,35 +262,6 @@ export const PlaceAdminFoods: React.FC<PlaceAdminFoodsProps> = ({
     return new Set(associatedFoods.map((f) => f.id));
   }, [associatedFoods]);
 
-  // Client-side filtering on available foods for specialty type, status, price
-  const filteredAvailableFoods = useMemo(() => {
-    return availableFoods.filter((f) => {
-      // Specialty Type filter
-      if (selectedSpecialtyType !== "all") {
-        if ((f.specialtyType || "").toLowerCase() !== selectedSpecialtyType.toLowerCase()) {
-          return false;
-        }
-      }
-
-      // Status filter
-      if (selectedStatus !== "all") {
-        const isHidden = f.status === "hidden" || f.statusNum === 3;
-        if (selectedStatus === "active" && isHidden) return false;
-        if (selectedStatus === "hidden" && !isHidden) return false;
-      }
-
-      // Price filter
-      if (selectedPriceRange !== "all") {
-        const minP = Number(f.minPrice || 0);
-        const maxP = Number(f.maxPrice || minP || 0);
-        if (selectedPriceRange === "under_50k" && minP > 50000) return false;
-        if (selectedPriceRange === "50k_150k" && (maxP < 50000 || minP > 150000)) return false;
-        if (selectedPriceRange === "above_150k" && maxP < 150000) return false;
-      }
-
-      return true;
-    });
-  }, [availableFoods, selectedSpecialtyType, selectedStatus, selectedPriceRange]);
 
   // Add food to current place
   const handleAddFoodToPlace = (food: AdminFoodItem) => {
@@ -298,21 +314,32 @@ export const PlaceAdminFoods: React.FC<PlaceAdminFoodsProps> = ({
     setAssociatedFoods(nextList);
   };
 
-  // Search submit
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSearchKeyword(searchInput.trim());
+  // Handlers for search & filters matching FoodsTab
+  const handleSearchChange = (val: string) => {
+    setSearchInput(val);
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    debounceTimerRef.current = setTimeout(() => {
+      setSearchKeyword(val.trim());
+      setCurrentPage(1);
+    }, 300);
+  };
+
+  const handleProvinceChange = (val: string) => {
+    setSelectedProvince(val);
     setCurrentPage(1);
   };
 
-  // Reset search filters
+  const handleStatusChange = (val: string) => {
+    setSelectedStatus(val);
+    setCurrentPage(1);
+  };
+
   const handleResetFilters = () => {
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
     setSearchInput("");
     setSearchKeyword("");
     setSelectedProvince("all");
-    setSelectedSpecialtyType("all");
     setSelectedStatus("all");
-    setSelectedPriceRange("all");
     setCurrentPage(1);
   };
 
@@ -322,8 +349,7 @@ export const PlaceAdminFoods: React.FC<PlaceAdminFoodsProps> = ({
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-200">
-      {/* ── TOP HEADER / SYNCED STATUS ── */}
+    <div className="space-y-6 animate-in fade-in duration-200 text-xs font-sans">
       <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-2xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -336,12 +362,14 @@ export const PlaceAdminFoods: React.FC<PlaceAdminFoodsProps> = ({
                   Món ăn Đặc sản của {placeName}
                 </h2>
               </div>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Quản lý và liên kết các món ăn, ẩm thực địa phương đặc trưng cho địa điểm này.
+              </p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── SECTION 1: CURRENT ASSOCIATED FOODS LIST (LIKE USER SCREENSHOT 2) ── */}
       <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden">
         <div className="p-4 sm:p-5 bg-slate-50/80 border-b border-slate-200 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
@@ -366,6 +394,9 @@ export const PlaceAdminFoods: React.FC<PlaceAdminFoodsProps> = ({
               <div className="text-sm font-bold text-slate-800">
                 Địa điểm này chưa có món ăn đặc sản nào
               </div>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                Hãy tìm kiếm và thêm món ăn từ danh sách bên dưới để hiển thị trên trang chi tiết địa điểm.
+              </p>
             </div>
           ) : (
             associatedFoods.map((food, fIdx) => {
@@ -418,7 +449,7 @@ export const PlaceAdminFoods: React.FC<PlaceAdminFoodsProps> = ({
                             : "bg-[#e6fcf5] text-[#087f5b] border-[#63e6be]"
                             }`}
                         >
-                          {isHidden ? "Tạm ẩn" : "Hoạt động"}
+                          {isHidden ? "Tạm ẩn" : "Công khai"}
                         </span>
 
                         {food.province && (
@@ -493,247 +524,148 @@ export const PlaceAdminFoods: React.FC<PlaceAdminFoodsProps> = ({
         </div>
       </div>
 
-      {/* ── SECTION 2: FOOD DISCOVERY & FILTER (LIKE COLLECTIONS TAB PICKER) ── */}
-      <div className="space-y-4 pt-2">
-        {/* Top Search & Filter Bar */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-4">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h3 className="font-extrabold text-sm text-slate-900">
-                Thêm Món ăn Đặc sản vào Địa điểm
-              </h3>
-            </div>
+      <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
+        {/* Search & Filter Controls (Matching FoodsTab) */}
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="relative flex-1 min-w-[240px]">
+            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Tìm kiếm theo tên món ăn, đặc sản, tỉnh thành..."
+              value={searchInput}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              className="w-full pl-9 pr-8 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:bg-white outline-none focus:border-emerald-500 transition-colors"
+            />
+            {searchInput && (
+              <button
+                type="button"
+                onClick={() => handleSearchChange("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={selectedProvince}
+              onChange={(e) => handleProvinceChange(e.target.value)}
+              className="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 font-medium text-slate-800 outline-none focus:border-emerald-500 cursor-pointer text-xs"
+            >
+              <option value="all">Tất cả tỉnh thành</option>
+              {provincesList.map((prov) => (
+                <option key={prov.id || prov.name} value={prov.name}>
+                  {prov.name}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={selectedStatus}
+              onChange={(e) => handleStatusChange(e.target.value)}
+              className="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 font-medium text-slate-800 outline-none focus:border-emerald-500 cursor-pointer text-xs"
+            >
+              <option value="all">Tất cả trạng thái</option>
+              <option value="active">Đang công khai</option>
+              <option value="hidden">Đang tạm ẩn</option>
+            </select>
+
             <button
               type="button"
               onClick={handleResetFilters}
-              className="px-3 py-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer border border-slate-200"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold cursor-pointer transition-all text-xs"
             >
               <RotateCcw size={13} />
-              <span>Đặt lại bộ lọc</span>
+              <span>Đặt lại</span>
             </button>
-          </div>
-
-          {/* Search form */}
-          <form onSubmit={handleSearchSubmit} className="flex items-center gap-3">
-            <div className="relative flex-1">
-              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Tìm kiếm theo tên món ăn, đặc sản, xuất xứ..."
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                className="w-full pl-10 pr-10 py-2.5 bg-slate-50 focus:bg-white border border-slate-200 focus:border-emerald-600 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 outline-none transition-all font-medium"
-              />
-              {searchInput && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSearchInput("");
-                    setSearchKeyword("");
-                    setCurrentPage(1);
-                  }}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
-                >
-                  <X size={14} />
-                </button>
-              )}
-            </div>
-
-            <button
-              type="submit"
-              className="px-5 py-2.5 bg-emerald-800 hover:bg-emerald-900 text-white font-extrabold text-xs rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-xs shrink-0"
-            >
-              <Search size={14} />
-              <span>Tìm kiếm</span>
-            </button>
-          </form>
-
-          {/* Filter Row: Province, Specialty Type, Price, Status */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
-            {/* Province Filter */}
-            <div>
-              <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                Tỉnh / Thành phố
-              </label>
-              <select
-                value={selectedProvince}
-                onChange={(e) => {
-                  setSelectedProvince(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 outline-none focus:border-emerald-600 cursor-pointer"
-              >
-                <option value="all">Tất cả Tỉnh thành ({provincesList.length})</option>
-                {provincesList.map((p) => (
-                  <option key={p.id} value={p.name}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Price Range Filter */}
-            <div>
-              <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                Mức giá tham khảo
-              </label>
-              <select
-                value={selectedPriceRange}
-                onChange={(e) => {
-                  setSelectedPriceRange(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 outline-none focus:border-emerald-600 cursor-pointer"
-              >
-                <option value="all">Tất cả mức giá</option>
-                <option value="under_50k">Dưới 50.000đ</option>
-                <option value="50k_150k">Từ 50.000đ - 150.000đ</option>
-                <option value="above_150k">Trên 150.000đ</option>
-              </select>
-            </div>
-
-            {/* Status Filter */}
-            <div>
-              <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                Trạng thái duyệt
-              </label>
-              <select
-                value={selectedStatus}
-                onChange={(e) => {
-                  setSelectedStatus(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 outline-none focus:border-emerald-600 cursor-pointer"
-              >
-                <option value="all">Tất cả trạng thái</option>
-                <option value="active">Đang công khai</option>
-                <option value="hidden">Tạm ẩn</option>
-              </select>
-            </div>
           </div>
         </div>
 
-        {/* Available Foods Results Grid */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-4">
-          <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100">
-            <span className="text-xs font-extrabold text-slate-800">
-              Kết quả tìm kiếm ({filteredAvailableFoods.length} món)
-            </span>
-          </div>
-
-          {isLoadingAvailableFoods ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 min-h-[300px]">
-              {Array.from({ length: 6 }).map((_, idx) => (
-                <div
-                  key={idx}
-                  className="p-3.5 rounded-2xl border border-slate-200/80 bg-slate-50/50 animate-pulse flex flex-col justify-between gap-3 h-[130px]"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="w-14 h-14 rounded-xl bg-slate-200/80 shrink-0" />
-                    <div className="flex-1 space-y-2">
-                      <div className="h-3.5 bg-slate-200/80 rounded w-3/4" />
-                      <div className="h-2.5 bg-slate-200/70 rounded w-1/2" />
-                      <div className="h-2.5 bg-slate-200/70 rounded w-1/3" />
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center pt-2 border-t border-slate-100">
-                    <div className="h-3 bg-slate-200/80 rounded w-16" />
-                    <div className="h-6 bg-slate-200/80 rounded-lg w-20" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : filteredAvailableFoods.length === 0 ? (
-            <div className="py-12 text-center text-slate-400 text-xs space-y-2">
-              <p>Không tìm thấy món ăn nào phù hợp với bộ lọc hiện tại.</p>
-              <button
-                type="button"
-                onClick={handleResetFilters}
-                className="text-emerald-800 hover:underline font-bold"
-              >
-                Xóa bộ lọc để xem tất cả món ăn
-              </button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-              {filteredAvailableFoods.map((food) => {
+        {/* Foods Table (Layout Matching FoodsTab) */}
+        <div className="overflow-x-auto rounded-xl border border-slate-200/80">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-bold text-[11px] uppercase tracking-wider">
+                <th className="p-3.5 pl-4">Món ăn / Đặc sản</th>
+                <th className="p-3.5">Tỉnh / Thành</th>
+                <th className="p-3.5">Khoảng giá</th>
+                <th className="p-3.5">Trạng thái</th>
+                <th className="p-3.5 text-right pr-4">Hành động</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {availableFoods.map((food) => {
                 const isAdded = associatedFoodIds.has(food.id);
-                const cover = food.coverImg || food.imageUrl;
+                const isHidden = food.status === "hidden" || food.statusNum === 3;
+                const minP = food.minPrice ? food.minPrice.toLocaleString("vi-VN") : "0";
+                const maxP = food.maxPrice ? food.maxPrice.toLocaleString("vi-VN") : "";
+                const priceText = (food.minPrice || food.maxPrice)
+                  ? `${minP}đ${maxP ? ` – ${maxP}đ` : ""}`
+                  : "Liên hệ";
+                const cover =
+                  food.coverImg ||
+                  food.imageUrl ||
+                  "https://images.unsplash.com/photo-1541544741938-0af808871cc0?w=600&h=400&fit=crop";
 
                 return (
-                  <div
+                  <tr
                     key={food.id}
-                    className={`p-3.5 rounded-2xl border transition-all flex flex-col justify-between gap-3 text-xs ${isAdded
-                      ? "bg-emerald-50/40 border-emerald-300 ring-1 ring-emerald-400/20"
-                      : "bg-white border-slate-200/90 hover:border-slate-300 hover:shadow-2xs"
+                    className={`hover:bg-slate-50/60 transition-colors group ${isAdded ? "bg-emerald-50/30" : ""
                       }`}
                   >
-                    <div className="flex items-start gap-3">
-                      {cover ? (
+                    {/* Food Image & Name */}
+                    <td className="p-3.5 pl-4 font-bold text-slate-900">
+                      <div className="flex items-center gap-3">
                         <img
                           src={cover}
+                          className="w-10 h-10 rounded-lg object-cover border border-slate-200 shrink-0"
                           alt={food.name}
-                          className="w-14 h-14 rounded-xl object-cover shrink-0 border border-slate-200"
                           onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = "none";
-                            const sibling = target.nextElementSibling as HTMLElement | null;
-                            if (sibling) sibling.style.display = "flex";
+                            (e.target as HTMLImageElement).src =
+                              "https://images.unsplash.com/photo-1541544741938-0af808871cc0?w=600&h=400&fit=crop";
                           }}
                         />
-                      ) : null}
-                      <div
-                        className={`w-14 h-14 rounded-xl bg-slate-100 border border-slate-200 shrink-0 items-center justify-center text-slate-400 flex-col gap-0.5 ${cover ? "hidden" : "flex"
+                        <div>
+                          <div className="font-bold text-slate-900 group-hover:text-emerald-700 transition-colors text-xs">
+                            {food.name}
+                          </div>
+                          <div className="text-[11px] text-slate-400 font-normal truncate max-w-xs">
+                            {food.specialtyType || food.desc || food.description || "Món đặc sản"}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Province */}
+                    <td className="p-3.5 text-slate-700 font-medium text-xs">
+                      {food.province || "Toàn quốc"}
+                    </td>
+
+                    {/* Price Range */}
+                    <td className="p-3.5 font-bold text-emerald-800 text-xs">
+                      {priceText}
+                    </td>
+
+                    {/* Status */}
+                    <td className="p-3.5">
+                      <span
+                        className={`inline-flex items-center justify-center px-3.5 py-1 rounded-xl text-xs font-bold border transition-colors ${isHidden
+                            ? "bg-slate-100 text-slate-700 border-slate-300"
+                            : "bg-[#e6fcf5] text-[#087f5b] border-[#63e6be]"
                           }`}
                       >
-                        <ImageIcon size={16} className="text-slate-300" />
-                      </div>
-
-                      <div className="min-w-0 flex-1 space-y-1">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <h4 className="font-extrabold text-slate-900 text-xs leading-snug line-clamp-1">
-                            {food.name}
-                          </h4>
-                        </div>
-
-                        <div className="flex items-center gap-1.5 flex-wrap text-[10px]">
-                          {food.province && (
-                            <span className="px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200">
-                              {food.province}
-                            </span>
-                          )}
-                          {food.specialtyType && (
-                            <span className="px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 font-medium">
-                              {food.specialtyType}
-                            </span>
-                          )}
-                        </div>
-
-                        {(food.minPrice !== undefined || food.maxPrice !== undefined) && (
-                          <div className="text-[10px] font-bold text-amber-700">
-                            {food.minPrice ? formatPrice(food.minPrice) : "0đ"}
-                            {food.maxPrice ? ` - ${formatPrice(food.maxPrice)}` : ""}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {(food.desc || food.description) && (
-                      <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed font-normal">
-                        {food.desc || food.description}
-                      </p>
-                    )}
-
-                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
-                      <span className="text-[10px] font-mono text-slate-400">
-                        #{food.id}
+                        {isHidden ? "Tạm ẩn" : "Công khai"}
                       </span>
+                    </td>
 
+                    {/* Action Buttons */}
+                    <td className="p-3.5 text-right pr-4">
                       {isAdded ? (
                         <button
                           type="button"
                           onClick={() => handleRemoveFoodFromPlace(food.id, food.name)}
-                          className="px-3 py-1.5 rounded-xl font-bold text-[11px] bg-emerald-100 text-emerald-800 border border-emerald-300 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200 transition-colors flex items-center gap-1 cursor-pointer"
+                          className="px-3 py-1.5 rounded-xl font-bold text-xs bg-emerald-100 text-emerald-800 border border-emerald-300 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200 transition-colors inline-flex items-center gap-1 cursor-pointer"
                           title="Bấm để gỡ món ăn khỏi địa điểm"
                         >
                           <Check size={13} />
@@ -743,49 +675,91 @@ export const PlaceAdminFoods: React.FC<PlaceAdminFoodsProps> = ({
                         <button
                           type="button"
                           onClick={() => handleAddFoodToPlace(food)}
-                          className="px-3.5 py-1.5 rounded-xl font-bold text-[11px] bg-emerald-800 hover:bg-emerald-900 text-white transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
+                          className="px-3.5 py-1.5 rounded-xl font-bold text-xs bg-emerald-800 hover:bg-emerald-900 text-white transition-all inline-flex items-center gap-1 cursor-pointer shadow-2xs"
                         >
                           <Plus size={13} />
                           <span>Thêm vào địa điểm</span>
                         </button>
                       )}
-                    </div>
-                  </div>
+                    </td>
+                  </tr>
                 );
               })}
+            </tbody>
+          </table>
+
+          {isLoadingAvailableFoods ? (
+            <div className="p-12 text-center text-slate-400">
+              <div className="flex flex-col items-center justify-center gap-2">
+                <Loader2 size={24} className="animate-spin text-emerald-600" />
+                <span className="text-xs">Đang tải danh sách món ăn từ máy chủ...</span>
+              </div>
             </div>
-          )}
+          ) : availableFoods.length === 0 ? (
+            <div className="p-8 text-center text-slate-400 font-medium text-xs">
+              Không tìm thấy món ăn đặc sản nào phù hợp với bộ lọc.
+            </div>
+          ) : null}
+        </div>
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between pt-4 border-t border-slate-100">
-              <span className="text-xs text-slate-500 font-medium">
-                Trang <strong>{currentPage}</strong> / {totalPages} (Tổng số {totalElements} món ăn)
-              </span>
+        {/* Pagination Bar (Matching FoodsTab) */}
+        {totalElements > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 px-1 border-t border-slate-100 text-xs text-slate-500 font-medium">
+            <div>
+              Hiển thị <strong>{availableFoods.length}</strong> / <strong>{totalElements}</strong> món ăn (Trang <strong>{currentPage}</strong> / {totalPages || 1})
+            </div>
 
-              <div className="flex items-center gap-2">
+            {totalPages > 1 && (
+              <div className="flex items-center gap-1.5">
                 <button
                   type="button"
-                  disabled={currentPage === 1}
+                  disabled={currentPage <= 1 || isLoadingAvailableFoods}
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl text-xs font-bold text-slate-700 transition-colors cursor-pointer flex items-center gap-1"
+                  className="px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-bold text-slate-700 transition-colors flex items-center gap-1 cursor-pointer text-xs"
                 >
                   <ChevronLeft size={14} />
                   <span>Trước</span>
                 </button>
+
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pNum = currentPage - 2 + i;
+                    if (currentPage <= 3) {
+                      pNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pNum = totalPages - 4 + i;
+                    }
+                    if (pNum < 1 || pNum > totalPages) return null;
+                    const isActive = pNum === currentPage;
+                    return (
+                      <button
+                        key={pNum}
+                        type="button"
+                        onClick={() => setCurrentPage(pNum)}
+                        className={`w-7 h-7 rounded-full text-xs font-bold transition-colors cursor-pointer flex items-center justify-center ${isActive
+                            ? "bg-[#087f5b] text-white shadow-xs"
+                            : "text-slate-600 hover:bg-slate-100"
+                          }`}
+                      >
+                        {pNum}
+                      </button>
+                    );
+                  })}
+                </div>
+
                 <button
                   type="button"
-                  disabled={currentPage >= totalPages}
+                  disabled={currentPage >= totalPages || isLoadingAvailableFoods}
                   onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl text-xs font-bold text-slate-700 transition-colors cursor-pointer flex items-center gap-1"
+                  className="px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-bold text-slate-700 transition-colors flex items-center gap-1 cursor-pointer text-xs"
                 >
                   <span>Sau</span>
                   <ChevronRight size={14} />
                 </button>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

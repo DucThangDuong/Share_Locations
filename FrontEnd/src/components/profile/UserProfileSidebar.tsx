@@ -12,7 +12,6 @@ interface UserProfileSidebarProps {
 export const UserProfileSidebar: React.FC<UserProfileSidebarProps> = ({ profile }) => {
   return (
     <div className="space-y-6">
-      {/* Intro Card */}
       <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-2xs">
         <h2 className="text-lg font-bold text-slate-900 pb-3 border-b border-slate-100 mb-4">
           Giới thiệu

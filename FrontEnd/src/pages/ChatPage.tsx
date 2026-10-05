@@ -45,23 +45,19 @@ export default function ChatPage({
 
   const currentUserId = user?.id ? Number(user.id) : null
 
-  // Input states
   const [inputText, setInputText] = useState('')
   const [replyingTo, setReplyingTo] = useState<{ id: number; senderName: string; text: string } | null>(null)
   const [isSending, setIsSending] = useState(false)
 
-  // Modals & Drawers
   const [showRightDrawer, setShowRightDrawer] = useState(true)
   const [showPlacePicker, setShowPlacePicker] = useState(false)
   const [lightboxImage, setLightboxImage] = useState<string | null>(null)
 
-  // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Handle initial conversation ID or select first
   useEffect(() => {
     if (initialConversationId) {
       const parsedId = Number(initialConversationId)
@@ -73,7 +69,6 @@ export default function ChatPage({
     }
   }, [initialConversationId, inbox, activeRoomId, selectRoom])
 
-  // Scroll to bottom on new messages / typing
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, partnerTyping])
@@ -142,7 +137,6 @@ export default function ChatPage({
     }
   }
 
-  // Shared media in right drawer
   const { allMediaAttachments } = useMemo(() => {
     const images: MessageAttachmentDto[] = []
     const files: MessageAttachmentDto[] = []
@@ -171,7 +165,6 @@ export default function ChatPage({
     <div className="h-full w-full bg-slate-50 overflow-hidden flex flex-col">
       <div className="w-full max-w-[1440px] mx-auto px-3 sm:px-4 lg:px-6 h-full flex flex-col py-2.5">
         <div className="flex-1 flex bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden relative">
-          {/* Hidden File Inputs */}
           <input
             type="file"
             ref={imageInputRef}
@@ -187,7 +180,6 @@ export default function ChatPage({
             onChange={handleFileUpload}
           />
 
-          {/* CỘT 1: SIDEBAR HỘP THƯ (CỐ ĐỊNH, CUỘN DANH SÁCH RIÊNG) */}
           <ChatSidebar
             inbox={inbox}
             isLoading={isLoadingInbox}
@@ -196,7 +188,6 @@ export default function ChatPage({
             onBack={onBack}
           />
 
-          {/* CỘT 2: KHUNG CHAT CHÍNH (CUỘN FEED TIN NHẮN RIÊNG) */}
           <main className="flex-1 min-w-0 h-full flex flex-col bg-white relative overflow-hidden">
             <ChatMessageFeed
               roomTitle={roomTitle}
@@ -228,7 +219,6 @@ export default function ChatPage({
             />
           </main>
 
-          {/* CỘT 3: DRAWER THÔNG TIN ĐOẠN CHAT (PHẢI) */}
           <ChatDrawer
             isOpen={showRightDrawer}
             roomTitle={roomTitle}
@@ -241,14 +231,12 @@ export default function ChatPage({
         </div>
       </div>
 
-      {/* MODAL CHỌN ĐỊA ĐIỂM */}
       <ChatPlacePickerModal
         isOpen={showPlacePicker}
         onClose={() => setShowPlacePicker(false)}
         onSelectPlace={handleSharePlace}
       />
 
-      {/* LIGHTBOX XEM ẢNH */}
       <ChatLightbox imageUrl={lightboxImage} onClose={() => setLightboxImage(null)} />
     </div>
   )

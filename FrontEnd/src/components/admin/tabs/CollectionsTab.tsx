@@ -968,8 +968,8 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
                     type="button"
                     onClick={() => handleToggleCollectionStatus(activeCollection.id)}
                     className={`inline-flex items-center justify-center px-3.5 py-1 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${activeCollection.status === 1
-                        ? "bg-[#e6fcf5] text-[#087f5b] border-[#63e6be] hover:bg-[#d3f9ec]"
-                        : "bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200"
+                      ? "bg-[#e6fcf5] text-[#087f5b] border-[#63e6be] hover:bg-[#d3f9ec]"
+                      : "bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200"
                       }`}
                     title={activeCollection.status === 1 ? "Bấm để chuyển sang Tạm ẩn" : "Bấm để chuyển sang Công khai"}
                   >
@@ -986,7 +986,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
 
             {/* Header Right Actions */}
             <div className="flex items-center gap-2 shrink-0 flex-wrap">
-              {/* Nút Hủy thay đổi khi có thay đổi chưa lưu (chế độ chỉnh sửa) */}
               {hasUnsavedChanges && !isCreatingNew && (
                 <button
                   type="button"
@@ -999,7 +998,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
                 </button>
               )}
 
-              {/* Nút Hủy tạo khi ở chế độ tạo mới */}
               {isCreatingNew && (
                 <button
                   type="button"
@@ -1059,7 +1057,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
           </div>
         </div>
 
-        {/* ── CURRENT COLLECTION STOPS / TIMELINE SECTION ── */}
         <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden">
           <div className="p-4 sm:p-5 bg-slate-50/80 border-b border-slate-200 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
@@ -1212,10 +1209,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
             )}
           </div>
         </div>
-
-        {/* ───────────────────────────────────────────────────────────── */}
-        {/* ── PLACE DISCOVERY & FILTER SECTION (LIKE USER SCREENSHOT) ── */}
-        {/* ───────────────────────────────────────────────────────────── */}
         <div className="space-y-4 pt-2">
           {/* Top Search Bar */}
           <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs">
@@ -1254,9 +1247,7 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
             </form>
           </div>
 
-          {/* 2-Column Filter and Place Results Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 items-start">
-            {/* ── LEFT SIDEBAR: BỘ LỌC TÌM KIẾM ── */}
             <div className="lg:col-span-1 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-5">
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div className="flex items-center gap-2 font-extrabold text-sm text-slate-900">
@@ -1414,7 +1405,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
               </div>
             </div>
 
-            {/* ── RIGHT MAIN CONTENT: KẾT QUẢ TÌM KIẾM ĐỊA ĐIỂM ── */}
             <div className="lg:col-span-3 space-y-4">
               {/* Header Bar */}
               <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center justify-between gap-3">
@@ -1761,7 +1751,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
         </div>
       </div>
 
-      {/* ── COLLECTIONS TABLE VIEW (1 DÒNG NGANG MỖI BỘ SƯU TẬP) ── */}
       {isLoading ? (
         <div className="py-20 flex flex-col items-center justify-center text-slate-400 gap-2 bg-white rounded-2xl border border-slate-200">
           <Loader2 size={28} className="animate-spin text-emerald-800" />

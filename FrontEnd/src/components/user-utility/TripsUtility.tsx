@@ -131,7 +131,6 @@ export const TripsUtility: React.FC<TripsUtilityProps> = ({
 
   return (
     <div className={`flex flex-col ${isDrawer ? 'flex-1 overflow-hidden' : 'space-y-5'}`}>
-      {/* Top Search and Create Action */}
       <div className={`flex items-center justify-between gap-2.5 ${isDrawer ? 'px-4 py-3 border-b border-slate-200 bg-white' : 'pb-3 border-b border-slate-200'}`}>
         <div className="relative flex-1">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -164,7 +163,6 @@ export const TripsUtility: React.FC<TripsUtilityProps> = ({
         </button>
       </div>
 
-      {/* Main Content */}
       <div className={isDrawer ? 'p-4 flex-1 overflow-y-auto space-y-2.5' : ''}>
         {isLoading ? (
           <div className="py-20 flex flex-col items-center justify-center text-slate-400 gap-2">
@@ -235,7 +233,6 @@ export const TripsUtility: React.FC<TripsUtilityProps> = ({
                   </div>
 
                   <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5">
-                    {/* Published / Privacy Status Badge */}
                     {isPublished ? (
                       <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold flex items-center gap-1 shrink-0">
                         <Globe size={10} />
@@ -262,7 +259,6 @@ export const TripsUtility: React.FC<TripsUtilityProps> = ({
             })}
           </div>
         ) : (
-          /* Full Page Clean Grid Layout */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {filteredTrips.map((trip) => {
               const isPublished =
@@ -283,7 +279,6 @@ export const TripsUtility: React.FC<TripsUtilityProps> = ({
                         <Luggage size={24} />
                       </div>
                       <div className="flex items-center gap-1.5 flex-wrap justify-end">
-                        {/* Published Status Badge */}
                         {isPublished ? (
                           <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold flex items-center gap-1.5">
                             <Globe size={12} />
@@ -297,13 +292,12 @@ export const TripsUtility: React.FC<TripsUtilityProps> = ({
                         )}
 
                         <span
-                          className={`px-2.5 py-1 rounded-lg text-xs font-bold border ${
-                            trip.status === 1
-                              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                              : trip.status === 2
-                                ? 'bg-slate-100 text-slate-700 border-slate-200'
-                                : 'bg-slate-50 text-slate-600 border-slate-200'
-                          }`}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-bold border ${trip.status === 1
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                            : trip.status === 2
+                              ? 'bg-slate-100 text-slate-700 border-slate-200'
+                              : 'bg-slate-50 text-slate-600 border-slate-200'
+                            }`}
                         >
                           {trip.status === 0 ? 'Đang lên kế hoạch' : trip.status === 1 ? 'Đang đi' : 'Hoàn thành'}
                         </span>

@@ -226,7 +226,6 @@ export const ItineraryPublishModal: React.FC<ItineraryPublishModalProps> = ({
             />
           </div>
 
-          {/* Description Field (Required) */}
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
@@ -236,10 +235,10 @@ export const ItineraryPublishModal: React.FC<ItineraryPublishModalProps> = ({
               </label>
               <span
                 className={`text-[10px] font-bold ${trimmedDesc.length < 10
-                    ? 'text-amber-600'
-                    : trimmedDesc.length > 2000
-                      ? 'text-rose-600'
-                      : 'text-emerald-700'
+                  ? 'text-amber-600'
+                  : trimmedDesc.length > 2000
+                    ? 'text-rose-600'
+                    : 'text-emerald-700'
                   }`}
               >
                 {trimmedDesc.length} / 2000 ký tự (tối thiểu 10)
@@ -260,7 +259,6 @@ export const ItineraryPublishModal: React.FC<ItineraryPublishModalProps> = ({
             )}
           </div>
 
-          {/* Cover Image Upload (From user's device) */}
           <div>
             <input
               type="file"
@@ -326,8 +324,8 @@ export const ItineraryPublishModal: React.FC<ItineraryPublishModalProps> = ({
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
                 className={`w-full border-2 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-all ${isDragging
-                    ? 'border-emerald-500 bg-emerald-50/60'
-                    : 'border-slate-300 hover:border-emerald-500 bg-slate-50/60 hover:bg-emerald-50/30'
+                  ? 'border-emerald-500 bg-emerald-50/60'
+                  : 'border-slate-300 hover:border-emerald-500 bg-slate-50/60 hover:bg-emerald-50/30'
                   }`}
               >
                 <div className="w-12 h-12 rounded-2xl bg-white text-emerald-700 shadow-xs border border-slate-200/80 flex items-center justify-center mb-2.5">
@@ -358,8 +356,8 @@ export const ItineraryPublishModal: React.FC<ItineraryPublishModalProps> = ({
               type="submit"
               disabled={isSubmitting || !isDescValid}
               className={`px-5 py-2 text-white font-bold rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer ${isSubmitting || !isDescValid
-                  ? 'bg-emerald-400 cursor-not-allowed opacity-70'
-                  : 'bg-emerald-700 hover:bg-emerald-800'
+                ? 'bg-emerald-400 cursor-not-allowed opacity-70'
+                : 'bg-emerald-700 hover:bg-emerald-800'
                 }`}
             >
               {isSubmitting ? (

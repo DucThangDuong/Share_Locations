@@ -401,7 +401,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
 
 
 
-  // Real activities data from API
   const reviewsList = userActivities?.reviews || []
   const blogsList = userActivities?.blogs || []
   const tripsList = userActivities?.trips || []
@@ -409,7 +408,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
 
   return (
     <div className="space-y-6 font-sans antialiased text-slate-800 animate-in fade-in duration-200">
-      {/* ── TOP HEADER / BREADCRUMB ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
         <div className="flex items-center gap-3">
           <button
@@ -477,7 +475,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
         </div>
       </div>
 
-      {/* ── USER PROFILE BANNER CARD ── */}
       <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-2xs flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div className="flex items-center gap-5 min-w-0">
           {userDetail?.avatarUrl || user.avatarUrl ? (
@@ -551,12 +548,9 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
         </div>
       </div>
 
-      {/* ── LOWER CONTENT TABS CONTAINER ── */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden p-6 space-y-5">
-        {/* Navigation Tabs Header */}
         <div className="border-b border-slate-200 flex items-center justify-between gap-4 overflow-x-auto overflow-y-hidden text-xs font-bold scrollbar-none">
           <div className="flex items-center gap-4 sm:gap-6">
-            {/* TABS FOR ADMIN MANAGEMENT */}
             {isTargetAdmin && (
               <>
                 <button
@@ -581,12 +575,10 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
                   <span>Lịch sử hoạt động ({accessHistory.length})</span>
                 </button>
 
-                {/* Visual Divider between Admin Management & User Contributions */}
                 <div className="h-4 w-px bg-slate-200 self-center hidden sm:block" />
               </>
             )}
 
-            {/* TABS FOR USER CONTRIBUTIONS (Accessible to both regular users and admins) */}
             <button
               type="button"
               onClick={() => setActiveTab('reviews')}
@@ -656,11 +648,9 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
           </div>
         )}
 
-        {/* 1. ADMIN TAB: PHẠM VI PHÂN QUYỀN (MỤC 1: DANH MỤC, MỤC 2: TỈNH THÀNH) */}
         {!isLoading && activeTab === 'scopes' && (
           <div className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* MỤC 1: DANH MỤC PHÂN QUYỀN */}
               <div className="bg-slate-50/50 rounded-2xl border border-slate-200/90 p-5 space-y-4">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-200/80">
                   <div className="flex items-center gap-2.5">
@@ -776,7 +766,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
                 </div>
               </div>
 
-              {/* MỤC 2: TỈNH THÀNH PHỤ TRÁCH */}
               <div className="bg-slate-50/50 rounded-2xl border border-slate-200/90 p-5 space-y-4">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-200/80">
                   <div className="flex items-center gap-2.5">
@@ -904,7 +893,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
               </div>
             </div>
 
-            {/* ACTION FOOTER: LƯU VÀ HỦY VỚI TRẠNG THÁI THAY ĐỔI */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-200/80 bg-slate-50/80 p-4 rounded-xl border border-slate-200">
               <div className="text-xs">
                 {hasScopeChanges ? (
@@ -960,7 +948,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
         )}
 
 
-        {/* 3. ADMIN TAB: LỊCH SỬ HOẠT ĐỘNG (ACCESS HISTORY) */}
         {!isLoading && activeTab === 'logs' && (
           <div className="overflow-x-auto max-h-[500px] overflow-y-auto rounded-xl border border-slate-100 shadow-2xs">
             <table className="w-full text-left border-collapse text-xs">
@@ -1018,7 +1005,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
           </div>
         )}
 
-        {/* 4. USER TAB: HÌNH ẢNH & ĐÁNH GIÁ */}
         {!isLoading && activeTab === 'reviews' && (
           <div className="space-y-3">
             {reviewsList.length === 0 ? (
@@ -1121,7 +1107,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
           </div>
         )}
 
-        {/* 5. USER TAB: BÀI VIẾT & CẨM NANG */}
         {!isLoading && activeTab === 'blogs' && (
           <div className="space-y-3">
             {blogsList.length === 0 ? (
@@ -1205,7 +1190,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
           </div>
         )}
 
-        {/* 6. USER TAB: CHUYẾN ĐI CÔNG KHAI */}
         {!isLoading && activeTab === 'trips' && (
           <div className="space-y-3">
             {tripsList.length === 0 ? (
@@ -1285,7 +1269,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
           </div>
         )}
 
-        {/* 7. USER TAB: ĐỀ XUẤT ĐỊA ĐIỂM */}
         {!isLoading && activeTab === 'proposals' && (
           <div className="overflow-x-auto rounded-xl border border-slate-200 shadow-2xs">
             <table className="w-full text-left border-collapse text-xs">
