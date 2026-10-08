@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
+import { useSystemSettings } from '@/context/SystemSettingsContext'
 import {
   X,
   ChevronLeft,
@@ -51,13 +52,14 @@ export const UserUtilityDrawer: React.FC<UserUtilityDrawerProps> = ({
   initialUtility = null
 }) => {
   const { user, profile, logout } = useAuth()
+  const { defaultUserAvatar } = useSystemSettings()
   const navigate = useNavigate()
 
   const [activeUtility, setActiveUtility] = useState<UtilityType | null>(initialUtility)
   const [toastMsg, setToastMsg] = useState<string | null>(null)
 
   const displayName = user?.fullName || profile?.fullName || 'Người dùng'
-  const avatarUrl = user?.avatarUrl || profile?.avatarUrl || null
+  const avatarUrl = user?.avatarUrl || profile?.avatarUrl || defaultUserAvatar
   const email = user?.email || profile?.email || ''
 
   const showToast = (msg: string) => {
@@ -112,72 +114,54 @@ export const UserUtilityDrawer: React.FC<UserUtilityDrawerProps> = ({
     title: string
     subtitle: string
     icon: React.ElementType
-    iconColor: string
-    bgColor: string
   }> = [
       {
         key: 'favorites',
         title: 'Yêu thích',
         subtitle: 'Địa điểm, ẩm thực, hành trình, cẩm nang đã lưu',
         icon: Bookmark,
-        iconColor: 'text-amber-700',
-        bgColor: 'bg-amber-50 group-hover:bg-amber-100'
       },
       {
         key: 'trips',
         title: 'Chuyến đi',
         subtitle: 'Lịch trình du lịch, điểm đến & hoạt động',
         icon: Luggage,
-        iconColor: 'text-blue-800',
-        bgColor: 'bg-blue-50 group-hover:bg-blue-100'
       },
       {
         key: 'visitLogs',
         title: 'Nhật ký',
         subtitle: 'Địa điểm đã check-in, đánh giá & ghi nhớ',
         icon: CalendarCheck,
-        iconColor: 'text-emerald-800',
-        bgColor: 'bg-emerald-50 group-hover:bg-emerald-100'
       },
       {
         key: 'friends',
         title: 'Bạn bè',
         subtitle: 'Kết nối du lịch, lời mời kết bạn & gợi ý',
         icon: UserPlus,
-        iconColor: 'text-indigo-800',
-        bgColor: 'bg-indigo-50 group-hover:bg-indigo-100'
       },
       {
         key: 'reviews',
         title: 'Đánh giá',
         subtitle: 'Nhận xét và hình ảnh địa điểm bạn đã chia sẻ',
         icon: Star,
-        iconColor: 'text-yellow-700',
-        bgColor: 'bg-yellow-50 group-hover:bg-yellow-100'
       },
       {
         key: 'comments',
         title: 'Bình luận',
         subtitle: 'Tất cả tương tác & phản hồi của bạn',
         icon: MessageSquare,
-        iconColor: 'text-violet-800',
-        bgColor: 'bg-violet-50 group-hover:bg-violet-100'
       },
       {
         key: 'blogs',
         title: 'Cẩm nang',
         subtitle: 'Cẩm nang du lịch và kinh nghiệm khám phá',
         icon: Newspaper,
-        iconColor: 'text-teal-800',
-        bgColor: 'bg-teal-50 group-hover:bg-teal-100'
       },
       {
         key: 'proposals',
         title: 'Đề xuất',
         subtitle: 'Địa điểm và cập nhật bạn đã gửi duyệt',
         icon: PlusCircle,
-        iconColor: 'text-rose-800',
-        bgColor: 'bg-rose-50 group-hover:bg-rose-100'
       }
     ]
 
@@ -271,23 +255,21 @@ export const UserUtilityDrawer: React.FC<UserUtilityDrawerProps> = ({
                     key={item.key}
                     type="button"
                     onClick={() => setActiveUtility(item.key)}
-                    className="w-full flex items-center justify-between p-3 rounded-2xl hover:bg-slate-50 transition-all text-left cursor-pointer border border-transparent hover:border-slate-100 group shadow-2xs hover:shadow-xs"
+                    className="w-full flex items-center justify-between p-2.5 px-3 rounded-xl hover:bg-slate-50 transition-all text-left cursor-pointer border border-transparent hover:border-slate-100 group"
                   >
-                    <div className="flex items-center gap-3.5 min-w-0">
-                      <div
-                        className={`w-10 h-10 rounded-xl ${item.bgColor} ${item.iconColor} flex items-center justify-center shrink-0 transition-colors shadow-2xs`}
-                      >
-                        <IconComponent size={20} />
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-8 h-8 rounded-lg bg-slate-100 group-hover:bg-slate-200/70 text-slate-600 group-hover:text-slate-900 flex items-center justify-center shrink-0 transition-colors">
+                        <IconComponent size={16} strokeWidth={1.8} />
                       </div>
                       <div className="min-w-0">
-                        <span className="text-[13px] font-bold text-slate-900 group-hover:text-emerald-800 transition-colors truncate block">
+                        <span className="text-[13px] font-semibold text-slate-800 group-hover:text-slate-900 transition-colors truncate block">
                           {item.title}
                         </span>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1 shrink-0 ml-2 text-slate-300 group-hover:text-slate-600 transition-colors">
-                      <ChevronRight size={16} />
+                    <div className="flex items-center gap-1 shrink-0 ml-2 text-slate-300 group-hover:text-slate-500 transition-colors">
+                      <ChevronRight size={15} />
                     </div>
                   </button>
                 )

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react'
 import { useChat } from '@/context/ChatContext'
 import { useAuth } from '@/context/AuthContext'
+import { useSystemSettings } from '@/context/SystemSettingsContext'
 import { MessageAttachmentType, type MessageAttachmentDto } from '@/services/chatService'
 import type { PlaceSummaryDto } from '@/types/models/place.model'
 import {
@@ -27,6 +28,7 @@ export default function ChatPage({
   showToast = () => { },
 }: ChatPageProps) {
   const { user } = useAuth()
+  const { defaultUserAvatar, defaultGroupAvatar } = useSystemSettings()
   const {
     inbox,
     isLoadingInbox,
@@ -57,17 +59,28 @@ export default function ChatPage({
   const fileInputRef = useRef<HTMLInputElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const initializedRoomIdRef = useRef<number | null>(null)
 
   useEffect(() => {
     if (initialConversationId) {
       const parsedId = Number(initialConversationId)
-      if (!isNaN(parsedId)) {
+      if (!isNaN(parsedId) && activeRoomId !== parsedId && initializedRoomIdRef.current !== parsedId) {
+        initializedRoomIdRef.current = parsedId
         selectRoom(parsedId)
       }
-    } else if (!activeRoomId && inbox.length > 0) {
-      selectRoom(inbox[0].roomId)
+    } else if (!activeRoomId && inbox.length > 0 && initializedRoomIdRef.current === null) {
+      const firstRoomId = inbox[0].roomId
+      initializedRoomIdRef.current = firstRoomId
+      selectRoom(firstRoomId)
     }
-  }, [initialConversationId, inbox, activeRoomId, selectRoom])
+  }, [initialConversationId, activeRoomId, inbox.length, selectRoom])
+
+  const handleSelectRoom = (roomId: number) => {
+    if (roomId === activeRoomId) return
+    initializedRoomIdRef.current = roomId
+    selectRoom(roomId)
+    window.history.replaceState(null, '', `/chat?conversation=${roomId}`)
+  }
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -158,8 +171,8 @@ export default function ChatPage({
   const roomAvatar =
     activeRoom?.avatarUrl ||
     (activeRoom?.isGroup
-      ? 'https://cdn.pixabay.com/photo/2016/11/14/17/39/group-1824145_1280.png'
-      : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop')
+      ? defaultGroupAvatar
+      : defaultUserAvatar)
 
   return (
     <div className="h-full w-full bg-slate-50 overflow-hidden flex flex-col">
@@ -184,7 +197,7 @@ export default function ChatPage({
             inbox={inbox}
             isLoading={isLoadingInbox}
             activeRoomId={activeRoomId}
-            onSelectRoom={(roomId) => selectRoom(roomId)}
+            onSelectRoom={handleSelectRoom}
             onBack={onBack}
           />
 

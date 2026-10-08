@@ -45,4 +45,14 @@ public interface IAdminUserRepository
         int page,
         int pageSize,
         CancellationToken ct = default);
+
+    Task<UpdateAdminUserRoleResponseDto> UpdateUserRoleAsync(
+        long targetUserId,
+        byte targetRoleId,
+        List<int>? categoryIds,
+        List<int>? provinceIds,
+        List<int>? regionIds,
+        string? reason,
+        long updatedBy,
+        CancellationToken ct = default);
 }

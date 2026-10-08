@@ -56,6 +56,13 @@ export const placeService = {
     return response.data
   },
 
+  async getRelatedPlaces(placeId: number | string, limit: number = 6): Promise<ApiSuccessResponse<PlaceSummaryDto[]>> {
+    const response = await apiClient.get<ApiSuccessResponse<PlaceSummaryDto[]>>(`/api/places/${placeId}/related`, {
+      params: { limit }
+    })
+    return response.data
+  },
+
   async getPlaceReviews(id: number | string, params?: { page?: number; pageSize?: number; rating?: number }): Promise<ApiSuccessResponse<PlaceReviewSummaryDto>> {
     const cleanParams: Record<string, any> = {
       page: params?.page || 1,

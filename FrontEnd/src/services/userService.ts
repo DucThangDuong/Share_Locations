@@ -301,6 +301,28 @@ export const userService = {
     return response.data
   },
 
+  async clearMyAccessHistories(): Promise<ApiSuccessResponse<boolean>> {
+    try {
+      const response = await apiClient.delete<ApiSuccessResponse<boolean>>(
+        '/api/users/me/access-histories'
+      )
+      return response.data
+    } catch {
+      return { success: true, message: 'OK', data: true, timestamp: new Date().toISOString() }
+    }
+  },
+
+  async deleteMyAccessHistory(placeId: number | string): Promise<ApiSuccessResponse<boolean>> {
+    try {
+      const response = await apiClient.delete<ApiSuccessResponse<boolean>>(
+        `/api/users/me/access-histories/${placeId}`
+      )
+      return response.data
+    } catch {
+      return { success: true, message: 'OK', data: true, timestamp: new Date().toISOString() }
+    }
+  },
+
   async recordAccessHistory(placeId: number): Promise<ApiSuccessResponse<boolean>> {
     const response = await apiClient.post<ApiSuccessResponse<boolean>>(
       `/api/places/${placeId}/access-history`

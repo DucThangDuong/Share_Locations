@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { useChat } from '@/context/ChatContext'
 import { useAuth } from '@/context/AuthContext'
+import { useSystemSettings } from '@/context/SystemSettingsContext'
 import { CreateGroupModal } from '@/components/chat/CreateGroupModal'
 
 interface HeaderChatDropdownProps {
@@ -38,6 +39,7 @@ function formatTimestamp(isoString: string | null): string {
 
 export const HeaderChatDropdown: React.FC<HeaderChatDropdownProps> = ({ onClose }) => {
   const navigate = useNavigate()
+  const { defaultUserAvatar, defaultGroupAvatar } = useSystemSettings()
   const { isAuthenticated } = useAuth()
   const { inbox, isLoadingInbox, openFloatingChat, totalUnreadCount, createGroupChat } = useChat()
   const [searchQuery, setSearchQuery] = useState('')
@@ -230,8 +232,8 @@ export const HeaderChatDropdown: React.FC<HeaderChatDropdownProps> = ({ onClose 
             const avatar =
               item.avatarUrl ||
               (item.isGroup
-                ? 'https://cdn.pixabay.com/photo/2016/11/14/17/39/group-1824145_1280.png'
-                : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop')
+                ? defaultGroupAvatar
+                : defaultUserAvatar)
 
             return (
               <button

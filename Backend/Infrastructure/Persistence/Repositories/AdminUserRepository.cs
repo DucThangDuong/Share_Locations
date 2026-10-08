@@ -11,13 +11,16 @@ public class AdminUserRepository : IAdminUserRepository
 {
     private readonly TravelReviewDbContext _dbContext;
     private readonly ICurrentUserService _currentUserService;
+    private readonly IAuditLogService _auditLogService;
 
     public AdminUserRepository(
         TravelReviewDbContext dbContext,
-        ICurrentUserService currentUserService)
+        ICurrentUserService currentUserService,
+        IAuditLogService auditLogService)
     {
         _dbContext = dbContext;
         _currentUserService = currentUserService;
+        _auditLogService = auditLogService;
     }
 
     public async Task<PagedResult<AdminUserListItemDto>> GetAdminUsersAsync(
@@ -442,6 +445,18 @@ public class AdminUserRepository : IAdminUserRepository
 
         try
         {
+            // 0. Lấy danh sách Scope hiện tại trước khi cập nhật
+            const string oldScopesSql = @"
+                SELECT CategoryId FROM dbo.AdminCategoryScopes WHERE UserId = @UserId;
+                SELECT ProvinceId FROM dbo.AdminProvinceScopes WHERE UserId = @UserId;
+                SELECT RegionId FROM dbo.AdminRegionScopes WHERE UserId = @UserId;
+            ";
+            using var multi = await connection.QueryMultipleAsync(oldScopesSql, new { UserId = targetUserId }, transaction);
+            var oldCatIds = (await multi.ReadAsync<int>()).ToList();
+            var oldProvIds = (await multi.ReadAsync<int>()).ToList();
+            var oldRegIds = (await multi.ReadAsync<int>()).ToList();
+            var oldData = new { CategoryIds = oldCatIds, ProvinceIds = oldProvIds, RegionIds = oldRegIds };
+
             // 1. Cập nhật Category Scopes
             await connection.ExecuteAsync(
                 "DELETE FROM dbo.AdminCategoryScopes WHERE UserId = @UserId;",
@@ -511,22 +526,18 @@ public class AdminUserRepository : IAdminUserRepository
                 }
             }
 
-            // 4. Ghi Audit Log vào AdminActionLogs
-            const string logSql = @"
-                INSERT INTO dbo.AdminActionLogs (
-                    AdminId, ActionType, TargetTable, TargetId, ActionStatus, Reason, CreatedAt
-                ) VALUES (
-                    @AdminId, 'ASSIGN_SCOPES', 'Users', @TargetId, 1, @Reason, SYSUTCDATETIME()
-                );";
-
-            await connection.ExecuteAsync(logSql, new
-            {
-                AdminId = updatedBy,
-                TargetId = targetUserId,
-                Reason = $"Cập nhật phân quyền: {categoryIds?.Count ?? 0} danh mục, {provinceIds?.Count ?? 0} tỉnh thành."
-            }, transaction);
-
             transaction.Commit();
+
+            // 4. Ghi Audit Log chuẩn hóa
+            await _auditLogService.LogAsync(
+                actionType: "ASSIGN_SCOPES",
+                targetTable: "Users",
+                targetId: targetUserId,
+                reason: $"Cập nhật phân quyền: {categoryIds?.Count ?? 0} danh mục, {provinceIds?.Count ?? 0} tỉnh thành, {regionIds?.Count ?? 0} vùng miền.",
+                oldData: oldData,
+                newData: new { CategoryIds = categoryIds ?? new List<int>(), ProvinceIds = provinceIds ?? new List<int>(), RegionIds = regionIds ?? new List<int>() },
+                customAdminId: updatedBy,
+                ct: ct);
 
             return new UpdateAdminScopesResponseDto
             {
@@ -552,6 +563,9 @@ public class AdminUserRepository : IAdminUserRepository
     {
         var connection = _dbContext.Database.GetDbConnection();
 
+        const string oldStatusSql = "SELECT Status FROM dbo.Users WHERE Id = @UserId AND IsDeleted = 0;";
+        var oldStatus = await connection.ExecuteScalarAsync<byte?>(oldStatusSql, new { UserId = targetUserId });
+
         const string updateSql = @"
             UPDATE dbo.Users 
             SET Status = @Status, UpdatedAt = SYSUTCDATETIME() 
@@ -560,21 +574,18 @@ public class AdminUserRepository : IAdminUserRepository
         var rows = await connection.ExecuteAsync(updateSql, new { UserId = targetUserId, Status = status });
         if (rows > 0)
         {
-            const string logSql = @"
-                INSERT INTO dbo.AdminActionLogs (
-                    AdminId, ActionType, TargetTable, TargetId, ActionStatus, Reason, CreatedAt
-                ) VALUES (
-                    @AdminId, @ActionType, 'Users', @TargetId, 1, @Reason, SYSUTCDATETIME()
-                );";
-
             var actionType = status == 1 ? "ACTIVATE_USER" : "LOCK_USER";
-            await connection.ExecuteAsync(logSql, new
-            {
-                AdminId = updatedBy,
-                ActionType = actionType,
-                TargetId = targetUserId,
-                Reason = reason ?? (status == 1 ? "Mở khóa tài khoản" : "Khóa tài khoản")
-            });
+            var actionReason = reason ?? (status == 1 ? "Mở khóa tài khoản" : "Khóa tài khoản");
+
+            await _auditLogService.LogAsync(
+                actionType: actionType,
+                targetTable: "Users",
+                targetId: targetUserId,
+                reason: actionReason,
+                oldData: new { Status = oldStatus },
+                newData: new { Status = status },
+                customAdminId: updatedBy,
+                ct: ct);
 
             return true;
         }
@@ -726,4 +737,222 @@ public class AdminUserRepository : IAdminUserRepository
             Total = total
         };
     }
+
+    public async Task<UpdateAdminUserRoleResponseDto> UpdateUserRoleAsync(
+        long targetUserId,
+        byte targetRoleId,
+        List<int>? categoryIds,
+        List<int>? provinceIds,
+        List<int>? regionIds,
+        string? reason,
+        long updatedBy,
+        CancellationToken ct = default)
+    {
+        var connection = _dbContext.Database.GetDbConnection();
+        if (connection.State != System.Data.ConnectionState.Open)
+        {
+            await connection.OpenAsync(ct);
+        }
+
+        using var transaction = connection.BeginTransaction();
+
+        try
+        {
+            // 1. Kiểm tra tài khoản người dùng có tồn tại
+            const string checkUserSql = "SELECT Id FROM dbo.Users WHERE Id = @UserId AND IsDeleted = 0;";
+            var userIdExists = await connection.ExecuteScalarAsync<long?>(checkUserSql, new { UserId = targetUserId }, transaction);
+            if (!userIdExists.HasValue)
+            {
+                throw new InvalidOperationException("Không tìm thấy người dùng hoặc người dùng đã bị xóa.");
+            }
+
+            // 2. Lấy vai trò và phạm vi hiện tại (để kiểm tra an toàn và chụp OldData)
+            const string oldRolesSql = @"
+                SELECT r.Code 
+                FROM dbo.UserRoles ur 
+                JOIN dbo.Roles r ON ur.RoleId = r.Id 
+                WHERE ur.UserId = @UserId;";
+            var oldRoles = (await connection.QueryAsync<string>(oldRolesSql, new { UserId = targetUserId }, transaction)).ToList();
+
+            const string oldScopesSql = @"
+                SELECT CategoryId FROM dbo.AdminCategoryScopes WHERE UserId = @UserId;
+                SELECT ProvinceId FROM dbo.AdminProvinceScopes WHERE UserId = @UserId;
+                SELECT RegionId FROM dbo.AdminRegionScopes WHERE UserId = @UserId;";
+            using var multi = await connection.QueryMultipleAsync(oldScopesSql, new { UserId = targetUserId }, transaction);
+            var oldCatIds = (await multi.ReadAsync<int>()).ToList();
+            var oldProvIds = (await multi.ReadAsync<int>()).ToList();
+            var oldRegIds = (await multi.ReadAsync<int>()).ToList();
+
+            var oldData = new
+            {
+                Roles = oldRoles,
+                CategoryIds = oldCatIds,
+                ProvinceIds = oldProvIds,
+                RegionIds = oldRegIds
+            };
+
+            // 3. Kiểm tra an toàn: Nếu đang là SYSTEM_ADMIN và bị đổi sang vai trò khác -> bảo vệ không để mất SystemAdmin cuối cùng
+            var isCurrentSystemAdmin = oldRoles.Any(r => r.Equals("SYSTEM_ADMIN", StringComparison.OrdinalIgnoreCase));
+            if (isCurrentSystemAdmin && targetRoleId != Domain.Constants.AppRoles.SystemAdminRoleId)
+            {
+                const string countSystemAdminsSql = @"
+                    SELECT COUNT(1) 
+                    FROM dbo.UserRoles ur
+                    JOIN dbo.Roles r ON ur.RoleId = r.Id
+                    JOIN dbo.Users u ON ur.UserId = u.Id
+                    WHERE r.Code = 'SYSTEM_ADMIN' AND u.IsDeleted = 0 AND u.Status = 1;";
+                var activeSystemAdminCount = await connection.ExecuteScalarAsync<int>(countSystemAdminsSql, transaction: transaction);
+                if (activeSystemAdminCount <= 1)
+                {
+                    throw new InvalidOperationException("Hệ thống phải có ít nhất một Quản trị viên hệ thống (SystemAdmin) đang hoạt động. Không thể hạ quyền tài khoản này.");
+                }
+            }
+
+            // 4. Cập nhật bảng dbo.UserRoles
+            await connection.ExecuteAsync(
+                "DELETE FROM dbo.UserRoles WHERE UserId = @UserId;",
+                new { UserId = targetUserId },
+                transaction);
+
+            const string insertRoleSql = @"
+                INSERT INTO dbo.UserRoles (UserId, RoleId, AssignedBy, AssignedAt)
+                VALUES (@UserId, @RoleId, @AssignedBy, SYSUTCDATETIME());";
+            await connection.ExecuteAsync(insertRoleSql, new
+            {
+                UserId = targetUserId,
+                RoleId = targetRoleId,
+                AssignedBy = updatedBy
+            }, transaction);
+
+            // 5. Cập nhật Scopes theo vai trò mới
+            List<int> effectiveCatIds = new();
+            List<int> effectiveProvIds = new();
+            List<int> effectiveRegIds = new();
+
+            if (targetRoleId == Domain.Constants.AppRoles.UserRoleId || targetRoleId == Domain.Constants.AppRoles.SystemAdminRoleId)
+            {
+                // Hạ quyền về Người thường hoặc thăng lên SystemAdmin: Dọn dẹp sạch Scope
+                await connection.ExecuteAsync("DELETE FROM dbo.AdminCategoryScopes WHERE UserId = @UserId;", new { UserId = targetUserId }, transaction);
+                await connection.ExecuteAsync("DELETE FROM dbo.AdminProvinceScopes WHERE UserId = @UserId;", new { UserId = targetUserId }, transaction);
+                await connection.ExecuteAsync("DELETE FROM dbo.AdminRegionScopes WHERE UserId = @UserId;", new { UserId = targetUserId }, transaction);
+            }
+            else if (targetRoleId == Domain.Constants.AppRoles.CategoryAdminRoleId)
+            {
+                // Là Admin cấp 1:
+                // a. Category Scopes
+                if (categoryIds != null)
+                {
+                    await connection.ExecuteAsync("DELETE FROM dbo.AdminCategoryScopes WHERE UserId = @UserId;", new { UserId = targetUserId }, transaction);
+                    if (categoryIds.Count > 0)
+                    {
+                        const string insertCatSql = @"
+                            INSERT INTO dbo.AdminCategoryScopes (UserId, CategoryId, AssignedBy, AssignedAt)
+                            VALUES (@UserId, @CategoryId, @AssignedBy, SYSUTCDATETIME());";
+                        var catParams = categoryIds.Distinct().Select(id => new { UserId = targetUserId, CategoryId = id, AssignedBy = updatedBy });
+                        await connection.ExecuteAsync(insertCatSql, catParams, transaction);
+                        effectiveCatIds = categoryIds.Distinct().ToList();
+                    }
+                }
+                else
+                {
+                    effectiveCatIds = oldCatIds;
+                }
+
+                // b. Province Scopes
+                if (provinceIds != null)
+                {
+                    await connection.ExecuteAsync("DELETE FROM dbo.AdminProvinceScopes WHERE UserId = @UserId;", new { UserId = targetUserId }, transaction);
+                    if (provinceIds.Count > 0)
+                    {
+                        const string insertProvSql = @"
+                            INSERT INTO dbo.AdminProvinceScopes (UserId, ProvinceId, AssignedBy, AssignedAt)
+                            VALUES (@UserId, @ProvinceId, @AssignedBy, SYSUTCDATETIME());";
+                        var provParams = provinceIds.Distinct().Select(id => new { UserId = targetUserId, ProvinceId = id, AssignedBy = updatedBy });
+                        await connection.ExecuteAsync(insertProvSql, provParams, transaction);
+                        effectiveProvIds = provinceIds.Distinct().ToList();
+                    }
+                }
+                else
+                {
+                    effectiveProvIds = oldProvIds;
+                }
+
+                // c. Region Scopes
+                if (regionIds != null)
+                {
+                    await connection.ExecuteAsync("DELETE FROM dbo.AdminRegionScopes WHERE UserId = @UserId;", new { UserId = targetUserId }, transaction);
+                    if (regionIds.Count > 0)
+                    {
+                        const string insertRegSql = @"
+                            INSERT INTO dbo.AdminRegionScopes (UserId, RegionId, AssignedBy, AssignedAt)
+                            VALUES (@UserId, @RegionId, @AssignedBy, SYSUTCDATETIME());";
+                        var regParams = regionIds.Distinct().Select(id => new { UserId = targetUserId, RegionId = id, AssignedBy = updatedBy });
+                        await connection.ExecuteAsync(insertRegSql, regParams, transaction);
+                        effectiveRegIds = regionIds.Distinct().ToList();
+                    }
+                }
+                else
+                {
+                    effectiveRegIds = oldRegIds;
+                }
+            }
+
+            // 6. Cập nhật thời gian chỉnh sửa bảng Users
+            await connection.ExecuteAsync(
+                "UPDATE dbo.Users SET UpdatedAt = SYSUTCDATETIME() WHERE Id = @UserId;",
+                new { UserId = targetUserId },
+                transaction);
+
+            transaction.Commit();
+
+            // 7. Xác định tên mã vai trò mới
+            var targetRoleCode = targetRoleId switch
+            {
+                Domain.Constants.AppRoles.SystemAdminRoleId => "SYSTEM_ADMIN",
+                Domain.Constants.AppRoles.CategoryAdminRoleId => "CATEGORY_ADMIN",
+                _ => "USER"
+            };
+
+            var targetRoleDescription = targetRoleId switch
+            {
+                Domain.Constants.AppRoles.SystemAdminRoleId => "Quản trị viên hệ thống (SystemAdmin)",
+                Domain.Constants.AppRoles.CategoryAdminRoleId => "Admin cấp 1 (CategoryAdmin)",
+                _ => "Người dùng thông thường (User)"
+            };
+
+            // 8. Ghi Audit Log chuẩn hóa
+            await _auditLogService.LogAsync(
+                actionType: "CHANGE_USER_ROLE",
+                targetTable: "Users",
+                targetId: targetUserId,
+                reason: reason ?? $"Thay đổi vai trò người dùng thành {targetRoleDescription}",
+                oldData: oldData,
+                newData: new
+                {
+                    Role = targetRoleCode,
+                    CategoryIds = targetRoleId == Domain.Constants.AppRoles.CategoryAdminRoleId ? (categoryIds ?? oldCatIds) : new List<int>(),
+                    ProvinceIds = targetRoleId == Domain.Constants.AppRoles.CategoryAdminRoleId ? (provinceIds ?? oldProvIds) : new List<int>(),
+                    RegionIds = targetRoleId == Domain.Constants.AppRoles.CategoryAdminRoleId ? (regionIds ?? oldRegIds) : new List<int>()
+                },
+                customAdminId: updatedBy,
+                ct: ct);
+
+            return new UpdateAdminUserRoleResponseDto
+            {
+                UserId = targetUserId,
+                NewRole = targetRoleCode,
+                Roles = new List<string> { targetRoleCode },
+                ScopeCategoriesCount = effectiveCatIds.Count,
+                ScopeProvincesCount = effectiveProvIds.Count,
+                ScopeRegionsCount = effectiveRegIds.Count,
+                Message = $"Đã thay đổi vai trò người dùng thành {targetRoleDescription} thành công."
+            };
+        }
+        catch
+        {
+            transaction.Rollback();
+            throw;
+        }
+    }
 }
+

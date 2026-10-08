@@ -1,6 +1,8 @@
 using Application.Common;
+using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs.Admin;
+using Application.Features.Admin.Catalog;
 using MediatR;
 
 namespace Application.Features.Admin.Places;
@@ -10,10 +12,12 @@ public record UpdateAdminPlaceCommand(long Id, UpdateAdminPlaceInput Input) : IR
 public class UpdateAdminPlaceCommandHandler : IRequestHandler<UpdateAdminPlaceCommand, Result<bool>>
 {
     private readonly IAdminPlaceRepository _placeRepository;
+    private readonly ICacheService _cacheService;
 
-    public UpdateAdminPlaceCommandHandler(IAdminPlaceRepository placeRepository)
+    public UpdateAdminPlaceCommandHandler(IAdminPlaceRepository placeRepository, ICacheService cacheService)
     {
         _placeRepository = placeRepository;
+        _cacheService = cacheService;
     }
 
     public async Task<Result<bool>> Handle(UpdateAdminPlaceCommand request, CancellationToken ct)
@@ -34,6 +38,7 @@ public class UpdateAdminPlaceCommandHandler : IRequestHandler<UpdateAdminPlaceCo
             return Result<bool>.NotFound("Không tìm thấy địa điểm yêu cầu cập nhật.");
         }
 
+        await CatalogCacheInvalidator.InvalidateCatalogCachesAsync(_cacheService, ct);
         return Result<bool>.Success(true, "Cập nhật thông tin địa điểm thành công.");
     }
 }

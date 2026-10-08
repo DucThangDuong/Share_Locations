@@ -3,6 +3,7 @@ import { useParams, useNavigate, useSearchParams, useLocation } from 'react-rout
 import { Loader2, AlertCircle } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { useChat } from '@/context/ChatContext'
+import { useSystemSettings } from '@/context/SystemSettingsContext'
 import { userService } from '@/services/userService'
 import { friendService } from '@/services/friendService'
 import { UserProfileHeader, type ProfileTabType } from '@/components/profile/UserProfileHeader'
@@ -24,6 +25,7 @@ export const UserProfilePage: React.FC = () => {
   const location = useLocation()
   const { user: currentUser } = useAuth()
   const { openFloatingChat } = useChat()
+  const { defaultUserAvatar } = useSystemSettings()
 
   const [activeTab, setActiveTab] = useState<ProfileTabType>('reviews')
   const [loading, setLoading] = useState(true)
@@ -77,7 +79,7 @@ export const UserProfilePage: React.FC = () => {
               fullName: isCurrentUser ? currentUser?.fullName || 'Người dùng' : (nameFromQuery || 'Người dùng'),
               avatarUrl: isCurrentUser
                 ? currentUser?.avatarUrl || null
-                : (locationState?.authorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop'),
+                : (locationState?.authorAvatar || defaultUserAvatar),
               coverUrl: isCurrentUser
                 ? currentUser?.coverUrl || null
                 : 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1600&h=400&fit=crop',
@@ -119,7 +121,7 @@ export const UserProfilePage: React.FC = () => {
           setProfile({
             id: 9999,
             fullName: nameFromQuery,
-            avatarUrl: locationState?.authorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop',
+            avatarUrl: locationState?.authorAvatar || defaultUserAvatar,
             coverUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1600&h=400&fit=crop',
             bio: locationState?.authorRole || 'Tác giả chia sẻ cẩm nang du lịch và địa điểm trên LangThang.',
             joinedDate: 'Tháng 4, 2024',

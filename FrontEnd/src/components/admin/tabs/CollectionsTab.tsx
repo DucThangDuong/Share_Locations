@@ -23,8 +23,6 @@ import {
   List,
   ChevronLeft,
   ChevronRight,
-  Eye,
-  EyeOff,
   Image as ImageIcon,
   Save
 } from "lucide-react";
@@ -38,6 +36,7 @@ import {
 } from "@/services/adminService";
 import { placeService } from "@/services/placeService";
 import { geographyService } from "@/services/geographyService";
+import { CustomSelect } from "@/components/common/CustomSelect";
 import { getDayTheme } from "@/utils/itineraryStyles";
 import type { ProvinceDto } from "@/types/models/geography.model";
 import type {
@@ -49,15 +48,6 @@ import type {
 interface CollectionsTabProps {
   showToast?: (msg: string) => void;
 }
-
-const DEFAULT_PROVINCES: ProvinceDto[] = [
-  { id: 1, name: "TP Hà Nội", regionId: 1, regionName: "Miền Bắc", featured: true, displayOrder: 1, placeCount: 220 },
-  { id: 27, name: "TP Hồ Chí Minh", regionId: 4, regionName: "Miền Nam", featured: true, displayOrder: 2, placeCount: 260 },
-  { id: 25, name: "Tỉnh Lâm Đồng", regionId: 3, regionName: "Tây Nguyên", featured: true, displayOrder: 3, placeCount: 130 },
-  { id: 2, name: "Đà Nẵng", regionId: 2, regionName: "Miền Trung", featured: true, displayOrder: 4, placeCount: 150 },
-  { id: 4, name: "Khánh Hòa", regionId: 3, regionName: "Nam Trung Bộ", featured: true, displayOrder: 5, placeCount: 110 },
-  { id: 3, name: "Quảng Nam", regionId: 2, regionName: "Miền Trung", featured: false, displayOrder: 6, placeCount: 95 }
-];
 
 export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => {
   const navigate = useNavigate();
@@ -142,7 +132,7 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
   const [selectedProvinceCatalog, setSelectedProvinceCatalog] = useState<string>("all");
 
   // Provinces & Filter Options
-  const [provinces, setProvinces] = useState<ProvinceDto[]>(DEFAULT_PROVINCES);
+  const [provinces, setProvinces] = useState<ProvinceDto[]>([]);
   const [filterCategories, setFilterCategories] = useState<LookupItemDto[]>([]);
   const [filterRegions, setFilterRegions] = useState<RegionLookupDto[]>([]);
 
@@ -215,7 +205,10 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
     geographyService
       .getProvinces()
       .then((res) => {
-        if (res.data && res.data.length > 0) {
+        const provList = extractList<ProvinceDto>(res);
+        if (provList.length > 0) {
+          setProvinces(provList);
+        } else if (res?.data && Array.isArray(res.data)) {
           setProvinces(res.data);
         }
       })
@@ -798,11 +791,11 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
                   setCollectionPlaces([]);
                   setHasUnsavedChanges(false);
                 }}
-                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer flex items-center gap-1.5 font-bold shrink-0"
+                className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-white border border-slate-200/80 hover:bg-slate-50 text-slate-600 hover:text-slate-900 flex items-center justify-center transition-colors cursor-pointer shadow-2xs shrink-0"
                 title="Quay lại danh sách bộ sưu tập"
+                aria-label="Quay lại"
               >
-                <ArrowLeft size={16} />
-                <span className="hidden sm:inline">Quay lại</span>
+                <ArrowLeft size={18} />
               </button>
               <div className="min-w-0 flex-1">
                 {isInlineEditingTitle ? (
@@ -922,12 +915,11 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
                 )}
 
                 <div className="flex items-center gap-2 text-slate-500 font-medium mt-1 flex-wrap">
-                  <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold">
-                    <MapPin size={10} />
-                    <select
+                  <div className="min-w-[180px]">
+                    <CustomSelect
                       value={activeCollection.provinceId ?? ""}
-                      onChange={(e) => {
-                        const newProvId = e.target.value ? Number(e.target.value) : null;
+                      onChange={(val) => {
+                        const newProvId = val ? Number(val) : null;
                         const provObj = provinces.find((p) => p.id === newProvId);
                         const newProvName = provObj ? provObj.name : "Toàn quốc";
 
@@ -953,15 +945,16 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
                           notify(`Đã chọn tỉnh/thành "${newProvName}". Nhấn "Lưu thay đổi" để hoàn tất.`);
                         }
                       }}
-                      className="bg-transparent text-emerald-800 font-bold outline-none cursor-pointer pr-1"
-                    >
-                      <option value="">Toàn quốc / Chung</option>
-                      {provinces.map((prov) => (
-                        <option key={prov.id} value={prov.id}>
-                          {prov.name}
-                        </option>
-                      ))}
-                    </select>
+                      options={[
+                        { value: "", label: "Toàn quốc / Chung", icon: <MapPin size={11} className="text-emerald-700" /> },
+                        ...provinces.map((prov) => ({
+                          value: prov.id,
+                          label: prov.name,
+                          icon: <MapPin size={11} className="text-emerald-700" />,
+                        })),
+                      ]}
+                      size="sm"
+                    />
                   </div>
 
                   <button
@@ -1730,19 +1723,16 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
         {/* Filters */}
         <div className="flex items-center justify-between gap-3 pt-2 border-t border-slate-100 flex-wrap">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Tỉnh thành:</span>
-            <select
+            <CustomSelect
               value={selectedProvinceCatalog}
-              onChange={(e) => setSelectedProvinceCatalog(e.target.value)}
-              className="px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 outline-none cursor-pointer"
-            >
-              <option value="all">Tất cả tỉnh thành</option>
-              {provinces.map((p) => (
-                <option key={p.id} value={p.name}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
+              onChange={(val) => setSelectedProvinceCatalog(val)}
+              options={[
+                { value: "all", label: "Tất cả tỉnh thành" },
+                ...provinces.map((p) => ({ value: p.name, label: p.name })),
+              ]}
+              size="sm"
+              className="min-w-[140px]"
+            />
           </div>
 
           <div className="text-[11px] text-slate-500 font-medium">
@@ -1777,24 +1767,17 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-bold text-[11px] uppercase tracking-wider">
-                <th className="p-3.5 pl-4 w-12 text-center">STT</th>
                 <th className="p-3.5">Bộ sưu tập</th>
                 <th className="p-3.5">Tỉnh / Thành</th>
                 <th className="p-3.5">Số lượng địa điểm</th>
                 <th className="p-3.5">Thứ tự</th>
                 <th className="p-3.5">Trạng thái</th>
                 <th className="p-3.5 text-center">Xem chi tiết</th>
-                <th className="p-3.5 text-right pr-4">Hành động</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredCollections.map((col, idx) => (
+              {filteredCollections.map((col) => (
                 <tr key={col.id} className="hover:bg-slate-50/70 transition-colors group">
-                  <td className="p-3.5 pl-4 text-center">
-                    <span className="w-6 h-6 rounded-lg bg-slate-100 text-slate-700 font-extrabold text-[11px] inline-flex items-center justify-center">
-                      {idx + 1}
-                    </span>
-                  </td>
                   <td className="p-3.5">
                     <div className="min-w-0">
                       <div className="font-extrabold text-sm text-slate-900 group-hover:text-emerald-800 transition-colors">
@@ -1839,24 +1822,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
                     >
                       Chi tiết →
                     </button>
-                  </td>
-                  <td className="p-3.5 text-right pr-4">
-                    <div className="flex items-center justify-end gap-1.5">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleToggleCollectionStatus(col.id);
-                        }}
-                        className={`p-1.5 rounded-lg border transition-all cursor-pointer ${col.status === 1
-                          ? "text-slate-400 hover:text-amber-700 hover:bg-amber-50 border-slate-200"
-                          : "text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 border-emerald-200 bg-emerald-50/50"
-                          }`}
-                        title={col.status === 1 ? "Ẩn bộ sưu tập (Tạm ẩn)" : "Hiện bộ sưu tập (Kích hoạt)"}
-                      >
-                        {col.status === 1 ? <EyeOff size={13} /> : <Eye size={13} />}
-                      </button>
-                    </div>
                   </td>
                 </tr>
               ))}

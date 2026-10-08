@@ -27,6 +27,18 @@ export const RegionHeroBento: React.FC<RegionHeroBentoProps> = ({ data }) => {
 
   const currentImage = images[currentIdx] || images[0]
 
+  const tagline =
+    data.tagline ||
+    (data.heroHeadline && !data.heroHeadline.startsWith('Khám phá ') ? data.heroHeadline : '') ||
+    (data.description && data.heroSubheadline ? data.heroSubheadline : '') ||
+    ''
+
+  const description =
+    data.description ||
+    (data.heroSubheadline && data.heroSubheadline !== tagline ? data.heroSubheadline : '') ||
+    (data.heroHeadline && data.heroHeadline !== tagline ? data.heroHeadline : '') ||
+    ''
+
   return (
     <section className="relative pt-4 pb-2">
       <div className="mb-6">
@@ -36,25 +48,31 @@ export const RegionHeroBento: React.FC<RegionHeroBentoProps> = ({ data }) => {
               {data.name}, Việt Nam
             </h1>
 
-            <p className="mt-2 text-sm sm:text-base text-stone-700 font-semibold max-w-3xl">
-              {data.heroHeadline}
-            </p>
+            {tagline && (
+              <p className="mt-2 text-sm sm:text-base text-stone-700 font-semibold max-w-3xl">
+                {tagline}
+              </p>
+            )}
           </div>
         </div>
 
-        <div className="mt-3 max-w-4xl">
-          <p className={`text-xs sm:text-sm text-stone-600 leading-relaxed font-normal ${isExpanded ? '' : 'line-clamp-2'}`}>
-            {data.heroSubheadline}
-          </p>
-          <button
-            type="button"
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="mt-1 text-xs font-bold text-stone-800 hover:text-[#C0392B] inline-flex items-center gap-1 cursor-pointer transition-colors"
-          >
-            <span>{isExpanded ? 'Thu gọn' : 'Đọc thêm'}</span>
-            {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-          </button>
-        </div>
+        {description && (
+          <div className="mt-3 max-w-4xl">
+            <p className={`text-xs sm:text-sm text-stone-600 leading-relaxed font-normal ${isExpanded ? '' : 'line-clamp-2'}`}>
+              {description}
+            </p>
+            {description.length > 120 && (
+              <button
+                type="button"
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="mt-1 text-xs font-bold text-stone-800 hover:text-[#C0392B] inline-flex items-center gap-1 cursor-pointer transition-colors"
+              >
+                <span>{isExpanded ? 'Thu gọn' : 'Đọc thêm'}</span>
+                {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="relative rounded-3xl overflow-hidden bg-stone-900 shadow-xl border border-stone-200 aspect-16/9 sm:aspect-21/9 min-h-[280px] sm:min-h-[420px] lg:min-h-[480px]">

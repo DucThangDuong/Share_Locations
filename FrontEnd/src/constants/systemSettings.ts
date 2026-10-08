@@ -1,0 +1,31 @@
+export const SYSTEM_SETTING_KEYS = {
+  SITE_NAME: 'SITE_NAME',
+  SITE_HOTLINE: 'SITE_HOTLINE',
+  SITE_EMAIL: 'SITE_EMAIL',
+  MAINTENANCE_MODE: 'MAINTENANCE_MODE',
+  AUTO_APPROVE_PLACES: 'AUTO_APPROVE_PLACES',
+  AUTO_APPROVE_REVIEWS: 'AUTO_APPROVE_REVIEWS',
+  MAX_UPLOAD_PHOTOS: 'MAX_UPLOAD_PHOTOS',
+  MAX_UPLOAD_SIZE_MB: 'MAX_UPLOAD_SIZE_MB',
+  BLACKLIST_WORDS: 'BLACKLIST_WORDS',
+  DEFAULT_USER_AVATAR: 'DEFAULT_USER_AVATAR',
+  DEFAULT_GROUP_AVATAR: 'DEFAULT_GROUP_AVATAR',
+  HOME_HERO_IMAGE: 'HOME_HERO_IMAGE',
+} as const;
+
+export type SystemSettingKey = typeof SYSTEM_SETTING_KEYS[keyof typeof SYSTEM_SETTING_KEYS];
+
+export const DEFAULT_SYSTEM_SETTINGS: Record<string, string> = {
+  SITE_NAME: 'Lang Thang - Nền tảng Du lịch & Ẩm thực Việt Nam',
+  SITE_HOTLINE: '1900 6868',
+  SITE_EMAIL: 'support@langthang.vn',
+  MAINTENANCE_MODE: '0',
+  AUTO_APPROVE_PLACES: '0',
+  AUTO_APPROVE_REVIEWS: '1',
+  MAX_UPLOAD_PHOTOS: '10',
+  MAX_UPLOAD_SIZE_MB: '5',
+  BLACKLIST_WORDS: 'lừa đảo,đm,dcm,chó,vcl,bậy,chửi',
+  DEFAULT_USER_AVATAR: 'https://imageshare13.blob.core.windows.net/avatar/1741530973685-default-avatar.png',
+  DEFAULT_GROUP_AVATAR: 'https://cdn.pixabay.com/photo/2016/11/14/17/39/group-1824145_1280.png',
+  HOME_HERO_IMAGE: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1920&auto=format&fit=crop',
+};

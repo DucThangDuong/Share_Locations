@@ -14,14 +14,17 @@ public class AdminFoodRepository : IAdminFoodRepository
     private readonly TravelReviewDbContext _dbContext;
     private readonly ICurrentUserService _currentUserService;
     private readonly IBlobService? _blobService;
+    private readonly IAuditLogService _auditLogService;
 
     public AdminFoodRepository(
         TravelReviewDbContext dbContext, 
         ICurrentUserService currentUserService,
+        IAuditLogService auditLogService,
         IBlobService? blobService = null)
     {
         _dbContext = dbContext;
         _currentUserService = currentUserService;
+        _auditLogService = auditLogService;
         _blobService = blobService;
     }
 
@@ -120,6 +123,22 @@ public class AdminFoodRepository : IAdminFoodRepository
             await _dbContext.SaveChangesAsync(ct);
         }
 
+        await _auditLogService.LogAsync(
+            actionType: "CREATE_FOOD",
+            targetTable: "Foods",
+            targetId: food.Id,
+            reason: $"Tạo mới món ăn: {food.Name}",
+            newData: new
+            {
+                Name = food.Name,
+                Description = food.Description,
+                MinPrice = food.MinPrice,
+                MaxPrice = food.MaxPrice,
+                Status = (int)food.Status,
+                ProvinceId = input.ProvinceId
+            },
+            ct: ct);
+
         return food.Id;
     }
 
@@ -129,6 +148,21 @@ public class AdminFoodRepository : IAdminFoodRepository
 
         var food = await _dbContext.Foods.FirstOrDefaultAsync(f => f.Id == id, ct);
         if (food == null) return false;
+
+        var oldProvinceId = await _dbContext.FoodProvinces
+            .Where(fp => fp.FoodId == id)
+            .Select(fp => (int?)fp.ProvinceId)
+            .FirstOrDefaultAsync(ct);
+
+        var oldData = new
+        {
+            Name = food.Name,
+            Description = food.Description,
+            MinPrice = food.MinPrice,
+            MaxPrice = food.MaxPrice,
+            Status = (int)food.Status,
+            ProvinceId = oldProvinceId
+        };
 
         var oldCoverUrl = food.CoverImageUrl;
         var effectiveCoverImg = !string.IsNullOrWhiteSpace(input.CoverImg) ? input.CoverImg : oldCoverUrl;
@@ -144,6 +178,7 @@ public class AdminFoodRepository : IAdminFoodRepository
             : RecordStatus.Active;
         food.UpdateStatus(status);
 
+        var effectiveProvinceId = oldProvinceId;
         if (input.ProvinceId.HasValue && input.ProvinceId.Value > 0)
         {
             if (!AdminScopeFilterHelper.ValidateFoodInputScope(_currentUserService, input.ProvinceId.Value))
@@ -161,9 +196,27 @@ public class AdminFoodRepository : IAdminFoodRepository
                 _dbContext.FoodProvinces.Remove(existing);
                 _dbContext.FoodProvinces.Add(new FoodProvince(id, input.ProvinceId.Value));
             }
+            effectiveProvinceId = input.ProvinceId.Value;
         }
 
         await _dbContext.SaveChangesAsync(ct);
+
+        await _auditLogService.LogAsync(
+            actionType: "UPDATE_FOOD",
+            targetTable: "Foods",
+            targetId: id,
+            reason: $"Cập nhật món ăn: {food.Name}",
+            oldData: oldData,
+            newData: new
+            {
+                Name = food.Name,
+                Description = food.Description,
+                MinPrice = food.MinPrice,
+                MaxPrice = food.MaxPrice,
+                Status = (int)food.Status,
+                ProvinceId = effectiveProvinceId
+            },
+            ct: ct);
 
         // Tự động dọn dẹp blob cũ nếu đã được thay thế bằng ảnh mới
         if (_blobService != null && 
@@ -199,8 +252,19 @@ public class AdminFoodRepository : IAdminFoodRepository
             ? RecordStatus.Inactive
             : RecordStatus.Active;
 
+        var oldStatus = food.Status;
         food.UpdateStatus(recordStatus);
         await _dbContext.SaveChangesAsync(ct);
+
+        await _auditLogService.LogAsync(
+            actionType: "UPDATE_FOOD_STATUS",
+            targetTable: "Foods",
+            targetId: id,
+            reason: $"Thay đổi trạng thái món ăn #{id} sang {status}",
+            oldData: new { Status = (int)oldStatus },
+            newData: new { Status = (int)recordStatus },
+            ct: ct);
+
         return true;
     }
 
@@ -211,8 +275,18 @@ public class AdminFoodRepository : IAdminFoodRepository
         var food = await _dbContext.Foods.FirstOrDefaultAsync(f => f.Id == id, ct);
         if (food == null) return false;
 
+        var oldData = new { Id = food.Id, Name = food.Name, Status = (int)food.Status };
         _dbContext.Foods.Remove(food);
         await _dbContext.SaveChangesAsync(ct);
+
+        await _auditLogService.LogAsync(
+            actionType: "DELETE_FOOD",
+            targetTable: "Foods",
+            targetId: id,
+            reason: $"Xóa món ăn #{id} ({food.Name})",
+            oldData: oldData,
+            ct: ct);
+
         return true;
     }
 

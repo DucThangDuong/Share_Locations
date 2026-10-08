@@ -14,13 +14,16 @@ public class CollectionRepository : ICollectionRepository
 {
     private readonly TravelReviewDbContext _dbContext;
     private readonly ICurrentUserService _currentUserService;
+    private readonly IAuditLogService _auditLogService;
 
     public CollectionRepository(
         TravelReviewDbContext dbContext,
-        ICurrentUserService currentUserService)
+        ICurrentUserService currentUserService,
+        IAuditLogService auditLogService)
     {
         _dbContext = dbContext;
         _currentUserService = currentUserService;
+        _auditLogService = auditLogService;
     }
 
     public async Task<IReadOnlyList<CollectionDto>> GetFeaturedCollectionsAsync(int count, CancellationToken ct = default)
@@ -275,6 +278,20 @@ public class CollectionRepository : ICollectionRepository
             Places = placeCards
         };
 
+        await _auditLogService.LogAsync(
+            actionType: "UPDATE_COLLECTION_PLACES",
+            targetTable: "Collections",
+            targetId: collectionId,
+            reason: $"Cập nhật địa điểm bộ sưu tập #{collectionId}: thêm {addedCount}, sửa {updatedCount}",
+            newData: new
+            {
+                CollectionId = collectionId,
+                AddedCount = addedCount,
+                UpdatedCount = updatedCount,
+                TotalPlaces = placeCards.Count
+            },
+            ct: ct);
+
         return Result<UpdateCollectionPlacesResultDto>.Success(resultDto, "Cập nhật địa điểm cho bộ sưu tập thành công.");
     }
 
@@ -338,7 +355,7 @@ public class CollectionRepository : ICollectionRepository
                 p.Id,
                 p.Name,
                 p.Description,
-                cat.Name AS CategoryName,
+                CASE WHEN cat.Status = 1 THEN cat.Name ELSE N'Không khả dụng' END AS CategoryName,
                 prov.Name AS ProvinceName,
                 p.Address,
                 CAST(p.AvgRating AS FLOAT) AS AvgRating,
@@ -473,6 +490,21 @@ public class CollectionRepository : ICollectionRepository
             CreatedAt = collection.CreatedAt
         };
 
+        await _auditLogService.LogAsync(
+            actionType: "CREATE_COLLECTION",
+            targetTable: "Collections",
+            targetId: collection.Id,
+            reason: $"Tạo bộ sưu tập: {collection.Title}",
+            newData: new
+            {
+                Title = collection.Title,
+                ProvinceId = collection.ProvinceId,
+                IsFeatured = collection.IsFeatured,
+                Status = (int)collection.Status,
+                PlaceCount = placeCount
+            },
+            ct: ct);
+
         return Result<AdminCollectionCreatedDto>.Created(resultDto, "Tạo bộ sưu tập thành công.");
     }
 
@@ -490,9 +522,19 @@ public class CollectionRepository : ICollectionRepository
             return Result<UpdateCollectionStatusResultDto>.NotFound($"Không tìm thấy bộ sưu tập với ID {id}.");
         }
 
+        var oldStatus = collection.Status;
         var recordStatus = status == 1 ? Domain.Enums.RecordStatus.Active : Domain.Enums.RecordStatus.Inactive;
         collection.UpdateStatus(recordStatus);
         await _dbContext.SaveChangesAsync(ct);
+
+        await _auditLogService.LogAsync(
+            actionType: "UPDATE_COLLECTION_STATUS",
+            targetTable: "Collections",
+            targetId: id,
+            reason: $"Thay đổi trạng thái bộ sưu tập #{id} sang {(status == 1 ? "Hoạt động" : "Tạm ẩn")}",
+            oldData: new { Status = (int)oldStatus },
+            newData: new { Status = (int)recordStatus },
+            ct: ct);
 
         var resultDto = new UpdateCollectionStatusResultDto
         {

@@ -107,9 +107,11 @@ export interface RegionLandingData {
   code: RegionCode
   name: string
   shortTitle: string
+  tagline?: string | null
+  description?: string | null
   badgeText?: string
-  heroHeadline: string
-  heroSubheadline: string
+  heroHeadline?: string
+  heroSubheadline?: string
   provinces: string[]
   heroImages: RegionHeroImage[]
   collections?: RegionCollection[]

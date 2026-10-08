@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import type { AdminUserItem } from '@/types/admin.types'
 import { isUserSystemAdmin } from '@/utils/authUtils'
 import { UserDetailDashboardView } from './UserDetailDashboardView'
+import { CustomSelect } from '@/components/common/CustomSelect'
 import {
   Users,
   Shield,
@@ -390,40 +391,44 @@ export const UsersTab: React.FC<UsersTabProps> = ({
           </form>
 
           {/* Status filter dropdown */}
-          <select
+          <CustomSelect
             value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value)
+            onChange={(val) => {
+              setStatusFilter(val)
               onFilterChange?.({
                 ...currentFilters,
-                status: e.target.value === 'all' ? undefined : e.target.value,
+                status: val === 'all' ? undefined : val,
                 page: 1
               })
             }}
-            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 outline-none focus:border-emerald-600 cursor-pointer"
-          >
-            <option value="all">Tất cả trạng thái</option>
-            <option value="1">Đang hoạt động</option>
-            <option value="0">Bị khóa</option>
-          </select>
+            options={[
+              { value: 'all', label: 'Tất cả trạng thái' },
+              { value: '1', label: 'Đang hoạt động' },
+              { value: '0', label: 'Bị khóa' },
+            ]}
+            size="sm"
+            className="min-w-[140px]"
+          />
 
           {/* Page size selector */}
-          <select
+          <CustomSelect
             value={pagination.pageSize || 20}
-            onChange={(e) => {
+            onChange={(val) => {
               onFilterChange?.({
                 ...currentFilters,
-                pageSize: Number(e.target.value),
+                pageSize: Number(val),
                 page: 1
               })
             }}
-            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 outline-none focus:border-emerald-600 cursor-pointer"
-          >
-            <option value={10}>10 / trang</option>
-            <option value={20}>20 / trang</option>
-            <option value={50}>50 / trang</option>
-            <option value={100}>100 / trang</option>
-          </select>
+            options={[
+              { value: 10, label: '10 / trang' },
+              { value: 20, label: '20 / trang' },
+              { value: 50, label: '50 / trang' },
+              { value: 100, label: '100 / trang' },
+            ]}
+            size="sm"
+            className="min-w-[110px]"
+          />
 
           {(searchText || statusFilter !== 'all' || activeSubTab !== 'all') && (
             <button
@@ -603,3 +608,4 @@ export const UsersTab: React.FC<UsersTabProps> = ({
 }
 
 export default UsersTab
+

@@ -29,7 +29,7 @@ import { geographyService } from "@/services/geographyService";
 import type { PlaceTypeDto } from "@/types/models/place.model";
 import type { ProvinceDto } from "@/types/models/geography.model";
 import type { AdminProposalItem } from "@/types/admin.types";
-import { adminService } from "@/services/adminService";
+import { adminService, extractList } from "@/services/adminService";
 
 interface ProposalDetailEditorProps {
   proposal: AdminProposalItem;
@@ -38,27 +38,6 @@ interface ProposalDetailEditorProps {
   onApprove: (proposal: AdminProposalItem, adminNotes?: string) => void;
   onReject: (proposal: AdminProposalItem, reason: string) => void;
 }
-
-const DEFAULT_CATEGORIES: PlaceTypeDto[] = [
-  { id: 1, name: "Nhà hàng & Quán ăn" },
-  { id: 2, name: "Cà phê & Trà sữa" },
-  { id: 3, name: "Địa điểm tham quan" },
-  { id: 4, name: "Khách sạn & Homestay" },
-  { id: 5, name: "Giải trí & Trải nghiệm" },
-  { id: 6, name: "Mua sắm & Đặc sản" },
-];
-
-const DEFAULT_PROVINCES: ProvinceDto[] = [
-  { id: 1, name: "Đà Nẵng", regionId: 2, regionName: "Miền Trung", featured: true, displayOrder: 1, placeCount: 150 },
-  { id: 2, name: "Quảng Nam", regionId: 2, regionName: "Miền Trung", featured: false, displayOrder: 2, placeCount: 95 },
-  { id: 3, name: "Thừa Thiên Huế", regionId: 2, regionName: "Miền Trung", featured: false, displayOrder: 3, placeCount: 80 },
-  { id: 4, name: "Khánh Hòa", regionId: 3, regionName: "Nam Trung Bộ", featured: true, displayOrder: 4, placeCount: 110 },
-  { id: 5, name: "Lâm Đồng", regionId: 3, regionName: "Tây Nguyên", featured: true, displayOrder: 5, placeCount: 130 },
-  { id: 6, name: "Hà Nội", regionId: 1, regionName: "Miền Bắc", featured: true, displayOrder: 6, placeCount: 220 },
-  { id: 7, name: "TP. Hồ Chí Minh", regionId: 4, regionName: "Miền Nam", featured: true, displayOrder: 7, placeCount: 260 },
-];
-
-const DEFAULT_APPROVE_NOTE = "Thông tin địa điểm đầy đủ, chính xác và đã được phê duyệt.";
 
 export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
   proposal,
@@ -70,8 +49,8 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
   const [isRejecting, setIsRejecting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  const [categories, setCategories] = useState<PlaceTypeDto[]>(DEFAULT_CATEGORIES);
-  const [provinces, setProvinces] = useState<ProvinceDto[]>(DEFAULT_PROVINCES);
+  const [categories, setCategories] = useState<PlaceTypeDto[]>([]);
+  const [provinces, setProvinces] = useState<ProvinceDto[]>([]);
 
   // Proposer Info
   const [proposer, setProposer] = useState<{
@@ -86,7 +65,7 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
   }));
 
   // Moderation text inputs
-  const [adminNotesInput, setAdminNotesInput] = useState(DEFAULT_APPROVE_NOTE);
+  const [adminNotesInput, setAdminNotesInput] = useState("");
   const [rejectReasonInput, setRejectReasonInput] = useState("");
 
   // Stored notes from DB (support both adminNote/AdminNote and rejectReason/RejectReason)
@@ -116,25 +95,21 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
   );
 
   const [categoryId, setCategoryId] = useState<number>(() => {
-    const targetCat = proposal.placeData?.categoryName || proposal.proposedData?.category || proposal.category;
-    const found = DEFAULT_CATEGORIES.find((c) => c.name === targetCat);
-    return found ? found.id : (proposal.placeData?.categoryId || 1);
+    return proposal.placeData?.categoryId || 0;
   });
 
   const [provinceId, setProvinceId] = useState<number>(() => {
-    const targetProv = proposal.placeData?.provinceName || proposal.province;
-    const found = DEFAULT_PROVINCES.find((p) => p.name === targetProv);
-    return found ? found.id : (proposal.placeData?.provinceId || 1);
+    return proposal.placeData?.provinceId || 0;
   });
 
-  const [provinceName, setProvinceName] = useState(proposal.placeData?.provinceName || proposal.province || "Đà Nẵng");
+  const [provinceName, setProvinceName] = useState(proposal.placeData?.provinceName || proposal.province || "");
   const [address, setAddress] = useState(proposal.placeData?.address || proposal.proposedData?.address || "");
   const [phone, setPhone] = useState(proposal.placeData?.phone || proposal.proposedData?.phone || "");
-  const [website, setWebsite] = useState(proposal.placeData?.website || "https://langthang.vn");
+  const [website, setWebsite] = useState(proposal.placeData?.website || "");
 
   // Coordinates
-  const [lat, setLat] = useState(String(proposal.placeData?.latitude || "16.054407"));
-  const [lng, setLng] = useState(String(proposal.placeData?.longitude || "108.202167"));
+  const [lat, setLat] = useState(String(proposal.placeData?.latitude || ""));
+  const [lng, setLng] = useState(String(proposal.placeData?.longitude || ""));
 
   // Operating Hours
   const [is24Hours, setIs24Hours] = useState(() => {
@@ -166,7 +141,7 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
       const numStr = match[0].replace(/[.,]/g, "");
       return numStr.length < 5 ? `${numStr}000` : numStr;
     }
-    return "35000";
+    return "0";
   });
   const [maxPrice, setMaxPrice] = useState(() => {
     if (proposal.placeData?.maxPrice !== undefined) return String(proposal.placeData.maxPrice);
@@ -176,14 +151,14 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
       const numStr = matches[1].replace(/[.,]/g, "");
       return numStr.length < 5 ? `${numStr}000` : numStr;
     }
-    return "90000";
+    return "0";
   });
 
   // Description & Note
   const [description, setDescription] = useState(
     proposal.placeData?.description ||
     proposal.proposedData?.description ||
-    "Địa điểm ẩm thực và trải nghiệm được người dùng đề xuất đóng góp vào bản đồ du lịch LangThang."
+    ""
   );
   const contributorNote = proposal.note;
 
@@ -378,14 +353,21 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
           catalogService.getPlaceTypes(),
           geographyService.getProvinces(),
         ]);
-        if (catRes.success && catRes.data && catRes.data.length > 0) {
+        const catList = extractList<PlaceTypeDto>(catRes);
+        if (catList.length > 0) {
+          setCategories(catList);
+        } else if (catRes?.data && Array.isArray(catRes.data)) {
           setCategories(catRes.data);
         }
-        if (provRes.success && provRes.data && provRes.data.length > 0) {
+
+        const provList = extractList<ProvinceDto>(provRes);
+        if (provList.length > 0) {
+          setProvinces(provList);
+        } else if (provRes?.data && Array.isArray(provRes.data)) {
           setProvinces(provRes.data);
         }
-      } catch {
-        // Fallback already assigned in defaults
+      } catch (err) {
+        console.warn("Could not load categories or provinces:", err);
       }
     };
     loadMetadata();
@@ -444,7 +426,7 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
     setErrorMsg("");
     setIsApproving(true);
     try {
-      const finalNotes = adminNotesInput.trim() || DEFAULT_APPROVE_NOTE;
+      const finalNotes = adminNotesInput.trim();
       await onApprove(proposal, finalNotes);
       setAdminNotes(finalNotes);
       setStatus(1);
@@ -487,11 +469,11 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
           <button
             type="button"
             onClick={onBack}
-            className="p-2 sm:px-3 sm:py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-white border border-slate-200/80 hover:bg-slate-50 text-slate-600 hover:text-slate-900 flex items-center justify-center transition-colors cursor-pointer shadow-2xs shrink-0"
             title="Quay lại danh sách đề xuất"
+            aria-label="Quay lại"
           >
-            <ArrowLeft size={15} />
-            <span className="hidden sm:inline">Quay lại</span>
+            <ArrowLeft size={18} />
           </button>
 
           <div>

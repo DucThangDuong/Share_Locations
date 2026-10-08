@@ -1,7 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import type { AdminMainTab, AdminAssignmentInfo } from "@/types/admin.types";
 import { Bell, Menu } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useNotification } from "@/context/NotificationContext";
+import { HeaderNotificationDropdown } from "@/components/notification";
+import { getAdminRoleTitle } from "@/utils/authUtils";
 
 interface AdminTopbarProps {
   isSidebarOpen: boolean;
@@ -22,9 +25,10 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
   selectedPlaceId,
   currentPlaceName,
   currentAdminInfo,
-  showToast,
 }) => {
   const { user } = useAuth();
+  const { unreadCount, fetchNotifications } = useNotification();
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
 
   const storedUser = (() => {
     try {
@@ -48,25 +52,7 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
     storedUser?.avatar ||
     null;
 
-  const rawRole =
-    user?.role ??
-    currentAdminInfo?.roleId ??
-    currentAdminInfo?.role ??
-    storedUser?.roleId ??
-    storedUser?.role;
-
-  const getRoleDisplayName = (r: any) => {
-    const s = String(r ?? "").trim().toUpperCase();
-    if (s === "3" || s === "SYSTEM_ADMIN" || s === "SYSTEMADMIN" || s === "SUPERADMIN" || s === "ADMIN") {
-      return "Admin tổng";
-    }
-    if (s === "2" || s === "CATEGORY_ADMIN" || s === "CATEGORYADMIN") {
-      return "Admin cấp 1";
-    }
-    return "Admin tổng";
-  };
-
-  const roleTitle = getRoleDisplayName(rawRole);
+  const roleTitle = getAdminRoleTitle();
 
   return (
     <header className="h-16 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-6 flex items-center justify-between sticky top-0 z-20">
@@ -84,6 +70,7 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
         <div className="flex items-center gap-2 text-xs font-medium">
           <span className="text-slate-900 font-bold">
             {mainTab === "dashboard" && "Tổng quan (Dashboard)"}
+            {(mainTab === "admin_profile" || (mainTab as any) === "profile") && "Phạm vi điều hành"}
             {mainTab === "users" && "Quản lý Tài khoản & Phân quyền"}
             {mainTab === "places" && (selectedPlaceId ? `Chi tiết: ${currentPlaceName || ""}` : "Quản lý Địa điểm")}
             {mainTab === "proposals" && "Đề xuất đóng góp"}
@@ -92,8 +79,10 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
             {mainTab === "foods" && "Ẩm thực"}
             {mainTab === "collections" && "Bộ sưu tập"}
             {mainTab === "blogs" && "Blog & Cẩm nang"}
+            {mainTab === "provinces" && "Tỉnh thành & Vùng"}
             {mainTab === "categories" && "Danh mục hệ thống"}
-            {mainTab === "notifications_profile" && "Hồ sơ cá nhân"}
+            {mainTab === "settings" && "Cài đặt hệ thống"}
+            {mainTab === "notifications_profile" && "Cài đặt hệ thống"}
             {mainTab === "audit_logs" && "Nhật ký kiểm toán"}
           </span>
         </div>
@@ -101,14 +90,34 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
 
       <div className="flex items-center gap-3 sm:gap-4">
         {/* Notifications */}
-        <button
-          onClick={() => showToast && showToast("Bạn có 3 báo cáo vi phạm mới cần thẩm định.")}
-          className="relative p-2 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
-          title="Thông báo kiểm duyệt"
-        >
-          <Bell size={17} />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white" />
-        </button>
+        <div className="relative">
+          <button
+            onClick={() => {
+              if (!isNotifOpen) {
+                fetchNotifications(true);
+              }
+              setIsNotifOpen(!isNotifOpen);
+            }}
+            className={`relative p-2 rounded-xl transition-colors cursor-pointer ${
+              isNotifOpen
+                ? "bg-emerald-100 text-emerald-800"
+                : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+            }`}
+            title="Thông báo hệ thống & kiểm duyệt"
+            aria-expanded={isNotifOpen}
+          >
+            <Bell size={18} />
+            {unreadCount > 0 && (
+              <span className="absolute top-1 right-1 min-w-[16px] h-[16px] px-1 bg-rose-500 text-white rounded-full text-[9px] font-black border-2 border-white flex items-center justify-center shadow-xs">
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
+            )}
+          </button>
+
+          {isNotifOpen && (
+            <HeaderNotificationDropdown onClose={() => setIsNotifOpen(false)} />
+          )}
+        </div>
 
         {/* Admin profile chip */}
         <div className="flex items-center gap-2.5 pl-3 border-l border-slate-200">

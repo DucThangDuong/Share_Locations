@@ -7,6 +7,7 @@ import {
   Loader2,
 } from 'lucide-react'
 import { friendService } from '@/services/friendService'
+import { useSystemSettings } from '@/context/SystemSettingsContext'
 import type { FriendItemDto } from '@/types/models/friend.model'
 
 interface AddMembersModalProps {
@@ -24,6 +25,7 @@ export const AddMembersModal: React.FC<AddMembersModalProps> = ({
   onClose,
   onAddMembers,
 }) => {
+  const { defaultUserAvatar } = useSystemSettings()
   const [searchQuery, setSearchQuery] = useState('')
   const [friends, setFriends] = useState<FriendItemDto[]>([])
   const [selectedFriendIds, setSelectedFriendIds] = useState<number[]>([])
@@ -162,7 +164,7 @@ export const AddMembersModal: React.FC<AddMembersModalProps> = ({
                     className="inline-flex items-center gap-1.5 pl-1.5 pr-2 py-1 rounded-full bg-blue-50 text-[#0084FF] border border-blue-200/80 text-xs font-semibold"
                   >
                     <img
-                      src={f.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop'}
+                      src={f.avatar || defaultUserAvatar}
                       alt=""
                       className="w-4 h-4 rounded-full object-cover"
                     />
@@ -201,9 +203,7 @@ export const AddMembersModal: React.FC<AddMembersModalProps> = ({
                 ) : (
                   filteredFriends.map((friend) => {
                     const isSelected = selectedFriendIds.includes(friend.id)
-                    const avatar =
-                      friend.avatar ||
-                      'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop'
+                    const avatar = friend.avatar || defaultUserAvatar
 
                     return (
                       <div

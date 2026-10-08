@@ -22,7 +22,7 @@ public class PlaceRepository : IPlaceRepository
     {
         var categories = await _dbContext.Categories
             .AsNoTracking()
-            .Where(c => c.Status == RecordStatus.Active)
+            .Where(c => c.Status == RecordStatus.Active && c.PlaceType.Status == RecordStatus.Active)
             .OrderBy(c => c.Name)
             .Select(c => new LookupItemDto
             {
@@ -79,7 +79,7 @@ public class PlaceRepository : IPlaceRepository
                 p.Address LIKE @Keyword OR 
                 p.Description LIKE @Keyword OR 
                 prov.Name LIKE @Keyword OR 
-                cat.Name LIKE @Keyword
+                (cat.Status = 1 AND cat.Name LIKE @Keyword)
             )");
             parameters.Add("Keyword", $"%{p.Keyword.Trim()}%");
         }
@@ -104,7 +104,7 @@ public class PlaceRepository : IPlaceRepository
         var categoryIds = p.GetEffectiveCategoryIds();
         if (categoryIds.Count > 0)
         {
-            whereClauses.Add("p.CategoryId IN @CategoryIds");
+            whereClauses.Add("(p.CategoryId IN @CategoryIds AND cat.Status = 1)");
             parameters.Add("CategoryIds", categoryIds);
         }
 
@@ -112,7 +112,7 @@ public class PlaceRepository : IPlaceRepository
         var placeTypeIds = p.GetEffectivePlaceTypeIds();
         if (placeTypeIds.Count > 0)
         {
-            whereClauses.Add("cat.PlaceTypeId IN @PlaceTypeIds");
+            whereClauses.Add("(cat.PlaceTypeId IN @PlaceTypeIds AND pt.Status = 1)");
             parameters.Add("PlaceTypeIds", placeTypeIds);
         }
 
@@ -143,6 +143,7 @@ public class PlaceRepository : IPlaceRepository
             FROM dbo.Places p
             INNER JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id
             INNER JOIN dbo.Categories cat ON p.CategoryId = cat.Id
+            INNER JOIN dbo.PlaceTypes pt ON cat.PlaceTypeId = pt.Id
             {whereSql};";
 
         var totalCount = await connection.ExecuteScalarAsync<long>(countSql, parameters);
@@ -157,8 +158,11 @@ public class PlaceRepository : IPlaceRepository
 
         var dataSql = $@"
             SELECT p.Id, p.Name, p.Description, p.Address, p.ProvinceId, prov.Name AS ProvinceName,
-                   prov.RegionId, r.Name AS RegionName, p.CategoryId, cat.Name AS CategoryName,
-                   cat.PlaceTypeId, pt.Name AS PlaceTypeName, p.MinPrice, p.MaxPrice, p.OpeningHours,
+                   prov.RegionId, r.Name AS RegionName, p.CategoryId, 
+                   CASE WHEN cat.Status = 1 THEN cat.Name ELSE N'Không khả dụng' END AS CategoryName,
+                   cat.PlaceTypeId, 
+                   CASE WHEN pt.Status = 1 THEN pt.Name ELSE N'Không khả dụng' END AS PlaceTypeName, 
+                   p.MinPrice, p.MaxPrice, p.OpeningHours,
                    p.AvgRating, p.ReviewCount, p.Status, p.CreatedAt,
                    (SELECT TOP 1 pm.Url FROM dbo.PlaceMedia pm WHERE pm.PlaceId = p.Id ORDER BY pm.DisplayOrder) AS ThumbnailUrl
             FROM dbo.Places p
@@ -186,9 +190,12 @@ public class PlaceRepository : IPlaceRepository
 
         const string sql = @"
             SELECT p.Id, p.Name, p.Description, p.Address, p.ProvinceId, prov.Name AS ProvinceName,
-                   prov.RegionId, r.Name AS RegionName, p.CategoryId, cat.Name AS CategoryName,
-                   cat.PlaceTypeId, pt.Name AS PlaceTypeName, p.MinPrice, p.MaxPrice, p.OpeningHours,
-                   p.AvgRating, p.ReviewCount, p.Latitude, p.Longitude, p.Phone AS PhoneNumber,
+                   prov.RegionId, r.Name AS RegionName, p.CategoryId, 
+                   CASE WHEN cat.Status = 1 THEN cat.Name ELSE N'Không khả dụng' END AS CategoryName,
+                   cat.PlaceTypeId, 
+                   CASE WHEN pt.Status = 1 THEN pt.Name ELSE N'Không khả dụng' END AS PlaceTypeName, 
+                   p.MinPrice, p.MaxPrice, p.OpeningHours,
+                   p.AvgRating, p.ReviewCount, p.ViewCount, p.Latitude, p.Longitude, p.Phone AS PhoneNumber,
                    p.Website, p.Status, p.CreatedAt, p.CoverImageUrl AS ThumbnailUrl
             FROM dbo.Places p
             INNER JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id
@@ -223,6 +230,19 @@ public class PlaceRepository : IPlaceRepository
         using var multi = await connection.QueryMultipleAsync(sql, new { Id = id });
         var place = await multi.ReadFirstOrDefaultAsync<PlaceDetailDto>();
         if (place == null) return null;
+
+        _ = connection.ExecuteAsync("UPDATE dbo.Places SET ViewCount = ViewCount + 1 WHERE Id = @Id;", new { Id = id });
+        place.ViewCount += 1;
+
+        if (userId.HasValue && userId.Value > 0)
+        {
+            _ = connection.ExecuteAsync(@"
+                IF EXISTS (SELECT 1 FROM dbo.AccessHistories WHERE UserId = @UserId AND PlaceId = @PlaceId)
+                    UPDATE dbo.AccessHistories SET ViewedAt = SYSUTCDATETIME() WHERE UserId = @UserId AND PlaceId = @PlaceId;
+                ELSE
+                    INSERT INTO dbo.AccessHistories (UserId, PlaceId, ViewedAt) VALUES (@UserId, @PlaceId, SYSUTCDATETIME());",
+                new { UserId = userId.Value, PlaceId = id });
+        }
 
         var placeMediaUrls = (await multi.ReadAsync<string>()).ToList();
         var reviewMediaUrls = (await multi.ReadAsync<string>()).ToList();
@@ -289,7 +309,7 @@ public class PlaceRepository : IPlaceRepository
         place.Highlights =
         [
             $"Điểm đến nổi tiếng tại {place.ProvinceName}",
-            $"Thuộc danh mục {place.CategoryName} hấp dẫn",
+            place.CategoryName == "Không khả dụng" ? "Điểm đến thú vị hấp dẫn" : $"Thuộc danh mục {place.CategoryName} hấp dẫn",
             $"Được đánh giá {place.AvgRating:F1} sao từ {place.ReviewCount} lượt du khách"
         ];
 
@@ -333,7 +353,7 @@ public class PlaceRepository : IPlaceRepository
             SELECT TOP 500
                 p.Id,
                 p.Name,
-                cat.Name AS Category,
+                CASE WHEN cat.Status = 1 THEN cat.Name ELSE N'Không khả dụng' END AS Category,
                 p.CategoryId,
                 CASE 
                     WHEN r.Id = 1 THEN 'north'
@@ -363,9 +383,9 @@ public class PlaceRepository : IPlaceRepository
             WHERE p.Status = 1
               AND p.Latitude IS NOT NULL 
               AND p.Longitude IS NOT NULL
-              AND (@Keyword IS NULL OR (p.Name LIKE @Keyword OR p.Address LIKE @Keyword OR prov.Name LIKE @Keyword))
+              AND (@Keyword IS NULL OR (p.Name LIKE @Keyword OR p.Address LIKE @Keyword OR prov.Name LIKE @Keyword OR (cat.Status = 1 AND cat.Name LIKE @Keyword)))
               AND (@ProvinceId IS NULL OR p.ProvinceId = @ProvinceId)
-              AND (@CategoryId IS NULL OR p.CategoryId = @CategoryId)
+              AND (@CategoryId IS NULL OR (p.CategoryId = @CategoryId AND cat.Status = 1))
               AND (@RegionKey IS NULL OR (
                     (@RegionKey = 'north' AND r.Id = 1) OR
                     (@RegionKey = 'central' AND r.Id = 2) OR
@@ -523,6 +543,103 @@ public class PlaceRepository : IPlaceRepository
             .AsNoTracking()
             .AnyAsync(v => v.UserId == userId && v.PlaceId == placeId, ct);
     }
+
+    public async Task<IReadOnlyList<PlaceSummaryDto>> GetRelatedPlacesAsync(
+        long placeId,
+        int limit = 6,
+        CancellationToken ct = default)
+    {
+        var safeLimit = Math.Clamp(limit, 1, 20);
+        var connection = _dbContext.Database.GetDbConnection();
+
+        // 1. Lấy thông tin địa điểm gốc
+        const string currentSql = @"
+            SELECT p.Id, p.CategoryId, cat.PlaceTypeId, p.ProvinceId, prov.RegionId, p.Latitude, p.Longitude
+            FROM dbo.Places p
+            INNER JOIN dbo.Categories cat ON p.CategoryId = cat.Id
+            INNER JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id
+            WHERE p.Id = @PlaceId AND p.Status = 1;";
+
+        var current = await connection.QueryFirstOrDefaultAsync<CurrentPlaceContext>(currentSql, new { PlaceId = placeId });
+        if (current == null)
+        {
+            return Array.Empty<PlaceSummaryDto>();
+        }
+
+        // 2. Chấm điểm Scored Waterfall các địa điểm ứng viên
+        const string querySql = @"
+            SELECT TOP (@Limit)
+                p.Id, p.Name, p.Description, p.Address, p.ProvinceId, prov.Name AS ProvinceName,
+                prov.RegionId, r.Name AS RegionName, p.CategoryId, 
+                CASE WHEN cat.Status = 1 THEN cat.Name ELSE N'Không khả dụng' END AS CategoryName,
+                cat.PlaceTypeId, 
+                CASE WHEN pt.Status = 1 THEN pt.Name ELSE N'Không khả dụng' END AS PlaceTypeName, 
+                p.MinPrice, p.MaxPrice, p.OpeningHours,
+                p.AvgRating, p.ReviewCount, p.Status, p.CreatedAt,
+                COALESCE(NULLIF(p.CoverImageUrl, ''), (SELECT TOP 1 pm.Url FROM dbo.PlaceMedia pm WHERE pm.PlaceId = p.Id ORDER BY pm.DisplayOrder)) AS ThumbnailUrl
+            FROM dbo.Places p
+            INNER JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id
+            INNER JOIN dbo.Regions r ON prov.RegionId = r.Id
+            INNER JOIN dbo.Categories cat ON p.CategoryId = cat.Id
+            INNER JOIN dbo.PlaceTypes pt ON cat.PlaceTypeId = pt.Id
+            WHERE p.Id <> @PlaceId AND p.Status = 1 AND cat.Status = 1 AND pt.Status = 1
+            ORDER BY
+                (
+                    -- A. Mức độ khớp Danh mục & Loại hình
+                    CASE 
+                        WHEN p.CategoryId = @CategoryId THEN 50.0
+                        WHEN cat.PlaceTypeId = @PlaceTypeId THEN 25.0
+                        ELSE 0.0 
+                    END
+                    -- B. Mức độ khớp Địa lý Hành chính (Tỉnh / Vùng)
+                    + CASE 
+                        WHEN p.ProvinceId = @ProvinceId THEN 30.0
+                        WHEN prov.RegionId = @RegionId THEN 10.0
+                        ELSE 0.0 
+                    END
+                    -- C. Điểm thưởng khoảng cách lân cận GPS (nếu cả 2 có toạ độ hợp lệ)
+                    + CASE 
+                        WHEN @Latitude IS NOT NULL AND @Longitude IS NOT NULL 
+                             AND p.Latitude IS NOT NULL AND p.Longitude IS NOT NULL THEN
+                            20.0 / (1.0 + SQRT(
+                                POWER(CAST((p.Latitude - @Latitude) * 111.0 AS FLOAT), 2) +
+                                POWER(CAST((p.Longitude - @Longitude) * 111.0 AS FLOAT) * COS(RADIANS(CAST(@Latitude AS FLOAT))), 2)
+                            ))
+                        ELSE 0.0 
+                    END
+                    -- D. Chất lượng & Mức độ phổ biến
+                    + (p.AvgRating * 3.0)
+                    + (LOG(CAST(p.ReviewCount + 1 AS FLOAT)) * 2.0)
+                    + (LOG(CAST(p.ViewCount + 1 AS FLOAT)) * 1.0)
+                ) DESC,
+                p.AvgRating DESC,
+                p.ReviewCount DESC;";
+
+        var candidates = await connection.QueryAsync<PlaceSummaryDto>(querySql, new
+        {
+            PlaceId = placeId,
+            Limit = safeLimit,
+            CategoryId = current.CategoryId,
+            PlaceTypeId = current.PlaceTypeId,
+            ProvinceId = current.ProvinceId,
+            RegionId = current.RegionId,
+            Latitude = current.Latitude,
+            Longitude = current.Longitude
+        });
+
+        return candidates.ToList();
+    }
+}
+
+file sealed class CurrentPlaceContext
+{
+    public long Id { get; set; }
+    public int CategoryId { get; set; }
+    public int PlaceTypeId { get; set; }
+    public int ProvinceId { get; set; }
+    public int RegionId { get; set; }
+    public decimal? Latitude { get; set; }
+    public decimal? Longitude { get; set; }
 }
 
 file sealed class RawPlaceFoodRow

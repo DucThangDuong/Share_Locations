@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react'
 import { Search, ChevronLeft, X, Loader2, UserPlus, Users } from 'lucide-react'
 import { useChat } from '@/context/ChatContext'
+import { useSystemSettings } from '@/context/SystemSettingsContext'
 import { CreateGroupModal } from './CreateGroupModal'
 import type { InboxItemDto } from '@/services/chatService'
 
@@ -20,6 +21,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
   onBack,
 }) => {
   const { createGroupChat } = useChat()
+  const { defaultUserAvatar, defaultGroupAvatar } = useSystemSettings()
   const [filterTab, setFilterTab] = useState<'all' | 'unread' | 'groups'>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false)
@@ -160,8 +162,8 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
             const avatarUrl =
               item.avatarUrl ||
               (item.isGroup
-                ? 'https://cdn.pixabay.com/photo/2016/11/14/17/39/group-1824145_1280.png'
-                : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop')
+                ? defaultGroupAvatar
+                : defaultUserAvatar)
 
             return (
               <div

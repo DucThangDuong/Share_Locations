@@ -1,30 +1,13 @@
 import React, { useMemo, useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Search, Plus, Star, ChevronLeft, ChevronRight, Loader2, X } from "lucide-react";
+import { Search, Plus, Star, ChevronLeft, ChevronRight, Loader2, X, ImageIcon } from "lucide-react";
 import { PlaceDetailEditor } from "./PlaceDetailEditor";
 import { geographyService } from "@/services/geographyService";
 import { catalogService } from "@/services/catalogService";
+import { extractList } from "@/services/adminService";
 import type { ProvinceDto } from "@/types/models/geography.model";
 import type { PlaceTypeDto } from "@/types/models/place.model";
-
-const DEFAULT_PROVINCES: ProvinceDto[] = [
-  { id: 1, name: "Đà Nẵng", regionId: 2, regionName: "Miền Trung", featured: true, displayOrder: 1, placeCount: 150 },
-  { id: 2, name: "Quảng Nam", regionId: 2, regionName: "Miền Trung", featured: false, displayOrder: 2, placeCount: 95 },
-  { id: 3, name: "Thừa Thiên Huế", regionId: 2, regionName: "Miền Trung", featured: false, displayOrder: 3, placeCount: 80 },
-  { id: 4, name: "Khánh Hòa", regionId: 3, regionName: "Nam Trung Bộ", featured: true, displayOrder: 4, placeCount: 110 },
-  { id: 5, name: "Lâm Đồng", regionId: 3, regionName: "Tây Nguyên", featured: true, displayOrder: 5, placeCount: 130 },
-  { id: 6, name: "Hà Nội", regionId: 1, regionName: "Miền Bắc", featured: true, displayOrder: 6, placeCount: 220 },
-  { id: 7, name: "TP. Hồ Chí Minh", regionId: 4, regionName: "Miền Nam", featured: true, displayOrder: 7, placeCount: 260 },
-];
-
-const DEFAULT_CATEGORIES: PlaceTypeDto[] = [
-  { id: 1, name: "Nhà hàng & Quán ăn" },
-  { id: 2, name: "Cà phê & Trà sữa" },
-  { id: 3, name: "Địa điểm tham quan" },
-  { id: 4, name: "Khách sạn & Homestay" },
-  { id: 5, name: "Giải trí & Trải nghiệm" },
-  { id: 6, name: "Mua sắm & Đặc sản" },
-];
+import { CustomSelect } from "@/components/common/CustomSelect";
 
 interface PlacesTabProps {
   placesList: any[];
@@ -91,8 +74,8 @@ export const PlacesTab: React.FC<PlacesTabProps> = ({
   const categoryFilter = propFilterCategory ?? localCategoryFilter;
   const setCategoryFilter = propSetFilterCategory ?? setLocalCategoryFilter;
 
-  const [provinces, setProvinces] = useState<ProvinceDto[]>(DEFAULT_PROVINCES);
-  const [categories, setCategories] = useState<PlaceTypeDto[]>(DEFAULT_CATEGORIES);
+  const [provinces, setProvinces] = useState<ProvinceDto[]>([]);
+  const [categories, setCategories] = useState<PlaceTypeDto[]>([]);
 
   // Debounced Search calling API via onFilterChange
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -106,15 +89,17 @@ export const PlacesTab: React.FC<PlacesTabProps> = ({
           catalogService.getPlaceTypes(),
         ]);
         if (mounted) {
-          if (provRes?.success && Array.isArray(provRes.data) && provRes.data.length > 0) {
-            setProvinces(provRes.data);
+          const provList = extractList<ProvinceDto>(provRes?.data || provRes);
+          if (provList.length > 0) {
+            setProvinces(provList);
           }
-          if (catRes?.success && Array.isArray(catRes.data) && catRes.data.length > 0) {
-            setCategories(catRes.data);
+          const catList = extractList<PlaceTypeDto>(catRes?.data || catRes);
+          if (catList.length > 0) {
+            setCategories(catList);
           }
         }
       } catch {
-        // Fallback already assigned
+        // network fallback
       }
     };
     loadMetadata();
@@ -191,9 +176,9 @@ export const PlacesTab: React.FC<PlacesTabProps> = ({
           setSelectedPlaceId(null);
           navigate('/admin/places');
         }}
-        onSave={(updatedPlace) => {
+        onSave={async (updatedPlace) => {
           if (handleUpdatePlace) {
-            handleUpdatePlace(updatedPlace);
+            return await handleUpdatePlace(updatedPlace);
           }
         }}
         onToggleStatus={handleTogglePlaceStatus}
@@ -227,43 +212,47 @@ export const PlacesTab: React.FC<PlacesTabProps> = ({
 
           <div className="flex flex-wrap items-center gap-2">
             {/* Bộ lọc Tỉnh thành */}
-            <select
+            <CustomSelect
               value={placeFilterProvince}
-              onChange={(e) => handleProvinceChange(e.target.value)}
-              className="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 font-medium text-slate-800 outline-none focus:border-emerald-500 text-xs cursor-pointer"
-            >
-              <option value="all">Tất cả tỉnh thành</option>
-              {allProvinces.map((prov) => (
-                <option key={prov.id || prov.name} value={prov.name}>
-                  {prov.name}
-                </option>
-              ))}
-            </select>
+              onChange={(val) => handleProvinceChange(val)}
+              options={[
+                { value: "all", label: "Tất cả tỉnh thành" },
+                ...allProvinces.map((prov) => ({
+                  value: prov.name,
+                  label: prov.name,
+                })),
+              ]}
+              size="sm"
+              className="min-w-[140px]"
+            />
 
             {/* Bộ lọc Danh mục */}
-            <select
+            <CustomSelect
               value={categoryFilter}
-              onChange={(e) => handleCategoryChange(e.target.value)}
-              className="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 font-medium text-slate-800 outline-none focus:border-emerald-500 text-xs cursor-pointer"
-            >
-              <option value="all">Tất cả danh mục</option>
-              {allCategories.map((cat) => (
-                <option key={cat.id || cat.name} value={cat.name}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
+              onChange={(val) => handleCategoryChange(val)}
+              options={[
+                { value: "all", label: "Tất cả danh mục" },
+                ...allCategories.map((cat) => ({
+                  value: cat.name,
+                  label: cat.name,
+                })),
+              ]}
+              size="sm"
+              className="min-w-[140px]"
+            />
 
             {/* Bộ lọc Trạng thái */}
-            <select
+            <CustomSelect
               value={placeFilterStatus}
-              onChange={(e) => handleStatusChange(e.target.value)}
-              className="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 font-medium text-slate-800 outline-none focus:border-emerald-500 text-xs cursor-pointer"
-            >
-              <option value="all">Tất cả trạng thái</option>
-              <option value="active">Công khai</option>
-              <option value="hidden">Đang ẩn</option>
-            </select>
+              onChange={(val) => handleStatusChange(val)}
+              options={[
+                { value: "all", label: "Tất cả trạng thái" },
+                { value: "active", label: "Công khai" },
+                { value: "hidden", label: "Đang ẩn" },
+              ]}
+              size="sm"
+              className="min-w-[130px]"
+            />
 
             <button
               type="button"
@@ -314,27 +303,45 @@ export const PlacesTab: React.FC<PlacesTabProps> = ({
                     p.status === "Đang hiển thị" ||
                     p.status === "Đã duyệt";
 
+                  const cover = p.img || p.thumbnailUrl || p.coverImg || p.coverImageUrl || "";
+
                   return (
                     <tr key={p.id} className="hover:bg-slate-50/60 transition-colors">
                       <td className="p-3.5 pl-4 font-bold text-slate-900">
                         <div className="flex items-center gap-3">
-                          <img
-                            src={p.img || p.thumbnailUrl || "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&h=400&fit=crop"}
-                            className="w-10 h-10 rounded-lg object-cover border border-slate-200 shrink-0"
-                            alt=""
-                          />
+                          {cover ? (
+                            <img
+                              src={cover}
+                              className="w-10 h-10 rounded-lg object-cover border border-slate-200 shrink-0"
+                              alt=""
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = "none";
+                                const sibling = target.nextElementSibling as HTMLElement | null;
+                                if (sibling) sibling.style.display = "flex";
+                              }}
+                            />
+                          ) : null}
+                          <div
+                            className={`w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 items-center justify-center text-slate-400 shrink-0 ${
+                              cover ? "hidden" : "flex"
+                            }`}
+                            title="Không có hình ảnh"
+                          >
+                            <ImageIcon size={14} className="text-slate-300" />
+                          </div>
                           <div>
-                            <div className="font-bold text-slate-900">{p.name}</div>
+                            <div className="font-bold text-slate-900">{p.name || "--"}</div>
                             <div className="text-[11px] text-slate-400 font-normal truncate max-w-xs">
-                              {p.location || p.address}
+                              {p.location || p.address || "--"}
                             </div>
                           </div>
                         </div>
                       </td>
                       <td className="p-3.5 text-slate-700 font-medium">
-                        {p.category || p.categoryName || "Nhà hàng & Quán ăn"}
+                        {p.category || p.categoryName || "--"}
                       </td>
-                      <td className="p-3.5 text-slate-700 font-medium">{p.province}</td>
+                      <td className="p-3.5 text-slate-700 font-medium">{p.province || p.provinceName || "--"}</td>
                       <td className="p-3.5">
                         <span
                           className={`inline-flex items-center justify-center px-3.5 py-1 rounded-xl text-xs font-bold border transition-colors ${isPlaceActive
@@ -348,7 +355,7 @@ export const PlacesTab: React.FC<PlacesTabProps> = ({
                       <td className="p-3.5">
                         <div className="flex items-center gap-1 font-bold text-amber-900">
                           <Star size={13} className="fill-amber-400 text-amber-400" />
-                          <span>{p.rating || 4.8}</span>
+                          <span>{p.rating !== undefined && p.rating !== null ? p.rating : "--"}</span>
                         </div>
                       </td>
                       <td className="p-3.5 text-center" onClick={(e) => e.stopPropagation()}>

@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import type { PlaceReviewItem, PlaceCommentItem } from "@/types/admin.types";
 import { adminService } from "@/services/adminService";
+import { CustomSelect } from "@/components/common/CustomSelect";
 
 const formatDateTime = (dateStr?: string) => {
   if (!dateStr) return "";
@@ -276,37 +277,41 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
             </div>
 
             {revComTab === "reviews" && (
-              <select
+              <CustomSelect
                 value={ratingFilter}
-                onChange={(e) => {
-                  setRatingFilter(e.target.value);
-                  setRevReportFilter(e.target.value === "reported" ? "reported" : "all");
+                onChange={(val) => {
+                  setRatingFilter(val);
+                  setRevReportFilter(val === "reported" ? "reported" : "all");
                   setCurrentPage(1);
                 }}
-                className="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 font-medium text-slate-800 outline-none focus:border-emerald-500 cursor-pointer"
-              >
-                <option value="all">Tất cả số sao</option>
-                <option value="5">5 sao (★★★★★)</option>
-                <option value="4">4 sao (★★★★☆)</option>
-                <option value="3">3 sao (★★★☆☆)</option>
-                <option value="2">2 sao (★★☆☆☆)</option>
-                <option value="1">1 sao (★☆☆☆☆)</option>
-                <option value="reported">Có báo cáo vi phạm</option>
-              </select>
+                options={[
+                  { value: "all", label: "Tất cả số sao" },
+                  { value: "5", label: "5 sao (★★★★★)" },
+                  { value: "4", label: "4 sao (★★★★☆)" },
+                  { value: "3", label: "3 sao (★★★☆☆)" },
+                  { value: "2", label: "2 sao (★★☆☆☆)" },
+                  { value: "1", label: "1 sao (★☆☆☆☆)" },
+                  { value: "reported", label: "Có báo cáo vi phạm" },
+                ]}
+                size="sm"
+                className="min-w-[140px]"
+              />
             )}
 
-            <select
+            <CustomSelect
               value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
+              onChange={(val) => {
+                setStatusFilter(val);
                 setCurrentPage(1);
               }}
-              className="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 font-medium text-slate-800 outline-none focus:border-emerald-500 cursor-pointer"
-            >
-              <option value="all">Tất cả trạng thái</option>
-              <option value="active">Đang công khai</option>
-              <option value="hidden">Đang tạm ẩn</option>
-            </select>
+              options={[
+                { value: "all", label: "Tất cả trạng thái" },
+                { value: "active", label: "Đang công khai" },
+                { value: "hidden", label: "Đang tạm ẩn" },
+              ]}
+              size="sm"
+              className="min-w-[130px]"
+            />
           </div>
         </div>
 

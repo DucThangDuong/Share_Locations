@@ -15,13 +15,19 @@ public class UpdateAdminUserStatusCommandHandler : IRequestHandler<UpdateAdminUs
 {
     private readonly IAdminUserRepository _userRepository;
     private readonly ICurrentUserService _currentUserService;
+    private readonly INotificationRepository _notificationRepository;
+    private readonly INotificationNotifier _notifier;
 
     public UpdateAdminUserStatusCommandHandler(
         IAdminUserRepository userRepository,
-        ICurrentUserService currentUserService)
+        ICurrentUserService currentUserService,
+        INotificationRepository notificationRepository,
+        INotificationNotifier notifier)
     {
         _userRepository = userRepository;
         _currentUserService = currentUserService;
+        _notificationRepository = notificationRepository;
+        _notifier = notifier;
     }
 
     public async Task<Result<bool>> Handle(UpdateAdminUserStatusCommand request, CancellationToken ct)
@@ -57,6 +63,38 @@ public class UpdateAdminUserStatusCommandHandler : IRequestHandler<UpdateAdminUs
             request.Reason,
             _currentUserService.UserId ?? 1,
             ct);
+
+        if (success)
+        {
+            try
+            {
+                var isBanned = request.Status == 2;
+                var title = isBanned ? "Cảnh báo: Tài khoản của bạn đã bị khóa" : "Tài khoản của bạn đã được mở khóa";
+                var reasonText = !string.IsNullOrWhiteSpace(request.Reason) ? $". Lý do: {request.Reason}" : "";
+                var content = isBanned 
+                    ? $"Tài khoản của bạn đã bị tạm dừng hoạt động do vi phạm tiêu chuẩn cộng đồng{reasonText}."
+                    : "Tài khoản của bạn đã được kích hoạt lại. Chào mừng bạn quay trở lại!";
+
+                var notif = await _notificationRepository.CreateNotificationAsync(new DTOs.CreateNotificationInput
+                {
+                    UserId = request.UserId,
+                    ActorUserId = _currentUserService.UserId,
+                    Title = title,
+                    Content = content,
+                    Type = Domain.Enums.NotificationType.Moderation,
+                    Priority = isBanned ? (byte)1 : (byte)2,
+                    TargetUrl = "/account/status",
+                    GroupKey = $"USER_STATUS_{request.UserId}"
+                }, ct);
+
+                var unread = await _notificationRepository.GetUnreadCountAsync(request.UserId, ct);
+                await _notifier.NotifyAsync(request.UserId, notif, unread, ct);
+            }
+            catch
+            {
+                // Non-blocking notification dispatch
+            }
+        }
 
         return success 
             ? Result<bool>.Success(true)

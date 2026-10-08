@@ -374,6 +374,16 @@ export const adminService = {
     get<Record<string, unknown>[]>("/api/admin/users", params),
   getUserDetail: (userId: number) =>
     get<Record<string, unknown>>(`/api/admin/users/${userId}`),
+  updateUserRole: (
+    userId: number,
+    data: {
+      role: string;
+      categoryIds?: number[];
+      provinceIds?: number[];
+      regionIds?: number[];
+      reason?: string;
+    }
+  ) => write<any>("put", `/api/admin/users/${userId}/role`, data),
   updateUserScopes: (userId: number, data: unknown) =>
     write<unknown>("put", `/api/admin/users/${userId}/scopes`, data),
   updateUserStatus: (userId: number, status: string | number, reason?: string) =>
@@ -382,6 +392,92 @@ export const adminService = {
     get<Record<string, unknown>>(`/api/admin/users/${userId}/activities`),
   getUserAccessHistory: (userId: number) =>
     get<Record<string, unknown>[]>("/api/admin/users/" + userId + "/access-history"),
+
+  getAuditLogs: (params?: Record<string, unknown>) =>
+    get<any>("/api/admin/audit-logs", params),
+  getAuditLogDetail: (id: number) =>
+    get<any>(`/api/admin/audit-logs/${id}`),
+
+  getGeographyRegions: (params?: { activeOnly?: boolean }) =>
+    get<import("@/types/admin.types").AdminGeographyRegionItem[]>("/api/admin/geography/regions", params as Record<string, unknown>),
+  createGeographyRegion: (data: FormData | Partial<import("@/types/admin.types").AdminGeographyRegionItem>) =>
+    write<number>("post", "/api/admin/geography/regions", data),
+  updateGeographyRegion: (id: number, data: FormData | Partial<import("@/types/admin.types").AdminGeographyRegionItem>) =>
+    write<boolean>("put", `/api/admin/geography/regions/${id}`, data),
+  updateGeographyRegionStatus: (id: number, status: number, reason?: string) =>
+    write<boolean>("put", `/api/admin/geography/regions/${id}/status`, { status, reason }),
+
+  getGeographyProvinces: (params?: {
+    regionId?: number;
+    status?: number;
+    featured?: boolean;
+    keyword?: string;
+    page?: number;
+    pageSize?: number;
+  }) =>
+    get<import("@/types/admin.types").AdminGeographyProvinceItem[] | AdminPage<import("@/types/admin.types").AdminGeographyProvinceItem>>(
+      "/api/admin/geography/provinces",
+      params as Record<string, unknown>
+    ),
+  getGeographyProvince: (id: number) =>
+    get<import("@/types/admin.types").AdminGeographyProvinceItem>(`/api/admin/geography/provinces/${id}`),
+  createGeographyProvince: (data: FormData | Partial<import("@/types/admin.types").AdminGeographyProvinceItem>) =>
+    write<number>("post", "/api/admin/geography/provinces", data),
+  updateGeographyProvince: (id: number, data: FormData | Partial<import("@/types/admin.types").AdminGeographyProvinceItem>) =>
+    write<boolean>("put", `/api/admin/geography/provinces/${id}`, data),
+  updateGeographyProvinceStatus: (id: number, status: number, reason?: string) =>
+    write<boolean>("put", `/api/admin/geography/provinces/${id}/status`, { status, reason }),
+
+  getCatalogPlaceTypes: (params?: { activeOnly?: boolean }) =>
+    get<import("@/types/admin.types").AdminCatalogPlaceTypeItem[]>(
+      "/api/admin/catalog/place-types",
+      params as Record<string, unknown>
+    ),
+  createCatalogPlaceType: (data: FormData | Partial<import("@/types/admin.types").AdminCatalogPlaceTypeItem>) =>
+    write<number>("post", "/api/admin/catalog/place-types", data),
+  updateCatalogPlaceType: (id: number, data: FormData | Partial<import("@/types/admin.types").AdminCatalogPlaceTypeItem>) =>
+    write<boolean>("post", `/api/admin/catalog/place-types/${id}`, data),
+  updateCatalogPlaceTypeStatus: (id: number, status: number, reason?: string) =>
+    write<boolean>("put", `/api/admin/catalog/place-types/${id}/status`, { status, reason }),
+
+  getCatalogCategories: (params?: {
+    placeTypeId?: number;
+    status?: number;
+    keyword?: string;
+    page?: number;
+    pageSize?: number;
+  }) =>
+    get<import("@/types/admin.types").AdminCatalogCategoryItem[] | AdminPage<import("@/types/admin.types").AdminCatalogCategoryItem>>(
+      "/api/admin/catalog/categories",
+      params as Record<string, unknown>
+    ),
+  getCatalogCategory: (id: number) =>
+    get<import("@/types/admin.types").AdminCatalogCategoryItem>(`/api/admin/catalog/categories/${id}`),
+  createCatalogCategory: (data: FormData | Partial<import("@/types/admin.types").AdminCatalogCategoryItem>) =>
+    write<number>("post", "/api/admin/catalog/categories", data),
+  updateCatalogCategory: (id: number, data: FormData | Partial<import("@/types/admin.types").AdminCatalogCategoryItem>) =>
+    write<boolean>("post", `/api/admin/catalog/categories/${id}`, data),
+  updateCatalogCategoryStatus: (id: number, status: number, reason?: string) =>
+    write<boolean>("put", `/api/admin/catalog/categories/${id}/status`, { status, reason }),
+
+  getReportTypes: (params?: { targetScope?: string; activeOnly?: boolean }) =>
+    get<import("@/types/admin.types").AdminReportTypeItem[]>("/api/admin/settings/report-types", params as Record<string, unknown>),
+  createReportType: (data: Partial<import("@/types/admin.types").AdminReportTypeItem>) =>
+    write<number>("post", "/api/admin/settings/report-types", data),
+  updateReportType: (id: number, data: Partial<import("@/types/admin.types").AdminReportTypeItem>) =>
+    write<boolean>("put", `/api/admin/settings/report-types/${id}`, data),
+  updateReportTypeStatus: (id: number, isActive: boolean) =>
+    write<boolean>("put", `/api/admin/settings/report-types/${id}/status`, { isActive }),
+  deleteReportType: (id: number) =>
+    write<boolean>("delete", `/api/admin/settings/report-types/${id}`),
+
+  getSystemSettings: (params?: { group?: string }) =>
+    get<import("@/types/admin.types").AdminSystemSettingItem[]>("/api/admin/settings/system-settings", params as Record<string, unknown>),
+  updateSystemSetting: (key: string, data: { settingValue: string; description?: string }) =>
+    write<boolean>("put", `/api/admin/settings/system-settings/${encodeURIComponent(key)}`, data),
+  batchUpdateSystemSettings: (settings: Record<string, string>) =>
+    write<number>("put", "/api/admin/settings/system-settings/batch", { settings }),
 };
 
 export default adminService;
+

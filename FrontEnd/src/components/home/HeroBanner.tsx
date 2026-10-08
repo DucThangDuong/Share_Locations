@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { MapPin, Compass, Layers, ArrowRight } from 'lucide-react'
 import { placeService } from '@/services/placeService'
+import { useSystemSettings } from '@/context/SystemSettingsContext'
 import type { LookupItemDto, RegionLookupDto } from '@/types/models/place.model'
 
 export const HeroBanner: React.FC = () => {
   const navigate = useNavigate()
+  const { homeHeroImage } = useSystemSettings()
   const [keyword, setKeyword] = useState('')
   const [region, setRegion] = useState('')
   const [category, setCategory] = useState('')
@@ -41,9 +43,9 @@ export const HeroBanner: React.FC = () => {
     <header className="relative w-full overflow-hidden mx-auto max-w-7xl md:mt-4 md:rounded-3xl border border-slate-200/60 shadow-md">
       <div className="relative min-h-[580px] sm:min-h-[640px] md:min-h-[680px] flex flex-col justify-between items-center text-center p-6 sm:p-10 lg:p-12">
         <img
-          alt="Việt Nam ngút ngàn"
+          alt="Khám phá Việt Nam"
           className="absolute inset-0 w-full h-full object-cover"
-          src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1920&auto=format&fit=crop"
+          src={homeHeroImage}
         />
         <div className="absolute inset-0 bg-gradient-to-b from-sky-50/90 via-sky-50/25 to-slate-900/40 pointer-events-none" />
 

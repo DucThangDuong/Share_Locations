@@ -1,4 +1,6 @@
 using Application.Common;
+using Application.Common.Interfaces;
+using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
 using Domain.Entities;
 using Domain.Enums;
@@ -12,10 +14,17 @@ public record InviteTripMemberCommand(long TripId, long OwnerUserId, InviteTripM
 public class InviteTripMemberCommandHandler : IRequestHandler<InviteTripMemberCommand, Result>
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly INotificationRepository _notificationRepository;
+    private readonly INotificationNotifier _notifier;
 
-    public InviteTripMemberCommandHandler(IUnitOfWork unitOfWork)
+    public InviteTripMemberCommandHandler(
+        IUnitOfWork unitOfWork,
+        INotificationRepository notificationRepository,
+        INotificationNotifier notifier)
     {
         _unitOfWork = unitOfWork;
+        _notificationRepository = notificationRepository;
+        _notifier = notifier;
     }
 
     public async Task<Result> Handle(InviteTripMemberCommand request, CancellationToken ct)
@@ -61,6 +70,33 @@ public class InviteTripMemberCommandHandler : IRequestHandler<InviteTripMemberCo
         var member = new TripMember(trip.Id, targetUser.Id, role);
         await _unitOfWork.Trips.AddMemberAsync(member, ct);
         await _unitOfWork.SaveChangesAsync(ct);
+
+        // Gửi thông báo lời mời chuyến đi cho thành viên mới
+        try
+        {
+            var ownerProfile = await _unitOfWork.UserProfiles.GetByUserIdAsync(request.OwnerUserId, ct);
+            var ownerName = !string.IsNullOrWhiteSpace(ownerProfile?.FullName) ? ownerProfile.FullName : "Người tạo chuyến đi";
+            var notif = await _notificationRepository.CreateNotificationAsync(new CreateNotificationInput
+            {
+                UserId = targetUser.Id,
+                ActorUserId = request.OwnerUserId,
+                Title = "Lời mời tham gia chuyến đi",
+                Content = $"{ownerName} đã thêm bạn vào chuyến đi '{trip.Title}'.",
+                Type = NotificationType.Trip,
+                Priority = 2,
+                EntityType = "TRIP",
+                EntityId = trip.Id,
+                TargetUrl = $"/trips/{trip.Id}",
+                GroupKey = $"TRIP_{trip.Id}"
+            }, ct);
+
+            var unread = await _notificationRepository.GetUnreadCountAsync(targetUser.Id, ct);
+            await _notifier.NotifyAsync(targetUser.Id, notif, unread, ct);
+        }
+        catch
+        {
+            // Non-blocking notification dispatch
+        }
 
         return Result.Success("Đã thêm thành viên vào chuyến đi thành công.");
     }

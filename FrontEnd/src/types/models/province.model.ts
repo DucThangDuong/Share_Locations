@@ -28,8 +28,10 @@ export interface ProvinceItinerary {
 
 export interface ProvinceLandingData {
   province: ProvinceDto
-  heroHeadline: string
-  heroSubheadline: string
+  tagline?: string | null
+  description?: string | null
+  heroHeadline?: string
+  heroSubheadline?: string
   heroImages: RegionHeroImage[]
   collections: RegionCollection[]
   landmarks: RegionLandmark[]

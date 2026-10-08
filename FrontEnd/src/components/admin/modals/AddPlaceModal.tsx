@@ -1,5 +1,11 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { X } from "lucide-react";
+import { geographyService } from "@/services/geographyService";
+import { catalogService } from "@/services/catalogService";
+import { extractList } from "@/services/adminService";
+import type { ProvinceDto } from "@/types/models/geography.model";
+import type { PlaceTypeDto } from "@/types/models/place.model";
+import { CustomSelect } from "@/components/common/CustomSelect";
 
 interface AddPlaceModalProps {
   isOpen: boolean;
@@ -27,6 +33,24 @@ export const AddPlaceModal: React.FC<AddPlaceModalProps> = ({
   setForm,
   onSubmit,
 }) => {
+  const [provinces, setProvinces] = useState<ProvinceDto[]>([]);
+  const [categories, setCategories] = useState<PlaceTypeDto[]>([]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    Promise.all([
+      geographyService.getProvinces(),
+      catalogService.getPlaceTypes(),
+    ])
+      .then(([provRes, catRes]) => {
+        const provList = extractList<ProvinceDto>(provRes?.data || provRes);
+        if (provList.length > 0) setProvinces(provList);
+        const catList = extractList<PlaceTypeDto>(catRes?.data || catRes);
+        if (catList.length > 0) setCategories(catList);
+      })
+      .catch(() => {});
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
@@ -62,34 +86,25 @@ export const AddPlaceModal: React.FC<AddPlaceModalProps> = ({
           </div>
 
           <div>
-            <label className="font-semibold text-slate-700 block mb-1">Danh mục *</label>
-            <select
+            <CustomSelect
+              label="Danh mục *"
               value={form.category}
-              onChange={(e) => setForm({ ...form, category: e.target.value })}
-              className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 font-medium text-slate-800 outline-none focus:border-emerald-500"
-            >
-              <option value="Nhà hàng & Quán ăn">Nhà hàng &amp; Quán ăn</option>
-              <option value="Cà phê & Trà">Cà phê &amp; Trà</option>
-              <option value="Ăn vặt & Đường phố">Ăn vặt &amp; Đường phố</option>
-              <option value="Di tích & Thắng cảnh">Di tích &amp; Thắng cảnh</option>
-              <option value="Khách sạn & Lưu trú">Khách sạn &amp; Lưu trú</option>
-            </select>
+              onChange={(val) => setForm({ ...form, category: val })}
+              placeholder="-- Chọn danh mục --"
+              options={categories.map((c) => ({ value: c.name, label: c.name }))}
+              size="sm"
+            />
           </div>
 
           <div>
-            <label className="font-semibold text-slate-700 block mb-1">Tỉnh / Thành phố *</label>
-            <select
+            <CustomSelect
+              label="Tỉnh / Thành phố *"
               value={form.province}
-              onChange={(e) => setForm({ ...form, province: e.target.value })}
-              className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 font-medium text-slate-800 outline-none focus:border-emerald-500"
-            >
-              <option value="Đà Nẵng">Đà Nẵng</option>
-              <option value="Quảng Nam">Quảng Nam</option>
-              <option value="Thừa Thiên Huế">Thừa Thiên Huế</option>
-              <option value="Khánh Hòa">Khánh Hòa</option>
-              <option value="Lâm Đồng">Lâm Đồng</option>
-              <option value="Bình Định">Bình Định</option>
-            </select>
+              onChange={(val) => setForm({ ...form, province: val })}
+              placeholder="-- Chọn Tỉnh / Thành phố --"
+              options={provinces.map((p) => ({ value: p.name, label: p.name }))}
+              size="sm"
+            />
           </div>
 
           <div className="sm:col-span-2">

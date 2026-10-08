@@ -20,10 +20,15 @@ export const ExplorePlaceCard: React.FC<ExplorePlaceCardProps> = ({
       ? `Từ ${place.minPrice.toLocaleString('vi-VN')}đ`
       : 'Miễn phí'
 
+  const handleCardClick = () => {
+    navigate(`/places/${place.id}`)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   if (viewMode === 'list') {
     return (
       <div
-        onClick={() => navigate(`/places/${place.id}`)}
+        onClick={handleCardClick}
         className="group bg-white rounded-lg overflow-hidden border border-slate-200/80 transition-colors duration-300 flex flex-col sm:flex-row cursor-pointer"
       >
         <div className="w-full sm:w-52 md:w-56 aspect-square sm:aspect-square relative bg-slate-100 shrink-0 overflow-hidden">
@@ -85,7 +90,7 @@ export const ExplorePlaceCard: React.FC<ExplorePlaceCardProps> = ({
 
   return (
     <div
-      onClick={() => navigate(`/places/${place.id}`)}
+      onClick={handleCardClick}
       className="group bg-white rounded-lg overflow-hidden border border-slate-200/80 transition-colors duration-300 flex flex-col h-full cursor-pointer"
     >
       <div className="relative aspect-square w-full bg-slate-100 overflow-hidden shrink-0">

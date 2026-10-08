@@ -767,313 +767,313 @@ export const ArticleEditorView = forwardRef<ArticleEditorRef, ArticleEditorViewP
       <header className="sticky top-16 z-30 bg-white border-b border-slate-200 shadow-2xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="min-h-13 flex flex-wrap items-center py-2 justify-between gap-3 border-b border-slate-100">
-          <div className="flex items-center gap-2 flex-wrap">
-            <button
-              type="button"
-              onClick={() => setShowTocSidebar(!showTocSidebar)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer shrink-0 ${showTocSidebar
-                ? 'bg-emerald-50 text-emerald-900 border border-emerald-200'
-                : 'text-slate-700 bg-slate-100 hover:bg-slate-200'
-                }`}
-              title="Bật/tắt thanh điều hướng mục lục (Navigation Pane)"
-            >
-              {showTocSidebar ? <PanelLeftClose size={15} /> : <PanelLeft size={15} />}
-              <span>Mục lục</span>
-              {tocItems.length > 0 && (
-                <span className="px-1.5 py-0.2 bg-emerald-800 text-white text-[10px] rounded-full font-bold">
-                  {tocItems.length}
-                </span>
-              )}
-            </button>
-
-            <div className="w-px h-6 bg-slate-200 mx-0.5 shrink-0 hidden sm:block" />
-
-            <div className="flex items-center gap-1.5 shrink-0">
-              <Tag size={14} className="text-emerald-800 shrink-0" />
-              <select
-                value={category}
-                disabled={isPendingApproval}
-                onChange={(e) => {
-                  const selectedName = e.target.value
-                  const matched = categoriesList.find((c) => c.name === selectedName)
-                  setCategory(selectedName)
-                  if (matched) setCategoryId(matched.id)
-                }}
-                className="font-bold px-2.5 py-1.5 bg-slate-50 text-emerald-950 border border-slate-200 rounded-xl text-xs outline-none cursor-pointer shadow-2xs hover:border-emerald-300 disabled:opacity-60 disabled:cursor-not-allowed"
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setShowTocSidebar(!showTocSidebar)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer shrink-0 ${showTocSidebar
+                  ? 'bg-emerald-50 text-emerald-900 border border-emerald-200'
+                  : 'text-slate-700 bg-slate-100 hover:bg-slate-200'
+                  }`}
+                title="Bật/tắt thanh điều hướng mục lục (Navigation Pane)"
               >
-                {categoriesList.map((cat) => (
-                  <option key={cat.id} value={cat.name}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {!isPendingApproval && (
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setShowCoverModal(!showCoverModal)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl text-xs font-semibold transition-colors cursor-pointer shadow-2xs"
-                >
-                  <ImageIcon size={13} className="text-emerald-700" />
-                  <span>{coverImg ? 'Đổi ảnh bìa' : 'Chọn ảnh bìa'}</span>
-                  {coverImg && (
-                    <img
-                      src={coverImg}
-                      alt="Cover thumbnail"
-                      className="w-4 h-4 rounded object-cover ml-1 border border-slate-300"
-                    />
-                  )}
-                  <ChevronDown size={12} className="text-slate-400" />
-                </button>
-
-                {showCoverModal && (
-                  <div className="absolute top-full left-0 mt-1.5 w-80 bg-white border border-slate-200 rounded-2xl shadow-2xl p-3.5 z-50 space-y-3">
-                    <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                      <span className="font-bold text-xs text-slate-800">Cài đặt ảnh bìa bài viết</span>
-                      <button
-                        type="button"
-                        onClick={() => setShowCoverModal(false)}
-                        className="p-1 text-slate-400 hover:text-slate-600 rounded-md cursor-pointer"
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => coverFileInputRef.current?.click()}
-                      className="w-full flex items-center justify-center gap-2 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg font-bold text-xs cursor-pointer transition-colors"
-                    >
-                      <Upload size={13} />
-                      <span>Tải ảnh từ máy tính</span>
-                    </button>
-
-                    <div className="space-y-1.5 pt-1 border-t border-slate-100">
-                      <span className="text-[10px] font-bold text-slate-400 block uppercase">Hoặc chọn ảnh gợi ý nhanh:</span>
-                      <div className="grid grid-cols-3 gap-1.5">
-                        {COVER_PRESETS.map((p) => (
-                          <button
-                            key={p.label}
-                            type="button"
-                            onClick={() => {
-                              setCoverImg(p.url)
-                              setShowCoverModal(false)
-                              showNotification(`Đã chọn ảnh bìa: ${p.label}`)
-                            }}
-                            className="group relative rounded-lg overflow-hidden border border-slate-200 text-left cursor-pointer aspect-[16/10]"
-                          >
-                            <img src={p.url} alt={p.label} className="w-full h-full object-cover group-hover:brightness-90" />
-                            <span className="absolute inset-x-0 bottom-0 bg-black/60 text-white text-[9px] font-semibold px-1 py-0.5 truncate text-center">
-                              {p.label}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
+                {showTocSidebar ? <PanelLeftClose size={15} /> : <PanelLeft size={15} />}
+                <span>Mục lục</span>
+                {tocItems.length > 0 && (
+                  <span className="px-1.5 py-0.2 bg-emerald-800 text-white text-[10px] rounded-full font-bold">
+                    {tocItems.length}
+                  </span>
                 )}
-              </div>
-            )}
-          </div>
+              </button>
 
-          <div className="flex items-center gap-2 shrink-0">
-            {isPendingApproval ? (
-              <>
-                <span className="px-3 py-1.5 bg-amber-100 text-amber-900 border border-amber-300 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-2xs">
-                  <Clock size={14} className="text-amber-700 shrink-0" />
-                  <span>Đang chờ duyệt</span>
-                </span>
-                <button
-                  type="button"
-                  onClick={onCancel || (() => navigate('/blog'))}
-                  className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
+              <div className="w-px h-6 bg-slate-200 mx-0.5 shrink-0 hidden sm:block" />
+
+              <div className="flex items-center gap-1.5 shrink-0">
+                <Tag size={14} className="text-emerald-800 shrink-0" />
+                <select
+                  value={category}
+                  disabled={isPendingApproval}
+                  onChange={(e) => {
+                    const selectedName = e.target.value
+                    const matched = categoriesList.find((c) => c.name === selectedName)
+                    setCategory(selectedName)
+                    if (matched) setCategoryId(matched.id)
+                  }}
+                  className="font-bold px-2.5 py-1.5 bg-slate-50 text-emerald-950 border border-slate-200 rounded-xl text-xs outline-none cursor-pointer shadow-2xs hover:border-emerald-300 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  <span>Quay lại</span>
-                </button>
-              </>
-            ) : (
-              <>
-                {!isManagerMode && (
+                  {categoriesList.map((cat) => (
+                    <option key={cat.id} value={cat.name}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {!isPendingApproval && (
+                <div className="relative">
                   <button
                     type="button"
-                    onClick={handleSaveDraft}
-                    disabled={isSaving || isPublishing}
-                    className="px-3 py-1.5 bg-slate-100 text-slate-700 text-xs font-bold rounded-xl hover:bg-slate-200 transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                    onClick={() => setShowCoverModal(!showCoverModal)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl text-xs font-semibold transition-colors cursor-pointer shadow-2xs"
                   >
-                    <Save size={14} />
-                    <span>{isSaving ? 'Đang lưu...' : 'Lưu nháp'}</span>
+                    <ImageIcon size={13} className="text-emerald-700" />
+                    <span>{coverImg ? 'Đổi ảnh bìa' : 'Chọn ảnh bìa'}</span>
+                    {coverImg && (
+                      <img
+                        src={coverImg}
+                        alt="Cover thumbnail"
+                        className="w-4 h-4 rounded object-cover ml-1 border border-slate-300"
+                      />
+                    )}
+                    <ChevronDown size={12} className="text-slate-400" />
                   </button>
-                )}
+
+                  {showCoverModal && (
+                    <div className="absolute top-full left-0 mt-1.5 w-80 bg-white border border-slate-200 rounded-2xl shadow-2xl p-3.5 z-50 space-y-3">
+                      <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                        <span className="font-bold text-xs text-slate-800">Cài đặt ảnh bìa bài viết</span>
+                        <button
+                          type="button"
+                          onClick={() => setShowCoverModal(false)}
+                          className="p-1 text-slate-400 hover:text-slate-600 rounded-md cursor-pointer"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => coverFileInputRef.current?.click()}
+                        className="w-full flex items-center justify-center gap-2 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg font-bold text-xs cursor-pointer transition-colors"
+                      >
+                        <Upload size={13} />
+                        <span>Tải ảnh lên</span>
+                      </button>
+
+                      <div className="space-y-1.5 pt-1 border-t border-slate-100">
+                        <span className="text-[10px] font-bold text-slate-400 block uppercase">Hoặc chọn ảnh gợi ý nhanh:</span>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          {COVER_PRESETS.map((p) => (
+                            <button
+                              key={p.label}
+                              type="button"
+                              onClick={() => {
+                                setCoverImg(p.url)
+                                setShowCoverModal(false)
+                                showNotification(`Đã chọn ảnh bìa: ${p.label}`)
+                              }}
+                              className="group relative rounded-lg overflow-hidden border border-slate-200 text-left cursor-pointer aspect-[16/10]"
+                            >
+                              <img src={p.url} alt={p.label} className="w-full h-full object-cover group-hover:brightness-90" />
+                              <span className="absolute inset-x-0 bottom-0 bg-black/60 text-white text-[9px] font-semibold px-1 py-0.5 truncate text-center">
+                                {p.label}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              {isPendingApproval ? (
+                <>
+                  <span className="px-3 py-1.5 bg-amber-100 text-amber-900 border border-amber-300 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-2xs">
+                    <Clock size={14} className="text-amber-700 shrink-0" />
+                    <span>Đang chờ duyệt</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={onCancel || (() => navigate('/blog'))}
+                    className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
+                  >
+                    <span>Quay lại</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  {!isManagerMode && (
+                    <button
+                      type="button"
+                      onClick={handleSaveDraft}
+                      disabled={isSaving || isPublishing}
+                      className="px-3 py-1.5 bg-slate-100 text-slate-700 text-xs font-bold rounded-xl hover:bg-slate-200 transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                    >
+                      <Save size={14} />
+                      <span>{isSaving ? 'Đang lưu...' : 'Lưu nháp'}</span>
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={handlePublish}
+                    disabled={isSaving || isPublishing}
+                    className="px-4 py-1.5 bg-emerald-800 text-white text-xs font-bold rounded-xl hover:bg-emerald-900 transition-colors cursor-pointer disabled:opacity-50 shadow-xs flex items-center gap-1.5"
+                  >
+                    <Send size={13} />
+                    <span>{isPublishing ? 'Đang gửi duyệt...' : isManagerMode ? 'Lưu nội dung' : 'Gửi duyệt'}</span>
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+
+          {isPendingApproval ? (
+            <div className="px-4 py-2.5 bg-amber-50 border-b border-amber-200 flex items-center justify-between gap-2 text-amber-900 text-xs font-semibold">
+              <div className="flex items-center gap-2">
+                <AlertCircle size={16} className="text-amber-700 shrink-0" />
+                <span>Bài viết này đang ở trạng thái <strong>Chờ duyệt</strong> nên tạm thời bị khóa chỉnh sửa.</span>
+              </div>
+              <button
+                type="button"
+                onClick={onCancel || (() => navigate('/blog'))}
+                className="px-2.5 py-1 bg-amber-200/80 hover:bg-amber-300/80 text-amber-950 rounded-lg text-xs font-bold cursor-pointer transition-colors"
+              >
+                Đóng
+              </button>
+            </div>
+          ) : (
+            <div className="py-2 bg-slate-50 border-t border-slate-100 flex flex-wrap items-center gap-1.5">
+              <div className="bg-white p-0.5 rounded-xl flex items-center gap-0.5 border border-slate-200/80 shadow-2xs shrink-0">
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={handleSetParagraph}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${editor.isActive('paragraph') && !editor.isActive('heading')
+                    ? 'bg-slate-900 text-white shadow-xs font-bold ring-1 ring-slate-800'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                    }`}
+                  title="Đoạn văn bản thường (Normal Text)"
+                >
+                  Văn bản
+                </button>
 
                 <button
                   type="button"
-                  onClick={handlePublish}
-                  disabled={isSaving || isPublishing}
-                  className="px-4 py-1.5 bg-emerald-800 text-white text-xs font-bold rounded-xl hover:bg-emerald-900 transition-colors cursor-pointer disabled:opacity-50 shadow-xs flex items-center gap-1.5"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => handleApplyHeading(1)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${editor.isActive('heading', { level: 1 })
+                    ? 'bg-emerald-700 text-white shadow-xs ring-1 ring-emerald-600 font-bold'
+                    : 'text-slate-700 hover:bg-slate-100'
+                    }`}
+                  title="Heading 1: Tiêu đề mục chính (Tự động làm mục lục)"
                 >
-                  <Send size={13} />
-                  <span>{isPublishing ? 'Đang gửi duyệt...' : isManagerMode ? 'Lưu nội dung' : 'Gửi duyệt'}</span>
+                  <Heading1 size={13} />
+                  <span>Tiêu đề 1</span>
                 </button>
-              </>
-            )}
-          </div>
-        </div>
 
-        {isPendingApproval ? (
-          <div className="px-4 py-2.5 bg-amber-50 border-b border-amber-200 flex items-center justify-between gap-2 text-amber-900 text-xs font-semibold">
-            <div className="flex items-center gap-2">
-              <AlertCircle size={16} className="text-amber-700 shrink-0" />
-              <span>Bài viết này đang ở trạng thái <strong>Chờ duyệt</strong> nên tạm thời bị khóa chỉnh sửa.</span>
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => handleApplyHeading(2)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${editor.isActive('heading', { level: 2 })
+                    ? 'bg-emerald-700 text-white shadow-xs ring-1 ring-emerald-600 font-bold'
+                    : 'text-slate-700 hover:bg-slate-100'
+                    }`}
+                  title="Heading 2: Tiêu đề mục phụ (Tự động làm mục lục)"
+                >
+                  <Heading2 size={13} />
+                  <span>Tiêu đề 2</span>
+                </button>
+
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => handleApplyHeading(3)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1 ${editor.isActive('heading', { level: 3 })
+                    ? 'bg-emerald-700 text-white shadow-xs ring-1 ring-emerald-600 font-bold'
+                    : 'text-slate-700 hover:bg-slate-100'
+                    }`}
+                  title="Heading 3: Tiểu mục chi tiết (Tự động làm mục lục)"
+                >
+                  <Heading3 size={13} />
+                  <span>Tiểu mục</span>
+                </button>
+              </div>
+
+              <div className="w-px h-5 bg-slate-200 mx-0.5 shrink-0" />
+
+              <div className="flex items-center gap-0.5 shrink-0 bg-white p-0.5 rounded-xl border border-slate-200/80 shadow-2xs">
+                <ToolbarBtn onClick={() => editor.chain().focus().toggleBold().run()} isActive={editor.isActive('bold')} title="In đậm (Ctrl+B)">
+                  <Bold className="w-4 h-4" />
+                </ToolbarBtn>
+                <ToolbarBtn onClick={() => editor.chain().focus().toggleItalic().run()} isActive={editor.isActive('italic')} title="In nghiêng (Ctrl+I)">
+                  <Italic className="w-4 h-4" />
+                </ToolbarBtn>
+                <ToolbarBtn onClick={() => editor.chain().focus().toggleUnderline().run()} isActive={editor.isActive('underline')} title="Gạch chân (Ctrl+U)">
+                  <UnderlineIcon className="w-4 h-4" />
+                </ToolbarBtn>
+                <ToolbarBtn onClick={() => editor.chain().focus().toggleStrike().run()} isActive={editor.isActive('strike')} title="Gạch ngang chữ">
+                  <Strikethrough className="w-4 h-4" />
+                </ToolbarBtn>
+                <ToolbarBtn onClick={() => editor.chain().focus().toggleHighlight({ color: '#FEF08A' }).run()} isActive={editor.isActive('highlight')} title="Bôi sáng (Highlight)">
+                  <Highlighter className="w-4 h-4" />
+                </ToolbarBtn>
+                <ToolbarBtn onClick={() => editor.chain().focus().toggleCode().run()} isActive={editor.isActive('code')} title="Code inline">
+                  <Code className="w-4 h-4" />
+                </ToolbarBtn>
+              </div>
+
+              <div className="w-px h-5 bg-slate-200 mx-0.5 shrink-0" />
+
+              <div className="flex items-center gap-0.5 shrink-0 bg-white p-0.5 rounded-xl border border-slate-200/80 shadow-2xs">
+                <ToolbarBtn onClick={() => editor.chain().focus().toggleBulletList().run()} isActive={editor.isActive('bulletList')} title="Danh sách gạch đầu dòng">
+                  <List className="w-4 h-4" />
+                </ToolbarBtn>
+                <ToolbarBtn onClick={() => editor.chain().focus().toggleOrderedList().run()} isActive={editor.isActive('orderedList')} title="Danh sách đánh số">
+                  <ListOrdered className="w-4 h-4" />
+                </ToolbarBtn>
+                <ToolbarBtn onClick={() => editor.chain().focus().toggleTaskList().run()} isActive={editor.isActive('taskList')} title="Checklist công việc / lịch trình">
+                  <CheckSquare className="w-4 h-4" />
+                </ToolbarBtn>
+              </div>
+
+              <div className="w-px h-5 bg-slate-200 mx-0.5 shrink-0" />
+
+              <div className="flex items-center gap-0.5 shrink-0 bg-white p-0.5 rounded-xl border border-slate-200/80 shadow-2xs">
+                <ToolbarBtn onClick={() => editor.chain().focus().setTextAlign('left').run()} isActive={editor.isActive({ textAlign: 'left' })} title="Căn trái">
+                  <AlignLeft className="w-4 h-4" />
+                </ToolbarBtn>
+                <ToolbarBtn onClick={() => editor.chain().focus().setTextAlign('center').run()} isActive={editor.isActive({ textAlign: 'center' })} title="Căn giữa">
+                  <AlignCenter className="w-4 h-4" />
+                </ToolbarBtn>
+                <ToolbarBtn onClick={() => editor.chain().focus().setTextAlign('right').run()} isActive={editor.isActive({ textAlign: 'right' })} title="Căn phải">
+                  <AlignRight className="w-4 h-4" />
+                </ToolbarBtn>
+              </div>
+
+              <div className="w-px h-5 bg-slate-200 mx-0.5 shrink-0" />
+
+              <div className="flex items-center gap-0.5 shrink-0 bg-white p-0.5 rounded-xl border border-slate-200/80 shadow-2xs">
+                <ToolbarBtn onClick={() => editor.chain().focus().toggleBlockquote().run()} isActive={editor.isActive('blockquote')} title="Trích dẫn / Khung ghi chú">
+                  <Quote className="w-4 h-4" />
+                </ToolbarBtn>
+                <ToolbarBtn onClick={() => editor.chain().focus().setHorizontalRule().run()} title="Đường phân cách">
+                  <Minus className="w-4 h-4" />
+                </ToolbarBtn>
+                <ToolbarBtn onClick={triggerImageUpload} title="Chèn hình ảnh">
+                  <ImageIcon className="w-4 h-4" />
+                </ToolbarBtn>
+                <ToolbarBtn onClick={addLink} isActive={editor.isActive('link')} title="Chèn liên kết">
+                  <LinkIcon className="w-4 h-4" />
+                </ToolbarBtn>
+              </div>
+
+              <div className="w-px h-5 bg-slate-200 mx-0.5 shrink-0" />
+
+              <div className="flex items-center gap-0.5 shrink-0 bg-white p-0.5 rounded-xl border border-slate-200/80 shadow-2xs">
+                <ToolbarBtn onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} title="Hoàn tác (Ctrl+Z)">
+                  <Undo className="w-4 h-4" />
+                </ToolbarBtn>
+                <ToolbarBtn onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()} title="Làm lại (Ctrl+Y)">
+                  <Redo className="w-4 h-4" />
+                </ToolbarBtn>
+              </div>
             </div>
-            <button
-              type="button"
-              onClick={onCancel || (() => navigate('/blog'))}
-              className="px-2.5 py-1 bg-amber-200/80 hover:bg-amber-300/80 text-amber-950 rounded-lg text-xs font-bold cursor-pointer transition-colors"
-            >
-              Đóng
-            </button>
-          </div>
-        ) : (
-          <div className="py-2 bg-slate-50 border-t border-slate-100 flex flex-wrap items-center gap-1.5">
-            <div className="bg-white p-0.5 rounded-xl flex items-center gap-0.5 border border-slate-200/80 shadow-2xs shrink-0">
-              <button
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={handleSetParagraph}
-                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${editor.isActive('paragraph') && !editor.isActive('heading')
-                  ? 'bg-slate-900 text-white shadow-xs font-bold ring-1 ring-slate-800'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                  }`}
-                title="Đoạn văn bản thường (Normal Text)"
-              >
-                Văn bản
-              </button>
-
-              <button
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => handleApplyHeading(1)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${editor.isActive('heading', { level: 1 })
-                  ? 'bg-emerald-700 text-white shadow-xs ring-1 ring-emerald-600 font-bold'
-                  : 'text-slate-700 hover:bg-slate-100'
-                  }`}
-                title="Heading 1: Tiêu đề mục chính (Tự động làm mục lục)"
-              >
-                <Heading1 size={13} />
-                <span>Tiêu đề 1</span>
-              </button>
-
-              <button
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => handleApplyHeading(2)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${editor.isActive('heading', { level: 2 })
-                  ? 'bg-emerald-700 text-white shadow-xs ring-1 ring-emerald-600 font-bold'
-                  : 'text-slate-700 hover:bg-slate-100'
-                  }`}
-                title="Heading 2: Tiêu đề mục phụ (Tự động làm mục lục)"
-              >
-                <Heading2 size={13} />
-                <span>Tiêu đề 2</span>
-              </button>
-
-              <button
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => handleApplyHeading(3)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1 ${editor.isActive('heading', { level: 3 })
-                  ? 'bg-emerald-700 text-white shadow-xs ring-1 ring-emerald-600 font-bold'
-                  : 'text-slate-700 hover:bg-slate-100'
-                  }`}
-                title="Heading 3: Tiểu mục chi tiết (Tự động làm mục lục)"
-              >
-                <Heading3 size={13} />
-                <span>Tiểu mục</span>
-              </button>
-            </div>
-
-            <div className="w-px h-5 bg-slate-200 mx-0.5 shrink-0" />
-
-            <div className="flex items-center gap-0.5 shrink-0 bg-white p-0.5 rounded-xl border border-slate-200/80 shadow-2xs">
-              <ToolbarBtn onClick={() => editor.chain().focus().toggleBold().run()} isActive={editor.isActive('bold')} title="In đậm (Ctrl+B)">
-                <Bold className="w-4 h-4" />
-              </ToolbarBtn>
-              <ToolbarBtn onClick={() => editor.chain().focus().toggleItalic().run()} isActive={editor.isActive('italic')} title="In nghiêng (Ctrl+I)">
-                <Italic className="w-4 h-4" />
-              </ToolbarBtn>
-              <ToolbarBtn onClick={() => editor.chain().focus().toggleUnderline().run()} isActive={editor.isActive('underline')} title="Gạch chân (Ctrl+U)">
-                <UnderlineIcon className="w-4 h-4" />
-              </ToolbarBtn>
-              <ToolbarBtn onClick={() => editor.chain().focus().toggleStrike().run()} isActive={editor.isActive('strike')} title="Gạch ngang chữ">
-                <Strikethrough className="w-4 h-4" />
-              </ToolbarBtn>
-              <ToolbarBtn onClick={() => editor.chain().focus().toggleHighlight({ color: '#FEF08A' }).run()} isActive={editor.isActive('highlight')} title="Bôi sáng (Highlight)">
-                <Highlighter className="w-4 h-4" />
-              </ToolbarBtn>
-              <ToolbarBtn onClick={() => editor.chain().focus().toggleCode().run()} isActive={editor.isActive('code')} title="Code inline">
-                <Code className="w-4 h-4" />
-              </ToolbarBtn>
-            </div>
-
-            <div className="w-px h-5 bg-slate-200 mx-0.5 shrink-0" />
-
-            <div className="flex items-center gap-0.5 shrink-0 bg-white p-0.5 rounded-xl border border-slate-200/80 shadow-2xs">
-              <ToolbarBtn onClick={() => editor.chain().focus().toggleBulletList().run()} isActive={editor.isActive('bulletList')} title="Danh sách gạch đầu dòng">
-                <List className="w-4 h-4" />
-              </ToolbarBtn>
-              <ToolbarBtn onClick={() => editor.chain().focus().toggleOrderedList().run()} isActive={editor.isActive('orderedList')} title="Danh sách đánh số">
-                <ListOrdered className="w-4 h-4" />
-              </ToolbarBtn>
-              <ToolbarBtn onClick={() => editor.chain().focus().toggleTaskList().run()} isActive={editor.isActive('taskList')} title="Checklist công việc / lịch trình">
-                <CheckSquare className="w-4 h-4" />
-              </ToolbarBtn>
-            </div>
-
-            <div className="w-px h-5 bg-slate-200 mx-0.5 shrink-0" />
-
-            <div className="flex items-center gap-0.5 shrink-0 bg-white p-0.5 rounded-xl border border-slate-200/80 shadow-2xs">
-              <ToolbarBtn onClick={() => editor.chain().focus().setTextAlign('left').run()} isActive={editor.isActive({ textAlign: 'left' })} title="Căn trái">
-                <AlignLeft className="w-4 h-4" />
-              </ToolbarBtn>
-              <ToolbarBtn onClick={() => editor.chain().focus().setTextAlign('center').run()} isActive={editor.isActive({ textAlign: 'center' })} title="Căn giữa">
-                <AlignCenter className="w-4 h-4" />
-              </ToolbarBtn>
-              <ToolbarBtn onClick={() => editor.chain().focus().setTextAlign('right').run()} isActive={editor.isActive({ textAlign: 'right' })} title="Căn phải">
-                <AlignRight className="w-4 h-4" />
-              </ToolbarBtn>
-            </div>
-
-            <div className="w-px h-5 bg-slate-200 mx-0.5 shrink-0" />
-
-            <div className="flex items-center gap-0.5 shrink-0 bg-white p-0.5 rounded-xl border border-slate-200/80 shadow-2xs">
-              <ToolbarBtn onClick={() => editor.chain().focus().toggleBlockquote().run()} isActive={editor.isActive('blockquote')} title="Trích dẫn / Khung ghi chú">
-                <Quote className="w-4 h-4" />
-              </ToolbarBtn>
-              <ToolbarBtn onClick={() => editor.chain().focus().setHorizontalRule().run()} title="Đường phân cách">
-                <Minus className="w-4 h-4" />
-              </ToolbarBtn>
-              <ToolbarBtn onClick={triggerImageUpload} title="Chèn hình ảnh">
-                <ImageIcon className="w-4 h-4" />
-              </ToolbarBtn>
-              <ToolbarBtn onClick={addLink} isActive={editor.isActive('link')} title="Chèn liên kết">
-                <LinkIcon className="w-4 h-4" />
-              </ToolbarBtn>
-            </div>
-
-            <div className="w-px h-5 bg-slate-200 mx-0.5 shrink-0" />
-
-            <div className="flex items-center gap-0.5 shrink-0 bg-white p-0.5 rounded-xl border border-slate-200/80 shadow-2xs">
-              <ToolbarBtn onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} title="Hoàn tác (Ctrl+Z)">
-                <Undo className="w-4 h-4" />
-              </ToolbarBtn>
-              <ToolbarBtn onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()} title="Làm lại (Ctrl+Y)">
-                <Redo className="w-4 h-4" />
-              </ToolbarBtn>
-            </div>
-          </div>
-        )}
+          )}
         </div>
       </header>
 

@@ -41,4 +41,9 @@ public interface IPlaceRepository
         long userId,
         long placeId,
         CancellationToken ct = default);
+
+    Task<IReadOnlyList<PlaceSummaryDto>> GetRelatedPlacesAsync(
+        long placeId,
+        int limit = 6,
+        CancellationToken ct = default);
 }

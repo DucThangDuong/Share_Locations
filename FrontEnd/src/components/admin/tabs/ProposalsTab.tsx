@@ -1,9 +1,11 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Search, User, Image as ImageIcon } from "lucide-react";
 import type { AdminProposalItem } from "@/types/admin.types";
-import { adminService } from "@/services/adminService";
+import { adminService, extractList } from "@/services/adminService";
+import { geographyService, type ProvinceDto } from "@/services/geographyService";
 import { ProposalDetailEditor } from "./ProposalDetailEditor";
+import { CustomSelect } from "@/components/common/CustomSelect";
 
 interface ProposalsTabProps {
   proposals: AdminProposalItem[];
@@ -37,6 +39,14 @@ export const ProposalsTab: React.FC<ProposalsTabProps> = ({
   const [selectedProposalId, setSelectedProposalId] = useState<number | null>(null);
   const [proposalSearchText, setProposalSearchText] = useState("");
   const [proposalFilterProvince, setProposalFilterProvince] = useState("all");
+  const [provinces, setProvinces] = useState<ProvinceDto[]>([]);
+
+  useEffect(() => {
+    geographyService.getProvinces().then((res: any) => {
+      const items = extractList(res?.data || res);
+      if (items.length > 0) setProvinces(items);
+    }).catch(() => {});
+  }, []);
 
   // Match /admin/proposals/:id from URL path
   const proposalPathMatch = location.pathname.match(/\/admin\/proposals\/(\d+)/i);
@@ -136,31 +146,29 @@ export const ProposalsTab: React.FC<ProposalsTabProps> = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <select
+            <CustomSelect
               value={proposalFilterProvince}
-              onChange={(e) => setProposalFilterProvince(e.target.value)}
-              className="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 font-medium text-slate-800 outline-none focus:border-emerald-500 cursor-pointer"
-            >
-              <option value="all">Tất cả tỉnh thành</option>
-              <option value="Đà Nẵng">Đà Nẵng</option>
-              <option value="Quảng Nam">Quảng Nam</option>
-              <option value="Thừa Thiên Huế">Thừa Thiên Huế</option>
-              <option value="Khánh Hòa">Khánh Hòa</option>
-              <option value="Lâm Đồng">Lâm Đồng</option>
-              <option value="Hà Nội">Hà Nội</option>
-              <option value="TP. Hồ Chí Minh">TP. Hồ Chí Minh</option>
-            </select>
+              onChange={(val) => setProposalFilterProvince(val)}
+              options={[
+                { value: "all", label: "Tất cả tỉnh thành" },
+                ...provinces.map((p) => ({ value: p.name, label: p.name })),
+              ]}
+              size="sm"
+              className="min-w-[140px]"
+            />
 
-            <select
+            <CustomSelect
               value={proposalStatusFilter}
-              onChange={(e) => setProposalStatusFilter(e.target.value as any)}
-              className="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 font-medium text-slate-800 outline-none focus:border-emerald-500 cursor-pointer"
-            >
-              <option value="all">Tất cả trạng thái</option>
-              <option value="0">Chờ duyệt</option>
-              <option value="1">Đã chấp nhận</option>
-              <option value="2">Đã từ chối</option>
-            </select>
+              onChange={(val) => setProposalStatusFilter(val as any)}
+              options={[
+                { value: "all", label: "Tất cả trạng thái" },
+                { value: "0", label: "Chờ duyệt" },
+                { value: "1", label: "Đã chấp nhận" },
+                { value: "2", label: "Đã từ chối" },
+              ]}
+              size="sm"
+              className="min-w-[130px]"
+            />
           </div>
         </div>
 

@@ -27,34 +27,64 @@ export const ProvinceHeroBento: React.FC<ProvinceHeroBentoProps> = ({ data }) =>
 
   const currentImage = images[currentIdx] || images[0]
 
+  // Priority for tagline:
+  // 1. data.province?.tagline
+  // 2. data.tagline
+  // 3. data.heroHeadline (if not starting with "Khám phá ")
+  // 4. data.heroSubheadline (if data.province?.description exists so subheadline isn't duplicated)
+  const tagline =
+    data.province?.tagline ||
+    data.tagline ||
+    (data.heroHeadline && !data.heroHeadline.startsWith('Khám phá ') ? data.heroHeadline : '') ||
+    (data.province?.description && data.heroSubheadline ? data.heroSubheadline : '') ||
+    ''
+
+  // Priority for description:
+  // 1. data.province?.description
+  // 2. data.description
+  // 3. data.heroSubheadline (if different from tagline)
+  // 4. data.heroHeadline
+  const description =
+    data.province?.description ||
+    data.description ||
+    (data.heroSubheadline && data.heroSubheadline !== tagline ? data.heroSubheadline : '') ||
+    (data.heroHeadline && data.heroHeadline !== tagline ? data.heroHeadline : '') ||
+    ''
+
   return (
     <section className="relative pt-4 pb-2">
       <div className="mb-6">
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
           <div>
             <h1 className="text-3xl sm:text-5xl font-black text-stone-900 tracking-tight leading-tight">
-              {data.province.name}, {data.province.regionName || 'Việt Nam'}
+              {data.province.name}{data.province.regionName ? `, ${data.province.regionName}` : ''}
             </h1>
 
-            <p className="mt-2 text-sm sm:text-base text-stone-700 font-semibold max-w-3xl">
-              {data.heroHeadline}
-            </p>
+            {tagline && (
+              <p className="mt-2 text-sm sm:text-base text-stone-700 font-semibold max-w-3xl">
+                {tagline}
+              </p>
+            )}
           </div>
         </div>
 
-        <div className="mt-3 max-w-4xl">
-          <p className={`text-xs sm:text-sm text-stone-600 leading-relaxed font-normal ${isExpanded ? '' : 'line-clamp-2'}`}>
-            {data.heroSubheadline}
-          </p>
-          <button
-            type="button"
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="mt-1 text-xs font-bold text-stone-800 hover:text-[#C0392B] inline-flex items-center gap-1 cursor-pointer transition-colors"
-          >
-            <span>{isExpanded ? 'Thu gọn' : 'Đọc thêm'}</span>
-            {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-          </button>
-        </div>
+        {description && (
+          <div className="mt-3 max-w-4xl">
+            <p className={`text-xs sm:text-sm text-stone-600 leading-relaxed font-normal ${isExpanded ? '' : 'line-clamp-2'}`}>
+              {description}
+            </p>
+            {description.length > 120 && (
+              <button
+                type="button"
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="mt-1 text-xs font-bold text-stone-800 hover:text-[#C0392B] inline-flex items-center gap-1 cursor-pointer transition-colors"
+              >
+                <span>{isExpanded ? 'Thu gọn' : 'Đọc thêm'}</span>
+                {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="relative rounded-3xl overflow-hidden bg-stone-900 shadow-xl border border-stone-200 aspect-16/9 sm:aspect-21/9 min-h-[280px] sm:min-h-[420px] lg:min-h-[480px]">

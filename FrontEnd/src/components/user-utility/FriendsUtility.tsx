@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { friendService } from '@/services/friendService'
 import { useChat } from '@/context/ChatContext'
+import { useSystemSettings } from '@/context/SystemSettingsContext'
 import type { FriendItemDto } from '@/types/models/friend.model'
 
 interface FriendsUtilityProps {
@@ -32,6 +33,7 @@ export const FriendsUtility: React.FC<FriendsUtilityProps> = ({
 }) => {
   const navigate = useNavigate()
   const { openDirectChatWithUser } = useChat()
+  const { defaultUserAvatar } = useSystemSettings()
 
   const [activeTab, setActiveTab] = useState<FriendTab>('accepted')
   const [isLoading, setIsLoading] = useState(true)
@@ -264,7 +266,7 @@ export const FriendsUtility: React.FC<FriendsUtilityProps> = ({
                     >
                       <div className="flex items-center gap-3 min-w-0 flex-1">
                         <img
-                          src={friend.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop'}
+                          src={friend.avatar || defaultUserAvatar}
                           alt={friend.name}
                           className="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0"
                         />
@@ -307,7 +309,7 @@ export const FriendsUtility: React.FC<FriendsUtilityProps> = ({
                       className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs hover:shadow-md hover:border-indigo-300 transition-all flex flex-col items-center text-center relative group"
                     >
                       <img
-                        src={friend.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&h=200&fit=crop'}
+                        src={friend.avatar || defaultUserAvatar}
                         alt={friend.name}
                         className="w-16 h-16 rounded-full object-cover border-2 border-indigo-100 shadow-xs mb-3"
                       />
@@ -361,7 +363,7 @@ export const FriendsUtility: React.FC<FriendsUtilityProps> = ({
                     >
                       <div className="flex items-center gap-3 min-w-0 flex-1">
                         <img
-                          src={req.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop'}
+                          src={req.avatar || defaultUserAvatar}
                           alt={req.name}
                           className="w-11 h-11 rounded-full object-cover border border-slate-200 shrink-0"
                         />
@@ -414,7 +416,7 @@ export const FriendsUtility: React.FC<FriendsUtilityProps> = ({
                     >
                       <div className="flex items-center gap-3 min-w-0 flex-1">
                         <img
-                          src={req.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop'}
+                          src={req.avatar || defaultUserAvatar}
                           alt={req.name}
                           className="w-11 h-11 rounded-full object-cover border border-slate-200 shrink-0"
                         />
@@ -471,7 +473,7 @@ export const FriendsUtility: React.FC<FriendsUtilityProps> = ({
                         >
                           <div className="flex items-center gap-3 min-w-0 flex-1">
                             <img
-                              src={user.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop'}
+                              src={user.avatar || defaultUserAvatar}
                               alt={user.name}
                               className="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0"
                             />

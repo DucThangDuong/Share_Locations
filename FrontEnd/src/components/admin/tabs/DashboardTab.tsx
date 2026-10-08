@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import type {
   AdminProposalItem,
   AdminReportItem,
@@ -6,7 +6,11 @@ import type {
   AdminAuditLog,
   AdminMainTab,
 } from "@/types/admin.types";
+import { geographyService } from "@/services/geographyService";
+import { extractList } from "@/services/adminService";
+import type { ProvinceDto } from "@/types/models/geography.model";
 import type { AdminMetrics } from "@/services/adminService";
+import { CustomSelect } from "@/components/common/CustomSelect";
 import {
   MapPin,
   MessageSquare,
@@ -15,7 +19,7 @@ import {
   Plus,
   AlertCircle,
   BarChart3,
-  ArrowUpRight,
+  CheckCircle2,
 } from "lucide-react";
 
 interface DashboardTabProps {
@@ -61,21 +65,24 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
   setReportSubTab,
   setIsAddPlaceModalOpen,
 }) => {
-  const [selectedChartMonth, setSelectedChartMonth] = useState<number>(3);
+  const [provincesList, setProvincesList] = useState<ProvinceDto[]>([]);
   const [queueFilter, setQueueFilter] = useState<"all" | "urgent" | "proposals" | "reports">("all");
+
+  useEffect(() => {
+    geographyService
+      .getProvinces()
+      .then((res: any) => {
+        const list = extractList<ProvinceDto>(res?.data || res);
+        if (list.length > 0) {
+          setProvincesList(list);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const pendingPlaces = places.filter((p) => p.status === "Chờ duyệt" || p.statusNum === 0);
   const pendingProposals = proposals.filter((p) => p.status === 0);
   const pendingReports = reports.filter((r) => r.status === 0);
-
-  const monthlyStats = [
-    { month: "Tháng 1", positive: 180, negative: 45, total: 225 },
-    { month: "Tháng 2", positive: 310, negative: 60, total: 370 },
-    { month: "Tháng 3", positive: 210, negative: 40, total: 250 },
-    { month: "Tháng 4", positive: 620, negative: 116, total: 736 },
-    { month: "Tháng 5", positive: 490, negative: 85, total: 575 },
-    { month: "Tháng 6", positive: 430, negative: 72, total: 502 },
-  ];
 
   const actionQueueItems = [
     {
@@ -99,8 +106,8 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
       isUrgent: true,
       title: "Đề xuất địa điểm mới từ cộng đồng",
       desc: "Người dùng đóng góp quán ăn mới kèm ảnh thực đơn, cần xác thực tọa độ và số điện thoại",
-      count: proposals.filter((p) => p.status === 0 && p.type === "new_place").length || 1,
-      badge: "Chờ duyệt 48h",
+      count: proposals.filter((p) => p.status === 0 && p.type === "new_place").length,
+      badge: "Chờ duyệt",
       badgeColor: "bg-amber-50 text-amber-800 border-amber-200/80",
       actionText: "Duyệt đề xuất",
       onAction: () => {
@@ -114,7 +121,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
       isUrgent: false,
       title: "Đề xuất hiệu chỉnh giá & giờ mở cửa",
       desc: "Khách hàng cập nhật lại khung giá và thời gian phục vụ chính xác theo thực tế",
-      count: proposals.filter((p) => p.status === 0 && p.type === "update_info").length || 1,
+      count: proposals.filter((p) => p.status === 0 && p.type === "update_info").length,
       badge: "Cần đối chiếu",
       badgeColor: "bg-slate-100 text-slate-700 border-slate-200/80",
       actionText: "Đối chiếu & sửa",
@@ -154,32 +161,35 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">
             <span className="font-bold text-slate-800">Vùng địa lý:</span>
-            <select
+            <CustomSelect
               value={dashRegion}
-              onChange={(e) => setDashRegion(e.target.value)}
-              className="px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 font-medium text-slate-800 outline-none focus:border-emerald-500"
-            >
-              <option value="all">Toàn quốc (3 Vùng)</option>
-              <option value="mien_trung">Miền Trung</option>
-              <option value="mien_bac">Miền Bắc</option>
-              <option value="mien_nam">Miền Nam</option>
-            </select>
+              onChange={(val) => setDashRegion(val)}
+              options={[
+                { value: "all", label: "Toàn quốc (3 Vùng)" },
+                { value: "mien_trung", label: "Miền Trung" },
+                { value: "mien_bac", label: "Miền Bắc" },
+                { value: "mien_nam", label: "Miền Nam" },
+              ]}
+              size="sm"
+              className="min-w-[150px]"
+            />
           </div>
 
           <div className="flex items-center gap-2">
             <span className="font-bold text-slate-800">Tỉnh / Thành:</span>
-            <select
+            <CustomSelect
               value={dashProvince}
-              onChange={(e) => setDashProvince(e.target.value)}
-              className="px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 font-medium text-slate-800 outline-none focus:border-emerald-500"
-            >
-              <option value="all">Tất cả tỉnh thành</option>
-              <option value="Đà Nẵng">Đà Nẵng</option>
-              <option value="Quảng Nam">Quảng Nam</option>
-              <option value="Thừa Thiên Huế">Thừa Thiên Huế</option>
-              <option value="Khánh Hòa">Khánh Hòa</option>
-              <option value="Lâm Đồng">Lâm Đồng</option>
-            </select>
+              onChange={(val) => setDashProvince(val)}
+              options={[
+                { value: "all", label: "Tất cả tỉnh thành" },
+                ...provincesList.map((p) => ({
+                  value: p.name,
+                  label: p.name,
+                })),
+              ]}
+              size="sm"
+              className="min-w-[150px]"
+            />
           </div>
         </div>
 
@@ -237,16 +247,14 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
             <span className="text-2xl font-extrabold text-slate-900 tracking-tight">
               {metrics?.summary?.totalPlaces ?? places.length}
             </span>
-            <span className="text-xs font-bold text-emerald-600 flex items-center">
-              +12% <ArrowUpRight size={14} />
-            </span>
+            {pendingPlaces.length > 0 && (
+              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                {pendingPlaces.length} chờ duyệt
+              </span>
+            )}
           </div>
           <p className="text-[11px] text-slate-400 mt-1">
-            {pendingPlaces.length > 0 ? (
-              <span className="text-amber-700 font-semibold">{pendingPlaces.length} địa điểm chờ duyệt</span>
-            ) : (
-              "100% địa điểm đang hoạt động"
-            )}
+            Đã công khai trên bản đồ du lịch
           </p>
         </div>
 
@@ -319,21 +327,18 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
             <span className="text-2xl font-extrabold text-slate-900 tracking-tight">
               {metrics?.summary?.totalReviews ?? (reportedReviews.length > 0 ? reportedReviews.length : 0)}
             </span>
-            <span className="text-xs font-bold text-emerald-600 flex items-center">
-              +8.5% <ArrowUpRight size={14} />
-            </span>
           </div>
           <p className="text-[11px] text-slate-400 mt-1">
             {reportedReviews.length > 0 ? (
               <span className="text-rose-600 font-semibold">{reportedReviews.length} đánh giá có báo cáo</span>
             ) : (
-              "Mức độ hài lòng cộng đồng 98%"
+              "Đánh giá & phản hồi từ cộng đồng"
             )}
           </p>
         </div>
       </div>
 
-      {/* Action Queue & Interactive Trends */}
+      {/* Action Queue & Operational Distributions */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Urgent Action Queue (7 Cols) */}
         <div className="lg:col-span-7 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
@@ -401,51 +406,58 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
           </div>
         </div>
 
-        {/* Growth & Distribution Stats (5 Cols) */}
+        {/* Operational Distribution Breakdown (5 Cols) */}
         <div className="lg:col-span-5 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-2xs space-y-5">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div>
               <h3 className="font-bold text-base text-slate-900 tracking-tight flex items-center gap-2">
                 <BarChart3 className="text-slate-700" size={18} />
-                <span>Xu hướng tương tác số</span>
+                <span>Phân bố trạng thái vận hành</span>
               </h3>
-              <p className="text-xs text-slate-400 mt-0.5">Biểu đồ đánh giá tích cực vs phản ánh</p>
+              <p className="text-xs text-slate-400 mt-0.5">Tỷ lệ xử lý theo dữ liệu thực tế</p>
             </div>
-            <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg">
-              Q2 / 2026
-            </span>
           </div>
 
-          {/* Monthly Bars Visualization */}
+          {/* Operational Metrics Breakdown */}
           <div className="space-y-3 pt-1">
-            {monthlyStats.map((st, idx) => {
-              const isSelected = selectedChartMonth === idx;
-              const positivePercent = Math.round((st.positive / st.total) * 100);
+            {[
+              {
+                title: "Địa điểm hiển thị",
+                total: places.length,
+                activeCount: places.filter((p) => p.status === "Công khai" || p.statusNum === 1 || p.status === "active").length,
+                activeLabel: "Công khai",
+              },
+              {
+                title: "Đề xuất địa điểm",
+                total: proposals.length,
+                activeCount: proposals.filter((p) => p.status === 1).length,
+                activeLabel: "Đã duyệt",
+              },
+              {
+                title: "Báo cáo vi phạm",
+                total: reports.length,
+                activeCount: reports.filter((r) => r.status === 1).length,
+                activeLabel: "Đã giải quyết",
+              },
+            ].map((st, idx) => {
+              const activePercent = st.total > 0 ? Math.round((st.activeCount / st.total) * 100) : 0;
               return (
-                <div
-                  key={idx}
-                  onClick={() => setSelectedChartMonth(idx)}
-                  className={`p-2.5 rounded-xl border transition-all cursor-pointer ${
-                    isSelected
-                      ? "border-emerald-500 bg-emerald-50/40 shadow-2xs"
-                      : "border-transparent hover:bg-slate-50"
-                  }`}
-                >
-                  <div className="flex items-center justify-between text-xs mb-1.5 font-medium">
-                    <span className="font-bold text-slate-900">{st.month}</span>
+                <div key={idx} className="p-3 rounded-xl border border-slate-100 bg-slate-50/60 space-y-2">
+                  <div className="flex items-center justify-between text-xs font-medium">
+                    <span className="font-bold text-slate-900">{st.title}</span>
                     <span className="text-slate-500">
-                      {st.total} tương tác ({positivePercent}% tích cực)
+                      {st.activeCount}/{st.total} ({activePercent}% {st.activeLabel})
                     </span>
                   </div>
 
-                  <div className="w-full h-2.5 rounded-full bg-slate-100 overflow-hidden flex">
+                  <div className="w-full h-2 rounded-full bg-slate-200 overflow-hidden flex">
                     <div
-                      className="h-full bg-emerald-500 transition-all duration-300"
-                      style={{ width: `${positivePercent}%` }}
+                      className="h-full bg-emerald-600 transition-all duration-300"
+                      style={{ width: `${activePercent}%` }}
                     />
                     <div
-                      className="h-full bg-rose-400 transition-all duration-300"
-                      style={{ width: `${100 - positivePercent}%` }}
+                      className="h-full bg-amber-400 transition-all duration-300"
+                      style={{ width: `${100 - activePercent}%` }}
                     />
                   </div>
                 </div>
@@ -455,8 +467,10 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
 
           {/* Quick summary footer */}
           <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-600 flex items-center justify-between">
-            <span>Tỷ lệ phản hồi đúng hạn SLA:</span>
-            <strong className="text-slate-900 font-extrabold text-sm">94.2%</strong>
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 size={14} className="text-emerald-600" />
+              <span>Dữ liệu đồng bộ trực tiếp từ máy chủ</span>
+            </span>
           </div>
         </div>
       </div>

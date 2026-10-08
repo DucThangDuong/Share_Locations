@@ -111,7 +111,8 @@ public class ProvinceRepository : IProvinceRepository
 
         // 1. Hero Images (from places in this province)
         const string heroImgSql = @"
-            SELECT TOP 5 COALESCE(pl.CoverImageUrl, pm.Url) AS Url, pl.Name AS Title, @ProvName AS Location, ISNULL(cat.Name, N'Địa danh nổi bật') AS Tag
+            SELECT TOP 5 COALESCE(pl.CoverImageUrl, pm.Url) AS Url, pl.Name AS Title, @ProvName AS Location, 
+                   CASE WHEN cat.Status = 1 THEN ISNULL(cat.Name, N'Địa danh nổi bật') ELSE N'Không khả dụng' END AS Tag
             FROM dbo.Places pl
             LEFT JOIN dbo.PlaceMedia pm ON pm.PlaceId = pl.Id
             LEFT JOIN dbo.Categories cat ON pl.CategoryId = cat.Id
@@ -178,7 +179,9 @@ public class ProvinceRepository : IProvinceRepository
             var colIds = collectionRows.Select(c => (long)c.Id).ToList();
 
             const string colPlacesSql = @"
-                SELECT cp.CollectionId, p.Id, p.Name, p.AvgRating, p.ReviewCount, cat.Name AS CategoryName, p.CoverImageUrl
+                SELECT cp.CollectionId, p.Id, p.Name, p.AvgRating, p.ReviewCount, 
+                       CASE WHEN cat.Status = 1 THEN cat.Name ELSE N'Không khả dụng' END AS CategoryName, 
+                       p.CoverImageUrl
                 FROM dbo.CollectionPlaces cp
                 INNER JOIN dbo.Places p ON cp.PlaceId = p.Id
                 INNER JOIN dbo.Collections c ON cp.CollectionId = c.Id
@@ -256,7 +259,7 @@ public class ProvinceRepository : IProvinceRepository
                 p.ReviewCount,
                 (SELECT COUNT(1) FROM dbo.Favorites f WHERE f.TargetType = 1 AND f.TargetId = p.Id) AS SavedCount,
                 p.CoverImageUrl AS ImageUrl,
-                cat.Name AS Category,
+                CASE WHEN cat.Status = 1 THEN cat.Name ELSE N'Không khả dụng' END AS Category,
                 p.MinPrice,
                 CAST(p.Latitude AS FLOAT) AS Latitude,
                 CAST(p.Longitude AS FLOAT) AS Longitude
@@ -457,7 +460,7 @@ public class ProvinceRepository : IProvinceRepository
                 b.ViewCount,
                 ISNULL(up.FullName, N'Lang Thang Blogger') AS AuthorName,
                 up.AvatarUrl AS AuthorAvatar,
-                c.Name AS CategoryName
+                CASE WHEN c.Status = 1 THEN c.Name ELSE N'Không khả dụng' END AS CategoryName
             FROM dbo.Blogs b
             LEFT JOIN dbo.UserProfiles up ON b.AuthorId = up.UserId
             LEFT JOIN dbo.Categories c ON b.CategoryId = c.Id

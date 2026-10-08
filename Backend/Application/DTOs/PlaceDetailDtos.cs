@@ -52,6 +52,7 @@ public class PlaceDetailDto
     public string? OpeningHours { get; set; }
     public decimal AvgRating { get; set; }
     public int ReviewCount { get; set; }
+    public int ViewCount { get; set; }
     public string? ThumbnailUrl { get; set; }
     public IReadOnlyList<string> MediaUrls { get; set; } = [];
     public decimal? Latitude { get; set; }

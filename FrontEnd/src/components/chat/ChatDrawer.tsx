@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { useChat } from '@/context/ChatContext'
+import { useSystemSettings } from '@/context/SystemSettingsContext'
 import { AddMembersModal } from './AddMembersModal'
 import { ViewGroupMembersModal } from './ViewGroupMembersModal'
 import { RenameGroupModal } from './RenameGroupModal'
@@ -45,6 +46,7 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
   onPreviewImage,
 }) => {
   const { user } = useAuth()
+  const { defaultUserAvatar } = useSystemSettings()
   const navigate = useNavigate()
   const {
     addMembersToGroup,
@@ -282,8 +284,7 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
                 {/* Danh sách các thành viên */}
                 {displayMembers.map((member) => {
                   const avatar =
-                    member.avatarUrl ||
-                    'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop'
+                    member.avatarUrl || defaultUserAvatar
                   const isMemberAdmin = Boolean(member.isAdmin || member.role === 'Admin')
                   const isMe = currentUserId === member.userId
                   const isMenuOpen = activeMenuUserId === member.userId

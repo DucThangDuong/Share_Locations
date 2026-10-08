@@ -41,6 +41,7 @@ public class Program
         builder.Services.AddFastEndpoints();
         builder.Services.AddSignalR();
         builder.Services.AddScoped<Application.Common.Interfaces.IChatNotifier, API.Services.ChatNotifier>();
+        builder.Services.AddScoped<Application.Common.Interfaces.INotificationNotifier, API.Services.NotificationNotifier>();
 
         var app = builder.Build();
 
@@ -74,6 +75,7 @@ public class Program
         app.UseAuthorization();
 
         app.MapHub<API.Hubs.ChatHub>("/hubs/chat");
+        app.MapHub<API.Hubs.NotificationHub>("/hubs/notifications");
 
         app.UseFastEndpoints(c =>
         {

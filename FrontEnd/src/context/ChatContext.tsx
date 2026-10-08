@@ -113,6 +113,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   isFloatingChatMinimizedRef.current = isFloatingChatMinimized
   const floatingRoomIdsRef = useRef(floatingRoomIds)
   floatingRoomIdsRef.current = floatingRoomIds
+  const fetchingRoomsRef = useRef<Record<number, boolean>>({})
 
   // 1. Fetch Inbox from Backend and auto-join all rooms via SignalR
   const fetchInbox = useCallback(async () => {
@@ -135,6 +136,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // 2. Fetch Messages for a Room (Page 1)
   const fetchMessages = useCallback(async (roomId: number) => {
+    if (fetchingRoomsRef.current[roomId]) return
+    fetchingRoomsRef.current[roomId] = true
     setIsLoadingMessages(true)
     try {
       const msgs = await chatService.getRoomMessages(roomId, 1, 50)
@@ -164,6 +167,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (err) {
       console.error(`[ChatContext] Error fetching messages for room ${roomId}:`, err)
     } finally {
+      fetchingRoomsRef.current[roomId] = false
       setIsLoadingMessages(false)
     }
   }, [])
@@ -304,6 +308,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       })
 
       // Update inbox preview and unread count
+      let needFetchInbox = false
       setInbox((prev) => {
         const found = prev.find((item) => item.roomId === msgRoomId)
         if (found) {
@@ -318,11 +323,13 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
               : item
           )
         } else {
-          // If not in inbox yet, refresh inbox and join new room
-          fetchInbox()
+          needFetchInbox = true
           return prev
         }
       })
+      if (needFetchInbox) {
+        fetchInbox()
+      }
 
       // If message is from friend:
       const currentUserId = user?.id ? Number(user.id) : null
@@ -481,6 +488,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const selectRoom = useCallback(
     async (roomId: number) => {
       setActiveRoomId(roomId)
+      activeRoomIdRef.current = roomId
+
       try {
         await chatSignalR.joinRoom(roomId)
       } catch (err) {
@@ -497,9 +506,13 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Mark room as read
       try {
         await chatService.markRoomAsRead(roomId)
-        setInbox((prev) =>
-          prev.map((item) => (item.roomId === roomId ? { ...item, unreadCount: 0 } : item))
-        )
+        setInbox((prev) => {
+          const target = prev.find((item) => item.roomId === roomId)
+          if (target && (target.unreadCount || 0) > 0) {
+            return prev.map((item) => (item.roomId === roomId ? { ...item, unreadCount: 0 } : item))
+          }
+          return prev
+        })
       } catch (err) {
         console.warn(`[ChatContext] Mark read failed for room ${roomId}:`, err)
       }

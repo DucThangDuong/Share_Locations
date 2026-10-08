@@ -3,8 +3,10 @@ import { createPortal } from 'react-dom'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { useChat } from '@/context/ChatContext'
+import { useNotification } from '@/context/NotificationContext'
 import { isUserAdmin } from '@/utils/authUtils'
 import { HeaderChatDropdown } from './HeaderChatDropdown'
+import { HeaderNotificationDropdown } from '@/components/notification'
 import { UserUtilityDrawer } from './UserUtilityDrawer'
 import {
   Search,
@@ -18,12 +20,19 @@ import {
   ChevronDown,
   Plus,
   MessageCircle,
+  Bell,
   Shield
 } from 'lucide-react'
 
 export const Header: React.FC = () => {
   const { isAuthenticated, profile, user } = useAuth()
   const { isHeaderDropdownOpen, setIsHeaderDropdownOpen, toggleHeaderDropdown, totalUnreadCount } = useChat()
+  const {
+    unreadCount: notifUnreadCount,
+    isDropdownOpen: isNotifDropdownOpen,
+    setIsDropdownOpen: setIsNotifDropdownOpen,
+    toggleDropdown: toggleNotifDropdown
+  } = useNotification()
   const [isUtilityDrawerOpen, setIsUtilityDrawerOpen] = useState(false)
   const [isNavDrawerOpen, setIsNavDrawerOpen] = useState(false)
   const [headerSearch, setHeaderSearch] = useState('')
@@ -132,6 +141,34 @@ export const Header: React.FC = () => {
             <Plus className="w-3.5 h-3.5 text-emerald-700" />
             <span className="hidden sm:inline">Đề xuất địa điểm</span>
           </Link>
+
+          {isAuthenticated && (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={toggleNotifDropdown}
+                className={`relative inline-flex h-11 w-11 items-center justify-center rounded-full transition-colors cursor-pointer ${
+                  isNotifDropdownOpen
+                    ? 'bg-emerald-100 text-emerald-800'
+                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                }`}
+                aria-label="Mở thông báo"
+                title="Thông báo"
+                aria-expanded={isNotifDropdownOpen}
+              >
+                <Bell className="w-5 h-5" strokeWidth={2} />
+                {notifUnreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-red-500 text-white rounded-full text-[10px] font-black border-2 border-white flex items-center justify-center shadow-xs animate-pulse">
+                    {notifUnreadCount > 99 ? '99+' : notifUnreadCount}
+                  </span>
+                )}
+              </button>
+
+              {isNotifDropdownOpen && (
+                <HeaderNotificationDropdown onClose={() => setIsNotifDropdownOpen(false)} />
+              )}
+            </div>
+          )}
 
           {isAuthenticated && !isChatRoute && (
             <div className="relative">

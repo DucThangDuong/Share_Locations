@@ -4,6 +4,7 @@ import { Header } from '@/components/common/Header'
 import { Footer } from '@/components/common/Footer'
 import { RecentVisitedFloatingDock } from '@/components/common/RecentVisitedFloatingDock'
 import { FloatingChatWidget } from '@/components/chat'
+import { NotificationToast } from '@/components/notification'
 
 export const MainLayout: React.FC = () => {
   const navigate = useNavigate()
@@ -13,6 +14,7 @@ export const MainLayout: React.FC = () => {
   return (
     <div className="flex flex-col min-h-screen bg-surface text-slate-800">
       <Header />
+      <NotificationToast />
       <div className={`flex-1 ${isMapRoute ? 'overflow-hidden' : ''}`}>
         <Outlet />
       </div>

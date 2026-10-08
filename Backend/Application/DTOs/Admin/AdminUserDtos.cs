@@ -201,3 +201,24 @@ public class AdminAccessHistoryResultDto
     public List<AdminAccessHistoryItemDto> Items { get; set; } = new();
     public int Total { get; set; }
 }
+
+public class UpdateAdminUserRoleRequest
+{
+    public string Role { get; set; } = string.Empty;
+    public List<int>? CategoryIds { get; set; }
+    public List<int>? ProvinceIds { get; set; }
+    public List<int>? RegionIds { get; set; }
+    public string? Reason { get; set; }
+}
+
+public class UpdateAdminUserRoleResponseDto
+{
+    public long UserId { get; set; }
+    public string NewRole { get; set; } = string.Empty;
+    public List<string> Roles { get; set; } = new();
+    public int ScopeCategoriesCount { get; set; }
+    public int ScopeProvincesCount { get; set; }
+    public int ScopeRegionsCount { get; set; }
+    public string Message { get; set; } = string.Empty;
+}
+

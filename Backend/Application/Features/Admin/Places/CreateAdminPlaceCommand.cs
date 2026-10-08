@@ -1,6 +1,8 @@
 using Application.Common;
+using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs.Admin;
+using Application.Features.Admin.Catalog;
 using MediatR;
 
 namespace Application.Features.Admin.Places;
@@ -10,10 +12,12 @@ public record CreateAdminPlaceCommand(CreateAdminPlaceInput Input, long? Creator
 public class CreateAdminPlaceCommandHandler : IRequestHandler<CreateAdminPlaceCommand, Result<long>>
 {
     private readonly IAdminPlaceRepository _placeRepository;
+    private readonly ICacheService _cacheService;
 
-    public CreateAdminPlaceCommandHandler(IAdminPlaceRepository placeRepository)
+    public CreateAdminPlaceCommandHandler(IAdminPlaceRepository placeRepository, ICacheService cacheService)
     {
         _placeRepository = placeRepository;
+        _cacheService = cacheService;
     }
 
     public async Task<Result<long>> Handle(CreateAdminPlaceCommand request, CancellationToken ct)
@@ -39,6 +43,7 @@ public class CreateAdminPlaceCommandHandler : IRequestHandler<CreateAdminPlaceCo
         }
 
         var id = await _placeRepository.CreateAdminPlaceAsync(request.Input, request.CreatorId, ct);
+        await CatalogCacheInvalidator.InvalidateCatalogCachesAsync(_cacheService, ct);
         return Result<long>.Created(id, "Tạo mới địa điểm thành công.");
     }
 }

@@ -1,5 +1,6 @@
 import React from "react";
 import type { AdminReportItem } from "@/types/admin.types";
+import { CustomSelect } from "@/components/common/CustomSelect";
 
 const formatDateTime = (dateStr?: string) => {
   if (!dateStr) return "";
@@ -147,37 +148,39 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
             className="px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 font-medium text-slate-800 placeholder:text-slate-400 focus:bg-white outline-none focus:border-emerald-500 w-64"
           />
 
-          <select
+          <CustomSelect
             value={reportTargetTypeFilter}
-            onChange={(e) => {
-              setReportTargetTypeFilter(e.target.value as any);
+            onChange={(val) => {
+              setReportTargetTypeFilter(val as any);
               setReportCurrentPage(1);
             }}
-            className="px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 font-medium text-slate-800 outline-none focus:border-emerald-500"
-          >
-            <option value="all">Tất cả đối tượng</option>
-            <option value="place">Báo cáo địa điểm</option>
-            <option value="review">Báo cáo đánh giá</option>
-            <option value="comment">Báo cáo bình luận</option>
-            <option value="blog">Báo cáo bài viết</option>
-          </select>
+            options={[
+              { value: "all", label: "Tất cả đối tượng" },
+              { value: "place", label: "Báo cáo địa điểm" },
+              { value: "review", label: "Báo cáo đánh giá" },
+              { value: "comment", label: "Báo cáo bình luận" },
+              { value: "blog", label: "Báo cáo bài viết" },
+            ]}
+            size="sm"
+            className="min-w-[140px]"
+          />
 
-          <select
+          <CustomSelect
             value={reportProvinceFilter}
-            onChange={(e) => {
-              setReportProvinceFilter(e.target.value);
+            onChange={(val) => {
+              setReportProvinceFilter(val);
               setReportCurrentPage(1);
             }}
-            className="px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 font-medium text-slate-800 outline-none focus:border-emerald-500"
-          >
-            <option value="all">Tất cả tỉnh thành</option>
-            <option value="Hà Nội">Hà Nội</option>
-            <option value="TP. Hồ Chí Minh">TP. Hồ Chí Minh</option>
-            <option value="Đà Nẵng">Đà Nẵng</option>
-            <option value="Lâm Đồng">Lâm Đồng</option>
-            <option value="Quảng Nam">Quảng Nam</option>
-            <option value="Khánh Hòa">Khánh Hòa</option>
-          </select>
+            options={[
+              { value: "all", label: "Tất cả tỉnh thành" },
+              ...Array.from(new Set(reports.map((r) => r.province).filter(Boolean))).map((p) => ({
+                value: p,
+                label: p,
+              })),
+            ]}
+            size="sm"
+            className="min-w-[140px]"
+          />
         </div>
 
         {/* Batch actions */}

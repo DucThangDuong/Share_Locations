@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { adminService, extractList, type AdminMetrics } from "@/services/adminService";
-import { isUserAdmin } from "@/utils/authUtils";
+import { isUserAdmin, isUserSystemAdmin } from "@/utils/authUtils";
 import type {
   AdminMainTab,
   PlaceReviewItem,
@@ -34,6 +34,8 @@ import {
   CollectionsTab,
   ProvincesTab,
   CategoriesTab,
+  SystemSettingsTab,
+  AdminProfileTab,
   NotificationsProfileTab,
   AuditLogsTab,
 } from "@/components/admin/tabs/OtherTabs";
@@ -50,7 +52,9 @@ const TAB_SLUG_MAP: Record<AdminMainTab, string> = {
   provinces: "provinces",
   blogs: "blogs",
   categories: "categories",
-  notifications_profile: "profile",
+  settings: "settings",
+  admin_profile: "profile",
+  notifications_profile: "settings",
   audit_logs: "audit-logs",
 };
 
@@ -67,11 +71,18 @@ const SLUG_TO_TAB_MAP: Record<string, AdminMainTab> = {
   foods: "foods",
   collections: "collections",
   provinces: "provinces",
+  regions: "provinces",
   blogs: "blogs",
   categories: "categories",
-  profile: "notifications_profile",
-  "notifications-profile": "notifications_profile",
-  notifications_profile: "notifications_profile",
+  "place-types": "categories",
+  profile: "admin_profile",
+  "admin-profile": "admin_profile",
+  admin_profile: "admin_profile",
+  settings: "settings",
+  "system-settings": "settings",
+  "report-types": "settings",
+  "notifications-profile": "settings",
+  notifications_profile: "settings",
   "audit-logs": "audit_logs",
   audit_logs: "audit_logs",
 };
@@ -101,26 +112,41 @@ export const AdminPage: React.FC = () => {
     avatar: storedAdmin.avatarUrl || storedAdmin.avatar,
   };
 
+  const SUPER_ADMIN_ONLY_TABS: AdminMainTab[] = [
+    "users",
+    "provinces",
+    "categories",
+    "settings",
+    "notifications_profile",
+  ];
+
   // Determine active tab from URL path or query params
   const getTabFromUrl = (): AdminMainTab => {
+    let resolvedTab: AdminMainTab = "dashboard";
+
     // 1. Check path e.g. /admin/places or /admin/users
     const pathParts = location.pathname.replace(/\/+$/, "").split("/");
     const adminIndex = pathParts.indexOf("admin");
     if (adminIndex !== -1 && pathParts[adminIndex + 1]) {
       const subSlug = pathParts[adminIndex + 1].toLowerCase();
       if (SLUG_TO_TAB_MAP[subSlug]) {
-        return SLUG_TO_TAB_MAP[subSlug];
+        resolvedTab = SLUG_TO_TAB_MAP[subSlug];
+      }
+    } else {
+      // 2. Check query param e.g. /admin?tab=places
+      const params = new URLSearchParams(location.search);
+      const queryTab = params.get("tab")?.toLowerCase();
+      if (queryTab && SLUG_TO_TAB_MAP[queryTab]) {
+        resolvedTab = SLUG_TO_TAB_MAP[queryTab];
       }
     }
 
-    // 2. Check query param e.g. /admin?tab=places
-    const params = new URLSearchParams(location.search);
-    const queryTab = params.get("tab")?.toLowerCase();
-    if (queryTab && SLUG_TO_TAB_MAP[queryTab]) {
-      return SLUG_TO_TAB_MAP[queryTab];
+    // Guard: Admin cấp 1 cannot access super admin tabs
+    if (!isUserSystemAdmin() && SUPER_ADMIN_ONLY_TABS.includes(resolvedTab)) {
+      return "dashboard";
     }
 
-    return "dashboard";
+    return resolvedTab;
   };
 
   const getReportTargetTypeFromUrl = (): "all" | "place" | "review" | "comment" | "blog" | "photo" => {
@@ -154,6 +180,13 @@ export const AdminPage: React.FC = () => {
 
   // Handler to switch tab and update browser URL
   const setMainTab = (tab: AdminMainTab) => {
+    if (!isUserSystemAdmin() && SUPER_ADMIN_ONLY_TABS.includes(tab)) {
+      showToast("Bạn không có quyền truy cập chức năng này (chỉ dành cho Quản trị viên cấp cao).");
+      setMainTabState("dashboard");
+      navigate("/admin");
+      return;
+    }
+
     setMainTabState(tab);
     const slug = TAB_SLUG_MAP[tab];
     let targetPath = slug === "dashboard" ? "/admin" : `/admin/${slug}`;
@@ -939,7 +972,8 @@ export const AdminPage: React.FC = () => {
   const handleUpdatePlace = async (updatedPlace: any) => {
     await adminService.updatePlace(updatedPlace.id, {
       name: updatedPlace.name,
-      desc: updatedPlace.desc,
+      desc: updatedPlace.description || updatedPlace.desc,
+      description: updatedPlace.description || updatedPlace.desc,
       coverImg: updatedPlace.coverImg || updatedPlace.img,
       address: updatedPlace.address || updatedPlace.location,
       latitude: updatedPlace.latitude,
@@ -952,7 +986,6 @@ export const AdminPage: React.FC = () => {
       hours: updatedPlace.openingHours || updatedPlace.hours,
       minPrice: updatedPlace.minPrice,
       maxPrice: updatedPlace.maxPrice,
-      description: updatedPlace.description || updatedPlace.desc,
       primaryImageUrl: updatedPlace.coverImg || updatedPlace.img,
       phone: updatedPlace.phone,
       website: updatedPlace.website,
@@ -1353,7 +1386,7 @@ export const AdminPage: React.FC = () => {
                 />
               )}
               {mainTab === "collections" && <CollectionsTab showToast={showToast} />}
-              {mainTab === "provinces" && <ProvincesTab />}
+              {mainTab === "provinces" && isUserSystemAdmin() && <ProvincesTab showToast={showToast} />}
               {mainTab === "blogs" && (
                 <BlogsTab
                   blogsList={blogsList}
@@ -1370,13 +1403,27 @@ export const AdminPage: React.FC = () => {
                   showToast={showToast}
                 />
               )}
-              {mainTab === "categories" && <CategoriesTab />}
-              {mainTab === "notifications_profile" && (
-                <NotificationsProfileTab
+              {mainTab === "categories" && isUserSystemAdmin() && <CategoriesTab showToast={showToast} />}
+              {mainTab === "admin_profile" && (
+                <AdminProfileTab
                   currentAdminInfo={currentAdminInfo}
+                  onNavigateTab={(tab) => setMainTab(tab as any)}
+                  showToast={showToast}
                 />
               )}
-              {mainTab === "audit_logs" && <AuditLogsTab auditLogs={auditLogs} />}
+              {mainTab === "settings" && isUserSystemAdmin() && (
+                <SystemSettingsTab
+                  currentAdminInfo={currentAdminInfo}
+                  showToast={showToast}
+                />
+              )}
+              {mainTab === "notifications_profile" && isUserSystemAdmin() && (
+                <NotificationsProfileTab
+                  currentAdminInfo={currentAdminInfo}
+                  showToast={showToast}
+                />
+              )}
+              {mainTab === "audit_logs" && <AuditLogsTab />}
             </div>
           </main>
         </div>

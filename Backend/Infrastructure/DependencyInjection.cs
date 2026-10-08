@@ -51,9 +51,15 @@ public static class DependencyInjection
         services.AddScoped<IAdminBlogRepository, AdminBlogRepository>();
         services.AddScoped<IAdminDashboardRepository, AdminDashboardRepository>();
         services.AddScoped<IAdminUserRepository, AdminUserRepository>();
+        services.AddScoped<IAdminAuditLogRepository, AdminAuditLogRepository>();
+        services.AddScoped<IAdminGeographyRepository, AdminGeographyRepository>();
+        services.AddScoped<IAdminCatalogTaxonomyRepository, AdminCatalogTaxonomyRepository>();
+        services.AddScoped<IAdminSystemConfigRepository, AdminSystemConfigRepository>();
+        services.AddScoped<INotificationRepository, NotificationRepository>();
 
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
+        services.AddScoped<IAuditLogService, AuditLogService>();
 
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();
@@ -66,6 +72,16 @@ public static class DependencyInjection
         var redisConn = configuration.GetConnectionString("Redis");
         if (!string.IsNullOrWhiteSpace(redisConn))
         {
+            try
+            {
+                var multiplexer = StackExchange.Redis.ConnectionMultiplexer.Connect(redisConn);
+                services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(multiplexer);
+            }
+            catch
+            {
+                // Fallback nếu Redis chưa sẵn sàng khi khởi động
+            }
+
             services.AddStackExchangeRedisCache(options =>
             {
                 options.Configuration = redisConn;

@@ -10,6 +10,8 @@ export type AdminMainTab =
   | "provinces"
   | "blogs"
   | "categories"
+  | "settings"
+  | "admin_profile"
   | "notifications_profile"
   | "audit_logs";
 
@@ -247,7 +249,54 @@ export interface AdminBlogItem {
   readTime?: string;
 }
 
-// Audit Log Item
+export interface AdminAuditLogItem {
+  id: number;
+  adminId: number;
+  adminName: string;
+  adminEmail: string;
+  adminAvatar: string | null;
+  actorRoleCode: "SystemAdmin" | "CategoryAdmin" | string;
+  actionType: string;
+  targetTable: string;
+  targetId: number;
+  targetName: string;
+  actionStatus: number;
+  actionStatusText: string;
+  reason: string;
+  ipAddress: string;
+  createdAt: string;
+}
+
+export interface AdminAuditLogDetail extends AdminAuditLogItem {
+  oldDataJSON: string | null;
+  newDataJSON: string | null;
+  metadataJSON: string | null;
+  requestId: string;
+  userAgent: string;
+}
+
+export interface GetAdminAuditLogsParams {
+  page?: number;
+  pageSize?: number;
+  adminId?: number;
+  actionType?: string;
+  targetTable?: string;
+  targetId?: number;
+  fromDate?: string;
+  toDate?: string;
+  keyword?: string;
+}
+
+export interface AdminAuditLogsData {
+  items: AdminAuditLogItem[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
 export interface AdminAuditLog {
   id: number;
   adminId: number;
@@ -435,5 +484,116 @@ export interface UpdateAdminUserScopesRequest {
   provinceIds: number[];
   regionIds?: number[];
   note?: string;
+}
+
+export interface UpdateUserRoleRequest {
+  role: "USER" | "CATEGORY_ADMIN" | "SYSTEM_ADMIN" | string;
+  categoryIds?: number[];
+  provinceIds?: number[];
+  regionIds?: number[];
+  reason?: string;
+}
+
+export interface UpdateUserRoleResponseData {
+  userId: number;
+  newRole: string;
+  roles: string[];
+  scopeCategoriesCount?: number;
+  scopeProvincesCount?: number;
+  scopeRegionsCount?: number;
+  message?: string;
+}
+
+// ==========================================
+// 1. GEOGRAPHY (REGIONS & PROVINCES)
+// ==========================================
+export interface AdminGeographyRegionItem {
+  id: number;
+  name: string;
+  slug?: string;
+  tagline?: string;
+  description?: string;
+  imageUrl?: string;
+  orderIndex?: number;
+  status?: number;
+  statusName?: string;
+  totalProvinces?: number;
+  activeProvinces?: number;
+}
+
+export interface AdminGeographyProvinceItem {
+  id: number;
+  regionId: number;
+  regionName?: string;
+  name: string;
+  slug?: string;
+  tagline?: string;
+  description?: string;
+  imageUrl?: string;
+  featured?: boolean;
+  displayOrder?: number;
+  status?: number;
+  statusName?: string;
+  placeCount?: number;
+  foodCount?: number;
+  proposalCount?: number;
+  assignedAdminsCount?: number;
+}
+
+// ==========================================
+// 2. CATALOG (PLACE TYPES & CATEGORIES)
+// ==========================================
+export interface AdminCatalogPlaceTypeItem {
+  id: number;
+  name: string;
+  slug?: string;
+  imageUrl?: string;
+  status?: number;
+  statusName?: string;
+  totalCategories?: number;
+  activeCategories?: number;
+}
+
+export interface AdminCatalogCategoryItem {
+  id: number;
+  placeTypeId: number;
+  placeTypeName?: string;
+  name: string;
+  slug?: string;
+  imageUrl?: string;
+  status?: number;
+  statusName?: string;
+  placeCount?: number;
+  blogCount?: number;
+  proposalCount?: number;
+  assignedAdminsCount?: number;
+}
+
+// ==========================================
+// 3. SETTINGS & REPORT TYPES
+// ==========================================
+export interface AdminReportTypeItem {
+  id: number;
+  code: string;
+  name: string;
+  targetScope: "PLACE" | "CONTENT" | "ALL" | string;
+  targetScopeName?: string;
+  isActive: boolean;
+  statusName?: string;
+  displayOrder?: number;
+  totalReportsCount?: number;
+}
+
+export interface AdminSystemSettingItem {
+  id: number;
+  settingKey: string;
+  settingName?: string;
+  settingValue: string;
+  settingGroup: "GENERAL" | "MODERATION" | "SECURITY" | string;
+  settingGroupName?: string;
+  description?: string;
+  updatedAt?: string;
+  updatedBy?: number;
+  updatedByName?: string;
 }
 

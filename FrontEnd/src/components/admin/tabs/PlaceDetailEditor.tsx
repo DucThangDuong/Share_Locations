@@ -26,12 +26,13 @@ import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { catalogService } from "@/services/catalogService";
 import { geographyService } from "@/services/geographyService";
-import { adminService } from "@/services/adminService";
+import { adminService, extractList } from "@/services/adminService";
 import { PlaceAdminReviews } from "./PlaceAdminReviews";
 import { PlaceAdminFoods, type AdminPlaceFoodDto } from "./PlaceAdminFoods";
 import { UtensilsCrossed } from "lucide-react";
 import type { PlaceTypeDto } from "@/types/models/place.model";
 import type { ProvinceDto } from "@/types/models/geography.model";
+import { CustomSelect } from "@/components/common/CustomSelect";
 
 interface PlaceDetailEditorProps {
   place: any;
@@ -62,25 +63,6 @@ interface PlaceFormSnapshot {
   mediaItems: { id?: number; url: string }[];
 }
 
-const DEFAULT_CATEGORIES: PlaceTypeDto[] = [
-  { id: 1, name: "Nhà hàng & Quán ăn" },
-  { id: 2, name: "Cà phê & Trà sữa" },
-  { id: 3, name: "Địa điểm tham quan" },
-  { id: 4, name: "Khách sạn & Homestay" },
-  { id: 5, name: "Giải trí & Trải nghiệm" },
-  { id: 6, name: "Mua sắm & Đặc sản" },
-];
-
-const DEFAULT_PROVINCES: ProvinceDto[] = [
-  { id: 1, name: "Đà Nẵng", regionId: 2, regionName: "Miền Trung", featured: true, displayOrder: 1, placeCount: 150 },
-  { id: 2, name: "Quảng Nam", regionId: 2, regionName: "Miền Trung", featured: false, displayOrder: 2, placeCount: 95 },
-  { id: 3, name: "Thừa Thiên Huế", regionId: 2, regionName: "Miền Trung", featured: false, displayOrder: 3, placeCount: 80 },
-  { id: 4, name: "Khánh Hòa", regionId: 3, regionName: "Nam Trung Bộ", featured: true, displayOrder: 4, placeCount: 110 },
-  { id: 5, name: "Lâm Đồng", regionId: 3, regionName: "Tây Nguyên", featured: true, displayOrder: 5, placeCount: 130 },
-  { id: 6, name: "Hà Nội", regionId: 1, regionName: "Miền Bắc", featured: true, displayOrder: 6, placeCount: 220 },
-  { id: 7, name: "TP. Hồ Chí Minh", regionId: 4, regionName: "Miền Nam", featured: true, displayOrder: 7, placeCount: 260 },
-];
-
 const buildInitialSnapshot = (place: any): PlaceFormSnapshot => {
   const isVis =
     place?.status === 1 ||
@@ -90,34 +72,18 @@ const buildInitialSnapshot = (place: any): PlaceFormSnapshot => {
     String(place?.status || "").toLowerCase() === "approved" ||
     place?.status === "Đã duyệt";
 
-  let catId = 1;
-  if (place?.categoryId) {
-    catId = place.categoryId;
-  } else {
-    const found = DEFAULT_CATEGORIES.find(
-      (c) => c.name === place?.category || c.name === place?.categoryName
-    );
-    if (found) catId = found.id;
-  }
-
-  let provId = 1;
-  if (place?.provinceId) {
-    provId = place.provinceId;
-  } else {
-    const found = DEFAULT_PROVINCES.find((p) => p.name === place?.province);
-    if (found) provId = found.id;
-  }
-
-  const provName = place?.province || "Đà Nẵng";
+  const catId = Number(place?.categoryId || 0);
+  const provId = Number(place?.provinceId || 0);
+  const provName = place?.province || place?.provinceName || "";
   const addr = place?.location || place?.address || "";
   const ph = place?.phone || "";
   const web = place?.website || "";
 
-  let latVal = "16.054407";
+  let latVal = "";
   if (place?.latitude) latVal = String(place.latitude);
   else if (place?.lat) latVal = String(place.lat);
 
-  let lngVal = "108.202167";
+  let lngVal = "";
   if (place?.longitude) lngVal = String(place.longitude);
   else if (place?.lng) lngVal = String(place.lng);
 
@@ -131,8 +97,8 @@ const buildInitialSnapshot = (place: any): PlaceFormSnapshot => {
   const priceLower = (place?.price || "").toLowerCase();
   const freeVal = priceLower.includes("miễn phí") || (place?.minPrice === 0 && place?.maxPrice === 0);
 
-  let minP = "35000";
-  if (place?.minPrice !== undefined) {
+  let minP = "";
+  if (place?.minPrice !== undefined && place?.minPrice !== null) {
     minP = String(place.minPrice);
   } else {
     const match = (place?.price || "").match(/\d+([.,]\d+)?/);
@@ -142,8 +108,8 @@ const buildInitialSnapshot = (place: any): PlaceFormSnapshot => {
     }
   }
 
-  let maxP = "75000";
-  if (place?.maxPrice !== undefined) {
+  let maxP = "";
+  if (place?.maxPrice !== undefined && place?.maxPrice !== null) {
     maxP = String(place.maxPrice);
   } else {
     const matches = (place?.price || "").match(/\d+([.,]\d+)?/g);
@@ -156,30 +122,28 @@ const buildInitialSnapshot = (place: any): PlaceFormSnapshot => {
   const desc =
     place?.description ||
     place?.desc ||
-    "Địa điểm ẩm thực và du lịch đặc sắc với không gian rộng rãi, chất lượng dịch vụ chuyên nghiệp và phong vị chuẩn địa phương.";
+    "";
 
   let media: { id?: number; url: string }[] = [];
   if (Array.isArray(place?.media) && place.media.length > 0) {
     media = place.media.map((m: any) => ({ id: m.id, url: m.url || m.imageUrl || "" })).filter((m: any) => m.url);
   } else if (Array.isArray(place?.images) && place.images.length > 0) {
-    media = place.images.map((img: any) => (typeof img === "string" ? { url: img } : { id: img.id, url: img.url || "" }));
+    media = place.images.map((img: any) => (typeof img === "string" ? { url: img } : { id: img.id, url: img.url || "" })).filter((m: any) => m.url);
   } else if (Array.isArray(place?.mediaUrls) && place.mediaUrls.length > 0) {
-    media = place.mediaUrls.map((url: string) => ({ url }));
+    media = place.mediaUrls.map((url: string) => ({ url })).filter((m: any) => m.url);
   } else {
-    const fallbackCover = place?.coverImageUrl || place?.coverImg || place?.thumbnailUrl || place?.img || "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&h=600&fit=crop";
-    media = [{ url: fallbackCover }];
+    const fallbackCover = place?.coverImageUrl || place?.coverImg || place?.thumbnailUrl || place?.img || "";
+    if (fallbackCover) {
+      media = [{ url: fallbackCover }];
+    }
   }
 
   let imgs: string[] = [];
-  if (Array.isArray(place?.images) && place.images.length > 0) imgs = place.images;
-  else if (Array.isArray(place?.mediaUrls) && place.mediaUrls.length > 0) imgs = place.mediaUrls;
+  if (Array.isArray(place?.images) && place.images.length > 0) imgs = place.images.filter(Boolean);
+  else if (Array.isArray(place?.mediaUrls) && place.mediaUrls.length > 0) imgs = place.mediaUrls.filter(Boolean);
   else if (place?.coverImageUrl) imgs = [place.coverImageUrl];
   else if (place?.img) imgs = [place.img];
   else if (place?.thumbnailUrl) imgs = [place.thumbnailUrl];
-  else imgs = [
-    "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&h=600&fit=crop",
-    "https://images.unsplash.com/photo-1541544741938-0af808871cc0?w=800&h=600&fit=crop",
-  ];
 
   return {
     name: place?.name || "",
@@ -214,26 +178,14 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
   const [saveSuccessMsg, setSaveSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
 
-  const [categories, setCategories] = useState<PlaceTypeDto[]>(DEFAULT_CATEGORIES);
-  const [provinces, setProvinces] = useState<ProvinceDto[]>(DEFAULT_PROVINCES);
+  const [categories, setCategories] = useState<PlaceTypeDto[]>([]);
+  const [provinces, setProvinces] = useState<ProvinceDto[]>([]);
 
   // Form Fields
   const [name, setName] = useState(place?.name || "");
-  const [categoryId, setCategoryId] = useState<number>(() => {
-    if (place?.categoryId) return place.categoryId;
-    const found = DEFAULT_CATEGORIES.find(
-      (c) => c.name === place?.category || c.name === place?.categoryName
-    );
-    return found ? found.id : 1;
-  });
-
-  const [provinceId, setProvinceId] = useState<number>(() => {
-    if (place?.provinceId) return place.provinceId;
-    const found = DEFAULT_PROVINCES.find((p) => p.name === place?.province);
-    return found ? found.id : 1;
-  });
-
-  const [provinceName, setProvinceName] = useState(place?.province || "Đà Nẵng");
+  const [categoryId, setCategoryId] = useState<number>(Number(place?.categoryId || 1));
+  const [provinceId, setProvinceId] = useState<number>(Number(place?.provinceId || 1));
+  const [provinceName, setProvinceName] = useState(place?.province || place?.provinceName || "Đà Nẵng");
   const [address, setAddress] = useState(place?.location || place?.address || "");
   const [phone, setPhone] = useState(place?.phone || "");
   const [website, setWebsite] = useState(place?.website || "");
@@ -297,7 +249,7 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
   const [description, setDescription] = useState(
     place?.description ||
     place?.desc ||
-    "Địa điểm ẩm thực và du lịch đặc sắc với không gian rộng rãi, chất lượng dịch vụ chuyên nghiệp và phong vị chuẩn địa phương."
+    ""
   );
 
   // Images & Media State
@@ -306,25 +258,22 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
       return place.media.map((m: any) => ({ id: m.id, url: m.url || m.imageUrl || "" })).filter((m: any) => m.url);
     }
     if (Array.isArray(place?.images) && place.images.length > 0) {
-      return place.images.map((img: any) => (typeof img === "string" ? { url: img } : { id: img.id, url: img.url || "" }));
+      return place.images.map((img: any) => (typeof img === "string" ? { url: img } : { id: img.id, url: img.url || "" })).filter((m: any) => m.url);
     }
     if (Array.isArray(place?.mediaUrls) && place.mediaUrls.length > 0) {
-      return place.mediaUrls.map((url: string) => ({ url }));
+      return place.mediaUrls.map((url: string) => ({ url })).filter((m: any) => m.url);
     }
-    const fallbackCover = place?.coverImageUrl || place?.coverImg || place?.thumbnailUrl || place?.img || "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&h=600&fit=crop";
-    return [{ url: fallbackCover }];
+    const fallbackCover = place?.coverImageUrl || place?.coverImg || place?.thumbnailUrl || place?.img || "";
+    return fallbackCover ? [{ url: fallbackCover }] : [];
   });
 
   const [images, setImages] = useState<string[]>(() => {
-    if (Array.isArray(place?.images) && place.images.length > 0) return place.images;
-    if (Array.isArray(place?.mediaUrls) && place.mediaUrls.length > 0) return place.mediaUrls;
+    if (Array.isArray(place?.images) && place.images.length > 0) return place.images.filter(Boolean);
+    if (Array.isArray(place?.mediaUrls) && place.mediaUrls.length > 0) return place.mediaUrls.filter(Boolean);
     if (place?.coverImageUrl) return [place.coverImageUrl];
     if (place?.img) return [place.img];
     if (place?.thumbnailUrl) return [place.thumbnailUrl];
-    return [
-      "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&h=600&fit=crop",
-      "https://images.unsplash.com/photo-1541544741938-0af808871cc0?w=800&h=600&fit=crop",
-    ];
+    return [];
   });
   const [activePreviewImgIndex, setActivePreviewImgIndex] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -521,6 +470,28 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
             pData.status === "Đã duyệt";
           setStatusNum(isVis ? 1 : 0);
           if (pData.name) setName(pData.name);
+          const freshDesc = pData.description !== undefined ? pData.description : (pData.desc !== undefined ? pData.desc : "");
+          setDescription(freshDesc || "");
+          if (pData.address || pData.location) setAddress(pData.address || pData.location || "");
+          if (pData.phone !== undefined && pData.phone !== null) setPhone(pData.phone || "");
+          if (pData.website !== undefined && pData.website !== null) setWebsite(pData.website || "");
+          if (pData.latitude || pData.lat) setLat(String(pData.latitude || pData.lat));
+          if (pData.longitude || pData.lng) setLng(String(pData.longitude || pData.lng));
+          if (pData.categoryId) setCategoryId(Number(pData.categoryId));
+          if (pData.provinceId) setProvinceId(Number(pData.provinceId));
+          if (pData.province || pData.provinceName) setProvinceName(pData.province || pData.provinceName);
+          if (pData.minPrice !== undefined && pData.minPrice !== null) setMinPrice(String(pData.minPrice));
+          if (pData.maxPrice !== undefined && pData.maxPrice !== null) setMaxPrice(String(pData.maxPrice));
+          if (pData.isFree !== undefined && pData.isFree !== null) setIsFree(Boolean(pData.isFree));
+          if (pData.hours || pData.openingHours) {
+            const h = (pData.hours || pData.openingHours || "").toLowerCase();
+            const is24 = h.includes("24/7") || h.includes("24h") || h.includes("cả ngày");
+            setIs24Hours(is24);
+            const openMatch = (pData.hours || pData.openingHours || "").match(/(\d{1,2}:\d{2})/);
+            if (openMatch) setOpenTime(openMatch[1]);
+            const closeMatches = (pData.hours || pData.openingHours || "").match(/(\d{1,2}:\d{2})/g);
+            if (closeMatches && closeMatches.length > 1) setCloseTime(closeMatches[1]);
+          }
 
           const cover = pData.coverImageUrl || pData.coverImg || pData.thumbnailUrl || pData.img || "";
           let media: { id?: number; url: string }[] = [];
@@ -574,6 +545,8 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
             ...place,
             ...pData,
             statusNum: isVis ? 1 : 0,
+            description: freshDesc || "",
+            desc: freshDesc || "",
             media: media.length > 0 ? media : undefined,
             images: media.length > 0 ? media.map((m) => m.url) : (cover ? [cover] : undefined),
           });
@@ -589,25 +562,33 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
     };
   }, [place?.id]);
 
-  // Load Categories & Provinces from API with graceful fallback
+  // Load Categories & Provinces from real API endpoints
   useEffect(() => {
+    let mounted = true;
     const loadMetadata = async () => {
       try {
         const [catRes, provRes] = await Promise.all([
           catalogService.getPlaceTypes(),
           geographyService.getProvinces(),
         ]);
-        if (catRes.success && catRes.data && catRes.data.length > 0) {
-          setCategories(catRes.data);
-        }
-        if (provRes.success && provRes.data && provRes.data.length > 0) {
-          setProvinces(provRes.data);
+        if (mounted) {
+          const catList = extractList<PlaceTypeDto>(catRes?.data || catRes);
+          if (catList.length > 0) {
+            setCategories(catList);
+          }
+          const provList = extractList<ProvinceDto>(provRes?.data || provRes);
+          if (provList.length > 0) {
+            setProvinces(provList);
+          }
         }
       } catch {
-        // Fallback already assigned in defaults
+        // network fallback
       }
     };
     loadMetadata();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   // Mapbox initialization
@@ -960,11 +941,11 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
           <button
             type="button"
             onClick={onBack}
-            className="p-2 sm:px-3 sm:py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-            title="Quay lại danh sách"
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-white border border-slate-200/80 hover:bg-slate-50 text-slate-600 hover:text-slate-900 flex items-center justify-center transition-colors cursor-pointer shadow-2xs shrink-0"
+            title="Quay lại danh sách địa điểm"
+            aria-label="Quay lại"
           >
-            <ArrowLeft size={15} />
-            <span className="hidden sm:inline">Quay lại</span>
+            <ArrowLeft size={18} />
           </button>
 
           <div>
@@ -1148,42 +1129,34 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                          Danh mục / Thể loại <span className="text-rose-500">*</span>
-                        </label>
-                        <select
+                        <CustomSelect
+                          label="Danh mục / Thể loại *"
                           value={categoryId}
-                          onChange={(e) => setCategoryId(Number(e.target.value))}
-                          className="w-full px-3.5 py-3 rounded-2xl bg-slate-50/80 border border-slate-200 text-xs font-medium text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-700 cursor-pointer"
-                        >
-                          {categories.map((cat) => (
-                            <option key={cat.id} value={cat.id}>
-                              {cat.name}
-                            </option>
-                          ))}
-                        </select>
+                          onChange={(val) => setCategoryId(Number(val))}
+                          options={categories.map((cat) => ({
+                            value: cat.id,
+                            label: cat.name,
+                          }))}
+                          size="md"
+                        />
                       </div>
 
                       <div>
-                        <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                          Tỉnh / Thành phố <span className="text-rose-500">*</span>
-                        </label>
-                        <select
+                        <CustomSelect
+                          label="Tỉnh / Thành phố *"
                           value={provinceId}
-                          onChange={(e) => {
-                            const newProvId = Number(e.target.value);
+                          onChange={(val) => {
+                            const newProvId = Number(val);
                             setProvinceId(newProvId);
                             const prov = provinces.find((p) => p.id === newProvId);
                             if (prov) setProvinceName(prov.name);
                           }}
-                          className="w-full px-3.5 py-3 rounded-2xl bg-slate-50/80 border border-slate-200 text-xs font-medium text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-700 cursor-pointer"
-                        >
-                          {provinces.map((prov) => (
-                            <option key={prov.id} value={prov.id}>
-                              {prov.name}
-                            </option>
-                          ))}
-                        </select>
+                          options={provinces.map((prov) => ({
+                            value: prov.id,
+                            label: prov.name,
+                          }))}
+                          size="md"
+                        />
                       </div>
                     </div>
 
@@ -1573,26 +1546,34 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
 
                     <div className="space-y-2 pt-1">
                       <h4 className="font-bold text-[15px] sm:text-base text-slate-900 group-hover:text-emerald-900 transition-colors line-clamp-2 leading-snug tracking-tight">
-                        {name.trim() || "Tên địa điểm"}
+                        {name.trim() || "--"}
                       </h4>
 
                       <div className="flex items-center gap-1.5 text-xs text-slate-900 font-bold">
                         <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 shrink-0" />
-                        <span>{(Number(rating) || 4.8).toFixed(1)}</span>
-                        <span className="text-slate-400 font-normal">·</span>
-                        <span className="text-slate-500 font-normal">{currentCategoryName}</span>
+                        <span>{rating !== undefined && rating !== null ? Number(rating).toFixed(1) : "--"}</span>
+                        {currentCategoryName && (
+                          <>
+                            <span className="text-slate-400 font-normal">·</span>
+                            <span className="text-slate-500 font-normal">{currentCategoryName}</span>
+                          </>
+                        )}
                       </div>
 
-                      <div className="flex items-center gap-1 text-xs text-slate-500">
-                        <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                        <span className="truncate">
-                          {address.trim() ? `${address.trim()}, ${currentProvinceName}` : currentProvinceName}
-                        </span>
-                      </div>
+                      {currentProvinceName && (
+                        <div className="flex items-center gap-1 text-xs text-slate-500">
+                          <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <span className="truncate">
+                            {address.trim() ? `${address.trim()}, ${currentProvinceName}` : currentProvinceName}
+                          </span>
+                        </div>
+                      )}
 
-                      <p className="text-xs text-slate-600 line-clamp-2 font-normal leading-relaxed">
-                        {description.trim() || "Mô tả về địa điểm sẽ cập nhật trực tiếp tại đây..."}
-                      </p>
+                      {description.trim() && (
+                        <p className="text-xs text-slate-600 line-clamp-2 font-normal leading-relaxed">
+                          {description.trim()}
+                        </p>
+                      )}
 
                       <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
                         <span>{is24Hours ? "Mở cửa 24/7" : `${openTime} - ${closeTime}`}</span>

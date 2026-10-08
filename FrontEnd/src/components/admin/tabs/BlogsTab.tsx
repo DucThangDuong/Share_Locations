@@ -19,8 +19,11 @@ import {
   ChevronRight,
   Loader2,
   X,
+  ImageIcon,
+  User,
 } from "lucide-react";
 import type { AdminBlogItem } from "@/types/admin.types";
+import { CustomSelect } from "@/components/common/CustomSelect";
 import { adminService } from "@/services/adminService";
 import { blogService } from "@/services/blogService";
 import { BlogTableOfContents } from "@/components/blog/BlogTableOfContents";
@@ -263,29 +266,29 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <select
+            <CustomSelect
               value={blogFilterCategory}
-              onChange={(e) => handleCategoryChange(e.target.value)}
-              className="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 font-medium text-slate-800 outline-none focus:border-emerald-500 cursor-pointer"
-            >
-              <option value="all">Tất cả danh mục</option>
-              {CATEGORY_OPTIONS.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
+              onChange={(val) => handleCategoryChange(val)}
+              options={[
+                { value: "all", label: "Tất cả danh mục" },
+                ...CATEGORY_OPTIONS.map((cat) => ({ value: cat, label: cat })),
+              ]}
+              size="sm"
+              className="min-w-[140px]"
+            />
 
-            <select
+            <CustomSelect
               value={blogFilterStatus}
-              onChange={(e) => handleStatusChange(e.target.value)}
-              className="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 font-medium text-slate-800 outline-none focus:border-emerald-500 cursor-pointer"
-            >
-              <option value="all">Tất cả trạng thái</option>
-              <option value="published">Đang công khai</option>
-              <option value="hidden">Đang tạm ẩn</option>
-              <option value="draft">Bản nháp</option>
-            </select>
+              onChange={(val) => handleStatusChange(val)}
+              options={[
+                { value: "all", label: "Tất cả trạng thái" },
+                { value: "published", label: "Đang công khai" },
+                { value: "hidden", label: "Đang tạm ẩn" },
+                { value: "draft", label: "Bản nháp" },
+              ]}
+              size="sm"
+              className="min-w-[130px]"
+            />
           </div>
         </div>
 
@@ -298,7 +301,6 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
                 <th className="p-3.5">Lượt xem & Thích</th>
                 <th className="p-3.5">Trạng thái</th>
                 <th className="p-3.5 text-center">Xem chi tiết</th>
-                <th className="p-3.5 text-right pr-4">Hành động</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -315,24 +317,38 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
                     {/* Blog Cover & Title */}
                     <td className="p-3.5 pl-4 font-bold text-slate-900">
                       <div className="flex items-center gap-3">
-                        <img
-                          src={
-                            blog.coverImg ||
-                            "https://images.unsplash.com/photo-1505474975305-453b4ac9b972?w=600&h=400&fit=crop"
-                          }
-                          className="w-12 h-10 rounded-lg object-cover border border-slate-200 shrink-0"
-                          alt=""
-                        />
+                        {blog.coverImg ? (
+                          <img
+                            src={blog.coverImg}
+                            className="w-12 h-10 rounded-lg object-cover border border-slate-200 shrink-0"
+                            alt=""
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = "none";
+                              const sibling = target.nextElementSibling as HTMLElement | null;
+                              if (sibling) sibling.style.display = "flex";
+                            }}
+                          />
+                        ) : null}
+                        <div
+                          className={`w-12 h-10 rounded-lg bg-slate-100 border border-slate-200 items-center justify-center text-slate-400 shrink-0 ${
+                            blog.coverImg ? "hidden" : "flex"
+                          }`}
+                          title="Không có hình ảnh"
+                        >
+                          <ImageIcon size={14} className="text-slate-300" />
+                        </div>
                         <div className="max-w-md">
                           <div className="font-bold text-slate-900 group-hover:text-emerald-700 transition-colors line-clamp-1 text-xs sm:text-sm">
-                            {blog.title}
+                            {blog.title || "--"}
                           </div>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
-                              {blog.category}
-                            </span>
-
-                          </div>
+                          {blog.category && (
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
+                                {blog.category}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -340,21 +356,35 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
                     {/* Author & Date */}
                     <td className="p-3.5 text-slate-700 font-medium">
                       <div className="flex items-center gap-2">
-                        <img
-                          src={
-                            blog.authorAvatar ||
-                            "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&h=80&fit=crop"
-                          }
-                          alt=""
-                          className="w-6 h-6 rounded-full object-cover border border-slate-200 shrink-0"
-                        />
+                        {blog.authorAvatar ? (
+                          <img
+                            src={blog.authorAvatar}
+                            alt=""
+                            className="w-6 h-6 rounded-full object-cover border border-slate-200 shrink-0"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = "none";
+                              const sibling = target.nextElementSibling as HTMLElement | null;
+                              if (sibling) sibling.style.display = "flex";
+                            }}
+                          />
+                        ) : null}
+                        <div
+                          className={`w-6 h-6 rounded-full bg-slate-100 border border-slate-200 items-center justify-center text-slate-400 shrink-0 ${
+                            blog.authorAvatar ? "hidden" : "flex"
+                          }`}
+                        >
+                          <User size={10} className="text-slate-400" />
+                        </div>
                         <div>
                           <div className="font-semibold text-slate-900 text-xs">
-                            {blog.authorName}
+                            {blog.authorName || "--"}
                           </div>
-                          <div className="text-[10px] text-slate-400">
-                            {blog.publishedAt}
-                          </div>
+                          {blog.publishedAt && (
+                            <div className="text-[10px] text-slate-400">
+                              {blog.publishedAt}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -405,39 +435,6 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
                       >
                         Chi tiết →
                       </button>
-                    </td>
-
-                    {/* Action Buttons */}
-                    <td
-                      className="p-3.5 text-right pr-4"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <div className="flex items-center justify-end gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => handleToggleHideBlog(blog.id)}
-                          className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${isHidden
-                            ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                            : "border-slate-200 hover:bg-slate-100 text-slate-600"
-                            }`}
-                          title={
-                            isHidden
-                              ? "Công khai lại bài viết"
-                              : "Tạm ẩn bài viết"
-                          }
-                        >
-                          {isHidden ? <Eye size={13} /> : <EyeOff size={13} />}
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteBlog(blog.id)}
-                          className="p-1.5 rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                          title="Xóa bài viết"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      </div>
                     </td>
                   </tr>
                 );
@@ -548,15 +545,14 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
   // State for form and view
   const [title, setTitle] = useState(blog.title || "");
   const [category, setCategory] = useState(
-    blog.category || "Lịch trình ăn uống"
+    blog.category || ""
   );
-  const [readTime, setReadTime] = useState(blog.readTime || "5 phút đọc");
+  const [readTime, setReadTime] = useState(blog.readTime || "");
   const [authorName, setAuthorName] = useState(
-    blog.authorName || "Ban Biên Tập LangThang"
+    blog.authorName || ""
   );
   const [authorAvatar, setAuthorAvatar] = useState(
-    blog.authorAvatar ||
-    "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&h=80&fit=crop"
+    blog.authorAvatar || ""
   );
   const [publishedAt, setPublishedAt] = useState(
     blog.publishedAt || ""
@@ -564,8 +560,7 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
   const [views, setViews] = useState(String(blog.views || 0));
   const [likes, setLikes] = useState(String(blog.likes || 0));
   const [coverImg, setCoverImg] = useState(
-    blog.coverImg ||
-    "https://images.unsplash.com/photo-1505474975305-453b4ac9b972?w=600&h=400&fit=crop"
+    blog.coverImg || ""
   );
   const [summary, setSummary] = useState(blog.summary || "");
   const [content, setContent] = useState(blog.content || "");
@@ -699,11 +694,11 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
           <button
             type="button"
             onClick={onBack}
-            className="p-2 sm:px-3 sm:py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-white border border-slate-200/80 hover:bg-slate-50 text-slate-600 hover:text-slate-900 flex items-center justify-center transition-colors cursor-pointer shadow-2xs shrink-0"
             title="Quay lại danh sách bài viết"
+            aria-label="Quay lại"
           >
-            <ArrowLeft size={15} />
-            <span className="hidden sm:inline">Quay lại</span>
+            <ArrowLeft size={18} />
           </button>
 
           <div className="min-w-0">
@@ -952,20 +947,13 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                        Chủ đề / Danh mục cẩm nang <span className="text-rose-500">*</span>
-                      </label>
-                      <select
+                      <CustomSelect
+                        label="Chủ đề / Danh mục cẩm nang *"
                         value={category}
-                        onChange={(e) => setCategory(e.target.value)}
-                        className="w-full px-3.5 py-3 rounded-2xl bg-slate-50/80 border border-slate-200 text-xs font-medium text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-700 cursor-pointer"
-                      >
-                        {CATEGORY_OPTIONS.map((cat) => (
-                          <option key={cat} value={cat}>
-                            {cat}
-                          </option>
-                        ))}
-                      </select>
+                        onChange={(val) => setCategory(val)}
+                        options={CATEGORY_OPTIONS.map((cat) => ({ value: cat, label: cat }))}
+                        size="md"
+                      />
                     </div>
 
                     <div>
@@ -1095,7 +1083,7 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
                   </label>
                   <input
                     type="text"
-                    placeholder="https://images.unsplash.com/..."
+                    placeholder="https://domain.com/image.jpg"
                     value={coverImg}
                     onChange={(e) => setCoverImg(e.target.value)}
                     className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-700"
@@ -1269,26 +1257,17 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
                 </h3>
 
                 <div className="space-y-2 text-xs">
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                      Chế độ phát hành
-                    </label>
-                    <select
-                      value={status}
-                      onChange={(e) =>
-                        setStatus(
-                          e.target.value as "published" | "draft" | "hidden"
-                        )
-                      }
-                      className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 font-semibold text-slate-800 outline-none focus:border-emerald-600 cursor-pointer"
-                    >
-                      <option value="published">
-                        Đang công khai (Hiển thị cho tất cả thành viên)
-                      </option>
-                      <option value="draft">Bản nháp (Lưu tạm, chưa công khai)</option>
-                      <option value="hidden">Đang tạm ẩn (Ẩn khỏi danh sách cẩm nang)</option>
-                    </select>
-                  </div>
+                  <CustomSelect
+                    label="Chế độ phát hành"
+                    value={status}
+                    onChange={(val) => setStatus(val as any)}
+                    options={[
+                      { value: "published", label: "Đang công khai" },
+                      { value: "draft", label: "Bản nháp" },
+                      { value: "hidden", label: "Đang tạm ẩn" },
+                    ]}
+                    size="sm"
+                  />
                 </div>
               </div>
             </div>

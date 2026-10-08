@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { MessageAttachmentType, type ChatMessageDto } from '@/services/chatService'
 import { useChat } from '@/context/ChatContext'
+import { useSystemSettings } from '@/context/SystemSettingsContext'
 
 interface ChatMessageFeedProps {
   roomTitle: string
@@ -53,6 +54,7 @@ export const ChatMessageFeed: React.FC<ChatMessageFeedProps> = ({
   messagesEndRef,
 }) => {
   const { editMessage, deleteMessage, activeRoomId } = useChat()
+  const { defaultUserAvatar } = useSystemSettings()
   const scrollRef = useRef<HTMLDivElement>(null)
   const previousScrollHeightRef = useRef<number>(0)
 
@@ -360,8 +362,7 @@ export const ChatMessageFeed: React.FC<ChatMessageFeedProps> = ({
                     {!isNextSameSender && (
                       <img
                         src={
-                          msg.senderAvatarUrl ||
-                          'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop'
+                          msg.senderAvatarUrl || defaultUserAvatar
                         }
                         alt={`Ảnh đại diện của ${msg.senderName}`}
                         className="w-7 h-7 rounded-full object-cover border border-slate-200"

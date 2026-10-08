@@ -1,6 +1,7 @@
 import React from "react";
 import type { GroupedReport, AdminReportItem } from "@/types/admin.types";
 import { X } from "lucide-react";
+import { CustomSelect } from "@/components/common/CustomSelect";
 
 const formatDateTime = (dateStr?: string) => {
   if (!dateStr) return "";
@@ -265,19 +266,18 @@ export const ModerationDrawer: React.FC<ModerationDrawerProps> = ({
                 /* Dismiss Form */
                 <div className="space-y-3">
                   <div>
-                    <label className="font-bold text-slate-800 block mb-1.5">
-                      Lý do bác bỏ phản ánh:
-                    </label>
-                    <select
+                    <CustomSelect
+                      label="Lý do bác bỏ phản ánh:"
                       value={drawerDismissReason}
-                      onChange={(e) => setDrawerDismissReason(e.target.value)}
-                      className="w-full p-2.5 rounded-xl border border-slate-300 bg-white font-medium text-slate-800 outline-none focus:border-emerald-500"
-                    >
-                      <option value="NO_VIOLATION">Nội dung hợp lệ, không vi phạm điều khoản</option>
-                      <option value="INSUFFICIENT_EVIDENCE">Không đủ bằng chứng xác thực</option>
-                      <option value="SPAM_ABUSE">Báo cáo sai mục đích hoặc quấy rối</option>
-                      <option value="OTHER">Lý do nghiệp vụ khác</option>
-                    </select>
+                      onChange={(val) => setDrawerDismissReason(val)}
+                      options={[
+                        { value: "NO_VIOLATION", label: "Nội dung hợp lệ, không vi phạm điều khoản" },
+                        { value: "INSUFFICIENT_EVIDENCE", label: "Không đủ bằng chứng xác thực" },
+                        { value: "SPAM_ABUSE", label: "Báo cáo sai mục đích hoặc quấy rối" },
+                        { value: "OTHER", label: "Lý do nghiệp vụ khác" },
+                      ]}
+                      size="sm"
+                    />
                   </div>
 
                   <div>

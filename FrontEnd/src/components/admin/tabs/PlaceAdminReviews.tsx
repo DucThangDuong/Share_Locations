@@ -23,6 +23,7 @@ import {
   Play
 } from 'lucide-react'
 import { placeService } from '@/services/placeService'
+import { CustomSelect } from '@/components/common/CustomSelect'
 import { adminService, extractList } from '@/services/adminService'
 import { useAuth } from '@/context/AuthContext'
 import { MediaLightboxModal } from '@/components/place/MediaLightboxModal'
@@ -57,7 +58,7 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
   // Main Review State
   const [reviews, setReviews] = useState<ReviewItemDto[]>([])
   const [totalReviews, setTotalReviews] = useState<number>(0)
-  const [avgRating, setAvgRating] = useState<number>(5)
+  const [avgRating, setAvgRating] = useState<number>(0)
   const [ratingBreakdown, setRatingBreakdown] = useState<Record<string, number>>({})
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [errorMsg, setErrorMsg] = useState<string>('')
@@ -116,7 +117,7 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
         const items = data.items || []
         setReviews(items)
         setTotalReviews(data.totalReviews ?? items.length)
-        setAvgRating(Number(data.avgRating) || 5)
+        setAvgRating(Number(data.avgRating) || 0)
         setRatingBreakdown(data.ratingBreakdown || {})
         onReviewsCountChange?.(data.totalReviews ?? items.length)
       } else {
@@ -692,31 +693,33 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
 
           {/* Rating Dropdown */}
           <div className="md:col-span-3">
-            <select
+            <CustomSelect
               value={selectedRatingFilter}
-              onChange={(e) => setSelectedRatingFilter(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 outline-none cursor-pointer focus:bg-white focus:border-emerald-700"
-            >
-              <option value="all">Tất cả số sao (1 - 5 ★)</option>
-              <option value="5">⭐⭐⭐⭐⭐ 5 sao</option>
-              <option value="4">⭐⭐⭐⭐ 4 sao</option>
-              <option value="3">⭐⭐⭐ 3 sao</option>
-              <option value="2">⭐⭐ 2 sao</option>
-              <option value="1">⭐ 1 sao</option>
-            </select>
+              onChange={(val) => setSelectedRatingFilter(val)}
+              options={[
+                { value: "all", label: "Tất cả số sao (1 - 5 ★)" },
+                { value: "5", label: "⭐⭐⭐⭐⭐ 5 sao" },
+                { value: "4", label: "⭐⭐⭐⭐ 4 sao" },
+                { value: "3", label: "⭐⭐⭐ 3 sao" },
+                { value: "2", label: "⭐⭐ 2 sao" },
+                { value: "1", label: "⭐ 1 sao" },
+              ]}
+              size="sm"
+            />
           </div>
 
           {/* Status Dropdown */}
           <div className="md:col-span-2">
-            <select
+            <CustomSelect
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 outline-none cursor-pointer focus:bg-white focus:border-emerald-700"
-            >
-              <option value="all">Tất cả trạng thái</option>
-              <option value="active">Đang hiển thị</option>
-              <option value="hidden">Đang tạm ẩn</option>
-            </select>
+              onChange={(val) => setStatusFilter(val as any)}
+              options={[
+                { value: "all", label: "Tất cả trạng thái" },
+                { value: "active", label: "Đang hiển thị" },
+                { value: "hidden", label: "Đang tạm ẩn" },
+              ]}
+              size="sm"
+            />
           </div>
         </div>
 

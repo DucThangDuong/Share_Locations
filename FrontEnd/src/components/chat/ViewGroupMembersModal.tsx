@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { X, Users, UserPlus, Loader2, Search, ShieldCheck } from 'lucide-react'
 import { chatService, type ChatRoomMemberDto } from '@/services/chatService'
+import { useSystemSettings } from '@/context/SystemSettingsContext'
 
 interface ViewGroupMembersModalProps {
   isOpen: boolean
@@ -17,6 +18,7 @@ export const ViewGroupMembersModal: React.FC<ViewGroupMembersModalProps> = ({
   onClose,
   onOpenAddMembers,
 }) => {
+  const { defaultUserAvatar } = useSystemSettings()
   const [members, setMembers] = useState<ChatRoomMemberDto[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -126,9 +128,7 @@ export const ViewGroupMembersModal: React.FC<ViewGroupMembersModalProps> = ({
             </div>
           ) : (
             filteredMembers.map((m) => {
-              const avatar =
-                m.avatarUrl ||
-                'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop'
+              const avatar = m.avatarUrl || defaultUserAvatar
 
               const isMemberAdmin = Boolean(m.isAdmin || m.role === 'Admin')
 

@@ -69,21 +69,21 @@ public class BlogRepository : IBlogRepository
 
         if (!string.IsNullOrWhiteSpace(p.Category))
         {
-            conditions.Add("c.Name LIKE @Category");
+            conditions.Add("(c.Status = 1 AND c.Name LIKE @Category)");
             parameters.Add("Category", $"%{p.Category.Trim()}%");
         }
 
         var categoryIds = p.GetEffectiveCategoryIds();
         if (categoryIds.Count > 0)
         {
-            conditions.Add("b.CategoryId IN @CategoryIds");
+            conditions.Add("(b.CategoryId IN @CategoryIds AND c.Status = 1)");
             parameters.Add("CategoryIds", categoryIds);
         }
 
         var placeTypeIds = p.GetEffectivePlaceTypeIds();
         if (placeTypeIds.Count > 0)
         {
-            conditions.Add("c.PlaceTypeId IN @PlaceTypeIds");
+            conditions.Add("(c.PlaceTypeId IN @PlaceTypeIds AND c.Status = 1)");
             parameters.Add("PlaceTypeIds", placeTypeIds);
         }
 
@@ -112,7 +112,7 @@ public class BlogRepository : IBlogRepository
                 b.CreatedAt,
                 ISNULL(up.FullName, N'Lang Thang Blogger') AS AuthorName,
                 up.AvatarUrl AS AuthorAvatar,
-                c.Name AS CategoryName
+                CASE WHEN c.Status = 1 THEN c.Name ELSE N'Không khả dụng' END AS CategoryName
             FROM dbo.Blogs b
             LEFT JOIN dbo.UserProfiles up ON b.AuthorId = up.UserId
             LEFT JOIN dbo.Categories c ON b.CategoryId = c.Id
@@ -142,7 +142,7 @@ public class BlogRepository : IBlogRepository
                 b.CreatedAt,
                 ISNULL(up.FullName, N'Lang Thang Blogger') AS AuthorName,
                 up.AvatarUrl AS AuthorAvatar,
-                c.Name AS CategoryName
+                CASE WHEN c.Status = 1 THEN c.Name ELSE N'Không khả dụng' END AS CategoryName
             FROM dbo.Blogs b
             LEFT JOIN dbo.UserProfiles up ON b.AuthorId = up.UserId
             LEFT JOIN dbo.Categories c ON b.CategoryId = c.Id
@@ -173,7 +173,7 @@ public class BlogRepository : IBlogRepository
                     b.CreatedAt,
                     ISNULL(up.FullName, N'Lang Thang Blogger') AS AuthorName,
                     up.AvatarUrl AS AuthorAvatar,
-                    c.Name AS CategoryName
+                    CASE WHEN c.Status = 1 THEN c.Name ELSE N'Không khả dụng' END AS CategoryName
                 FROM dbo.Blogs b
                 LEFT JOIN dbo.UserProfiles up ON b.AuthorId = up.UserId
                 LEFT JOIN dbo.Categories c ON b.CategoryId = c.Id
@@ -197,7 +197,7 @@ public class BlogRepository : IBlogRepository
                     b.CreatedAt,
                     ISNULL(up.FullName, N'Lang Thang Blogger') AS AuthorName,
                     up.AvatarUrl AS AuthorAvatar,
-                    c.Name AS CategoryName
+                    CASE WHEN c.Status = 1 THEN c.Name ELSE N'Không khả dụng' END AS CategoryName
                 FROM dbo.Blogs b
                 LEFT JOIN dbo.UserProfiles up ON b.AuthorId = up.UserId
                 LEFT JOIN dbo.Categories c ON b.CategoryId = c.Id

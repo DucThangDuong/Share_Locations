@@ -12,11 +12,16 @@ public class AdminReviewRepository : IAdminReviewRepository
 {
     private readonly TravelReviewDbContext _dbContext;
     private readonly ICurrentUserService _currentUserService;
+    private readonly IAuditLogService _auditLogService;
 
-    public AdminReviewRepository(TravelReviewDbContext dbContext, ICurrentUserService currentUserService)
+    public AdminReviewRepository(
+        TravelReviewDbContext dbContext,
+        ICurrentUserService currentUserService,
+        IAuditLogService auditLogService)
     {
         _dbContext = dbContext;
         _currentUserService = currentUserService;
+        _auditLogService = auditLogService;
     }
 
     public async Task<PagedResult<AdminReviewItemDto>> GetAdminReviewsAsync(
@@ -162,10 +167,21 @@ public class AdminReviewRepository : IAdminReviewRepository
         if (!await AdminScopeFilterHelper.IsPlaceInScopeAsync(_currentUserService, _dbContext.Database.GetDbConnection(), review.PlaceId))
             return false;
 
+        var oldStatus = review.Status;
         review.UpdateStatus(status);
         await _dbContext.SaveChangesAsync(ct);
 
         await RecalculatePlaceRatingAsync(review.PlaceId);
+
+        await _auditLogService.LogAsync(
+            actionType: "UPDATE_REVIEW_STATUS",
+            targetTable: "Reviews",
+            targetId: id,
+            reason: $"Cập nhật trạng thái đánh giá #{id} sang {status}",
+            oldData: new { Status = (int)oldStatus },
+            newData: new { Status = (int)status },
+            ct: ct);
+
         return true;
     }
 
@@ -178,10 +194,20 @@ public class AdminReviewRepository : IAdminReviewRepository
             return false;
 
         var placeId = review.PlaceId;
+        var oldReviewData = new { Id = review.Id, Content = review.Content, PlaceId = review.PlaceId, UserId = review.UserId, Rating = review.Rating };
         _dbContext.Reviews.Remove(review);
         await _dbContext.SaveChangesAsync(ct);
 
         await RecalculatePlaceRatingAsync(placeId);
+
+        await _auditLogService.LogAsync(
+            actionType: "DELETE_REVIEW",
+            targetTable: "Reviews",
+            targetId: id,
+            reason: $"Xóa đánh giá #{id} tại địa điểm #{placeId}",
+            oldData: oldReviewData,
+            ct: ct);
+
         return true;
     }
 
@@ -294,8 +320,19 @@ public class AdminReviewRepository : IAdminReviewRepository
         if (!await AdminScopeFilterHelper.IsPlaceInScopeAsync(_currentUserService, _dbContext.Database.GetDbConnection(), comment.Review.PlaceId))
             return false;
 
+        var oldStatus = comment.Status;
         comment.UpdateStatus(status);
         await _dbContext.SaveChangesAsync(ct);
+
+        await _auditLogService.LogAsync(
+            actionType: "UPDATE_COMMENT_STATUS",
+            targetTable: "Comments",
+            targetId: id,
+            reason: $"Cập nhật trạng thái bình luận #{id} sang {status}",
+            oldData: new { Status = (int)oldStatus },
+            newData: new { Status = (int)status },
+            ct: ct);
+
         return true;
     }
 
@@ -307,8 +344,18 @@ public class AdminReviewRepository : IAdminReviewRepository
         if (!await AdminScopeFilterHelper.IsPlaceInScopeAsync(_currentUserService, _dbContext.Database.GetDbConnection(), comment.Review.PlaceId))
             return false;
 
+        var oldCommentData = new { Id = comment.Id, Content = comment.Content, ReviewId = comment.ReviewId, UserId = comment.UserId };
         _dbContext.Comments.Remove(comment);
         await _dbContext.SaveChangesAsync(ct);
+
+        await _auditLogService.LogAsync(
+            actionType: "DELETE_COMMENT",
+            targetTable: "Comments",
+            targetId: id,
+            reason: $"Xóa bình luận #{id}",
+            oldData: oldCommentData,
+            ct: ct);
+
         return true;
     }
 

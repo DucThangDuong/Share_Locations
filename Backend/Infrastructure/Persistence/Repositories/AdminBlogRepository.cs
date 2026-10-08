@@ -13,11 +13,16 @@ public class AdminBlogRepository : IAdminBlogRepository
 {
     private readonly TravelReviewDbContext _dbContext;
     private readonly ICurrentUserService _currentUserService;
+    private readonly IAuditLogService _auditLogService;
 
-    public AdminBlogRepository(TravelReviewDbContext dbContext, ICurrentUserService currentUserService)
+    public AdminBlogRepository(
+        TravelReviewDbContext dbContext,
+        ICurrentUserService currentUserService,
+        IAuditLogService auditLogService)
     {
         _dbContext = dbContext;
         _currentUserService = currentUserService;
+        _auditLogService = auditLogService;
     }
 
     public async Task<PagedResult<AdminBlogListItemDto>> GetAdminBlogsAsync(
@@ -196,6 +201,21 @@ public class AdminBlogRepository : IAdminBlogRepository
 
         _dbContext.Blogs.Add(blog);
         await _dbContext.SaveChangesAsync(ct);
+
+        await _auditLogService.LogAsync(
+            actionType: "CREATE_BLOG",
+            targetTable: "Blogs",
+            targetId: blog.Id,
+            reason: $"Tạo mới bài viết cẩm nang: {blog.Title}",
+            newData: new
+            {
+                Title = blog.Title,
+                CategoryId = blog.CategoryId,
+                Status = (int)blog.Status,
+                AuthorId = authorId
+            },
+            ct: ct);
+
         return blog.Id;
     }
 
@@ -209,6 +229,14 @@ public class AdminBlogRepository : IAdminBlogRepository
 
         var blog = await _dbContext.Blogs.FirstOrDefaultAsync(b => b.Id == id, ct);
         if (blog == null) return false;
+
+        var oldData = new
+        {
+            Title = blog.Title,
+            CategoryId = blog.CategoryId,
+            Status = (int)blog.Status,
+            Summary = blog.Excerpt
+        };
 
         var status = input.Status.Equals("draft", StringComparison.OrdinalIgnoreCase)
             ? BlogStatus.Draft
@@ -224,6 +252,22 @@ public class AdminBlogRepository : IAdminBlogRepository
             status: status);
 
         await _dbContext.SaveChangesAsync(ct);
+
+        await _auditLogService.LogAsync(
+            actionType: "UPDATE_BLOG",
+            targetTable: "Blogs",
+            targetId: id,
+            reason: $"Cập nhật bài viết cẩm nang: {blog.Title}",
+            oldData: oldData,
+            newData: new
+            {
+                Title = blog.Title,
+                CategoryId = blog.CategoryId,
+                Status = (int)blog.Status,
+                Summary = blog.Excerpt
+            },
+            ct: ct);
+
         return true;
     }
 
@@ -239,8 +283,19 @@ public class AdminBlogRepository : IAdminBlogRepository
             ? BlogStatus.Draft
             : (status.Equals("hidden", StringComparison.OrdinalIgnoreCase) ? BlogStatus.Archived : BlogStatus.Published);
 
+        var oldStatus = blog.Status;
         blog.UpdateStatus(blogStatus);
         await _dbContext.SaveChangesAsync(ct);
+
+        await _auditLogService.LogAsync(
+            actionType: "UPDATE_BLOG_STATUS",
+            targetTable: "Blogs",
+            targetId: id,
+            reason: $"Thay đổi trạng thái bài viết #{id} sang {status}",
+            oldData: new { Status = (int)oldStatus },
+            newData: new { Status = (int)blogStatus },
+            ct: ct);
+
         return true;
     }
 
@@ -252,8 +307,18 @@ public class AdminBlogRepository : IAdminBlogRepository
         var blog = await _dbContext.Blogs.FirstOrDefaultAsync(b => b.Id == id, ct);
         if (blog == null) return false;
 
+        var oldData = new { Id = blog.Id, Title = blog.Title, Status = (int)blog.Status };
         _dbContext.Blogs.Remove(blog);
         await _dbContext.SaveChangesAsync(ct);
+
+        await _auditLogService.LogAsync(
+            actionType: "DELETE_BLOG",
+            targetTable: "Blogs",
+            targetId: id,
+            reason: $"Xóa bài viết #{id} ({blog.Title})",
+            oldData: oldData,
+            ct: ct);
+
         return true;
     }
 }

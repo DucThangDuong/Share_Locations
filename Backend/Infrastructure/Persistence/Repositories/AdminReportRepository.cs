@@ -13,11 +13,16 @@ public class AdminReportRepository : IAdminReportRepository
 {
     private readonly TravelReviewDbContext _dbContext;
     private readonly ICurrentUserService _currentUserService;
+    private readonly IAuditLogService _auditLogService;
 
-    public AdminReportRepository(TravelReviewDbContext dbContext, ICurrentUserService currentUserService)
+    public AdminReportRepository(
+        TravelReviewDbContext dbContext,
+        ICurrentUserService currentUserService,
+        IAuditLogService auditLogService)
     {
         _dbContext = dbContext;
         _currentUserService = currentUserService;
+        _auditLogService = auditLogService;
     }
 
     public async Task<IReadOnlyList<ReportReasonDto>> GetReportReasonsAsync(string? targetType = null, CancellationToken ct = default)
@@ -538,6 +543,26 @@ public class AdminReportRepository : IAdminReportRepository
         }
 
         await _dbContext.SaveChangesAsync(ct);
+
+        var reportTable = targetType.Trim().ToLowerInvariant() switch
+        {
+            "place" => "PlaceReports",
+            "review" => "ReviewReports",
+            "comment" => "CommentReports",
+            "blog" => "BlogReports",
+            _ => "Reports"
+        };
+
+        await _auditLogService.LogAsync(
+            actionType: "RESOLVE_REPORT",
+            targetTable: reportTable,
+            targetId: reportId,
+            reason: resolutionNote ?? $"Xử lý báo cáo {targetType} #{reportId}. Hành động: {actionTaken ?? "Không"}, Trạng thái: {status}",
+            oldData: new { Status = 0 },
+            newData: new { Status = (int)status, ActionTaken = actionTaken, ResolutionNote = resolutionNote },
+            customAdminId: adminId,
+            ct: ct);
+
         return true;
     }
 
@@ -603,6 +628,26 @@ public class AdminReportRepository : IAdminReportRepository
         }
 
         await _dbContext.SaveChangesAsync(ct);
+
+        var targetTable = targetType.Trim().ToLowerInvariant() switch
+        {
+            "place" => "Places",
+            "review" => "Reviews",
+            "comment" => "Comments",
+            "blog" => "Blogs",
+            _ => "Reports"
+        };
+
+        await _auditLogService.LogAsync(
+            actionType: "RESOLVE_REPORT_GROUP",
+            targetTable: targetTable,
+            targetId: targetId,
+            reason: resolutionNote ?? $"Xử lý nhóm báo cáo cho đối tượng {targetType} #{targetId}. Hành động: {actionTaken ?? "Không"}",
+            oldData: new { Status = 0 },
+            newData: new { Status = (int)status, ActionTaken = actionTaken, ResolutionNote = resolutionNote },
+            customAdminId: adminId,
+            ct: ct);
+
         return true;
     }
 

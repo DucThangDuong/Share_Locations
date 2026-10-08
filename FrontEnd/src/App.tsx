@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route, useNavigate, useSearchParams } from 'reac
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import { AuthProvider } from '@/context/AuthContext'
 import { ChatProvider } from '@/context/ChatContext'
+import { NotificationProvider } from '@/context/NotificationContext'
+import { SystemSettingsProvider } from '@/context/SystemSettingsContext'
 import { MainLayout } from '@/layouts/MainLayout'
 import { ChatLayout } from '@/layouts/ChatLayout'
 
@@ -52,10 +54,12 @@ export const App: React.FC = () => {
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
       <AuthProvider>
-        <ChatProvider>
-          <BrowserRouter>
-            <Suspense fallback={<PageLoadingFallback />}>
-              <Routes>
+        <SystemSettingsProvider>
+          <NotificationProvider>
+            <ChatProvider>
+              <BrowserRouter>
+              <Suspense fallback={<PageLoadingFallback />}>
+                <Routes>
                 <Route path="/" element={<MainLayout />}>
                 <Route index element={<HomePage />} />
                 <Route path="explore" element={<ExplorePage />} />
@@ -116,7 +120,9 @@ export const App: React.FC = () => {
             </Routes>
           </Suspense>
         </BrowserRouter>
-        </ChatProvider>
+            </ChatProvider>
+          </NotificationProvider>
+        </SystemSettingsProvider>
       </AuthProvider>
     </GoogleOAuthProvider>
   )

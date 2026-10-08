@@ -186,7 +186,9 @@ public class RegionRepository : IRegionRepository
             var colIds = collectionRows.Select(c => (int)c.Id).ToList();
 
             const string colPlacesSql = @"
-                SELECT cp.CollectionId, p.Id, p.Name, p.AvgRating, p.ReviewCount, cat.Name AS CategoryName, p.CoverImageUrl
+                SELECT cp.CollectionId, p.Id, p.Name, p.AvgRating, p.ReviewCount, 
+                       CASE WHEN cat.Status = 1 THEN cat.Name ELSE N'Không khả dụng' END AS CategoryName, 
+                       p.CoverImageUrl
                 FROM dbo.CollectionPlaces cp
                 INNER JOIN dbo.Places p ON cp.PlaceId = p.Id
                 LEFT JOIN dbo.Categories cat ON p.CategoryId = cat.Id
@@ -258,7 +260,7 @@ public class RegionRepository : IRegionRepository
                 p.ReviewCount,
                 (SELECT COUNT(1) FROM dbo.Favorites f WHERE f.TargetId = p.Id AND f.TargetType = 1) AS SavedCount,
                 COALESCE(p.CoverImageUrl, (SELECT TOP 1 pm.Url FROM dbo.PlaceMedia pm WHERE pm.PlaceId = p.Id ORDER BY pm.DisplayOrder)) AS ImageUrl,
-                cat.Name AS Category,
+                CASE WHEN cat.Status = 1 THEN cat.Name ELSE N'Không khả dụng' END AS Category,
                 p.MinPrice,
                 p.MaxPrice
             FROM dbo.Places p
@@ -465,7 +467,7 @@ public class RegionRepository : IRegionRepository
                 b.ViewCount,
                 ISNULL(up.FullName, N'Lang Thang Blogger') AS AuthorName,
                 up.AvatarUrl AS AuthorAvatar,
-                c.Name AS CategoryName
+                CASE WHEN c.Status = 1 THEN c.Name ELSE N'Không khả dụng' END AS CategoryName
             FROM dbo.Blogs b
             LEFT JOIN dbo.UserProfiles up ON b.AuthorId = up.UserId
             LEFT JOIN dbo.Categories c ON b.CategoryId = c.Id

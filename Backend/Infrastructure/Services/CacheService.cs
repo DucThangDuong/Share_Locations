@@ -1,7 +1,9 @@
 using System.Text.Json;
 using Application.Common.Interfaces;
 using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using StackExchange.Redis;
 
 namespace Infrastructure.Services;
 
@@ -9,16 +11,21 @@ public class CacheService : ICacheService
 {
     private readonly IDistributedCache _cache;
     private readonly ILogger<CacheService> _logger;
+    private readonly IConnectionMultiplexer? _redis;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true
     };
 
-    public CacheService(IDistributedCache cache, ILogger<CacheService> logger)
+    public CacheService(
+        IDistributedCache cache, 
+        ILogger<CacheService> logger,
+        IServiceProvider serviceProvider)
     {
         _cache = cache;
         _logger = logger;
+        _redis = serviceProvider.GetService<IConnectionMultiplexer>();
     }
 
     public async Task<T?> GetAsync<T>(string key, CancellationToken ct = default)
@@ -69,6 +76,35 @@ public class CacheService : ICacheService
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Lỗi xóa cache với key: {Key}", key);
+        }
+    }
+
+    public async Task RemoveByPatternAsync(string pattern, CancellationToken ct = default)
+    {
+        try
+        {
+            if (_redis != null && _redis.IsConnected)
+            {
+                var fullPattern = pattern.StartsWith("TravelReview_") ? pattern : $"TravelReview_{pattern}";
+                var db = _redis.GetDatabase();
+
+                foreach (var endpoint in _redis.GetEndPoints())
+                {
+                    var server = _redis.GetServer(endpoint);
+                    if (server.IsConnected)
+                    {
+                        var keys = server.Keys(pattern: fullPattern).ToArray();
+                        if (keys.Length > 0)
+                        {
+                            await db.KeyDeleteAsync(keys);
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Lỗi xóa cache theo pattern: {Pattern}", pattern);
         }
     }
 }

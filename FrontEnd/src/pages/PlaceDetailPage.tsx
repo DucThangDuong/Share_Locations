@@ -11,6 +11,7 @@ import { PlaceDetailOverview } from '@/components/place/PlaceDetailOverview'
 import { PlaceDetailReviews } from '@/components/place/PlaceDetailReviews'
 import { PlaceDetailSidebar } from '@/components/place/PlaceDetailSidebar'
 import { PlaceDetailFoods } from '@/components/place/PlaceDetailFoods'
+import { PlaceDetailRelated } from '@/components/place/PlaceDetailRelated'
 import type { PlaceDetailDto, ReviewItemDto } from '@/types/models/place.model'
 
 export const PlaceDetailPage = () => {
@@ -258,10 +259,11 @@ export const PlaceDetailPage = () => {
           <span>{shareToastMsg}</span>
         </div>
       )}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-8">
         <PlaceDetailGallery images={images} placeName={place.name} />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
+        {/* Top Info & Sidebar (2 Columns): Sidebar stays sticky only through Overview + Foods */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
           <div className="lg:col-span-2 space-y-8">
             <PlaceDetailOverview
               place={place}
@@ -277,25 +279,29 @@ export const PlaceDetailPage = () => {
             {place.foods && place.foods.length > 0 && (
               <PlaceDetailFoods foods={place.foods} />
             )}
-
-            <PlaceDetailReviews
-              placeId={place.id}
-              reviews={reviewsList}
-              totalReviews={totalReviews}
-              ratingBreakdown={ratingBreakdown}
-              avgRating={place.avgRating}
-              isAuthenticated={isAuthenticated}
-              hasMore={reviewsList.length < totalReviews}
-              isLoadingMore={loadingMoreReviews}
-              onLoadMore={handleLoadMoreReviews}
-              onReviewAdded={handleReviewAdded}
-              onReviewUpdated={handleReviewUpdated}
-              onReviewDeleted={handleReviewDeleted}
-            />
           </div>
 
           <PlaceDetailSidebar place={place} />
         </div>
+
+        {/* Full-width Related / Similar Places (Above Reviews) */}
+        <PlaceDetailRelated currentPlaceId={place.id} />
+
+        {/* Full-width Community Reviews */}
+        <PlaceDetailReviews
+          placeId={place.id}
+          reviews={reviewsList}
+          totalReviews={totalReviews}
+          ratingBreakdown={ratingBreakdown}
+          avgRating={place.avgRating}
+          isAuthenticated={isAuthenticated}
+          hasMore={reviewsList.length < totalReviews}
+          isLoadingMore={loadingMoreReviews}
+          onLoadMore={handleLoadMoreReviews}
+          onReviewAdded={handleReviewAdded}
+          onReviewUpdated={handleReviewUpdated}
+          onReviewDeleted={handleReviewDeleted}
+        />
       </div>
 
       {isReportOpen && (

@@ -13,11 +13,16 @@ public class AdminPlaceRepository : IAdminPlaceRepository
 {
     private readonly TravelReviewDbContext _dbContext;
     private readonly ICurrentUserService _currentUserService;
+    private readonly IAuditLogService _auditLogService;
 
-    public AdminPlaceRepository(TravelReviewDbContext dbContext, ICurrentUserService currentUserService)
+    public AdminPlaceRepository(
+        TravelReviewDbContext dbContext,
+        ICurrentUserService currentUserService,
+        IAuditLogService auditLogService)
     {
         _dbContext = dbContext;
         _currentUserService = currentUserService;
+        _auditLogService = auditLogService;
     }
 
     public async Task<PagedResult<AdminPlaceListItemDto>> GetAdminPlacesAsync(
@@ -234,6 +239,22 @@ public class AdminPlaceRepository : IAdminPlaceRepository
             await _dbContext.SaveChangesAsync(ct);
         }
 
+        await _auditLogService.LogAsync(
+            actionType: "CREATE_PLACE",
+            targetTable: "Places",
+            targetId: place.Id,
+            reason: $"Tạo mới địa điểm: {place.Name}",
+            newData: new
+            {
+                Name = place.Name,
+                Address = place.Address,
+                CategoryId = place.CategoryId,
+                ProvinceId = place.ProvinceId,
+                Status = (int)place.Status,
+                FoodIds = input.FoodIds
+            },
+            ct: ct);
+
         return place.Id;
     }
 
@@ -244,6 +265,25 @@ public class AdminPlaceRepository : IAdminPlaceRepository
 
         var place = await _dbContext.Places.FirstOrDefaultAsync(p => p.Id == id, ct);
         if (place == null) return false;
+
+        var oldFoodIds = await _dbContext.FoodPlaces
+            .Where(fp => fp.PlaceId == id)
+            .Select(fp => fp.FoodId)
+            .ToListAsync(ct);
+
+        var oldData = new
+        {
+            Name = place.Name,
+            Address = place.Address,
+            CategoryId = place.CategoryId,
+            ProvinceId = place.ProvinceId,
+            Phone = place.Phone,
+            Website = place.Website,
+            Hours = place.OpeningHours,
+            MinPrice = place.MinPrice,
+            MaxPrice = place.MaxPrice,
+            FoodIds = oldFoodIds
+        };
 
         var name = !string.IsNullOrWhiteSpace(input.Name) ? input.Name : place.Name;
         var address = !string.IsNullOrWhiteSpace(input.Address) ? input.Address : place.Address;
@@ -291,6 +331,7 @@ public class AdminPlaceRepository : IAdminPlaceRepository
             }
         }
 
+        var effectiveFoodIds = oldFoodIds;
         if (input.FoodIds != null)
         {
             var distinctFoodIds = input.FoodIds.Where(fid => fid > 0).Distinct().ToList();
@@ -308,9 +349,32 @@ public class AdminPlaceRepository : IAdminPlaceRepository
             {
                 _dbContext.FoodPlaces.Add(new FoodPlace(foodId, id));
             }
+            effectiveFoodIds = validFoodIds;
         }
 
         await _dbContext.SaveChangesAsync(ct);
+
+        await _auditLogService.LogAsync(
+            actionType: "UPDATE_PLACE",
+            targetTable: "Places",
+            targetId: id,
+            reason: $"Cập nhật thông tin địa điểm: {place.Name}",
+            oldData: oldData,
+            newData: new
+            {
+                Name = place.Name,
+                Address = place.Address,
+                CategoryId = place.CategoryId,
+                ProvinceId = place.ProvinceId,
+                Phone = place.Phone,
+                Website = place.Website,
+                Hours = place.OpeningHours,
+                MinPrice = place.MinPrice,
+                MaxPrice = place.MaxPrice,
+                FoodIds = effectiveFoodIds
+            },
+            ct: ct);
+
         return true;
     }
 
@@ -322,8 +386,19 @@ public class AdminPlaceRepository : IAdminPlaceRepository
         var place = await _dbContext.Places.FirstOrDefaultAsync(p => p.Id == id, ct);
         if (place == null) return false;
 
+        var oldStatus = place.Status;
         place.UpdateStatus(status);
         await _dbContext.SaveChangesAsync(ct);
+
+        await _auditLogService.LogAsync(
+            actionType: "UPDATE_PLACE_STATUS",
+            targetTable: "Places",
+            targetId: id,
+            reason: $"Cập nhật trạng thái địa điểm #{id} ({place.Name}) sang {status}",
+            oldData: new { Status = (int)oldStatus },
+            newData: new { Status = (int)status },
+            ct: ct);
+
         return true;
     }
 
@@ -335,9 +410,20 @@ public class AdminPlaceRepository : IAdminPlaceRepository
         var place = await _dbContext.Places.FirstOrDefaultAsync(p => p.Id == id, ct);
         if (place == null) return false;
 
+        var oldStatus = place.Status;
         // Xóa các bảng phụ thuộc hoặc xóa mềm sang Hidden
         place.UpdateStatus(PlaceStatus.Hidden);
         await _dbContext.SaveChangesAsync(ct);
+
+        await _auditLogService.LogAsync(
+            actionType: "DELETE_PLACE",
+            targetTable: "Places",
+            targetId: id,
+            reason: $"Xóa (ẩn) địa điểm #{id} ({place.Name})",
+            oldData: new { Status = (int)oldStatus },
+            newData: new { Status = (int)PlaceStatus.Hidden },
+            ct: ct);
+
         return true;
     }
 
@@ -352,6 +438,15 @@ public class AdminPlaceRepository : IAdminPlaceRepository
         var oldCoverUrl = place.CoverImageUrl;
         place.UpdateCoverImage(newCoverImageUrl);
         await _dbContext.SaveChangesAsync(ct);
+
+        await _auditLogService.LogAsync(
+            actionType: "UPDATE_PLACE_COVER",
+            targetTable: "Places",
+            targetId: placeId,
+            reason: $"Cập nhật ảnh đại diện cho địa điểm: {place.Name}",
+            oldData: new { CoverImageUrl = oldCoverUrl },
+            newData: new { CoverImageUrl = newCoverImageUrl },
+            ct: ct);
 
         return (true, oldCoverUrl);
     }
@@ -387,6 +482,16 @@ public class AdminPlaceRepository : IAdminPlaceRepository
         }
 
         await _dbContext.SaveChangesAsync(ct);
+
+        await _auditLogService.LogAsync(
+            actionType: "ADD_PLACE_MEDIA",
+            targetTable: "Places",
+            targetId: placeId,
+            reason: $"Tải lên {addedItems.Count} ảnh vào bộ sưu tập địa điểm: {place.Name}",
+            newData: new { PlaceId = placeId, Count = addedItems.Count, MediaUrls = mediaUrls },
+            customAdminId: uploaderId,
+            ct: ct);
+
         return addedItems;
     }
 
@@ -401,6 +506,14 @@ public class AdminPlaceRepository : IAdminPlaceRepository
         var url = media.Url;
         _dbContext.PlaceMedia.Remove(media);
         await _dbContext.SaveChangesAsync(ct);
+
+        await _auditLogService.LogAsync(
+            actionType: "DELETE_PLACE_MEDIA",
+            targetTable: "PlaceMedia",
+            targetId: mediaId,
+            reason: $"Xóa ảnh #{mediaId} khỏi địa điểm #{placeId}",
+            oldData: new { PlaceId = placeId, MediaId = mediaId, Url = url },
+            ct: ct);
 
         return (true, url);
     }

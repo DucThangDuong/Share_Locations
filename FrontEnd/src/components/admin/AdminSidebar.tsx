@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import type { AdminMainTab } from "@/types/admin.types";
+import { isUserSystemAdmin } from "@/utils/authUtils";
 import {
   LayoutDashboard,
   Users,
@@ -15,6 +16,9 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   ChevronDown,
+  History,
+  Compass,
+  Settings,
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -56,6 +60,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   auditLogsCount: _auditLogsCount,
   onBackToUserView,
 }) => {
+  const isSystemAdmin = isUserSystemAdmin();
   const [isReportsDropdownOpen, setIsReportsDropdownOpen] = useState<boolean>(mainTab === "reports");
 
   useEffect(() => {
@@ -114,13 +119,15 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
               {[
                 { id: "dashboard", label: "Tổng quan", icon: LayoutDashboard },
-                { id: "users", label: "Quản lý Tài khoản", icon: Users },
+                { id: "admin_profile", label: "Phạm vi điều hành", icon: Compass },
+                ...(isSystemAdmin ? [{ id: "users", label: "Quản lý Tài khoản", icon: Users }] : []),
                 { id: "places", label: "Địa điểm", icon: MapPin, count: pendingPlacesCount, isAlert: pendingPlacesCount > 0 },
                 { id: "proposals", label: "Đề xuất đóng góp", icon: ClipboardCheck, count: pendingProposalsCount, isAlert: pendingProposalsCount > 0 },
                 { id: "reviews_comments", label: "Đánh giá & Bình luận", icon: MessageSquare, count: reportedReviewsCount, isAlert: reportedReviewsCount > 0 },
+                { id: "audit_logs", label: "Nhật ký kiểm toán", icon: History },
               ].map((item) => {
                 const IconComp = item.icon;
-                const isActive = mainTab === item.id;
+                const isActive = mainTab === item.id || (item.id === "admin_profile" && (mainTab === "profile" as any || mainTab === "admin_profile"));
                 return (
                   <button
                     key={item.id}
@@ -256,10 +263,12 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                 { id: "foods", label: "Ẩm thực", icon: Utensils },
                 { id: "collections", label: "Bộ sưu tập", icon: FolderHeart },
                 { id: "blogs", label: "Cẩm nang", icon: BookOpen },
-                { id: "categories", label: "Danh mục hệ thống", icon: Layers },
+                ...(isSystemAdmin ? [{ id: "provinces", label: "Tỉnh thành", icon: Compass }] : []),
+                ...(isSystemAdmin ? [{ id: "categories", label: "Danh mục", icon: Layers }] : []),
+                ...(isSystemAdmin ? [{ id: "settings", label: "Cài đặt", icon: Settings }] : []),
               ].map((item) => {
                 const IconComp = item.icon;
-                const isActive = mainTab === item.id;
+                const isActive = mainTab === item.id || (item.id === "settings" && mainTab === "notifications_profile");
                 return (
                   <button
                     key={item.id}

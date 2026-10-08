@@ -1,5 +1,8 @@
-﻿using Application.Common;
+using Application.Common;
+using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
+using Application.DTOs;
+using Domain.Enums;
 using Domain.Interfaces;
 using MediatR;
 
@@ -11,11 +14,19 @@ public class CreateGroupRoomCommandHandler : IRequestHandler<CreateGroupRoomComm
 {
     private readonly IChatRepository _chatRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly INotificationRepository _notificationRepository;
+    private readonly INotificationNotifier _notifier;
 
-    public CreateGroupRoomCommandHandler(IChatRepository chatRepository, IUnitOfWork unitOfWork)
+    public CreateGroupRoomCommandHandler(
+        IChatRepository chatRepository,
+        IUnitOfWork unitOfWork,
+        INotificationRepository notificationRepository,
+        INotificationNotifier notifier)
     {
         _chatRepository = chatRepository;
         _unitOfWork = unitOfWork;
+        _notificationRepository = notificationRepository;
+        _notifier = notifier;
     }
 
     public async Task<Result<long>> Handle(CreateGroupRoomCommand request, CancellationToken ct)
@@ -42,6 +53,38 @@ public class CreateGroupRoomCommandHandler : IRequestHandler<CreateGroupRoomComm
         }
 
         var roomId = await _chatRepository.CreateGroupRoomAsync(cleanName, request.CreatorId, validMemberIds, ct);
+
+        // Gửi thông báo đến từng thành viên được thêm vào nhóm chat mới
+        try
+        {
+            var creatorProfile = await _unitOfWork.UserProfiles.GetByUserIdAsync(request.CreatorId, ct);
+            var creatorName = !string.IsNullOrWhiteSpace(creatorProfile?.FullName) ? creatorProfile.FullName : "Một người dùng";
+
+            foreach (var memberId in validMemberIds)
+            {
+                var notif = await _notificationRepository.CreateNotificationAsync(new CreateNotificationInput
+                {
+                    UserId = memberId,
+                    ActorUserId = request.CreatorId,
+                    Title = "Được thêm vào nhóm trò chuyện",
+                    Content = $"{creatorName} đã thêm bạn vào nhóm trò chuyện '{cleanName}'.",
+                    Type = NotificationType.Social,
+                    Priority = 2,
+                    EntityType = "CHAT_ROOM",
+                    EntityId = roomId,
+                    TargetUrl = $"/chat?room={roomId}",
+                    GroupKey = $"CHAT_ROOM_{roomId}"
+                }, ct);
+
+                var unread = await _notificationRepository.GetUnreadCountAsync(memberId, ct);
+                await _notifier.NotifyAsync(memberId, notif, unread, ct);
+            }
+        }
+        catch
+        {
+            // Non-blocking notification dispatch
+        }
+
         return Result<long>.Success(roomId, "Tạo nhóm trò chuyện thành công.");
     }
 }

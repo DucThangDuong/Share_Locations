@@ -15,15 +15,18 @@ public class AdminProposalRepository : IAdminProposalRepository
     private readonly TravelReviewDbContext _dbContext;
     private readonly ICurrentUserService _currentUserService;
     private readonly IBlobService _blobService;
+    private readonly IAuditLogService _auditLogService;
 
     public AdminProposalRepository(
         TravelReviewDbContext dbContext,
         ICurrentUserService currentUserService,
-        IBlobService blobService)
+        IBlobService blobService,
+        IAuditLogService auditLogService)
     {
         _dbContext = dbContext;
         _currentUserService = currentUserService;
         _blobService = blobService;
+        _auditLogService = auditLogService;
     }
 
     public async Task<PagedResult<AdminProposalSummaryDto>> GetProposalsAsync(
@@ -679,9 +682,22 @@ public class AdminProposalRepository : IAdminProposalRepository
             effectiveTargetPlaceId = newPlace.Id;
         }
 
+        var oldProposalStatus = proposal.Status;
+
         // Cập nhật trạng thái và liên kết Proposal với Place
         proposal.Approve(adminId, adminNote, effectiveTargetPlaceId);
         await _dbContext.SaveChangesAsync(ct);
+
+        await _auditLogService.LogAsync(
+            actionType: "APPROVE_PROPOSAL",
+            targetTable: "Proposals",
+            targetId: id,
+            reason: adminNote ?? $"Phê duyệt đề xuất #{id} cho địa điểm #{effectiveTargetPlaceId}",
+            oldData: new { Status = (int)oldProposalStatus },
+            newData: new { Status = (int)proposal.Status, TargetPlaceId = effectiveTargetPlaceId, AdminNote = adminNote },
+            customAdminId: adminId,
+            ct: ct);
+
         return true;
     }
 
@@ -692,8 +708,21 @@ public class AdminProposalRepository : IAdminProposalRepository
         var proposal = await _dbContext.Proposals.FirstOrDefaultAsync(p => p.Id == id, ct);
         if (proposal == null) return false;
 
+        var oldProposalStatus = proposal.Status;
+
         proposal.Reject(adminId, reason);
         await _dbContext.SaveChangesAsync(ct);
+
+        await _auditLogService.LogAsync(
+            actionType: "REJECT_PROPOSAL",
+            targetTable: "Proposals",
+            targetId: id,
+            reason: reason,
+            oldData: new { Status = (int)oldProposalStatus },
+            newData: new { Status = (int)proposal.Status, Reason = reason },
+            customAdminId: adminId,
+            ct: ct);
+
         return true;
     }
 

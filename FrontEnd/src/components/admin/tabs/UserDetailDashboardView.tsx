@@ -5,6 +5,7 @@ import { isUserSystemAdmin } from '@/utils/authUtils'
 import { adminService, extractList } from '@/services/adminService'
 import { geographyService } from '@/services/geographyService'
 import type { ProvinceDto } from '@/types/models/geography.model'
+import { ChangeRoleModal } from '../modals/ChangeRoleModal'
 import {
   ArrowLeft,
   FileText,
@@ -60,6 +61,7 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
   const [isLoading, setIsLoading] = useState(true)
   const [isSavingScopes, setIsSavingScopes] = useState(false)
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
+  const [isChangeRoleOpen, setIsChangeRoleOpen] = useState(false)
 
   // Roles determination
   const rolesUpper = (userDetail?.roles || user.roles || []).map((r) => String(r).toUpperCase())
@@ -163,107 +165,102 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
   }
 
   // Load All Data from API
-  useEffect(() => {
-    let isMounted = true
+  const loadData = async () => {
+    setIsLoading(true)
+    try {
+      // 1. Fetch master lists for categories (/api/admin/categories) & provinces
+      const [catRes, provRes] = await Promise.allSettled([
+        adminService.getCategories(),
+        geographyService.getProvinces()
+      ])
 
-    const loadData = async () => {
-      setIsLoading(true)
-      try {
-        // 1. Fetch master lists for categories (/api/admin/categories) & provinces
-        const [catRes, provRes] = await Promise.allSettled([
-          adminService.getCategories(),
-          geographyService.getProvinces()
-        ])
-
-        if (isMounted) {
-          if (catRes.status === 'fulfilled' && catRes.value) {
-            const rawList = extractList<AdminCategoryDto>((catRes.value as any)?.data || catRes.value)
-            setCategoriesList(rawList)
-          }
-          if (provRes.status === 'fulfilled' && provRes.value?.data) {
-            setProvincesList(provRes.value.data)
-          }
-        }
-
-        // 2. Fetch User Detail from BE: GET /api/admin/users/{userId}
-        try {
-          const detailRes = await adminService.getUserDetail(user.userId)
-          const detailData = (detailRes as any)?.data || detailRes
-          if (isMounted && detailData) {
-            setUserDetail(detailData)
-            const catIds = Array.isArray(detailData.categoryScopes)
-              ? detailData.categoryScopes.map((c: any) => c.categoryId)
-              : []
-            const provIds = Array.isArray(detailData.provinceScopes)
-              ? detailData.provinceScopes.map((p: any) => p.provinceId)
-              : []
-            setSelectedCategoryIds(catIds)
-            setSelectedProvinceIds(provIds)
-            setInitialCategoryIds(catIds)
-            setInitialProvinceIds(provIds)
-          }
-        } catch {
-          // Fallback to initial prop if API call fails
-          if (isMounted) {
-            const catIds = user.categoryScopes?.map((c) => c.categoryId) || []
-            const provIds = user.provinceScopes?.map((p) => p.provinceId) || []
-            setUserDetail({
-              userId: user.userId,
-              email: user.email,
-              fullName: user.fullName,
-              phoneNumber: user.phoneNumber,
-              avatarUrl: user.avatarUrl,
-              status: user.status,
-              createdAt: user.createdAt,
-              roles: user.roles || [],
-              categoryScopes: user.categoryScopes,
-              provinceScopes: user.provinceScopes,
-              regionScopes: user.regionScopes
-            })
-            setSelectedCategoryIds(catIds)
-            setSelectedProvinceIds(provIds)
-            setInitialCategoryIds(catIds)
-            setInitialProvinceIds(provIds)
-          }
-        }
-
-        // 3. Fetch User Activities: GET /api/admin/users/{userId}/activities
-        try {
-          const actRes = await adminService.getUserActivities(user.userId)
-          const actData = (actRes as any)?.data || actRes
-          if (isMounted && actData) {
-            setUserActivities(actData)
-          }
-        } catch {
-          // Empty activities on error
-          if (isMounted) setUserActivities({ reviews: [], blogs: [], trips: [], proposals: [] })
-        }
-
-        // 4. Fetch Admin Access History (if Admin): GET /api/admin/users/{userId}/access-history
-        if (isTargetAdmin) {
-          try {
-            const histRes = await adminService.getUserAccessHistory(user.userId)
-            const histData = extractList<AdminUserAccessHistoryItem>(histRes)
-            if (isMounted) {
-              setAccessHistory(histData)
-            }
-          } catch {
-            if (isMounted) setAccessHistory([])
-          }
-        }
-      } catch (err: any) {
-        showToast?.(err?.message || 'Lỗi khi tải dữ liệu tài khoản từ hệ thống.')
-      } finally {
-        if (isMounted) setIsLoading(false)
+      if (catRes.status === 'fulfilled' && catRes.value) {
+        const rawList = extractList<AdminCategoryDto>((catRes.value as any)?.data || catRes.value)
+        setCategoriesList(rawList)
       }
-    }
+      if (provRes.status === 'fulfilled' && provRes.value?.data) {
+        setProvincesList(provRes.value.data)
+      }
 
+      // 2. Fetch User Detail from BE: GET /api/admin/users/{userId}
+      try {
+        const detailRes = await adminService.getUserDetail(user.userId)
+        const detailData = (detailRes as any)?.data || detailRes
+        if (detailData) {
+          setUserDetail(detailData)
+          const catIds = Array.isArray(detailData.categoryScopes)
+            ? detailData.categoryScopes.map((c: any) => c.categoryId)
+            : []
+          const provIds = Array.isArray(detailData.provinceScopes)
+            ? detailData.provinceScopes.map((p: any) => p.provinceId)
+            : []
+          setSelectedCategoryIds(catIds)
+          setSelectedProvinceIds(provIds)
+          setInitialCategoryIds(catIds)
+          setInitialProvinceIds(provIds)
+        }
+      } catch {
+        // Fallback to initial prop if API call fails
+        const catIds = user.categoryScopes?.map((c) => c.categoryId) || []
+        const provIds = user.provinceScopes?.map((p) => p.provinceId) || []
+        setUserDetail({
+          userId: user.userId,
+          email: user.email,
+          fullName: user.fullName,
+          phoneNumber: user.phoneNumber,
+          avatarUrl: user.avatarUrl,
+          status: user.status,
+          createdAt: user.createdAt,
+          roles: user.roles || [],
+          categoryScopes: user.categoryScopes,
+          provinceScopes: user.provinceScopes,
+          regionScopes: user.regionScopes
+        })
+        setSelectedCategoryIds(catIds)
+        setSelectedProvinceIds(provIds)
+        setInitialCategoryIds(catIds)
+        setInitialProvinceIds(provIds)
+      }
+
+      // 3. Fetch User Activities: GET /api/admin/users/{userId}/activities
+      try {
+        const actRes = await adminService.getUserActivities(user.userId)
+        const actData = (actRes as any)?.data || actRes
+        if (actData) {
+          setUserActivities(actData)
+        }
+      } catch {
+        // Empty activities on error
+        setUserActivities({ reviews: [], blogs: [], trips: [], proposals: [] })
+      }
+
+      // 4. Fetch Admin Access History (if Admin): GET /api/admin/users/{userId}/access-history
+      if (isTargetAdmin) {
+        try {
+          const histRes = await adminService.getUserAccessHistory(user.userId)
+          const histData = extractList<AdminUserAccessHistoryItem>(histRes)
+          setAccessHistory(histData)
+        } catch {
+          setAccessHistory([])
+        }
+      }
+    } catch (err: any) {
+      showToast?.(err?.message || 'Lỗi khi tải dữ liệu tài khoản từ hệ thống.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
     loadData()
-
-    return () => {
-      isMounted = false
-    }
   }, [user.userId, isTargetAdmin])
+
+  const handleRoleChangeSuccess = (updatedData?: any) => {
+    loadData()
+    if (updatedData?.newRole === 'USER' && (activeTab === 'scopes' || activeTab === 'logs')) {
+      setActiveTab('reviews')
+    }
+  }
 
   // Toggle Category Checkbox
   const toggleCategory = (catId: number) => {
@@ -413,8 +410,9 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
           <button
             type="button"
             onClick={onBack}
-            className="p-2 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-white border border-slate-200/80 hover:bg-slate-50 text-slate-600 hover:text-slate-900 flex items-center justify-center transition-colors cursor-pointer shadow-2xs shrink-0"
             title="Quay lại danh sách tài khoản"
+            aria-label="Quay lại"
           >
             <ArrowLeft size={18} />
           </button>
@@ -451,6 +449,19 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
             <FileText size={14} />
             <span>XEM TRANG CÁ NHÂN</span>
           </a>
+
+          {/* Role Assignment Button for SystemAdmin */}
+          {viewerIsSystemAdmin && (
+            <button
+              type="button"
+              onClick={() => setIsChangeRoleOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer border bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100"
+              title="Phân quyền & Đổi vai trò tài khoản"
+            >
+              <ShieldCheck size={14} />
+              <span>Phân quyền vai trò</span>
+            </button>
+          )}
 
           {/* Quick Lock / Unlock Status button */}
           <button
@@ -526,15 +537,26 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
         </div>
 
         {/* Role & Privileges Mini Card on right */}
-        <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-200/80 min-w-[260px] shrink-0 space-y-2">
-          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-            Vai trò
-          </span>
+        <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-200/80 min-w-[280px] shrink-0 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+              Vai trò
+            </span>
+            {viewerIsSystemAdmin && (
+              <button
+                type="button"
+                onClick={() => setIsChangeRoleOpen(true)}
+                className="text-[11px] font-bold text-purple-700 hover:text-purple-900 hover:underline cursor-pointer"
+              >
+                Đổi vai trò
+              </button>
+            )}
+          </div>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-teal-100 text-teal-800 flex items-center justify-center font-bold shrink-0">
               {isSystemAdmin ? <ShieldCheck size={20} /> : isCategoryAdmin ? <Shield size={20} /> : <Users size={20} />}
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <h4 className="text-xs font-bold text-slate-900 truncate">{roleName}</h4>
               <p className="text-[11px] text-teal-700 font-semibold truncate">
                 {isSystemAdmin
@@ -1347,6 +1369,17 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
           </div>
         )}
       </div>
+
+      {/* Change User Role Modal */}
+      {isChangeRoleOpen && (
+        <ChangeRoleModal
+          isOpen={isChangeRoleOpen}
+          onClose={() => setIsChangeRoleOpen(false)}
+          user={userDetail || user}
+          onSuccess={handleRoleChangeSuccess}
+          showToast={showToast}
+        />
+      )}
     </div>
   )
 }

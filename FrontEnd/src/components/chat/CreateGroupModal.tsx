@@ -8,6 +8,7 @@ import {
   UserPlus,
 } from 'lucide-react'
 import { friendService } from '@/services/friendService'
+import { useSystemSettings } from '@/context/SystemSettingsContext'
 import type { FriendItemDto } from '@/types/models/friend.model'
 
 interface CreateGroupModalProps {
@@ -21,6 +22,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
   onClose,
   onCreateGroup,
 }) => {
+  const { defaultUserAvatar } = useSystemSettings()
   const [groupName, setGroupName] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [friends, setFriends] = useState<FriendItemDto[]>([])
@@ -187,7 +189,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                     className="inline-flex items-center gap-1.5 pl-1.5 pr-2 py-1 rounded-full bg-blue-50 text-[#0084FF] border border-blue-200/80 text-xs font-semibold animate-in zoom-in-75 duration-100"
                   >
                     <img
-                      src={f.avatar || 'https://cdn.pixabay.com/photo/2016/11/14/17/39/group-1824145_1280.png'}
+                      src={f.avatar || defaultUserAvatar}
                       alt=""
                       className="w-4 h-4 rounded-full object-cover"
                     />
@@ -228,9 +230,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                 ) : (
                   filteredFriends.map((friend) => {
                     const isSelected = selectedFriendIds.includes(friend.id)
-                    const avatar =
-                      friend.avatar ||
-                      'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&h=150&fit=crop'
+                    const avatar = friend.avatar || defaultUserAvatar
 
                     return (
                       <div

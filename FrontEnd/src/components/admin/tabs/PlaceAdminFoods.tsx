@@ -19,6 +19,7 @@ import {
 import { adminService, extractList } from "@/services/adminService";
 import { geographyService, type ProvinceDto } from "@/services/geographyService";
 import type { AdminFoodItem } from "@/types/admin.types";
+import { CustomSelect } from "@/components/common/CustomSelect";
 
 export interface AdminPlaceFoodDto {
   id: number;
@@ -49,10 +50,6 @@ interface PlaceAdminFoodsProps {
   onFoodsCountChange?: (count: number) => void;
   showToast?: (msg: string) => void;
 }
-
-
-const DEFAULT_FOOD_COVER =
-  "https://images.unsplash.com/photo-1541544741938-0af808871cc0?w=600&h=400&fit=crop";
 
 export const PlaceAdminFoods: React.FC<PlaceAdminFoodsProps> = ({
   placeId,
@@ -112,13 +109,14 @@ export const PlaceAdminFoods: React.FC<PlaceAdminFoodsProps> = ({
   const [provincesList, setProvincesList] = useState<ProvinceDto[]>([]);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Fetch provinces for filter
+  // Fetch real provinces from GET /api/provinces
   useEffect(() => {
     geographyService
       .getProvinces()
-      .then((res) => {
-        if (res.data && res.data.length > 0) {
-          setProvincesList(res.data);
+      .then((res: any) => {
+        const list = extractList<ProvinceDto>(res?.data || res);
+        if (list.length > 0) {
+          setProvincesList(list);
         }
       })
       .catch(() => { });
@@ -135,11 +133,11 @@ export const PlaceAdminFoods: React.FC<PlaceAdminFoodsProps> = ({
         const rawFoods = (placeData as any).foods || (placeData as any).Foods || [];
         const mappedFoods: AdminPlaceFoodDto[] = rawFoods.map((f: any) => ({
           id: Number(f.id ?? f.Id),
-          name: f.name ?? f.Name ?? "Món ăn đặc sản",
+          name: f.name ?? f.Name ?? "",
           minPrice: f.minPrice ?? f.MinPrice ?? null,
           maxPrice: f.maxPrice ?? f.MaxPrice ?? null,
-          coverImg: f.coverImg || f.CoverImg || f.coverImageUrl || f.CoverImageUrl || f.imageUrl || f.ImageUrl || DEFAULT_FOOD_COVER,
-          coverImageUrl: f.coverImg || f.CoverImg || f.coverImageUrl || f.CoverImageUrl || f.imageUrl || f.ImageUrl || DEFAULT_FOOD_COVER,
+          coverImg: f.coverImg || f.CoverImg || f.coverImageUrl || f.CoverImageUrl || f.imageUrl || f.ImageUrl || "",
+          coverImageUrl: f.coverImg || f.CoverImg || f.coverImageUrl || f.CoverImageUrl || f.imageUrl || f.ImageUrl || "",
           description: f.description ?? f.Description ?? f.desc ?? f.Desc ?? "",
           desc: f.description ?? f.Description ?? f.desc ?? f.Desc ?? "",
           status: f.status ?? f.Status ?? "active",
@@ -178,6 +176,13 @@ export const PlaceAdminFoods: React.FC<PlaceAdminFoodsProps> = ({
       }
       if (selectedProvince !== "all") {
         cleanParams.province = selectedProvince;
+        cleanParams.provinceName = selectedProvince;
+        const matchedProv = provincesList.find(
+          (p) => p.name?.toLowerCase() === selectedProvince.toLowerCase() || String(p.id) === selectedProvince
+        );
+        if (matchedProv?.id) {
+          cleanParams.provinceId = matchedProv.id;
+        }
       }
       if (selectedStatus !== "all") {
         cleanParams.status = selectedStatus;
@@ -189,11 +194,11 @@ export const PlaceAdminFoods: React.FC<PlaceAdminFoodsProps> = ({
       const mapped: AdminFoodItem[] = rawItems.map((item: any) => ({
         ...item,
         id: Number(item.id ?? item.Id),
-        name: item.name || item.Name || "Món ăn",
+        name: item.name || item.Name || "",
         province: item.provinceName || item.province || item.Province || "",
         provinceName: item.provinceName || item.province || item.Province || "",
         provinceId: item.provinceId ?? item.ProvinceId,
-        specialtyType: item.specialtyType || item.SpecialtyType || item.category || "Món đặc sản",
+        specialtyType: item.specialtyType || item.SpecialtyType || item.category || "",
         desc: item.desc || item.Desc || item.description || item.Description || "",
         description: item.desc || item.Desc || item.description || item.Description || "",
         historyInfo: item.historyInfo || item.HistoryInfo || "",
@@ -206,7 +211,7 @@ export const PlaceAdminFoods: React.FC<PlaceAdminFoodsProps> = ({
           item.image ||
           item.imageUrl ||
           item.ImageUrl ||
-          DEFAULT_FOOD_COVER,
+          "",
         minPrice: item.minPrice ? Number(item.minPrice) : (item.MinPrice ? Number(item.MinPrice) : 0),
         maxPrice: item.maxPrice ? Number(item.maxPrice) : (item.MaxPrice ? Number(item.MaxPrice) : 0),
         priceRange:
@@ -261,6 +266,30 @@ export const PlaceAdminFoods: React.FC<PlaceAdminFoodsProps> = ({
   const associatedFoodIds = useMemo(() => {
     return new Set(associatedFoods.map((f) => f.id));
   }, [associatedFoods]);
+
+  // Filter available foods for instant alignment if backend returns mixed list
+  const displayedAvailableFoods = useMemo(() => {
+    return availableFoods.filter((f) => {
+      if (selectedProvince !== "all") {
+        const foodProv = (f.province || (f as any).provinceName || "").toLowerCase().trim();
+        const targetProv = selectedProvince.toLowerCase().trim();
+        const matchedProv = provincesList.find(
+          (p) => p.name?.toLowerCase() === targetProv || String(p.id) === selectedProvince
+        );
+        const matchByName = foodProv === targetProv || foodProv.includes(targetProv) || targetProv.includes(foodProv);
+        const matchById = Boolean(matchedProv?.id && f.provinceId === matchedProv.id);
+        if (!matchByName && !matchById) {
+          return false;
+        }
+      }
+      if (selectedStatus !== "all") {
+        const isHidden = f.status === "hidden" || f.statusNum === 3;
+        if (selectedStatus === "active" && isHidden) return false;
+        if (selectedStatus === "hidden" && !isHidden) return false;
+      }
+      return true;
+    });
+  }, [availableFoods, selectedProvince, selectedStatus, provincesList]);
 
 
   // Add food to current place
@@ -548,28 +577,31 @@ export const PlaceAdminFoods: React.FC<PlaceAdminFoodsProps> = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <select
+            <CustomSelect
               value={selectedProvince}
-              onChange={(e) => handleProvinceChange(e.target.value)}
-              className="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 font-medium text-slate-800 outline-none focus:border-emerald-500 cursor-pointer text-xs"
-            >
-              <option value="all">Tất cả tỉnh thành</option>
-              {provincesList.map((prov) => (
-                <option key={prov.id || prov.name} value={prov.name}>
-                  {prov.name}
-                </option>
-              ))}
-            </select>
+              onChange={(val) => handleProvinceChange(val)}
+              options={[
+                { value: "all", label: "Tất cả tỉnh thành" },
+                ...provincesList.map((prov) => ({
+                  value: prov.name,
+                  label: prov.name,
+                })),
+              ]}
+              size="sm"
+              className="min-w-[140px]"
+            />
 
-            <select
+            <CustomSelect
               value={selectedStatus}
-              onChange={(e) => handleStatusChange(e.target.value)}
-              className="px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 font-medium text-slate-800 outline-none focus:border-emerald-500 cursor-pointer text-xs"
-            >
-              <option value="all">Tất cả trạng thái</option>
-              <option value="active">Đang công khai</option>
-              <option value="hidden">Đang tạm ẩn</option>
-            </select>
+              onChange={(val) => handleStatusChange(val)}
+              options={[
+                { value: "all", label: "Tất cả trạng thái" },
+                { value: "active", label: "Đang công khai" },
+                { value: "hidden", label: "Đang tạm ẩn" },
+              ]}
+              size="sm"
+              className="min-w-[130px]"
+            />
 
             <button
               type="button"
@@ -595,7 +627,7 @@ export const PlaceAdminFoods: React.FC<PlaceAdminFoodsProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {availableFoods.map((food) => {
+              {displayedAvailableFoods.map((food) => {
                 const isAdded = associatedFoodIds.has(food.id);
                 const isHidden = food.status === "hidden" || food.statusNum === 3;
                 const minP = food.minPrice ? food.minPrice.toLocaleString("vi-VN") : "0";
@@ -603,10 +635,7 @@ export const PlaceAdminFoods: React.FC<PlaceAdminFoodsProps> = ({
                 const priceText = (food.minPrice || food.maxPrice)
                   ? `${minP}đ${maxP ? ` – ${maxP}đ` : ""}`
                   : "Liên hệ";
-                const cover =
-                  food.coverImg ||
-                  food.imageUrl ||
-                  "https://images.unsplash.com/photo-1541544741938-0af808871cc0?w=600&h=400&fit=crop";
+                const cover = food.coverImg || food.imageUrl || "";
 
                 return (
                   <tr
@@ -617,22 +646,36 @@ export const PlaceAdminFoods: React.FC<PlaceAdminFoodsProps> = ({
                     {/* Food Image & Name */}
                     <td className="p-3.5 pl-4 font-bold text-slate-900">
                       <div className="flex items-center gap-3">
-                        <img
-                          src={cover}
-                          className="w-10 h-10 rounded-lg object-cover border border-slate-200 shrink-0"
-                          alt={food.name}
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src =
-                              "https://images.unsplash.com/photo-1541544741938-0af808871cc0?w=600&h=400&fit=crop";
-                          }}
-                        />
+                        {cover ? (
+                          <img
+                            src={cover}
+                            className="w-10 h-10 rounded-lg object-cover border border-slate-200 shrink-0"
+                            alt={food.name}
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = "none";
+                              const sibling = target.nextElementSibling as HTMLElement | null;
+                              if (sibling) sibling.style.display = "flex";
+                            }}
+                          />
+                        ) : null}
+                        <div
+                          className={`w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 items-center justify-center text-slate-400 shrink-0 ${
+                            cover ? "hidden" : "flex"
+                          }`}
+                          title="Không có hình ảnh"
+                        >
+                          <ImageIcon size={14} className="text-slate-300" />
+                        </div>
                         <div>
                           <div className="font-bold text-slate-900 group-hover:text-emerald-700 transition-colors text-xs">
-                            {food.name}
+                            {food.name || "--"}
                           </div>
-                          <div className="text-[11px] text-slate-400 font-normal truncate max-w-xs">
-                            {food.specialtyType || food.desc || food.description || "Món đặc sản"}
-                          </div>
+                          {(food.specialtyType || food.desc || food.description) && (
+                            <div className="text-[11px] text-slate-400 font-normal truncate max-w-xs">
+                              {food.specialtyType || food.desc || food.description}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -695,9 +738,9 @@ export const PlaceAdminFoods: React.FC<PlaceAdminFoodsProps> = ({
                 <span className="text-xs">Đang tải danh sách món ăn từ máy chủ...</span>
               </div>
             </div>
-          ) : availableFoods.length === 0 ? (
+          ) : displayedAvailableFoods.length === 0 ? (
             <div className="p-8 text-center text-slate-400 font-medium text-xs">
-              Không tìm thấy món ăn đặc sản nào phù hợp với bộ lọc.
+              Không tìm thấy món ăn đặc sản nào phù hợp với bộ lọc{selectedProvince !== "all" ? ` tại ${selectedProvince}` : ""}.
             </div>
           ) : null}
         </div>
@@ -706,7 +749,7 @@ export const PlaceAdminFoods: React.FC<PlaceAdminFoodsProps> = ({
         {totalElements > 0 && (
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 px-1 border-t border-slate-100 text-xs text-slate-500 font-medium">
             <div>
-              Hiển thị <strong>{availableFoods.length}</strong> / <strong>{totalElements}</strong> món ăn (Trang <strong>{currentPage}</strong> / {totalPages || 1})
+              Hiển thị <strong>{displayedAvailableFoods.length}</strong> / <strong>{totalElements}</strong> món ăn (Trang <strong>{currentPage}</strong> / {totalPages || 1})
             </div>
 
             {totalPages > 1 && (

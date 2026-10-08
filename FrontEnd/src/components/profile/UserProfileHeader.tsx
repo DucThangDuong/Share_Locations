@@ -8,6 +8,7 @@ import {
   Pencil
 } from 'lucide-react'
 import type { PublicUserProfileDto } from '@/types/models/userProfile.model'
+import { useSystemSettings } from '@/context/SystemSettingsContext'
 
 export type ProfileTabType = 'activity' | 'reviews' | 'trips' | 'visit_logs' | 'blogs' | 'proposals'
 
@@ -30,10 +31,10 @@ export const UserProfileHeader: React.FC<UserProfileHeaderProps> = ({
   onAddFriend,
   onUnfriend,
 }) => {
+  const { defaultUserAvatar } = useSystemSettings()
 
   const avatar =
-    profile.avatarUrl ||
-    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop'
+    profile.avatarUrl || defaultUserAvatar
   const coverImage =
     profile.coverUrl ||
     'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1600&h=400&fit=crop'
