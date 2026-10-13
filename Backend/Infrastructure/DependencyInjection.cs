@@ -1,4 +1,4 @@
-using Application.Common.Interfaces;
+﻿using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Domain.Interfaces;
 using Infrastructure.Persistence;
@@ -56,6 +56,8 @@ public static class DependencyInjection
         services.AddScoped<IAdminCatalogTaxonomyRepository, AdminCatalogTaxonomyRepository>();
         services.AddScoped<IAdminSystemConfigRepository, AdminSystemConfigRepository>();
         services.AddScoped<INotificationRepository, NotificationRepository>();
+        services.AddScoped<IRecommendationRepository, RecommendationRepository>();
+        services.AddScoped<IRankingRepository, RankingRepository>();
 
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
@@ -79,7 +81,6 @@ public static class DependencyInjection
             }
             catch
             {
-                // Fallback nếu Redis chưa sẵn sàng khi khởi động
             }
 
             services.AddStackExchangeRedisCache(options =>
@@ -93,7 +94,6 @@ public static class DependencyInjection
             services.AddDistributedMemoryCache();
         }
 
-        // Cấu hình MassTransit kết nối RabbitMQ và nạp Consumer gửi email
         services.AddMassTransit(x =>
         {
             x.SetKebabCaseEndpointNameFormatter();
@@ -113,7 +113,6 @@ public static class DependencyInjection
                     h.Password(password);
                 });
 
-                // Tự động retry khi gặp lỗi tạm thời (ví dụ SMTP server bận)
                 cfg.UseMessageRetry(r => r.Exponential(3, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(2)));
 
                 cfg.ConfigureEndpoints(context);

@@ -1,4 +1,4 @@
-using Application.Common;
+﻿using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs.Admin;
@@ -42,97 +42,92 @@ public class AdminUserRepository : IAdminUserRepository
         if (!_currentUserService.IsSystemAdmin && _currentUserService.IsCategoryAdmin)
         {
             whereClauses.Add(@"EXISTS (
-                SELECT 1 FROM dbo.UserRoles ur 
-                JOIN dbo.Roles ro ON ur.RoleId = ro.Id 
+                SELECT 1 FROM dbo.UserRoles ur
+                JOIN dbo.Roles ro ON ur.RoleId = ro.Id
                 WHERE ur.UserId = u.Id AND ro.Code = 'USER'
             ) AND NOT EXISTS (
-                SELECT 1 FROM dbo.UserRoles ur 
-                JOIN dbo.Roles ro ON ur.RoleId = ro.Id 
+                SELECT 1 FROM dbo.UserRoles ur
+                JOIN dbo.Roles ro ON ur.RoleId = ro.Id
                 WHERE ur.UserId = u.Id AND ro.Code IN ('CATEGORY_ADMIN', 'SYSTEM_ADMIN')
             )");
         }
         else
         {
-            // Lọc theo Role cho System Admin
             if (!string.IsNullOrWhiteSpace(role) && !role.Equals("all", StringComparison.OrdinalIgnoreCase))
             {
                 var r = role.Trim().ToUpperInvariant();
                 if (r == "USER" || r == "NORMAL")
                 {
                     whereClauses.Add(@"EXISTS (
-                        SELECT 1 FROM dbo.UserRoles ur 
-                        JOIN dbo.Roles ro ON ur.RoleId = ro.Id 
+                        SELECT 1 FROM dbo.UserRoles ur
+                        JOIN dbo.Roles ro ON ur.RoleId = ro.Id
                         WHERE ur.UserId = u.Id AND ro.Code = 'USER'
                     ) AND NOT EXISTS (
-                        SELECT 1 FROM dbo.UserRoles ur 
-                        JOIN dbo.Roles ro ON ur.RoleId = ro.Id 
+                        SELECT 1 FROM dbo.UserRoles ur
+                        JOIN dbo.Roles ro ON ur.RoleId = ro.Id
                         WHERE ur.UserId = u.Id AND ro.Code IN ('CATEGORY_ADMIN', 'SYSTEM_ADMIN')
                     )");
                 }
                 else if (r == "CATEGORY_ADMIN" || r == "ADMIN1" || r == "STAFF")
                 {
                     whereClauses.Add(@"EXISTS (
-                        SELECT 1 FROM dbo.UserRoles ur 
-                        JOIN dbo.Roles ro ON ur.RoleId = ro.Id 
+                        SELECT 1 FROM dbo.UserRoles ur
+                        JOIN dbo.Roles ro ON ur.RoleId = ro.Id
                         WHERE ur.UserId = u.Id AND ro.Code = 'CATEGORY_ADMIN'
                     )");
                 }
                 else if (r == "SYSTEM_ADMIN" || r == "ADMIN" || r == "SUPERADMIN")
                 {
                     whereClauses.Add(@"EXISTS (
-                        SELECT 1 FROM dbo.UserRoles ur 
-                        JOIN dbo.Roles ro ON ur.RoleId = ro.Id 
+                        SELECT 1 FROM dbo.UserRoles ur
+                        JOIN dbo.Roles ro ON ur.RoleId = ro.Id
                         WHERE ur.UserId = u.Id AND ro.Code = 'SYSTEM_ADMIN'
                     )");
                 }
             }
         }
 
-        // 2. Filter theo Category (dành cho Admin cấp 1 quản trị danh mục này)
         if (categoryId.HasValue && categoryId.Value > 0)
         {
             whereClauses.Add(@"EXISTS (
-                SELECT 1 FROM dbo.AdminCategoryScopes acs 
+                SELECT 1 FROM dbo.AdminCategoryScopes acs
                 WHERE acs.UserId = u.Id AND acs.CategoryId = @CategoryId
             )");
             parameters.Add("CategoryId", categoryId.Value);
         }
 
-        // 3. Filter theo Region (dành cho Admin cấp 1 quản trị vùng này)
         if (regionId.HasValue && regionId.Value > 0)
         {
             whereClauses.Add(@"(
                 EXISTS (
-                    SELECT 1 FROM dbo.AdminRegionScopes ars 
+                    SELECT 1 FROM dbo.AdminRegionScopes ars
                     WHERE ars.UserId = u.Id AND ars.RegionId = @RegionId
                 )
                 OR EXISTS (
-                    SELECT 1 FROM dbo.AdminProvinceScopes aps 
-                    JOIN dbo.Provinces p ON aps.ProvinceId = p.Id 
+                    SELECT 1 FROM dbo.AdminProvinceScopes aps
+                    JOIN dbo.Provinces p ON aps.ProvinceId = p.Id
                     WHERE aps.UserId = u.Id AND p.RegionId = @RegionId
                 )
             )");
             parameters.Add("RegionId", regionId.Value);
         }
 
-        // 4. Filter theo Province (dành cho Admin cấp 1 quản trị tỉnh này)
         if (provinceId.HasValue && provinceId.Value > 0)
         {
             whereClauses.Add(@"EXISTS (
-                SELECT 1 FROM dbo.AdminProvinceScopes aps 
+                SELECT 1 FROM dbo.AdminProvinceScopes aps
                 WHERE aps.UserId = u.Id AND aps.ProvinceId = @ProvinceId
             )");
             parameters.Add("ProvinceId", provinceId.Value);
         }
 
-        // 5. Filter theo Place (dành cho Admin cấp 1 quản trị địa điểm này)
         if (placeId.HasValue && placeId.Value > 0)
         {
             whereClauses.Add(@"EXISTS (
-                SELECT 1 FROM dbo.Places pl 
+                SELECT 1 FROM dbo.Places pl
                 WHERE pl.Id = @PlaceId
                   AND EXISTS (
-                      SELECT 1 FROM dbo.AdminCategoryScopes acs 
+                      SELECT 1 FROM dbo.AdminCategoryScopes acs
                       WHERE acs.UserId = u.Id AND acs.CategoryId = pl.CategoryId
                   )
                   AND (
@@ -142,8 +137,8 @@ public class AdminUserRepository : IAdminUserRepository
                   AND (
                       NOT EXISTS (SELECT 1 FROM dbo.AdminRegionScopes ars WHERE ars.UserId = u.Id)
                       OR EXISTS (
-                          SELECT 1 FROM dbo.AdminRegionScopes ars 
-                          JOIN dbo.Provinces prov ON ars.RegionId = prov.RegionId 
+                          SELECT 1 FROM dbo.AdminRegionScopes ars
+                          JOIN dbo.Provinces prov ON ars.RegionId = prov.RegionId
                           WHERE ars.UserId = u.Id AND prov.Id = pl.ProvinceId
                       )
                   )
@@ -151,14 +146,12 @@ public class AdminUserRepository : IAdminUserRepository
             parameters.Add("PlaceId", placeId.Value);
         }
 
-        // 6. Filter theo Status
         if (status.HasValue)
         {
             whereClauses.Add("u.Status = @Status");
             parameters.Add("Status", status.Value);
         }
 
-        // 7. Filter theo Keyword
         if (!string.IsNullOrWhiteSpace(keyword))
         {
             whereClauses.Add("(u.Email LIKE @Keyword OR prof.FullName LIKE @Keyword OR prof.Phone LIKE @Keyword)");
@@ -167,7 +160,6 @@ public class AdminUserRepository : IAdminUserRepository
 
         var whereSql = " WHERE " + string.Join(" AND ", whereClauses);
 
-        // Đếm tổng số
         var countSql = $@"
             SELECT COUNT(1)
             FROM dbo.Users u
@@ -176,13 +168,12 @@ public class AdminUserRepository : IAdminUserRepository
 
         var totalCount = await connection.ExecuteScalarAsync<int>(countSql, parameters);
 
-        // Phân trang
         var offset = (page - 1) * pageSize;
         parameters.Add("Offset", offset);
         parameters.Add("PageSize", pageSize);
 
         var dataSql = $@"
-            SELECT 
+            SELECT
                 u.Id,
                 u.Email,
                 prof.FullName,
@@ -203,18 +194,16 @@ public class AdminUserRepository : IAdminUserRepository
         {
             var userIds = items.Select(x => x.Id).ToList();
 
-            // Lấy vai trò (Roles)
             const string rolesSql = @"
-                SELECT ur.UserId, r.Code AS RoleCode 
-                FROM dbo.UserRoles ur 
-                JOIN dbo.Roles r ON ur.RoleId = r.Id 
+                SELECT ur.UserId, r.Code AS RoleCode
+                FROM dbo.UserRoles ur
+                JOIN dbo.Roles r ON ur.RoleId = r.Id
                 WHERE ur.UserId IN @UserIds AND r.IsActive = 1
                   AND (ur.ExpiresAt IS NULL OR ur.ExpiresAt > SYSUTCDATETIME());";
 
             var roleRows = await connection.QueryAsync<(long UserId, string RoleCode)>(rolesSql, new { UserIds = userIds });
             var roleLookup = roleRows.ToLookup(x => x.UserId, x => x.RoleCode);
 
-            // Lấy phạm vi Danh mục (Category Scopes)
             const string catScopesSql = @"
                 SELECT acs.UserId, c.Id AS CategoryId, c.Name AS CategoryName
                 FROM dbo.AdminCategoryScopes acs
@@ -225,7 +214,6 @@ public class AdminUserRepository : IAdminUserRepository
             var catRows = await connection.QueryAsync<(long UserId, int CategoryId, string CategoryName)>(catScopesSql, new { UserIds = userIds });
             var catLookup = catRows.ToLookup(x => x.UserId, x => new AdminScopeCategoryDto { CategoryId = x.CategoryId, CategoryName = x.CategoryName });
 
-            // Lấy phạm vi Tỉnh/Thành (Province Scopes)
             const string provScopesSql = @"
                 SELECT aps.UserId, p.Id AS ProvinceId, p.Name AS ProvinceName
                 FROM dbo.AdminProvinceScopes aps
@@ -236,7 +224,6 @@ public class AdminUserRepository : IAdminUserRepository
             var provRows = await connection.QueryAsync<(long UserId, int ProvinceId, string ProvinceName)>(provScopesSql, new { UserIds = userIds });
             var provLookup = provRows.ToLookup(x => x.UserId, x => new AdminScopeProvinceDto { ProvinceId = x.ProvinceId, ProvinceName = x.ProvinceName });
 
-            // Lấy phạm vi Vùng/Miền (Region Scopes)
             const string regScopesSql = @"
                 SELECT ars.UserId, r.Id AS RegionId, r.Name AS RegionName
                 FROM dbo.AdminRegionScopes ars
@@ -271,7 +258,6 @@ public class AdminUserRepository : IAdminUserRepository
             }
         }
 
-        // Đếm số lượng Admin cấp 1, Admin hệ thống, và User thường trên toàn hệ thống
         int categoryAdminsCount = 0;
         int systemAdminsCount = 0;
         int regularUsersCount = 0;
@@ -279,30 +265,30 @@ public class AdminUserRepository : IAdminUserRepository
         if (_currentUserService.IsSystemAdmin)
         {
             const string statsCountSql = @"
-                SELECT 
+                SELECT
                     (
-                        SELECT COUNT(DISTINCT ur.UserId) 
-                        FROM dbo.UserRoles ur 
-                        JOIN dbo.Roles r ON ur.RoleId = r.Id 
+                        SELECT COUNT(DISTINCT ur.UserId)
+                        FROM dbo.UserRoles ur
+                        JOIN dbo.Roles r ON ur.RoleId = r.Id
                         JOIN dbo.Users u ON ur.UserId = u.Id
                         WHERE r.Code = 'CATEGORY_ADMIN' AND u.IsDeleted = 0
                     ) AS CategoryAdminsCount,
                     (
-                        SELECT COUNT(DISTINCT ur.UserId) 
-                        FROM dbo.UserRoles ur 
-                        JOIN dbo.Roles r ON ur.RoleId = r.Id 
+                        SELECT COUNT(DISTINCT ur.UserId)
+                        FROM dbo.UserRoles ur
+                        JOIN dbo.Roles r ON ur.RoleId = r.Id
                         JOIN dbo.Users u ON ur.UserId = u.Id
                         WHERE r.Code = 'SYSTEM_ADMIN' AND u.IsDeleted = 0
                     ) AS SystemAdminsCount,
                     (
-                        SELECT COUNT(DISTINCT ur.UserId) 
-                        FROM dbo.UserRoles ur 
-                        JOIN dbo.Roles r ON ur.RoleId = r.Id 
+                        SELECT COUNT(DISTINCT ur.UserId)
+                        FROM dbo.UserRoles ur
+                        JOIN dbo.Roles r ON ur.RoleId = r.Id
                         JOIN dbo.Users u ON ur.UserId = u.Id
                         WHERE r.Code = 'USER' AND u.IsDeleted = 0
                           AND NOT EXISTS (
-                              SELECT 1 FROM dbo.UserRoles ur2 
-                              JOIN dbo.Roles r2 ON ur2.RoleId = r2.Id 
+                              SELECT 1 FROM dbo.UserRoles ur2
+                              JOIN dbo.Roles r2 ON ur2.RoleId = r2.Id
                               WHERE ur2.UserId = ur.UserId AND r2.Code IN ('CATEGORY_ADMIN', 'SYSTEM_ADMIN')
                           )
                     ) AS RegularUsersCount;";
@@ -341,7 +327,7 @@ public class AdminUserRepository : IAdminUserRepository
         var connection = _dbContext.Database.GetDbConnection();
 
         const string userSql = @"
-            SELECT 
+            SELECT
                 u.Id,
                 u.Email,
                 prof.FullName,
@@ -361,11 +347,10 @@ public class AdminUserRepository : IAdminUserRepository
         var user = await connection.QueryFirstOrDefaultAsync<AdminUserDetailDto>(userSql, new { UserId = targetUserId });
         if (user == null) return null;
 
-        // Roles
         const string rolesSql = @"
-            SELECT r.Code 
-            FROM dbo.UserRoles ur 
-            JOIN dbo.Roles r ON ur.RoleId = r.Id 
+            SELECT r.Code
+            FROM dbo.UserRoles ur
+            JOIN dbo.Roles r ON ur.RoleId = r.Id
             WHERE ur.UserId = @UserId AND r.IsActive = 1
               AND (ur.ExpiresAt IS NULL OR ur.ExpiresAt > SYSUTCDATETIME());";
 
@@ -375,10 +360,8 @@ public class AdminUserRepository : IAdminUserRepository
         var isCategoryAdmin = roles.Any(r => r.Equals("CATEGORY_ADMIN", StringComparison.OrdinalIgnoreCase));
         var isSystemAdmin = roles.Any(r => r.Equals("SYSTEM_ADMIN", StringComparison.OrdinalIgnoreCase));
 
-        // Nếu là Admin cấp 1 hoặc System Admin -> nạp Scopes & Statistics
         if (isCategoryAdmin || isSystemAdmin)
         {
-            // Category Scopes
             const string catScopesSql = @"
                 SELECT c.Id AS CategoryId, c.Name AS CategoryName
                 FROM dbo.AdminCategoryScopes acs
@@ -388,7 +371,6 @@ public class AdminUserRepository : IAdminUserRepository
 
             user.CategoryScopes = (await connection.QueryAsync<AdminScopeCategoryDto>(catScopesSql, new { UserId = targetUserId })).ToList();
 
-            // Province Scopes
             const string provScopesSql = @"
                 SELECT p.Id AS ProvinceId, p.Name AS ProvinceName
                 FROM dbo.AdminProvinceScopes aps
@@ -398,7 +380,6 @@ public class AdminUserRepository : IAdminUserRepository
 
             user.ProvinceScopes = (await connection.QueryAsync<AdminScopeProvinceDto>(provScopesSql, new { UserId = targetUserId })).ToList();
 
-            // Region Scopes
             const string regScopesSql = @"
                 SELECT r.Id AS RegionId, r.Name AS RegionName
                 FROM dbo.AdminRegionScopes ars
@@ -408,9 +389,8 @@ public class AdminUserRepository : IAdminUserRepository
 
             user.RegionScopes = (await connection.QueryAsync<AdminScopeRegionDto>(regScopesSql, new { UserId = targetUserId })).ToList();
 
-            // Thống kê hoạt động của Admin
             const string statsSql = @"
-                SELECT 
+                SELECT
                     (SELECT COUNT(1) FROM dbo.Proposals WHERE ReviewedBy = @UserId AND Status = 1) AS TotalApprovedPlaces,
                     (SELECT COUNT(1) FROM dbo.AdminActionLogs WHERE AdminId = @UserId AND TargetTable = 'Reviews') AS TotalModeratedReviews,
                     (
@@ -420,7 +400,7 @@ public class AdminUserRepository : IAdminUserRepository
                         (SELECT COUNT(1) FROM dbo.BlogReports WHERE ResolvedBy = @UserId)
                     ) AS TotalHandledReports;";
 
-            user.Statistics = await connection.QueryFirstOrDefaultAsync<AdminStatisticsDto>(statsSql, new { UserId = targetUserId }) 
+            user.Statistics = await connection.QueryFirstOrDefaultAsync<AdminStatisticsDto>(statsSql, new { UserId = targetUserId })
                               ?? new AdminStatisticsDto();
         }
 
@@ -445,7 +425,6 @@ public class AdminUserRepository : IAdminUserRepository
 
         try
         {
-            // 0. Lấy danh sách Scope hiện tại trước khi cập nhật
             const string oldScopesSql = @"
                 SELECT CategoryId FROM dbo.AdminCategoryScopes WHERE UserId = @UserId;
                 SELECT ProvinceId FROM dbo.AdminProvinceScopes WHERE UserId = @UserId;
@@ -457,7 +436,6 @@ public class AdminUserRepository : IAdminUserRepository
             var oldRegIds = (await multi.ReadAsync<int>()).ToList();
             var oldData = new { CategoryIds = oldCatIds, ProvinceIds = oldProvIds, RegionIds = oldRegIds };
 
-            // 1. Cập nhật Category Scopes
             await connection.ExecuteAsync(
                 "DELETE FROM dbo.AdminCategoryScopes WHERE UserId = @UserId;",
                 new { UserId = targetUserId },
@@ -479,7 +457,6 @@ public class AdminUserRepository : IAdminUserRepository
                 await connection.ExecuteAsync(insertCatSql, catParams, transaction);
             }
 
-            // 2. Cập nhật Province Scopes
             await connection.ExecuteAsync(
                 "DELETE FROM dbo.AdminProvinceScopes WHERE UserId = @UserId;",
                 new { UserId = targetUserId },
@@ -501,7 +478,6 @@ public class AdminUserRepository : IAdminUserRepository
                 await connection.ExecuteAsync(insertProvSql, provParams, transaction);
             }
 
-            // 3. Cập nhật Region Scopes (nếu có truyền)
             if (regionIds != null)
             {
                 await connection.ExecuteAsync(
@@ -528,7 +504,6 @@ public class AdminUserRepository : IAdminUserRepository
 
             transaction.Commit();
 
-            // 4. Ghi Audit Log chuẩn hóa
             await _auditLogService.LogAsync(
                 actionType: "ASSIGN_SCOPES",
                 targetTable: "Users",
@@ -567,8 +542,8 @@ public class AdminUserRepository : IAdminUserRepository
         var oldStatus = await connection.ExecuteScalarAsync<byte?>(oldStatusSql, new { UserId = targetUserId });
 
         const string updateSql = @"
-            UPDATE dbo.Users 
-            SET Status = @Status, UpdatedAt = SYSUTCDATETIME() 
+            UPDATE dbo.Users
+            SET Status = @Status, UpdatedAt = SYSUTCDATETIME()
             WHERE Id = @UserId AND IsDeleted = 0;";
 
         var rows = await connection.ExecuteAsync(updateSql, new { UserId = targetUserId, Status = status });
@@ -600,7 +575,6 @@ public class AdminUserRepository : IAdminUserRepository
         var connection = _dbContext.Database.GetDbConnection();
         var result = new UserActivitiesDto();
 
-        // 1. Reviews (Top 20) - Chỉ lấy đánh giá công khai (Status = 1: Active)
         const string reviewsSql = @"
             SELECT TOP 20
                 r.Id,
@@ -623,7 +597,6 @@ public class AdminUserRepository : IAdminUserRepository
 
         result.Reviews = (await connection.QueryAsync<UserReviewActivityDto>(reviewsSql, new { UserId = targetUserId })).ToList();
 
-        // 2. Blogs (Top 20) - Chỉ lấy bài viết đã publish (Status = 1: Published), không lấy bản nháp (Draft = 0) hoặc bị ẩn
         const string blogsSql = @"
             SELECT TOP 20
                 b.Id,
@@ -641,20 +614,19 @@ public class AdminUserRepository : IAdminUserRepository
 
         result.Blogs = (await connection.QueryAsync<UserBlogActivityDto>(blogsSql, new { UserId = targetUserId })).ToList();
 
-        // 3. Trips (Top 20) - Chỉ lấy chuyến đi công khai (Privacy = 0: Public), không lấy riêng tư (Private) hoặc bạn bè
         const string tripsSql = @"
             SELECT TOP 20
                 t.Id,
                 t.Title,
-                CASE 
-                    WHEN t.StartDate IS NOT NULL AND t.EndDate IS NOT NULL 
+                CASE
+                    WHEN t.StartDate IS NOT NULL AND t.EndDate IS NOT NULL
                     THEN CAST(DATEDIFF(day, t.StartDate, t.EndDate) + 1 AS NVARCHAR) + N' ngày'
                     ELSE N'Chưa đặt lịch'
                 END AS Duration,
                 (
-                    SELECT COUNT(1) 
-                    FROM dbo.TripDays td 
-                    JOIN dbo.TripPlaces tp ON tp.TripDayId = td.Id 
+                    SELECT COUNT(1)
+                    FROM dbo.TripDays td
+                    JOIN dbo.TripPlaces tp ON tp.TripDayId = td.Id
                     WHERE td.TripId = t.Id
                 ) AS PlacesCount,
                 t.CreatedAt,
@@ -670,7 +642,7 @@ public class AdminUserRepository : IAdminUserRepository
             SELECT TOP 20
                 pr.Id,
                 ISNULL(
-                    p.Name, 
+                    p.Name,
                     COALESCE(
                         JSON_VALUE(pr.ProposedDataJSON, '$.name'),
                         JSON_VALUE(pr.ProposedDataJSON, '$.Name'),
@@ -702,15 +674,15 @@ public class AdminUserRepository : IAdminUserRepository
         var connection = _dbContext.Database.GetDbConnection();
 
         const string countSql = @"
-            SELECT COUNT(1) 
-            FROM dbo.AdminActionLogs 
+            SELECT COUNT(1)
+            FROM dbo.AdminActionLogs
             WHERE AdminId = @AdminId;";
 
         var total = await connection.ExecuteScalarAsync<int>(countSql, new { AdminId = targetAdminId });
 
         var offset = (page - 1) * pageSize;
         const string dataSql = @"
-            SELECT 
+            SELECT
                 CAST(l.Id AS NVARCHAR) AS LogId,
                 l.ActionType AS Action,
                 l.TargetTable AS TargetType,
@@ -758,7 +730,6 @@ public class AdminUserRepository : IAdminUserRepository
 
         try
         {
-            // 1. Kiểm tra tài khoản người dùng có tồn tại
             const string checkUserSql = "SELECT Id FROM dbo.Users WHERE Id = @UserId AND IsDeleted = 0;";
             var userIdExists = await connection.ExecuteScalarAsync<long?>(checkUserSql, new { UserId = targetUserId }, transaction);
             if (!userIdExists.HasValue)
@@ -766,11 +737,10 @@ public class AdminUserRepository : IAdminUserRepository
                 throw new InvalidOperationException("Không tìm thấy người dùng hoặc người dùng đã bị xóa.");
             }
 
-            // 2. Lấy vai trò và phạm vi hiện tại (để kiểm tra an toàn và chụp OldData)
             const string oldRolesSql = @"
-                SELECT r.Code 
-                FROM dbo.UserRoles ur 
-                JOIN dbo.Roles r ON ur.RoleId = r.Id 
+                SELECT r.Code
+                FROM dbo.UserRoles ur
+                JOIN dbo.Roles r ON ur.RoleId = r.Id
                 WHERE ur.UserId = @UserId;";
             var oldRoles = (await connection.QueryAsync<string>(oldRolesSql, new { UserId = targetUserId }, transaction)).ToList();
 
@@ -791,12 +761,11 @@ public class AdminUserRepository : IAdminUserRepository
                 RegionIds = oldRegIds
             };
 
-            // 3. Kiểm tra an toàn: Nếu đang là SYSTEM_ADMIN và bị đổi sang vai trò khác -> bảo vệ không để mất SystemAdmin cuối cùng
             var isCurrentSystemAdmin = oldRoles.Any(r => r.Equals("SYSTEM_ADMIN", StringComparison.OrdinalIgnoreCase));
             if (isCurrentSystemAdmin && targetRoleId != Domain.Constants.AppRoles.SystemAdminRoleId)
             {
                 const string countSystemAdminsSql = @"
-                    SELECT COUNT(1) 
+                    SELECT COUNT(1)
                     FROM dbo.UserRoles ur
                     JOIN dbo.Roles r ON ur.RoleId = r.Id
                     JOIN dbo.Users u ON ur.UserId = u.Id
@@ -808,7 +777,6 @@ public class AdminUserRepository : IAdminUserRepository
                 }
             }
 
-            // 4. Cập nhật bảng dbo.UserRoles
             await connection.ExecuteAsync(
                 "DELETE FROM dbo.UserRoles WHERE UserId = @UserId;",
                 new { UserId = targetUserId },
@@ -824,22 +792,18 @@ public class AdminUserRepository : IAdminUserRepository
                 AssignedBy = updatedBy
             }, transaction);
 
-            // 5. Cập nhật Scopes theo vai trò mới
             List<int> effectiveCatIds = new();
             List<int> effectiveProvIds = new();
             List<int> effectiveRegIds = new();
 
             if (targetRoleId == Domain.Constants.AppRoles.UserRoleId || targetRoleId == Domain.Constants.AppRoles.SystemAdminRoleId)
             {
-                // Hạ quyền về Người thường hoặc thăng lên SystemAdmin: Dọn dẹp sạch Scope
                 await connection.ExecuteAsync("DELETE FROM dbo.AdminCategoryScopes WHERE UserId = @UserId;", new { UserId = targetUserId }, transaction);
                 await connection.ExecuteAsync("DELETE FROM dbo.AdminProvinceScopes WHERE UserId = @UserId;", new { UserId = targetUserId }, transaction);
                 await connection.ExecuteAsync("DELETE FROM dbo.AdminRegionScopes WHERE UserId = @UserId;", new { UserId = targetUserId }, transaction);
             }
             else if (targetRoleId == Domain.Constants.AppRoles.CategoryAdminRoleId)
             {
-                // Là Admin cấp 1:
-                // a. Category Scopes
                 if (categoryIds != null)
                 {
                     await connection.ExecuteAsync("DELETE FROM dbo.AdminCategoryScopes WHERE UserId = @UserId;", new { UserId = targetUserId }, transaction);
@@ -858,7 +822,6 @@ public class AdminUserRepository : IAdminUserRepository
                     effectiveCatIds = oldCatIds;
                 }
 
-                // b. Province Scopes
                 if (provinceIds != null)
                 {
                     await connection.ExecuteAsync("DELETE FROM dbo.AdminProvinceScopes WHERE UserId = @UserId;", new { UserId = targetUserId }, transaction);
@@ -877,7 +840,6 @@ public class AdminUserRepository : IAdminUserRepository
                     effectiveProvIds = oldProvIds;
                 }
 
-                // c. Region Scopes
                 if (regionIds != null)
                 {
                     await connection.ExecuteAsync("DELETE FROM dbo.AdminRegionScopes WHERE UserId = @UserId;", new { UserId = targetUserId }, transaction);
@@ -897,7 +859,6 @@ public class AdminUserRepository : IAdminUserRepository
                 }
             }
 
-            // 6. Cập nhật thời gian chỉnh sửa bảng Users
             await connection.ExecuteAsync(
                 "UPDATE dbo.Users SET UpdatedAt = SYSUTCDATETIME() WHERE Id = @UserId;",
                 new { UserId = targetUserId },
@@ -905,7 +866,6 @@ public class AdminUserRepository : IAdminUserRepository
 
             transaction.Commit();
 
-            // 7. Xác định tên mã vai trò mới
             var targetRoleCode = targetRoleId switch
             {
                 Domain.Constants.AppRoles.SystemAdminRoleId => "SYSTEM_ADMIN",
@@ -920,7 +880,6 @@ public class AdminUserRepository : IAdminUserRepository
                 _ => "Người dùng thông thường (User)"
             };
 
-            // 8. Ghi Audit Log chuẩn hóa
             await _auditLogService.LogAsync(
                 actionType: "CHANGE_USER_ROLE",
                 targetTable: "Users",
@@ -955,4 +914,3 @@ public class AdminUserRepository : IAdminUserRepository
         }
     }
 }
-

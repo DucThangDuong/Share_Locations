@@ -1,4 +1,4 @@
-namespace Domain.Entities;
+﻿namespace Domain.Entities;
 
 public class ChatRoomMember
 {
@@ -8,7 +8,6 @@ public class ChatRoomMember
     public DateTime JoinedAt { get; private set; }
     public DateTime? LastReadAt { get; private set; }
 
-    // Navigation
     public virtual ChatRoom ChatRoom { get; private set; } = null!;
     public virtual User User { get; private set; } = null!;
 

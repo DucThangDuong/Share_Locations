@@ -1,4 +1,4 @@
-using API.Hubs;
+﻿using API.Hubs;
 using Application.Common.Interfaces;
 using Application.DTOs;
 using Microsoft.AspNetCore.SignalR;
@@ -25,11 +25,9 @@ public class NotificationNotifier : INotificationNotifier
             var groupName = NotificationHub.GetUserGroupName(userId);
             _logger.LogInformation("Pushing notification {NotificationId} to user {UserId} via SignalR", notification.Id, userId);
 
-            // Gửi qua User ID claim và Group tương ứng để bảo đảm cả 2 cơ chế đều nhận được
             await _hubContext.Clients.User(userId.ToString()).ReceiveNotification(notification);
             await _hubContext.Clients.Group(groupName).ReceiveNotification(notification);
 
-            // Cập nhật số lượng chưa đọc realtime
             await NotifyUnreadCountAsync(userId, newUnreadCount, ct);
         }
         catch (Exception ex)

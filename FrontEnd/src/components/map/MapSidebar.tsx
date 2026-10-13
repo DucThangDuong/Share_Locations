@@ -78,7 +78,6 @@ export const MapSidebar: React.FC<MapSidebarProps> = ({
         mobileView === 'map' ? (isOpen ? 'flex' : 'hidden') : 'flex'
       }`}
     >
-      {/* Top Search & Filter Bar */}
       <div className="p-3.5 border-b border-slate-100 space-y-2.5 bg-slate-50/50 shrink-0">
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
@@ -120,7 +119,6 @@ export const MapSidebar: React.FC<MapSidebarProps> = ({
             )}
           </button>
 
-          {/* Collapse sidebar button */}
           <button
             type="button"
             onClick={onToggleSidebar}
@@ -132,7 +130,6 @@ export const MapSidebar: React.FC<MapSidebarProps> = ({
           </button>
         </div>
 
-        {/* Categories Horizontal Quick Scroll */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
           <button
             type="button"
@@ -166,7 +163,6 @@ export const MapSidebar: React.FC<MapSidebarProps> = ({
           })}
         </div>
 
-        {/* Active Filter Chips */}
         {activeFilterCount > 0 && (
           <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[11px]">
             <span className="text-slate-400 font-medium">Đang lọc:</span>
@@ -208,7 +204,6 @@ export const MapSidebar: React.FC<MapSidebarProps> = ({
         )}
       </div>
 
-      {/* Place Items List */}
       <div className="flex-1 overflow-y-auto p-3.5 space-y-2.5">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 text-slate-400 space-y-2">
@@ -284,7 +279,6 @@ export const MapSidebar: React.FC<MapSidebarProps> = ({
         )}
       </div>
 
-      {/* Filter Overlay Drawer */}
       <MapFilterSidebar
         isOpen={isFilterOpen}
         onClose={() => setIsFilterOpen(false)}

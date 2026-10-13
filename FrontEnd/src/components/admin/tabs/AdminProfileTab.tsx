@@ -30,7 +30,6 @@ export const AdminProfileTab: React.FC<AdminProfileTabProps> = () => {
   const [adminDetail, setAdminDetail] = useState<AdminUserDetail | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Catalogs
   const [allProvinces, setAllProvinces] = useState<AdminGeographyProvinceItem[]>([]);
   const [allCategories, setAllCategories] = useState<AdminCatalogCategoryItem[]>([]);
   const [allRegions, setAllRegions] = useState<AdminGeographyRegionItem[]>([]);
@@ -49,7 +48,6 @@ export const AdminProfileTab: React.FC<AdminProfileTabProps> = () => {
           }
         }
 
-        // Fetch Catalogs to display friendly names and region info
         const [provRes, catRes, regRes] = await Promise.allSettled([
           adminService.getGeographyProvinces({ pageSize: 100 }),
           adminService.getCatalogCategories({ pageSize: 100 }),
@@ -75,7 +73,6 @@ export const AdminProfileTab: React.FC<AdminProfileTabProps> = () => {
     fetchAdminData();
   }, [user?.id]);
 
-  // Map assigned category names
   const assignedCategories = useMemo(() => {
     if (isSystemAdmin) {
       return allCategories.map((c) => ({
@@ -97,7 +94,6 @@ export const AdminProfileTab: React.FC<AdminProfileTabProps> = () => {
     });
   }, [adminDetail?.categoryScopes, allCategories, isSystemAdmin]);
 
-  // Map assigned province names with region info
   const assignedProvinces = useMemo(() => {
     if (isSystemAdmin) {
       return allProvinces.map((p) => ({
@@ -119,7 +115,6 @@ export const AdminProfileTab: React.FC<AdminProfileTabProps> = () => {
     });
   }, [adminDetail?.provinceScopes, allProvinces, isSystemAdmin]);
 
-  // Map assigned region names
   const assignedRegions = useMemo(() => {
     if (isSystemAdmin) {
       return allRegions.map((r) => ({
@@ -156,7 +151,6 @@ export const AdminProfileTab: React.FC<AdminProfileTabProps> = () => {
             </div>
           </div>
         </div>
-        {/* Content Body */}
         {isLoading ? (
           <div className="py-16 flex flex-col items-center justify-center gap-2.5 text-slate-400 text-xs font-medium">
             <Loader2 className="w-6 h-6 animate-spin text-emerald-600" />
@@ -164,7 +158,6 @@ export const AdminProfileTab: React.FC<AdminProfileTabProps> = () => {
           </div>
         ) : (
           <div className="space-y-8">
-            {/* 1. Vùng miền & Tỉnh thành phụ trách */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm font-bold text-slate-800">
@@ -186,7 +179,6 @@ export const AdminProfileTab: React.FC<AdminProfileTabProps> = () => {
                 </div>
               ) : (
                 <div className="flex flex-wrap gap-2.5">
-                  {/* Region Scopes */}
                   {assignedRegions.map((reg) => (
                     <div
                       key={`reg-${reg.id}`}
@@ -197,7 +189,6 @@ export const AdminProfileTab: React.FC<AdminProfileTabProps> = () => {
                     </div>
                   ))}
 
-                  {/* Province Scopes */}
                   {assignedProvinces.map((prov) => (
                     <div
                       key={`prov-${prov.id}`}
@@ -216,7 +207,6 @@ export const AdminProfileTab: React.FC<AdminProfileTabProps> = () => {
               )}
             </div>
 
-            {/* 2. Danh mục trải nghiệm phụ trách */}
             <div className="space-y-4 pt-6 border-t border-slate-100">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm font-bold text-slate-800">

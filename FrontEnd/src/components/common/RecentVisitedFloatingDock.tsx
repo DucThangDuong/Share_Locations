@@ -91,7 +91,6 @@ export const RecentVisitedFloatingDock: React.FC = () => {
     return () => window.removeEventListener('storage', handleStorageChange)
   }, [isAuthenticated])
 
-  // Click outside to close
   useEffect(() => {
     if (!isOpen) return
     const handleClickOutside = (e: MouseEvent) => {
@@ -129,7 +128,6 @@ export const RecentVisitedFloatingDock: React.FC = () => {
         localStorage.setItem('langthang_deleted_histories', JSON.stringify(deletedIds))
       }
     } catch {
-      // Ignore
     }
 
     if (updated.length === 0) {
@@ -172,7 +170,6 @@ export const RecentVisitedFloatingDock: React.FC = () => {
       ) : (
         /* Expanded Floating Card */
         <div className="w-[330px] sm:w-[380px] rounded-2xl bg-white border border-slate-200/90 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.2)] overflow-hidden transition-all duration-300 animate-in fade-in slide-in-from-bottom-3">
-          {/* Header */}
           <div className="p-3.5 px-4 bg-gradient-to-r from-emerald-50/90 via-slate-50/60 to-white border-b border-slate-100 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div>
@@ -203,7 +200,6 @@ export const RecentVisitedFloatingDock: React.FC = () => {
             </div>
           </div>
 
-          {/* List Items */}
           <div className="max-h-[340px] overflow-y-auto p-2 space-y-1 divide-y divide-slate-50 [scrollbar-width:thin] [scrollbar-color:#CBD5E1_transparent]">
             {recentItems.map((item) => (
               <div
@@ -212,7 +208,6 @@ export const RecentVisitedFloatingDock: React.FC = () => {
                 className="group flex items-center justify-between gap-3 p-2 rounded-xl hover:bg-slate-50/90 transition-all cursor-pointer pt-2"
               >
                 <div className="flex items-center gap-3 min-w-0 flex-1">
-                  {/* Thumbnail */}
                   <div className="w-13 h-13 rounded-xl overflow-hidden bg-slate-100 shrink-0 relative flex items-center justify-center border border-slate-100 shadow-2xs">
                     {item.coverUrl ? (
                       <img
@@ -225,7 +220,6 @@ export const RecentVisitedFloatingDock: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Details */}
                   <div className="min-w-0 flex-1">
                     <h4 className="text-xs font-bold text-slate-900 truncate group-hover:text-emerald-700 transition-colors">
                       {item.name}
@@ -255,7 +249,6 @@ export const RecentVisitedFloatingDock: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Remove single item button */}
                 <button
                   type="button"
                   onClick={(e) => handleRemoveOne(e, item.id)}

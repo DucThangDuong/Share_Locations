@@ -1,4 +1,4 @@
-using Application.Common.Interfaces;
+﻿using Application.Common.Interfaces;
 using Application.Common.Models;
 using MailKit.Net.Smtp;
 using MailKit.Security;
@@ -29,7 +29,6 @@ public class EmailService : IEmailService
         var senderPassword = _settings.Password;
         var displayName = string.IsNullOrWhiteSpace(_settings.DisplayName) ? "Hệ thống Chia sẻ Địa điểm" : _settings.DisplayName;
 
-        // Fallback kiểm thử nội bộ: Nếu chưa có cấu hình Password thực tế, log trực tiếp mã OTP để dev test luồng
         if (string.IsNullOrWhiteSpace(senderPassword) || string.IsNullOrWhiteSpace(senderEmail))
         {
             _logger.LogWarning("⚠️ [DEV-MODE EMAIL SIMULATION] Chưa cấu hình Password hoặc UserName trong MailSettings. Gửi mail giả lập: Email: {Email}, OTP: {OtpCode}, Hết hạn sau: {ExpirationMinutes} phút.",

@@ -80,11 +80,9 @@ export const UsersTab: React.FC<UsersTabProps> = ({
   const [statusFilter, setStatusFilter] = useState(currentFilters.status || 'all')
   const [selectedUserForDetail, setSelectedUserForDetail] = useState<AdminUserItem | null>(null)
 
-  // Match /admin/users/:userId from URL path
   const userPathMatch = location.pathname.match(/\/admin\/users\/(\d+)/i)
   const urlUserId = userPathMatch ? Number(userPathMatch[1]) : null
 
-  // Find user in list or fallback to placeholder (UserDetailDashboardView will fetch full details via API)
   const activeDetailUser = useMemo(() => {
     if (!urlUserId) return null
     const found = usersList.find((u) => (u.userId || (u as any).id) === urlUserId)
@@ -103,7 +101,6 @@ export const UsersTab: React.FC<UsersTabProps> = ({
     } as AdminUserItem
   }, [urlUserId, usersList, selectedUserForDetail])
 
-  // Subtab click handler with backend API call
   const handleSubTabClick = (tab: 'all' | 'user' | 'admins') => {
     setActiveSubTab(tab)
     if (tab === 'all') {
@@ -115,20 +112,17 @@ export const UsersTab: React.FC<UsersTabProps> = ({
     }
   }
 
-  // Filtered users list (supporting server-side pagination and local fallback)
   const filteredUsers = useMemo(() => {
     return usersList.filter((u) => {
       const rolesUpper = (u.roles || []).map((r) => String(r).toUpperCase())
       const isUserOnly = rolesUpper.length === 0 || (rolesUpper.length === 1 && rolesUpper[0] === 'USER')
 
-      // Category Admin is restricted: only allowed to see regular users
       if (!isSystemAdmin && !isUserOnly) return false
 
       return true
     })
   }, [usersList, isSystemAdmin])
 
-  // Real summary counts from meta & API
   const firstUser = (usersList[0] || {}) as any
   const totalUsersCount = pagination.totalCount || usersList.length
 
@@ -172,7 +166,6 @@ export const UsersTab: React.FC<UsersTabProps> = ({
     onFilterChange?.({ page: 1, role: isSystemAdmin ? undefined : 'USER' })
   }
 
-  // Standard robust pagination items generator
   const paginationItems = useMemo((): (number | string)[] => {
     const total = Math.max(1, Number(pagination.totalPages || 1))
     const current = Math.max(1, Number(pagination.page || 1))
@@ -274,7 +267,6 @@ export const UsersTab: React.FC<UsersTabProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Top Header & Metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
         <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
           <div className="flex items-center justify-between">
@@ -329,10 +321,8 @@ export const UsersTab: React.FC<UsersTabProps> = ({
         </div>
       </div>
 
-      {/* Main Tab Controls & Filter Bar */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs p-4 space-y-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
-          {/* Sub-tab Selection */}
           <div className="flex items-center gap-1.5 p-1 bg-slate-100/80 rounded-xl font-medium text-xs">
             {isSystemAdmin && (
               <button
@@ -377,7 +367,6 @@ export const UsersTab: React.FC<UsersTabProps> = ({
           </div>
         </div>
 
-        {/* Filter inputs */}
         <div className="flex flex-wrap items-center gap-2.5">
           <form onSubmit={handleSearchSubmit} className="relative flex-1 min-w-[240px]">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -390,7 +379,6 @@ export const UsersTab: React.FC<UsersTabProps> = ({
             />
           </form>
 
-          {/* Status filter dropdown */}
           <CustomSelect
             value={statusFilter}
             onChange={(val) => {
@@ -410,7 +398,6 @@ export const UsersTab: React.FC<UsersTabProps> = ({
             className="min-w-[140px]"
           />
 
-          {/* Page size selector */}
           <CustomSelect
             value={pagination.pageSize || 20}
             onChange={(val) => {
@@ -443,7 +430,6 @@ export const UsersTab: React.FC<UsersTabProps> = ({
           )}
         </div>
 
-        {/* Users Table Container with independent vertical scrolling & sticky headers */}
         <div className="overflow-x-auto max-h-[580px] overflow-y-auto rounded-xl border border-slate-100 shadow-2xs">
           <table className="w-full text-left border-collapse text-xs">
             <thead className="sticky top-0 bg-white z-10 shadow-2xs border-b border-slate-200">
@@ -477,7 +463,6 @@ export const UsersTab: React.FC<UsersTabProps> = ({
                     onClick={() => handleSelectUser(u)}
                     className="hover:bg-slate-50/80 transition-colors cursor-pointer group"
                   >
-                    {/* User profile & contact */}
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-3 min-w-[200px]">
                         {u.avatarUrl ? (
@@ -508,22 +493,18 @@ export const UsersTab: React.FC<UsersTabProps> = ({
                       </div>
                     </td>
 
-                    {/* Role */}
                     <td className="py-3.5 px-4 whitespace-nowrap">
                       {renderRoleBadge(u.roles)}
                     </td>
 
-                    {/* Status */}
                     <td className="py-3.5 px-4 whitespace-nowrap">
                       {renderStatusBadge(u.status)}
                     </td>
 
-                    {/* Created date */}
                     <td className="py-3.5 px-4 text-slate-500 whitespace-nowrap">
                       {formatDate(u.createdAt)}
                     </td>
 
-                    {/* Actions */}
                     <td className="py-3.5 px-4 text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                       <button
                         type="button"
@@ -543,7 +524,6 @@ export const UsersTab: React.FC<UsersTabProps> = ({
           </table>
         </div>
 
-        {/* Enhanced Pagination Bar */}
         <div className="p-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
           <div>
             Hiển thị <strong>{filteredUsers.length}</strong> / <strong>{pagination.totalCount || usersList.length}</strong> tài khoản
@@ -562,7 +542,6 @@ export const UsersTab: React.FC<UsersTabProps> = ({
               <ChevronLeft size={15} />
             </button>
 
-            {/* Page Number Buttons */}
             {paginationItems.map((item, idx) => {
               if (typeof item === 'string') {
                 return (

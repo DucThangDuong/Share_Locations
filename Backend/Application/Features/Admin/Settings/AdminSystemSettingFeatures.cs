@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
@@ -6,8 +6,6 @@ using Application.DTOs.Admin;
 using MediatR;
 
 namespace Application.Features.Admin.Settings;
-
-// === QUERIES ===
 
 public record GetAdminSystemSettingsQuery(string? Group = null) : IRequest<Result<IReadOnlyList<AdminSystemSettingDto>>>;
 
@@ -26,8 +24,6 @@ public class GetAdminSystemSettingsQueryHandler : IRequestHandler<GetAdminSystem
         return Result<IReadOnlyList<AdminSystemSettingDto>>.Success(items);
     }
 }
-
-// === COMMANDS ===
 
 public record UpdateAdminSystemSettingCommand(string Key, string Value, string? Description) : IRequest<Result<bool>>;
 

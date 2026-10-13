@@ -156,7 +156,6 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
 
   return (
     <div className="space-y-6 animate-in fade-in duration-150">
-      {/* Scope Filter Bar */}
       <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-2xs flex flex-wrap items-center justify-between gap-4 text-xs">
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">
@@ -228,9 +227,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
         </div>
       </div>
 
-      {/* KPI Cards Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Card 1: Places */}
         <div
           onClick={() => setMainTab("places")}
           className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs hover:border-slate-300 transition-all cursor-pointer group"
@@ -258,7 +255,6 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
           </p>
         </div>
 
-        {/* Card 2: Proposals */}
         <div
           onClick={() => setMainTab("proposals")}
           className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs hover:border-slate-300 transition-all cursor-pointer group"
@@ -284,7 +280,6 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
           <p className="text-[11px] text-slate-400 mt-1">Đóng góp địa điểm &amp; chỉnh sửa thông tin</p>
         </div>
 
-        {/* Card 3: Reports */}
         <div
           onClick={() => setMainTab("reports")}
           className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs hover:border-slate-300 transition-all cursor-pointer group"
@@ -310,7 +305,6 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
           <p className="text-[11px] text-slate-400 mt-1">Phản ánh sai lệch, đóng cửa &amp; spam</p>
         </div>
 
-        {/* Card 4: Reviews */}
         <div
           onClick={() => setMainTab("reviews_comments")}
           className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs hover:border-slate-300 transition-all cursor-pointer group"
@@ -338,9 +332,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
         </div>
       </div>
 
-      {/* Action Queue & Operational Distributions */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Urgent Action Queue (7 Cols) */}
         <div className="lg:col-span-7 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
             <div>
@@ -406,7 +398,6 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
           </div>
         </div>
 
-        {/* Operational Distribution Breakdown (5 Cols) */}
         <div className="lg:col-span-5 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-2xs space-y-5">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div>
@@ -418,7 +409,6 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
             </div>
           </div>
 
-          {/* Operational Metrics Breakdown */}
           <div className="space-y-3 pt-1">
             {[
               {
@@ -465,7 +455,6 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
             })}
           </div>
 
-          {/* Quick summary footer */}
           <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-600 flex items-center justify-between">
             <span className="flex items-center gap-1.5">
               <CheckCircle2 size={14} className="text-emerald-600" />

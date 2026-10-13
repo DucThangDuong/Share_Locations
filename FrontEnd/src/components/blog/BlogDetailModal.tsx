@@ -77,7 +77,6 @@ export const BlogDetailModal: React.FC<BlogDetailModalProps> = ({
       />
 
       <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200 z-10 flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
-        {/* Header Bar */}
         <div className="p-4 sm:p-6 border-b border-slate-100 flex items-center justify-between gap-4 bg-white shrink-0">
           <div
             onClick={handleNavigateToAuthor}
@@ -131,7 +130,6 @@ export const BlogDetailModal: React.FC<BlogDetailModalProps> = ({
           </div>
         </div>
 
-        {/* Content Body */}
         <div className="p-4 sm:p-6 overflow-y-auto space-y-5 flex-1 divide-y divide-slate-100">
           <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 font-medium">
@@ -181,7 +179,6 @@ export const BlogDetailModal: React.FC<BlogDetailModalProps> = ({
           </div>
         </div>
 
-        {/* Footer Actions */}
         <div className="p-4 sm:p-5 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2.5 shrink-0">
           <button
             type="button"

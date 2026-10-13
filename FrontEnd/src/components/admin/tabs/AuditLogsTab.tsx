@@ -33,26 +33,21 @@ interface ActionMeta {
 }
 
 const ACTION_TYPE_MAP: Record<string, ActionMeta> = {
-  // Người dùng & Phân quyền
   ASSIGN_SCOPES: { label: "Phân quyền quản lý", category: "Users", color: "purple" },
   ACTIVATE_USER: { label: "Mở khóa tài khoản", category: "Users", color: "emerald" },
   LOCK_USER: { label: "Khóa tài khoản", category: "Users", color: "rose" },
 
-  // Đề xuất đóng góp
   APPROVE_PROPOSAL: { label: "Phê duyệt đề xuất", category: "Proposals", color: "emerald" },
   REJECT_PROPOSAL: { label: "Từ chối đề xuất", category: "Proposals", color: "rose" },
 
-  // Báo cáo vi phạm
   RESOLVE_REPORT: { label: "Xử lý báo cáo", category: "Reports", color: "amber" },
   RESOLVE_REPORT_GROUP: { label: "Xử lý cụm báo cáo", category: "Reports", color: "amber" },
 
-  // Đánh giá & Bình luận
   UPDATE_REVIEW_STATUS: { label: "Đổi trạng thái đánh giá", category: "Reviews", color: "sky" },
   DELETE_REVIEW: { label: "Xóa đánh giá", category: "Reviews", color: "rose" },
   UPDATE_COMMENT_STATUS: { label: "Đổi trạng thái bình luận", category: "Comments", color: "sky" },
   DELETE_COMMENT: { label: "Xóa bình luận", category: "Comments", color: "rose" },
 
-  // Quản lý địa điểm
   CREATE_PLACE: { label: "Tạo mới địa điểm", category: "Places", color: "emerald" },
   UPDATE_PLACE: { label: "Cập nhật địa điểm", category: "Places", color: "sky" },
   UPDATE_PLACE_STATUS: { label: "Đổi trạng thái địa điểm", category: "Places", color: "amber" },
@@ -61,19 +56,16 @@ const ACTION_TYPE_MAP: Record<string, ActionMeta> = {
   ADD_PLACE_MEDIA: { label: "Thêm ảnh địa điểm", category: "Places", color: "emerald" },
   DELETE_PLACE_MEDIA: { label: "Xóa ảnh địa điểm", category: "PlaceMedia", color: "rose" },
 
-  // Quản lý món ăn
   CREATE_FOOD: { label: "Thêm món ăn", category: "Foods", color: "emerald" },
   UPDATE_FOOD: { label: "Cập nhật món ăn", category: "Foods", color: "sky" },
   UPDATE_FOOD_STATUS: { label: "Đổi trạng thái món ăn", category: "Foods", color: "amber" },
   DELETE_FOOD: { label: "Xóa món ăn", category: "Foods", color: "rose" },
 
-  // Quản lý cẩm nang
   CREATE_BLOG: { label: "Tạo bài viết cẩm nang", category: "Blogs", color: "emerald" },
   UPDATE_BLOG: { label: "Cập nhật bài viết cẩm nang", category: "Blogs", color: "sky" },
   UPDATE_BLOG_STATUS: { label: "Đổi trạng thái bài viết", category: "Blogs", color: "amber" },
   DELETE_BLOG: { label: "Xóa bài viết", category: "Blogs", color: "rose" },
 
-  // Quản lý bộ sưu tập
   CREATE_COLLECTION: { label: "Tạo bộ sưu tập", category: "Collections", color: "emerald" },
   UPDATE_COLLECTION_PLACES: { label: "Cập nhật địa điểm BST", category: "Collections", color: "sky" },
   UPDATE_COLLECTION_STATUS: { label: "Đổi trạng thái BST", category: "Collections", color: "amber" },
@@ -132,14 +124,12 @@ export const AuditLogsTab: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Filters state
   const [keyword, setKeyword] = useState("");
   const [targetTable, setTargetTable] = useState("all");
   const [actionType, setActionType] = useState("all");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
 
-  // Pagination state
   const [page, setPage] = useState(1);
   const [pageSize] = useState(20);
   const [totalCount, setTotalCount] = useState(0);
@@ -147,13 +137,11 @@ export const AuditLogsTab: React.FC = () => {
   const [hasNextPage, setHasNextPage] = useState(false);
   const [hasPreviousPage, setHasPreviousPage] = useState(false);
 
-  // Selected Log Detail Modal State
   const [selectedLogId, setSelectedLogId] = useState<number | null>(null);
   const [detailLog, setDetailLog] = useState<AdminAuditLogDetail | null>(null);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
-  // Fetch audit logs
   const fetchAuditLogs = useCallback(async () => {
     setIsLoading(true);
     setErrorMsg(null);
@@ -203,7 +191,6 @@ export const AuditLogsTab: React.FC = () => {
     fetchAuditLogs();
   }, [fetchAuditLogs]);
 
-  // Handle open detail modal
   const handleOpenDetail = async (id: number) => {
     setSelectedLogId(id);
     setIsDetailLoading(true);
@@ -213,7 +200,6 @@ export const AuditLogsTab: React.FC = () => {
       const logData = res?.data || res;
       setDetailLog(logData);
     } catch {
-      // Fallback: find in loaded logs list
       const fallback = logs.find((l) => l.id === id);
       if (fallback) {
         setDetailLog({
@@ -251,7 +237,6 @@ export const AuditLogsTab: React.FC = () => {
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
-  // Safe parse JSON helper
   const parsedOldData = useMemo(() => {
     if (!detailLog?.oldDataJSON) return null;
     try {
@@ -285,7 +270,6 @@ export const AuditLogsTab: React.FC = () => {
     }
   }, [detailLog?.metadataJSON]);
 
-  // Filter available action types based on target table if selected
   const availableActionTypes = useMemo(() => {
     const entries = Object.entries(ACTION_TYPE_MAP);
     if (!targetTable || targetTable === "all") return entries;
@@ -297,10 +281,8 @@ export const AuditLogsTab: React.FC = () => {
 
   return (
     <div className="space-y-5 animate-in fade-in duration-150 text-xs">
-      {/* Filter Bar */}
       <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-          {/* Keyword Search */}
           <div className="lg:col-span-2 relative">
             <label className="block text-[11px] font-semibold text-slate-500 mb-1">Tìm kiếm</label>
             <div className="relative">
@@ -318,7 +300,6 @@ export const AuditLogsTab: React.FC = () => {
             </div>
           </div>
 
-          {/* Target Table Dropdown */}
           <CustomSelect
             label="Phân hệ"
             value={targetTable}
@@ -331,7 +312,6 @@ export const AuditLogsTab: React.FC = () => {
             size="sm"
           />
 
-          {/* Action Type Dropdown */}
           <CustomSelect
             label="Loại thao tác"
             value={actionType}
@@ -349,7 +329,6 @@ export const AuditLogsTab: React.FC = () => {
             size="sm"
           />
 
-          {/* Date Range & Reset Button */}
           <div className="flex items-end gap-2">
             <button
               type="button"
@@ -362,7 +341,6 @@ export const AuditLogsTab: React.FC = () => {
           </div>
         </div>
 
-        {/* Date Filter Row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2 border-t border-slate-50">
           <div>
             <label className="block text-[11px] font-semibold text-slate-500 mb-1 flex items-center gap-1">
@@ -398,7 +376,6 @@ export const AuditLogsTab: React.FC = () => {
         </div>
       </div>
 
-      {/* Audit Log Table */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
         {isLoading ? (
           <div className="p-16 flex flex-col items-center justify-center gap-2 text-slate-400">
@@ -453,7 +430,6 @@ export const AuditLogsTab: React.FC = () => {
                       className="hover:bg-slate-50/80 transition-colors group cursor-pointer"
                       onClick={() => handleOpenDetail(log.id)}
                     >
-                      {/* Time */}
                       <td className="p-3.5 pl-4 align-top whitespace-nowrap">
                         <div className="font-mono text-[11px] font-semibold text-slate-800">
                           {formatDateTime(log.createdAt)}
@@ -463,7 +439,6 @@ export const AuditLogsTab: React.FC = () => {
                         </div>
                       </td>
 
-                      {/* Admin Info */}
                       <td className="p-3.5 align-top">
                         <div className="flex items-start gap-2.5">
                           {log.adminAvatar ? (
@@ -503,7 +478,6 @@ export const AuditLogsTab: React.FC = () => {
                         </div>
                       </td>
 
-                      {/* Bảng dữ liệu */}
                       <td className="p-3.5 align-top whitespace-nowrap">
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-slate-700 font-bold text-[11px]">
                           <Layers size={12} className="text-slate-500 shrink-0" />
@@ -511,7 +485,6 @@ export const AuditLogsTab: React.FC = () => {
                         </span>
                       </td>
 
-                      {/* Hành động */}
                       <td className="p-3.5 align-top whitespace-nowrap">
                         <span
                           className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-bold border ${getBadgeStyle(
@@ -522,14 +495,12 @@ export const AuditLogsTab: React.FC = () => {
                         </span>
                       </td>
 
-                      {/* Lý do / Nghiệp vụ */}
                       <td className="p-3.5 align-top max-w-sm">
                         <p className="text-slate-700 text-xs leading-relaxed line-clamp-2" title={log.reason}>
                           {log.reason || "—"}
                         </p>
                       </td>
 
-                      {/* IP & Status */}
                       <td className="p-3.5 align-top whitespace-nowrap">
                         <div className="space-y-1">
                           <span className="inline-block font-mono text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200">
@@ -555,7 +526,6 @@ export const AuditLogsTab: React.FC = () => {
           </div>
         )}
 
-        {/* Pagination Bar */}
         {!isLoading && logs.length > 0 && (
           <div className="p-3.5 bg-slate-50/80 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs">
             <div className="text-slate-500 font-medium">
@@ -593,14 +563,12 @@ export const AuditLogsTab: React.FC = () => {
         )}
       </div>
 
-      {/* Modal: Audit Log Diff & Details */}
       {selectedLogId !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
           <div
             className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Modal Header */}
             <div className="p-4 sm:p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold">
@@ -636,7 +604,6 @@ export const AuditLogsTab: React.FC = () => {
               </button>
             </div>
 
-            {/* Modal Body */}
             <div className="p-4 sm:p-6 overflow-y-auto space-y-5 text-xs">
               {isDetailLoading ? (
                 <div className="p-16 flex flex-col items-center justify-center gap-2 text-slate-400">
@@ -647,7 +614,6 @@ export const AuditLogsTab: React.FC = () => {
                 </div>
               ) : detailLog ? (
                 <>
-                  {/* Summary Cards */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80">
                       <div className="text-[10px] font-semibold text-slate-400 uppercase">
@@ -697,7 +663,6 @@ export const AuditLogsTab: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Reason Callout */}
                   <div className="p-3.5 bg-blue-50/60 rounded-xl border border-blue-200/80 space-y-1">
                     <div className="font-bold text-blue-900 text-xs flex items-center gap-1.5">
                       <FileText size={13} className="text-blue-700" />
@@ -708,7 +673,6 @@ export const AuditLogsTab: React.FC = () => {
                     </p>
                   </div>
 
-                  {/* Tech Specs (Request ID & User Agent) */}
                   <div className="p-3.5 bg-slate-900 text-slate-200 rounded-xl font-mono text-[11px] space-y-2">
                     <div className="flex items-center justify-between text-slate-400 border-b border-slate-800 pb-1.5">
                       <span className="flex items-center gap-1.5 font-bold text-slate-300">
@@ -744,7 +708,6 @@ export const AuditLogsTab: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Diff Viewer (Old Data vs New Data) */}
                   <div className="space-y-2">
                     <h4 className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
                       <Layers size={14} className="text-slate-600" />
@@ -752,7 +715,6 @@ export const AuditLogsTab: React.FC = () => {
                     </h4>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Old Data Box */}
                       <div className="rounded-xl border border-rose-200 bg-rose-50/40 p-3.5 space-y-2">
                         <div className="flex items-center justify-between font-bold text-rose-800 text-xs border-b border-rose-200 pb-1.5">
                           <span>Dữ liệu trước thay đổi (Old Data)</span>
@@ -781,7 +743,6 @@ export const AuditLogsTab: React.FC = () => {
                         )}
                       </div>
 
-                      {/* New Data Box */}
                       <div className="rounded-xl border border-emerald-200 bg-emerald-50/40 p-3.5 space-y-2">
                         <div className="flex items-center justify-between font-bold text-emerald-800 text-xs border-b border-emerald-200 pb-1.5">
                           <span className="flex items-center gap-1">
@@ -815,7 +776,6 @@ export const AuditLogsTab: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Metadata if present */}
                   {detailLog.metadataJSON && (
                     <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5 space-y-1.5">
                       <div className="font-bold text-slate-800 text-xs">
@@ -836,7 +796,6 @@ export const AuditLogsTab: React.FC = () => {
               )}
             </div>
 
-            {/* Modal Footer */}
             <div className="p-3.5 sm:p-4 bg-slate-50 border-t border-slate-200 flex justify-end">
               <button
                 type="button"

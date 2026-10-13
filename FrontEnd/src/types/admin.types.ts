@@ -13,9 +13,9 @@ export type AdminMainTab =
   | "settings"
   | "admin_profile"
   | "notifications_profile"
-  | "audit_logs";
+  | "audit_logs"
+  | "rankings";
 
-// Sub-tabs inside PLACE DETAIL FORM & HUB
 export type PlaceDetailTab =
   | "info"
   | "contact"
@@ -26,7 +26,6 @@ export type PlaceDetailTab =
   | "proposals"
   | "reports";
 
-// Place Media Item
 export interface PlaceMediaItem {
   id: number;
   url: string;
@@ -38,7 +37,6 @@ export interface PlaceMediaItem {
   uploadedAt: string;
 }
 
-// Review Item
 export interface PlaceReviewItem {
   id: number;
   placeId: number;
@@ -57,7 +55,6 @@ export interface PlaceReviewItem {
   visitDate: string;
 }
 
-// Comment Item
 export interface PlaceCommentItem {
   id: number;
   reviewId?: number;
@@ -78,7 +75,6 @@ export interface PlaceCommentItem {
   replyToName?: string;
 }
 
-// Admin Assignment Info
 export interface AdminAssignmentInfo {
   adminId: number;
   adminName: string;
@@ -87,7 +83,6 @@ export interface AdminAssignmentInfo {
   roleId?: number | string;
 }
 
-// Admin Proposal Item
 export interface AdminProposalItem {
   id: number;
   type?: "new_place" | "update_info" | "correction" | string;
@@ -103,7 +98,7 @@ export interface AdminProposalItem {
   proposerAvatar?: string;
   userAvatar?: string;
   submittedAt: string;
-  status: 0 | 1 | 2; // 0: Pending, 1: Approved, 2: Rejected
+  status: 0 | 1 | 2;
   adminNotes?: string | null;
   adminNote?: string | null;
   rejectionReason?: string | null;
@@ -150,7 +145,6 @@ export interface AdminProposalItem {
   };
 }
 
-// Admin Report Item
 export type ReportTypeCode =
   | "SPAM"
   | "WRONG_INFO"
@@ -168,6 +162,7 @@ export interface AdminReportItem {
   targetTitle: string;
   targetSubtitle?: string;
   targetContent?: string;
+  targetImage?: string;
   targetRating?: number;
   targetAuthor?: string;
   reporterName: string;
@@ -190,7 +185,6 @@ export interface AdminReportItem {
   category: string;
 }
 
-// Grouped Report Type for Moderation Drawer
 export interface GroupedReport {
   groupKey: string;
   targetType: "place" | "review" | "comment" | "blog" | "photo";
@@ -212,7 +206,6 @@ export interface GroupedReport {
   status: 0 | 1 | 2;
 }
 
-// Food & Specialities
 export interface AdminFoodItem {
   id: number;
   name: string;
@@ -228,11 +221,10 @@ export interface AdminFoodItem {
   minPrice?: number;
   maxPrice?: number;
   status?: "active" | "hidden";
-  statusNum?: number; // 1: Active (Công khai), 3: Hidden (Tạm ẩn)
+  statusNum?: number;
   placesCount?: number;
 }
 
-// Blog Item for Admin
 export interface AdminBlogItem {
   id: number;
   title: string;
@@ -309,7 +301,6 @@ export interface AdminAuditLog {
   type: "approve" | "reject" | "edit" | "hide" | "create" | "resolve" | "delete";
 }
 
-// Report Reason
 export interface ReportReason {
   id: number;
   content: string;
@@ -317,7 +308,6 @@ export interface ReportReason {
   category?: string;
 }
 
-// Report Target Info (for universal ReportModal)
 export type ReportTargetType = "place" | "review" | "comment" | "blog" | "photo" | "user";
 
 export interface ReportTargetInfo {
@@ -333,7 +323,6 @@ export interface ReportTargetInfo {
   category?: string;
 }
 
-// ── ADMIN USER MANAGEMENT TYPES ──
 export interface AdminUserCategoryScope {
   categoryId: number;
   categoryName: string;
@@ -504,9 +493,6 @@ export interface UpdateUserRoleResponseData {
   message?: string;
 }
 
-// ==========================================
-// 1. GEOGRAPHY (REGIONS & PROVINCES)
-// ==========================================
 export interface AdminGeographyRegionItem {
   id: number;
   name: string;
@@ -540,9 +526,6 @@ export interface AdminGeographyProvinceItem {
   assignedAdminsCount?: number;
 }
 
-// ==========================================
-// 2. CATALOG (PLACE TYPES & CATEGORIES)
-// ==========================================
 export interface AdminCatalogPlaceTypeItem {
   id: number;
   name: string;
@@ -569,9 +552,6 @@ export interface AdminCatalogCategoryItem {
   assignedAdminsCount?: number;
 }
 
-// ==========================================
-// 3. SETTINGS & REPORT TYPES
-// ==========================================
 export interface AdminReportTypeItem {
   id: number;
   code: string;

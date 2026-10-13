@@ -48,7 +48,6 @@ export const ProposalsTab: React.FC<ProposalsTabProps> = ({
     }).catch(() => {});
   }, []);
 
-  // Match /admin/proposals/:id from URL path
   const proposalPathMatch = location.pathname.match(/\/admin\/proposals\/(\d+)/i);
   const urlProposalId = proposalPathMatch ? Number(proposalPathMatch[1]) : selectedProposalId;
 
@@ -132,7 +131,6 @@ export const ProposalsTab: React.FC<ProposalsTabProps> = ({
   return (
     <div className="space-y-6 animate-in fade-in duration-150 text-xs">
       <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
-        {/* Search & Filter Bar (Identical to PlacesTab) */}
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="relative flex-1 min-w-[240px]">
             <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -172,7 +170,6 @@ export const ProposalsTab: React.FC<ProposalsTabProps> = ({
           </div>
         </div>
 
-        {/* Proposals Table (Minimalist row-by-row layout matching PlacesTab) */}
         <div className="overflow-x-auto rounded-xl border border-slate-200/80">
           <table className="w-full text-left border-collapse">
             <thead>

@@ -45,13 +45,11 @@ public class LeaveGroupRoomCommandHandler : IRequestHandler<LeaveGroupRoomComman
 
         if (isRequesterAdmin)
         {
-            // Quản trị viên rời nhóm -> xóa tất cả thành viên khỏi nhóm (giải tán nhóm)
             await _chatRepository.DisbandGroupRoomAsync(request.RoomId, ct);
             return Result<bool>.Success(true, "Quản trị viên đã rời nhóm. Toàn bộ thành viên đã được xóa và nhóm đã được giải tán.");
         }
         else
         {
-            // Thành viên bình thường rời nhóm
             await _chatRepository.RemoveMemberFromRoomAsync(request.RoomId, request.UserId, ct);
             return Result<bool>.Success(true, "Bạn đã rời khỏi nhóm trò chuyện thành công.");
         }

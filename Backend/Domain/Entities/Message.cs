@@ -1,4 +1,4 @@
-namespace Domain.Entities;
+﻿namespace Domain.Entities;
 
 public class Message
 {
@@ -10,7 +10,6 @@ public class Message
     public bool IsDeleted { get; private set; }
     public DateTime CreatedAt { get; private set; }
 
-    // Navigation
     public virtual ChatRoom ChatRoom { get; private set; } = null!;
     public virtual User Sender { get; private set; } = null!;
     public virtual Message? ReplyToMessage { get; private set; }

@@ -104,7 +104,7 @@ export interface AdminCommentItemDto {
   userAvatar?: string | null;
   content: string;
   createdAt: string;
-  status: string; // "active" | "hidden"
+  status: string;
   reportCount: number;
 }
 
@@ -210,7 +210,6 @@ export const adminService = {
   uploadPlaceImages: async (files: File[], placeId?: number): Promise<string[]> => {
     if (!files || files.length === 0) return [];
 
-    // 1. If placeId is provided, upload directly to place media album endpoint
     if (placeId) {
       try {
         const formData = new FormData();
@@ -224,7 +223,6 @@ export const adminService = {
           return data.map((item: any) => (typeof item === "string" ? item : item.url || item.imageUrl || "")).filter(Boolean);
         }
       } catch {
-        // Fallback to next upload method
       }
     }
 
@@ -235,7 +233,6 @@ export const adminService = {
       formData.append("images", file);
     });
 
-    // 2. Try dedicated place images upload endpoint
     try {
       const res = await apiClient.post<ApiSuccessResponse<string[] | { urls: string[] }>>(
         "/api/admin/places/upload-images",
@@ -245,7 +242,6 @@ export const adminService = {
       if (Array.isArray(data)) return data;
       if (data && Array.isArray((data as any).urls)) return (data as any).urls;
     } catch {
-      // 3. Try global media upload endpoint
       try {
         const res = await apiClient.post<ApiSuccessResponse<string[] | { urls: string[] }>>(
           "/api/media/upload",
@@ -255,7 +251,6 @@ export const adminService = {
         if (Array.isArray(data)) return data;
         if (data && Array.isArray((data as any).urls)) return (data as any).urls;
       } catch {
-        // 4. Fallback: Convert to clean data URLs for immediate preview & atomic save
         return Promise.all(
           files.map(
             (f) =>
@@ -324,7 +319,6 @@ export const adminService = {
       );
     } catch (err: any) {
       if (err?.response?.status === 405) {
-        // Fallback for Method Not Allowed: Try PATCH or POST
         try {
           return await write<{ id: number; coverImg?: string; success?: boolean } | boolean>(
             "patch",

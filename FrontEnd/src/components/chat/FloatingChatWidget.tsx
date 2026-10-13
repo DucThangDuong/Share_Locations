@@ -64,14 +64,12 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
   const [replyingTo, setReplyingTo] = useState<{ id: number; senderName: string; text: string } | null>(null)
   const [isSending, setIsSending] = useState(false)
 
-  // Edit / Delete States
   const [editingMessageId, setEditingMessageId] = useState<number | null>(null)
   const [editingText, setEditingText] = useState('')
   const [isSavingEdit, setIsSavingEdit] = useState(false)
   const [activeMenuMessageId, setActiveMenuMessageId] = useState<number | null>(null)
   const [copiedMessageId, setCopiedMessageId] = useState<number | null>(null)
 
-  // Simulated Voice/Video Call Modal
   const [activeCall, setActiveCall] = useState<{ type: 'voice' | 'video'; partnerName: string } | null>(null)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -83,7 +81,6 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
 
   const currentUserId = user?.id ? Number(user.id) : null
 
-  // Compute all rooms to show as chat head lighticons
   const chatHeadRooms = useMemo(() => {
     const list: InboxItemDto[] = []
     const ids = floatingRoomIds.length > 0 ? floatingRoomIds : activeRoomId ? [activeRoomId] : []
@@ -114,7 +111,6 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
     return list
   }, [floatingRoomIds, activeRoomId, inbox, activeRoom, incomingToast])
 
-  // Handle scroll to top to load older messages
   const handleScroll = () => {
     const container = scrollContainerRef.current
     if (!container || !hasMoreMessages || isLoadingMoreMessages || !activeRoomId) return
@@ -125,7 +121,6 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
     }
   }
 
-  // Restore scroll position after loading older messages so it doesn't jump
   useEffect(() => {
     const container = scrollContainerRef.current
     if (container && previousScrollHeightRef.current > 0) {
@@ -137,14 +132,12 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
     }
   }, [messages])
 
-  // Scroll to bottom on open or when a new message is sent/received
   useEffect(() => {
     if (isFloatingChatOpen && !isFloatingChatMinimized && previousScrollHeightRef.current === 0) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
   }, [isFloatingChatOpen, isFloatingChatMinimized, messages, partnerTyping])
 
-  // Auto-dismiss incoming speech bubble after 7 seconds
   useEffect(() => {
     if (!incomingToast) return
     const timer = setTimeout(() => {
@@ -153,7 +146,6 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
     return () => clearTimeout(timer)
   }, [incomingToast, dismissIncomingToast])
 
-  // Close menus when clicking outside
   useEffect(() => {
     const handleClickOutside = () => {
       setActiveMenuMessageId(null)
@@ -166,14 +158,12 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
     return null
   }
 
-  // Handle Copy Message
   const handleCopy = (messageId: number, text: string) => {
     navigator.clipboard.writeText(text)
     setCopiedMessageId(messageId)
     setTimeout(() => setCopiedMessageId(null), 2000)
   }
 
-  // Handle Delete Message
   const handleDelete = async (messageId: number) => {
     setActiveMenuMessageId(null)
     if (!confirm('Bạn có chắc chắn muốn xóa tin nhắn này?')) return
@@ -185,7 +175,6 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
     }
   }
 
-  // Handle Save Edit
   const handleSaveEdit = async (messageId: number) => {
     if (!editingText.trim()) return
     setIsSavingEdit(true)
@@ -312,7 +301,6 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                             <X size={12} />
                           </button>
 
-                          {/* Mũi tên nhọn trỏ thẳng vào chính giữa tâm của Lighticon bên phải */}
                           <div className="absolute -right-[7px] top-1/2 -translate-y-1/2 w-3 h-3 bg-white border-t-2 border-r-2 border-blue-200/90 rotate-45 pointer-events-none" />
                         </div>
                       )}
@@ -337,7 +325,6 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                           />
                         </button>
 
-                        {/* Unread badge count */}
                         {room.unreadCount > 0 && (
                           <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white shadow-xs animate-bounce pointer-events-none">
                             {room.unreadCount > 99 ? '99+' : room.unreadCount}
@@ -531,13 +518,11 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                             <MoreHorizontal size={13} />
                           </button>
 
-                          {/* Dropdown Menu */}
                           {isMenuOpen && (
                             <div
                               className={`absolute bottom-full mb-1.5 w-36 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 animate-in zoom-in-95 duration-150 ${isMe ? 'right-0' : 'left-0'
                                 }`}
                             >
-                              {/* Trả lời */}
                               <button
                                 type="button"
                                 onClick={() => {

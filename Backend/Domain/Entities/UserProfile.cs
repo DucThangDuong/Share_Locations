@@ -1,4 +1,4 @@
-namespace Domain.Entities;
+﻿namespace Domain.Entities;
 
 public class UserProfile
 {
@@ -13,7 +13,6 @@ public class UserProfile
     public string RankLevel { get; private set; } = "Tân binh";
     public DateTime UpdatedAt { get; private set; }
 
-    // Navigation
     public virtual User User { get; private set; } = null!;
 
     protected UserProfile() { }

@@ -1,4 +1,4 @@
-using Application.Common;
+﻿using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
@@ -34,7 +34,6 @@ public class RespondFriendRequestCommandHandler : IRequestHandler<RespondFriendR
             return Result.NotFound("Không tìm thấy lời mời kết bạn đang chờ xử lý.");
         }
 
-        // BOLA Check: Chỉ người nhận lời mời mới có quyền phản hồi
         if (existing.ActionUserId == request.UserId)
         {
             return Result.Forbidden("Bạn không thể tự phản hồi lời mời do chính mình gửi.");
@@ -46,7 +45,6 @@ public class RespondFriendRequestCommandHandler : IRequestHandler<RespondFriendR
             existing.Accept(request.UserId);
             await _unitOfWork.SaveChangesAsync(ct);
 
-            // Gửi thông báo chấp nhận kết bạn cho đối phương (TargetUserId là người gửi lời mời ban đầu)
             try
             {
                 var acceptorProfile = await _unitOfWork.UserProfiles.GetByUserIdAsync(request.UserId, ct);
@@ -71,7 +69,6 @@ public class RespondFriendRequestCommandHandler : IRequestHandler<RespondFriendR
             }
             catch
             {
-                // Non-blocking notification dispatch
             }
 
             return Result.Success("Đã chấp nhận lời mời kết bạn.");

@@ -1,4 +1,4 @@
-namespace Application.DTOs.Admin;
+﻿namespace Application.DTOs.Admin;
 
 public class AdminBlogListItemDto
 {
@@ -10,7 +10,7 @@ public class AdminBlogListItemDto
     public int? CategoryId { get; set; }
     public DateTime PublishedAt { get; set; }
     public int Views { get; set; }
-    public string Status { get; set; } = "published"; // "published" | "draft" | "hidden"
+    public string Status { get; set; } = "published";
     public string? CoverImg { get; set; }
     public string ReadTime { get; set; } = "5 phút đọc";
     public string? Summary { get; set; }
@@ -48,5 +48,5 @@ public class UpdateAdminBlogInput
 
 public class UpdateBlogStatusInput
 {
-    public string Status { get; set; } = "published"; // "published" | "draft" | "hidden"
+    public string Status { get; set; } = "published";
 }

@@ -213,7 +213,6 @@ export const ExploreFilterSidebar: React.FC<ExploreFilterSidebarProps> = ({
           })}
         </div>
 
-        {/* Price Tier Section */}
         <div className="space-y-2.5 pt-4 border-t border-slate-100">
           <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
             Khoảng giá & Ngân sách
@@ -237,7 +236,6 @@ export const ExploreFilterSidebar: React.FC<ExploreFilterSidebarProps> = ({
           </div>
         </div>
 
-        {/* Rating Section */}
         <div className="space-y-2.5 pt-4 border-t border-slate-100">
           <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
             Đánh giá tối thiểu

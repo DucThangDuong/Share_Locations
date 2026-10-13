@@ -1,4 +1,4 @@
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace Application.DTOs;
 
@@ -599,4 +599,3 @@ public class UserMapPlaceDto
     [JsonPropertyName("date")]
     public string Date { get; set; } = string.Empty;
 }
-

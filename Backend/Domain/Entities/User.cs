@@ -1,4 +1,4 @@
-using Domain.Enums;
+﻿using Domain.Enums;
 
 namespace Domain.Entities;
 
@@ -13,7 +13,6 @@ public class User
     public DateTime UpdatedAt { get; private set; }
     public bool IsDeleted { get; private set; }
 
-    // Legacy role backward compatibility
     private UserRoleType _legacyRole = UserRoleType.User;
     public UserRoleType Role
     {
@@ -27,7 +26,6 @@ public class User
         private set => _legacyRole = value;
     }
 
-    // Navigation properties
     public virtual UserProfile? Profile { get; private set; }
 
     private readonly List<UserRole> _userRoles = new();

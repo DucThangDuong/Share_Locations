@@ -1,4 +1,4 @@
-using Application.Common;
+﻿using Application.Common;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
 using Dapper;
@@ -68,7 +68,7 @@ public class TripRepository : ITripRepository
         parameters.Add("PageSize", Math.Max(1, p.PageSize));
 
         var sql = $@"
-            SELECT 
+            SELECT
                 t.Id,
                 t.UserId,
                 t.Title,
@@ -108,7 +108,7 @@ public class TripRepository : ITripRepository
         if (dayIds.Count > 0)
         {
             const string stopsSql = @"
-                SELECT 
+                SELECT
                     tp.TripDayId,
                     tp.VisitOrder,
                     tp.StartTime,
@@ -244,7 +244,7 @@ public class TripRepository : ITripRepository
         parameters.Add("PageSize", pageSize);
 
         var sql = $@"
-            SELECT 
+            SELECT
                 t.Id,
                 t.Title,
                 t.Description,
@@ -254,7 +254,7 @@ public class TripRepository : ITripRepository
                 t.Privacy,
                 t.Status,
                 t.CreatedAt,
-                CASE 
+                CASE
                     WHEN t.UserId = @UserId THEN 'Owner'
                     ELSE ISNULL((SELECT CASE tm.Role WHEN 3 THEN 'Owner' WHEN 2 THEN 'Editor' ELSE 'Member' END FROM dbo.TripMembers tm WHERE tm.TripId = t.Id AND tm.UserId = @UserId), 'Member')
                 END AS UserRole,

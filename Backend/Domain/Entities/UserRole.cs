@@ -1,4 +1,4 @@
-namespace Domain.Entities;
+﻿namespace Domain.Entities;
 
 public class UserRole
 {
@@ -8,7 +8,6 @@ public class UserRole
     public DateTime AssignedAt { get; private set; }
     public DateTime? ExpiresAt { get; private set; }
 
-    // Navigation
     public virtual User User { get; private set; } = null!;
     public virtual Role Role { get; private set; } = null!;
     public virtual User? AssignedByUser { get; private set; }

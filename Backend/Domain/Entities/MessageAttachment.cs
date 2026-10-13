@@ -1,4 +1,4 @@
-using Domain.Enums;
+﻿using Domain.Enums;
 
 namespace Domain.Entities;
 
@@ -19,7 +19,6 @@ public class MessageAttachment
     public int DisplayOrder { get; private set; }
     public DateTime CreatedAt { get; private set; }
 
-    // Navigation
     public virtual Message Message { get; private set; } = null!;
     public virtual Place? Place { get; private set; }
     public virtual Food? Food { get; private set; }

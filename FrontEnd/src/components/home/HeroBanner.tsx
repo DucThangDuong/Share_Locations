@@ -137,7 +137,6 @@ export const HeroBanner: React.FC = () => {
               </div>
             </div>
 
-            {/* Action Button */}
             <button
               type="submit"
               className="w-full sm:w-auto px-6 py-3.5 bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-bold rounded-xl sm:rounded-full transition-all flex items-center justify-center gap-2.5 shrink-0 cursor-pointer shadow-md group min-h-[46px]"

@@ -6,9 +6,9 @@ export interface NotificationItem {
   actorAvatarUrl?: string | null;
   title: string;
   content: string;
-  type: number; // 1: System, 2: Social, 3: Review, 4: Trip, 5: Proposal, 6: Moderation
+  type: number;
   typeName?: string;
-  priority: number; // 1: Urgent, 2: Normal, 3: Low
+  priority: number;
   groupKey?: string | null;
   deduplicationKey?: string | null;
   entityType?: string | null;

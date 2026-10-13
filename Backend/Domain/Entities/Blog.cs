@@ -1,4 +1,4 @@
-using Domain.Enums;
+﻿using Domain.Enums;
 
 namespace Domain.Entities;
 
@@ -23,7 +23,6 @@ public class Blog
     public DateTime CreatedAt { get; private set; }
     public DateTime UpdatedAt { get; private set; }
 
-    // Navigation
     public virtual User Author { get; private set; } = null!;
     public virtual Category? Category { get; private set; }
     public virtual User? HiddenByUser { get; private set; }

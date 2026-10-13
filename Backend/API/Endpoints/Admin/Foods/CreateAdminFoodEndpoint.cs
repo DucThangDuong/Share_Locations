@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.Extensions;
 using Application.Common;
 using Application.DTOs;
@@ -61,4 +61,3 @@ public class CreateAdminFoodEndpoint : Endpoint<CreateAdminFoodRequest, ApiSucce
         await this.SendApiResponseAsync(result, ct);
     }
 }
-

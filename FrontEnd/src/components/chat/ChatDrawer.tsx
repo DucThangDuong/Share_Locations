@@ -59,31 +59,25 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
 
   const currentUserId = user?.id ? Number(user.id) : null
 
-  // Accordion open/close states
   const [isCustomizationOpen, setIsCustomizationOpen] = useState(true)
   const [isMembersOpen, setIsMembersOpen] = useState(true)
   const [isPhotosOpen, setIsPhotosOpen] = useState(true)
 
-  // Modals state
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false)
   const [isAddMembersOpen, setIsAddMembersOpen] = useState(false)
   const [isViewMembersOpen, setIsViewMembersOpen] = useState(false)
   const [previewMembers, setPreviewMembers] = useState<ChatRoomMemberDto[]>([])
   const [isLoadingMembers, setIsLoadingMembers] = useState(false)
 
-  // Remove member confirmation state
   const [memberToRemove, setMemberToRemove] = useState<ChatRoomMemberDto | null>(null)
   const [isRemovingMember, setIsRemovingMember] = useState(false)
 
-  // Leave group confirmation state
   const [isConfirmLeaveOpen, setIsConfirmLeaveOpen] = useState(false)
   const [isLeavingGroup, setIsLeavingGroup] = useState(false)
 
-  // Member Action Menu dropdown: userId -> boolean
   const [activeMenuUserId, setActiveMenuUserId] = useState<number | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
-  // Close context menu on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
@@ -94,7 +88,6 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Load group members from backend
   useEffect(() => {
     if (!isOpen || !isGroup || !roomId) {
       setPreviewMembers([])
@@ -116,13 +109,11 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
     loadMembers()
   }, [isOpen, isGroup, roomId])
 
-  // Fallback: Combine API members with current user + distinct message senders
   const displayMembers = useMemo(() => {
     if (previewMembers.length > 0) return previewMembers
 
     const map = new Map<number, ChatRoomMemberDto>()
 
-    // 1. Current user
     if (user?.id) {
       const myId = Number(user.id)
       map.set(myId, {
@@ -136,7 +127,6 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
       })
     }
 
-    // 2. Distinct senders from room messages
     if (roomId) {
       messages.forEach((msg) => {
         const msgRoomId = Number(msg.roomId)
@@ -157,7 +147,6 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
     return Array.from(map.values())
   }, [previewMembers, user, messages, roomId])
 
-  // Check if current user is group administrator based on isAdmin / role property
   const isCurrentUserAdmin = useMemo(() => {
     if (!currentUserId || displayMembers.length === 0) return false
     const me = displayMembers.find((m) => m.userId === currentUserId)
@@ -168,7 +157,6 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
 
   return (
     <aside className="hidden lg:flex w-80 bg-white border-l border-[#E4E6EB] flex-col p-3 overflow-y-auto font-sans select-none">
-      {/* Header Info */}
       <div className="flex flex-col items-center text-center py-4 border-b border-slate-100">
         <div className="relative mb-2">
           <img src={roomAvatar} alt="" className="w-18 h-18 rounded-full object-cover shadow-xs" />
@@ -197,10 +185,8 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
               </div>
             </button>
 
-            {/* Nội dung bên trong Dropdown Tùy chỉnh */}
             {isCustomizationOpen && (
               <div className="mt-1 space-y-1 animate-in slide-in-from-top-2 fade-in duration-150">
-                {/* 1. Đổi tên đoạn chat */}
                 <button
                   type="button"
                   onClick={() => setIsRenameModalOpen(true)}
@@ -214,7 +200,6 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
                   </span>
                 </button>
 
-                {/* 2. Rời khỏi nhóm */}
                 <button
                   type="button"
                   onClick={() => setIsConfirmLeaveOpen(true)}
@@ -241,7 +226,6 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
 
         {isGroup && roomId && (
           <div className="border-b border-slate-100 pb-2">
-            {/* Header Nút Dropdown */}
             <button
               type="button"
               onClick={() => setIsMembersOpen((prev) => !prev)}
@@ -255,10 +239,8 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
               </div>
             </button>
 
-            {/* Nội dung danh sách thành viên (Hiện khi Dropdown mở) */}
             {isMembersOpen && (
               <div className="mt-1 space-y-1 animate-in slide-in-from-top-2 fade-in duration-150">
-                {/* Nút Thêm người */}
                 <button
                   type="button"
                   onClick={() => setIsAddMembersOpen(true)}
@@ -273,7 +255,6 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
                   </div>
                 </button>
 
-                {/* Loading State */}
                 {isLoadingMembers && displayMembers.length === 0 && (
                   <div className="py-3 flex items-center justify-center gap-2 text-xs text-slate-400">
                     <Loader2 size={15} className="animate-spin text-[#0084FF]" />
@@ -281,7 +262,6 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
                   </div>
                 )}
 
-                {/* Danh sách các thành viên */}
                 {displayMembers.map((member) => {
                   const avatar =
                     member.avatarUrl || defaultUserAvatar
@@ -316,7 +296,6 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
                         </div>
                       </div>
 
-                      {/* Nút 3 chấm action menu */}
                       <div className="relative">
                         <button
                           type="button"
@@ -333,7 +312,6 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
                           <MoreHorizontal size={18} />
                         </button>
 
-                        {/* Dropdown Menu Popup */}
                         {isMenuOpen && (
                           <div
                             ref={menuRef}
@@ -365,7 +343,6 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
                               <span>Xem trang cá nhân</span>
                             </button>
 
-                            {/* Chỉ Quản trị viên nhóm mới có quyền xóa thành viên khác khỏi nhóm */}
                             {isCurrentUserAdmin && !isMe && (
                               <button
                                 type="button"
@@ -425,7 +402,6 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
         </div>
       </div>
 
-      {/* Modal Đổi Tên Nhóm */}
       {isGroup && roomId && (
         <RenameGroupModal
           isOpen={isRenameModalOpen}
@@ -437,7 +413,6 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
         />
       )}
 
-      {/* Modal Xác Nhận Xóa Thành Viên Khỏi Nhóm */}
       {memberToRemove && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150 font-sans">
           <div
@@ -493,7 +468,6 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
         </div>
       )}
 
-      {/* Modal Xác Nhận Rời / Giải Tán Nhóm */}
       {isConfirmLeaveOpen && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-150 font-sans">
           <div
@@ -548,7 +522,6 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
         </div>
       )}
 
-      {/* Modal Xem Thành Viên Full */}
       {isGroup && roomId && (
         <ViewGroupMembersModal
           isOpen={isViewMembersOpen}
@@ -559,7 +532,6 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
         />
       )}
 
-      {/* Modal Thêm Thành Viên */}
       {isGroup && roomId && (
         <AddMembersModal
           isOpen={isAddMembersOpen}
@@ -567,7 +539,6 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({
           roomTitle={roomTitle}
           onClose={() => {
             setIsAddMembersOpen(false)
-            // Reload members list
             chatService.getRoomMembers(roomId).then(setPreviewMembers).catch(() => { })
           }}
           onAddMembers={async (rId, userIds) => {

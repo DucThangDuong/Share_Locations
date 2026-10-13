@@ -46,7 +46,6 @@ export const ItineraryMemberModal: React.FC<ItineraryMemberModalProps> = ({
   const [isInviting, setIsInviting] = useState(false)
   const [removingUserId, setRemovingUserId] = useState<number | null>(null)
 
-  // Friends selection & suggestions
   const [friends, setFriends] = useState<FriendItemDto[]>([])
   const [selectedFriends, setSelectedFriends] = useState<FriendItemDto[]>([])
   const [, setIsLoadingFriends] = useState(false)
@@ -168,7 +167,6 @@ export const ItineraryMemberModal: React.FC<ItineraryMemberModalProps> = ({
     }
   }
 
-
   const getRoleBadge = (role?: string) => {
     const r = (role || 'Member').toLowerCase()
     if (r === 'owner') {
@@ -195,7 +193,6 @@ export const ItineraryMemberModal: React.FC<ItineraryMemberModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
       <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-        {/* Header */}
         <div className="p-5 sm:p-6 border-b border-slate-200 flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-800 flex items-center justify-center shrink-0">
@@ -216,7 +213,6 @@ export const ItineraryMemberModal: React.FC<ItineraryMemberModalProps> = ({
           </button>
         </div>
 
-        {/* Modal Body */}
         <div className="p-5 sm:p-6 space-y-5 overflow-y-auto">
           {isOwner ? (
             <form
@@ -337,7 +333,6 @@ export const ItineraryMemberModal: React.FC<ItineraryMemberModalProps> = ({
                 </select>
               </div>
 
-              {/* Action row */}
               <div className="pt-2 flex items-center justify-end gap-3 border-t border-slate-200/80">
                 <button
                   type="submit"
@@ -371,7 +366,6 @@ export const ItineraryMemberModal: React.FC<ItineraryMemberModalProps> = ({
             </div>
           )}
 
-          {/* Members List */}
           <div className="space-y-2.5">
             <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
               <ShieldCheck size={13} className="text-emerald-700" />
@@ -470,7 +464,6 @@ export const ItineraryMemberModal: React.FC<ItineraryMemberModalProps> = ({
           </div>
         </div>
 
-        {/* Footer */}
         <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end">
           <button
             type="button"

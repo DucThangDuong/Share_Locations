@@ -39,7 +39,6 @@ export const VisitLogsUtility: React.FC<VisitLogsUtilityProps> = ({
   const [privacyFilter, setPrivacyFilter] = useState<PrivacyFilter>('all')
   const [searchQuery, setSearchQuery] = useState('')
 
-  // Edit Log Modal State
   const [editingLog, setEditingLog] = useState<VisitLogItem | null>(null)
   const [editVisitedDate, setEditVisitedDate] = useState('')
   const [editPrivacy, setEditPrivacy] = useState<0 | 1>(0)
@@ -88,7 +87,6 @@ export const VisitLogsUtility: React.FC<VisitLogsUtilityProps> = ({
     navigate('/explore')
   }
 
-  // Edit Visit Log Submit
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!editingLog) return
@@ -122,7 +120,6 @@ export const VisitLogsUtility: React.FC<VisitLogsUtilityProps> = ({
 
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Quick Toggle Privacy
   const handleTogglePrivacy = async (e: React.MouseEvent, id: number, currentPrivacy: number) => {
     e.stopPropagation()
     e.preventDefault()
@@ -142,7 +139,6 @@ export const VisitLogsUtility: React.FC<VisitLogsUtilityProps> = ({
     }
   }
 
-  // Delete Visit Log
   const handleDeleteLog = async (e: React.MouseEvent, id: number) => {
     e.stopPropagation()
     e.preventDefault()

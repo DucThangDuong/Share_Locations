@@ -1,4 +1,4 @@
-using Domain.Enums;
+﻿using Domain.Enums;
 
 namespace Domain.Entities;
 
@@ -14,7 +14,6 @@ public class Food
     public RecordStatus Status { get; private set; } = RecordStatus.Active;
     public DateTime CreatedAt { get; private set; }
 
-    // Navigation
     private readonly List<FoodMedia> _media = new();
     public virtual IReadOnlyCollection<FoodMedia> Media => _media.AsReadOnly();
 

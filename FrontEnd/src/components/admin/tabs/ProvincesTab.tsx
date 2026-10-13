@@ -35,11 +35,9 @@ export const ProvincesTab: React.FC<ProvincesTabProps> = ({ showToast }) => {
 
   const [activeSubTab, setActiveSubTab] = useState<"provinces" | "regions">("provinces");
 
-  // Regions State
   const [regions, setRegions] = useState<AdminGeographyRegionItem[]>([]);
   const [isRegionsLoading, setIsRegionsLoading] = useState(false);
 
-  // Provinces State
   const [provinces, setProvinces] = useState<AdminGeographyProvinceItem[]>([]);
   const [isProvincesLoading, setIsProvincesLoading] = useState(false);
   const [provinceFilters, setProvinceFilters] = useState<{
@@ -69,7 +67,6 @@ export const ProvincesTab: React.FC<ProvincesTabProps> = ({ showToast }) => {
     totalPages: 1,
   });
 
-  // Dedicated Detail View State (Replacing Modals with Page Editors)
   const [detailView, setDetailView] = useState<{
     type: "province" | "region";
     mode: "create" | "edit";
@@ -169,7 +166,6 @@ export const ProvincesTab: React.FC<ProvincesTabProps> = ({ showToast }) => {
     setRegionForm((prev) => ({ ...prev, imageUrl: "" }));
   };
 
-  // Sync with URL Sub-route if any e.g. /admin/provinces/new or /admin/provinces/25
   useEffect(() => {
     const pathMatch = location.pathname.match(/\/admin\/provinces\/(new|\d+)/i);
     if (pathMatch) {
@@ -208,7 +204,6 @@ export const ProvincesTab: React.FC<ProvincesTabProps> = ({ showToast }) => {
             status: found.status ?? 1,
           });
         }
-        // Fetch fresh detail data from BE
         adminService
           .getGeographyProvince(provId)
           .then((res: any) => {
@@ -227,12 +222,11 @@ export const ProvincesTab: React.FC<ProvincesTabProps> = ({ showToast }) => {
               });
             }
           })
-          .catch(() => {});
+          .catch(() => { });
       }
     }
   }, [location.pathname, provinces.length, regions.length]);
 
-  // 1. Fetch Regions
   const fetchRegions = async () => {
     setIsRegionsLoading(true);
     try {
@@ -246,7 +240,6 @@ export const ProvincesTab: React.FC<ProvincesTabProps> = ({ showToast }) => {
     }
   };
 
-  // 2. Fetch Provinces with Filters & Pagination
   const fetchProvinces = async () => {
     setIsProvincesLoading(true);
     try {
@@ -318,7 +311,6 @@ export const ProvincesTab: React.FC<ProvincesTabProps> = ({ showToast }) => {
       .replace(/\s+/g, "-");
   };
 
-  // Open Detail View for Province
   const handleOpenProvinceDetail = (prov?: AdminGeographyProvinceItem) => {
     setProvinceImageFile(null);
     setProvincePreviewUrl("");
@@ -354,7 +346,7 @@ export const ProvincesTab: React.FC<ProvincesTabProps> = ({ showToast }) => {
             });
           }
         })
-        .catch(() => {});
+        .catch(() => { });
     } else {
       setDetailView({ type: "province", mode: "create" });
       setProvinceForm({
@@ -372,7 +364,6 @@ export const ProvincesTab: React.FC<ProvincesTabProps> = ({ showToast }) => {
     }
   };
 
-  // Open Detail View for Region
   const handleOpenRegionDetail = (reg?: AdminGeographyRegionItem) => {
     setRegionImageFile(null);
     setRegionPreviewUrl("");
@@ -410,7 +401,6 @@ export const ProvincesTab: React.FC<ProvincesTabProps> = ({ showToast }) => {
     navigate("/admin/provinces");
   };
 
-  // Save Province using multipart/form-data for Azure Blob storage
   const handleSaveProvince = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!provinceForm.name.trim()) {
@@ -452,7 +442,6 @@ export const ProvincesTab: React.FC<ProvincesTabProps> = ({ showToast }) => {
     }
   };
 
-  // Save Region using multipart/form-data for Azure Blob storage
   const handleSaveRegion = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!regionForm.name.trim()) {
@@ -494,7 +483,6 @@ export const ProvincesTab: React.FC<ProvincesTabProps> = ({ showToast }) => {
     }
   };
 
-  // Toggle Status
   const handleExecuteStatusToggle = async () => {
     const { type, id, targetStatus, reason } = statusConfirm;
     try {
@@ -521,7 +509,6 @@ export const ProvincesTab: React.FC<ProvincesTabProps> = ({ showToast }) => {
 
     return (
       <div className="space-y-4 animate-in fade-in duration-150 text-xs">
-        {/* Top Navigation Bar */}
         <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
@@ -561,9 +548,7 @@ export const ProvincesTab: React.FC<ProvincesTabProps> = ({ showToast }) => {
           </div>
         </div>
 
-        {/* Main Form Content */}
         <form id="province-detail-form" onSubmit={handleSaveProvince} className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Left Column: Form Info */}
           <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
             <h3 className="font-bold text-slate-900 text-sm border-b border-slate-100 pb-3">
               Thông tin địa lý
@@ -660,7 +645,6 @@ export const ProvincesTab: React.FC<ProvincesTabProps> = ({ showToast }) => {
             </div>
           </div>
 
-          {/* Right Column: Settings & Stats */}
           <div className="space-y-4">
             <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
               <h4 className="font-bold text-slate-900 text-xs border-b border-slate-100 pb-2">
@@ -692,7 +676,6 @@ export const ProvincesTab: React.FC<ProvincesTabProps> = ({ showToast }) => {
                 </label>
               </div>
 
-              {/* Cover Preview Box */}
               <div className="pt-2">
                 <span className="block text-slate-500 text-[11px] font-bold mb-1.5">Hình ảnh biểu trưng:</span>
                 <div className="h-32 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center">
@@ -741,9 +724,6 @@ export const ProvincesTab: React.FC<ProvincesTabProps> = ({ showToast }) => {
     );
   }
 
-  // =========================================================================
-  // VIEW: REGION DETAIL EDITOR
-  // =========================================================================
   if (detailView?.type === "region") {
     const isEdit = detailView.mode === "edit";
     const currentReg = isEdit ? regions.find((r) => r.id === detailView.id) : null;
@@ -926,12 +906,8 @@ export const ProvincesTab: React.FC<ProvincesTabProps> = ({ showToast }) => {
     );
   }
 
-  // =========================================================================
-  // VIEW: LIST VIEW (DEFAULT)
-  // =========================================================================
   return (
     <div className="space-y-4 animate-in fade-in duration-150 text-xs">
-      {/* Sub-tab Navigation */}
       <div className="flex items-center justify-between bg-white px-4 py-2.5 rounded-2xl border border-slate-200/80 shadow-2xs">
         <div className="flex items-center gap-2">
           <button
@@ -954,15 +930,8 @@ export const ProvincesTab: React.FC<ProvincesTabProps> = ({ showToast }) => {
             <span>Vùng / Miền ({regions.length})</span>
           </button>
         </div>
-
-        <div className="hidden sm:flex items-center gap-2">
-          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
-            Tổng: {pagination.totalCount || provinces.length} tỉnh thành
-          </span>
-        </div>
       </div>
 
-      {/* 1. PROVINCES LIST */}
       {activeSubTab === "provinces" && (
         <div className="space-y-4">
           <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex flex-col lg:flex-row items-center justify-between gap-3">
@@ -1040,14 +1009,6 @@ export const ProvincesTab: React.FC<ProvincesTabProps> = ({ showToast }) => {
             </form>
 
             <div className="flex items-center gap-2 w-full lg:w-auto justify-end">
-              <button
-                onClick={() => fetchProvinces()}
-                className="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
-                title="Làm mới"
-              >
-                <RefreshCw size={16} className={isProvincesLoading ? "animate-spin text-emerald-600" : ""} />
-              </button>
-
               <button
                 onClick={() => handleOpenProvinceDetail()}
                 className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-all shadow-sm shadow-emerald-600/20 cursor-pointer shrink-0"
@@ -1214,7 +1175,6 @@ export const ProvincesTab: React.FC<ProvincesTabProps> = ({ showToast }) => {
         </div>
       )}
 
-      {/* 2. REGIONS LIST */}
       {activeSubTab === "regions" && (
         <div className="space-y-4">
           <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
@@ -1344,7 +1304,6 @@ export const ProvincesTab: React.FC<ProvincesTabProps> = ({ showToast }) => {
         </div>
       )}
 
-      {/* CONFIRMATION: STATUS TOGGLE */}
       {statusConfirm.isOpen && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-sm w-full p-5 border border-slate-200 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150">

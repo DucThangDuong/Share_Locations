@@ -77,7 +77,6 @@ export const PlacesTab: React.FC<PlacesTabProps> = ({
   const [provinces, setProvinces] = useState<ProvinceDto[]>([]);
   const [categories, setCategories] = useState<PlaceTypeDto[]>([]);
 
-  // Debounced Search calling API via onFilterChange
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -99,7 +98,6 @@ export const PlacesTab: React.FC<PlacesTabProps> = ({
           }
         }
       } catch {
-        // network fallback
       }
     };
     loadMetadata();
@@ -108,7 +106,6 @@ export const PlacesTab: React.FC<PlacesTabProps> = ({
     };
   }, []);
 
-  // Merge loaded provinces with any provinces present in placesList
   const allProvinces = useMemo(() => {
     const list: { id: string | number; name: string }[] = [...provinces];
     placesList.forEach((p) => {
@@ -120,7 +117,6 @@ export const PlacesTab: React.FC<PlacesTabProps> = ({
     return list;
   }, [provinces, placesList]);
 
-  // Merge loaded categories with any categories present in placesList
   const allCategories = useMemo(() => {
     const list: { id: string | number; name: string }[] = [...categories];
     placesList.forEach((p) => {
@@ -140,7 +136,6 @@ export const PlacesTab: React.FC<PlacesTabProps> = ({
     return placesList.find((p) => Number(p.id) === urlPlaceId) || null;
   }, [urlPlaceId, placesList]);
 
-  // Handle Search input change with debounce to fetch from server
   const handleSearchChange = (value: string) => {
     setPlaceSearchText(value);
     if (onFilterChange) {
@@ -211,7 +206,6 @@ export const PlacesTab: React.FC<PlacesTabProps> = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            {/* Bộ lọc Tỉnh thành */}
             <CustomSelect
               value={placeFilterProvince}
               onChange={(val) => handleProvinceChange(val)}
@@ -226,7 +220,6 @@ export const PlacesTab: React.FC<PlacesTabProps> = ({
               className="min-w-[140px]"
             />
 
-            {/* Bộ lọc Danh mục */}
             <CustomSelect
               value={categoryFilter}
               onChange={(val) => handleCategoryChange(val)}
@@ -241,7 +234,6 @@ export const PlacesTab: React.FC<PlacesTabProps> = ({
               className="min-w-[140px]"
             />
 
-            {/* Bộ lọc Trạng thái */}
             <CustomSelect
               value={placeFilterStatus}
               onChange={(val) => handleStatusChange(val)}
@@ -265,7 +257,6 @@ export const PlacesTab: React.FC<PlacesTabProps> = ({
           </div>
         </div>
 
-        {/* Places Table */}
         <div className="overflow-x-auto rounded-xl border border-slate-200/80">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -378,7 +369,6 @@ export const PlacesTab: React.FC<PlacesTabProps> = ({
           </table>
         </div>
 
-        {/* Pagination Bar (Driven by Server Meta) */}
         {pagination && pagination.totalElements > 0 && (
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 px-1 border-t border-slate-100 text-xs text-slate-500 font-medium">
             <div>

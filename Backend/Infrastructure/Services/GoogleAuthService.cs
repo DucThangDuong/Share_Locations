@@ -1,4 +1,4 @@
-using Application.Common.Interfaces;
+﻿using Application.Common.Interfaces;
 using Application.DTOs;
 using Google.Apis.Auth;
 using Microsoft.Extensions.Configuration;
@@ -27,8 +27,8 @@ public class GoogleAuthService : IGoogleAuthService
             var googleClientId = _configuration["Authentication:Google:ClientId"];
             var settings = new GoogleJsonWebSignature.ValidationSettings
             {
-                Audience = !string.IsNullOrWhiteSpace(googleClientId) 
-                    ? new[] { googleClientId } 
+                Audience = !string.IsNullOrWhiteSpace(googleClientId)
+                    ? new[] { googleClientId }
                     : null
             };
 

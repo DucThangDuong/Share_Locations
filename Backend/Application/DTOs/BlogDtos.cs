@@ -1,4 +1,4 @@
-namespace Application.DTOs;
+﻿namespace Application.DTOs;
 
 public class BlogAuthorDto
 {
@@ -90,4 +90,3 @@ public class BlogForEditDto
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }
-

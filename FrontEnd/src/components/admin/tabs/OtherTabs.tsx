@@ -10,8 +10,8 @@ export { CategoriesTab } from "./CategoriesTab";
 export { ProvincesTab } from "./ProvincesTab";
 export { SystemSettingsTab } from "./SystemSettingsTab";
 export { AdminProfileTab } from "./AdminProfileTab";
+export { RankingsTab } from "./RankingsTab";
 
-// Alias for backwards compatibility with AdminPage routes
 export const NotificationsProfileTab: React.FC<{
   currentAdminInfo?: AdminAssignmentInfo;
   onNavigateTab?: (tab: string) => void;

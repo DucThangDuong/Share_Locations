@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text.RegularExpressions;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
@@ -62,7 +62,6 @@ public class RegionRepository : IRegionRepository
             _ => $"%{regionCode}%"
         };
 
-        // 1. Query Region
         const string regionSql = @"
             SELECT TOP 1 r.Id, r.Name, r.Tagline, r.Description, r.ImageUrl
             FROM dbo.Regions r
@@ -97,7 +96,6 @@ public class RegionRepository : IRegionRepository
             HeroSubheadline = !string.IsNullOrWhiteSpace(regionDesc) ? regionDesc : $"Hành trình trải nghiệm văn hoá, danh thắng và phong vị đặc sắc {regionName}."
         };
 
-        // 2. Provinces
         const string provincesSql = @"
             SELECT p.Name
             FROM dbo.Provinces p
@@ -107,7 +105,6 @@ public class RegionRepository : IRegionRepository
         var provinceNames = (await connection.QueryAsync<string>(provincesSql, new { RegionId = regionId })).ToList();
         dto.Provinces = provinceNames;
 
-        // 3. Hero Images (Region image + Top featured provinces)
         const string heroImagesSql = @"
             SELECT TOP 4 p.ImageUrl AS Url, p.Name AS Title, p.Name AS Location, ISNULL(p.Tagline, N'Điểm đến hấp dẫn') AS Tag
             FROM dbo.Provinces p
@@ -140,7 +137,6 @@ public class RegionRepository : IRegionRepository
         }
         dto.HeroImages = heroImages;
 
-        // 4. Collections
         const string collectionsSql = @"
             SELECT TOP 4
                 c.Id,
@@ -186,8 +182,8 @@ public class RegionRepository : IRegionRepository
             var colIds = collectionRows.Select(c => (int)c.Id).ToList();
 
             const string colPlacesSql = @"
-                SELECT cp.CollectionId, p.Id, p.Name, p.AvgRating, p.ReviewCount, 
-                       CASE WHEN cat.Status = 1 THEN cat.Name ELSE N'Không khả dụng' END AS CategoryName, 
+                SELECT cp.CollectionId, p.Id, p.Name, p.AvgRating, p.ReviewCount,
+                       CASE WHEN cat.Status = 1 THEN cat.Name ELSE N'Không khả dụng' END AS CategoryName,
                        p.CoverImageUrl
                 FROM dbo.CollectionPlaces cp
                 INNER JOIN dbo.Places p ON cp.PlaceId = p.Id
@@ -247,7 +243,6 @@ public class RegionRepository : IRegionRepository
         }
         dto.Collections = collections;
 
-        // 5. Landmarks (Places in region)
         const string landmarksSql = @"
             SELECT TOP 8
                 p.Id,
@@ -324,7 +319,6 @@ public class RegionRepository : IRegionRepository
         }
         dto.Landmarks = landmarks;
 
-        // 6. Foods (via FoodProvinces and FoodPlaces)
         const string foodsSql = @"
             SELECT TOP 6
                 f.Id,
@@ -455,7 +449,6 @@ public class RegionRepository : IRegionRepository
         }
         dto.Foods = foods;
 
-        // 7. Blog Posts
         const string blogsSql = @"
             SELECT TOP 4
                 b.Id,
@@ -513,7 +506,6 @@ public class RegionRepository : IRegionRepository
         }
         dto.BlogPosts = blogPosts;
 
-        // 8. Spotlight
         const string spotlightSql = @"
             SELECT TOP 1
                 p.Id,
@@ -566,7 +558,6 @@ public class RegionRepository : IRegionRepository
             };
         }
 
-        // 9. Reviews
         const string reviewsSql = @"
             SELECT TOP 6
                 rev.Id,

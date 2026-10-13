@@ -1,4 +1,4 @@
-using Application.Common;
+﻿using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
@@ -35,7 +35,6 @@ public class InviteTripMemberCommandHandler : IRequestHandler<InviteTripMemberCo
             return Result.NotFound("Chuyến đi không tồn tại.");
         }
 
-        // BOLA Check: CHỈ Owner mới được mời thành viên mới
         if (trip.UserId != request.OwnerUserId)
         {
             return Result.Forbidden("Chỉ chủ sở hữu mới có quyền mời thành viên vào chuyến đi.");
@@ -71,7 +70,6 @@ public class InviteTripMemberCommandHandler : IRequestHandler<InviteTripMemberCo
         await _unitOfWork.Trips.AddMemberAsync(member, ct);
         await _unitOfWork.SaveChangesAsync(ct);
 
-        // Gửi thông báo lời mời chuyến đi cho thành viên mới
         try
         {
             var ownerProfile = await _unitOfWork.UserProfiles.GetByUserIdAsync(request.OwnerUserId, ct);
@@ -95,7 +93,6 @@ public class InviteTripMemberCommandHandler : IRequestHandler<InviteTripMemberCo
         }
         catch
         {
-            // Non-blocking notification dispatch
         }
 
         return Result.Success("Đã thêm thành viên vào chuyến đi thành công.");

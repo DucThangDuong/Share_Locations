@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using Application.Common;
 using Application.Common.Interfaces;
 using Application.DTOs;
@@ -58,7 +58,6 @@ public class CreateProposalCommandHandler : IRequestHandler<CreateProposalComman
 
         var uploadCache = new Dictionary<string, string>(StringComparer.Ordinal);
 
-        // 1. Xử lý ảnh bìa nếu được upload dưới dạng file (multipart/form-data)
         if (request.CoverImageFile != null && request.CoverImageFile.Content != null && request.CoverImageFile.Content.Length > 0)
         {
             try
@@ -78,7 +77,6 @@ public class CreateProposalCommandHandler : IRequestHandler<CreateProposalComman
                 return Result<UserProposalItemDto>.Failure($"Lỗi khi tải ảnh bìa lên Azure: {ex.Message}");
             }
         }
-        // 2. Xử lý ảnh bìa nếu gửi dạng chuỗi Base64
         else if (!string.IsNullOrWhiteSpace(dto.CoverImg))
         {
             if (dto.CoverImg.StartsWith("data:image/", StringComparison.OrdinalIgnoreCase) ||
@@ -103,7 +101,6 @@ public class CreateProposalCommandHandler : IRequestHandler<CreateProposalComman
 
         var finalMediaUrls = new List<string>();
 
-        // 3. Xử lý danh sách ảnh đính kèm nếu được upload dưới dạng files (multipart/form-data)
         if (request.MediaFiles != null && request.MediaFiles.Count > 0)
         {
             foreach (var mediaFile in request.MediaFiles)
@@ -137,7 +134,6 @@ public class CreateProposalCommandHandler : IRequestHandler<CreateProposalComman
             }
         }
 
-        // 4. Xử lý các ảnh đính kèm trong mediaUrls & images nếu có chứa chuỗi Base64
         var rawUrls = new List<string>();
         if (dto.MediaUrls != null) rawUrls.AddRange(dto.MediaUrls);
         if (dto.Images != null) rawUrls.AddRange(dto.Images);
@@ -181,7 +177,6 @@ public class CreateProposalCommandHandler : IRequestHandler<CreateProposalComman
             }
         }
 
-        // 5. YÊU CẦU BẮT BUỘC PHẢI CÓ ẢNH (ẢNH BÌA HOẶC ẢNH ĐÍNH KÈM)
         bool hasCover = !string.IsNullOrWhiteSpace(dto.CoverImg);
         bool hasMedia = finalMediaUrls.Count > 0;
 
@@ -190,12 +185,10 @@ public class CreateProposalCommandHandler : IRequestHandler<CreateProposalComman
             return Result<UserProposalItemDto>.Failure("Địa điểm đề xuất bắt buộc phải có ít nhất một hình ảnh (ảnh bìa hoặc ảnh đính kèm).");
         }
 
-        // Nếu chưa có ảnh bìa nhưng có danh sách ảnh thì lấy ảnh đầu tiên làm ảnh bìa
         if (!hasCover && hasMedia)
         {
             dto.CoverImg = finalMediaUrls[0];
         }
-        // Nếu có ảnh bìa mà danh sách ảnh trống thì bổ sung ảnh bìa vào danh sách
         if (hasCover && finalMediaUrls.Count == 0)
         {
             finalMediaUrls.Add(dto.CoverImg!);
@@ -204,7 +197,6 @@ public class CreateProposalCommandHandler : IRequestHandler<CreateProposalComman
         dto.MediaUrls = finalMediaUrls;
         dto.Images = finalMediaUrls;
 
-        // Lưu URI Azure Blob vào ProposedDataJSON (tuyệt đối không lưu Base64 vào DB)
         var json = JsonSerializer.Serialize(dto);
         var proposal = new Proposal(
             request.UserId,

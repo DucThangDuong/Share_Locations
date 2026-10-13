@@ -1,4 +1,4 @@
-using Application.Common.Interfaces;
+﻿using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs.Admin;
 using Dapper;
@@ -26,7 +26,7 @@ public class AdminDashboardRepository : IAdminDashboardRepository
         {
             combinedSql = @"
             -- 1. Lấy dữ liệu tổng quan (Metrics Summary)
-            SELECT 
+            SELECT
                 (SELECT COUNT(1) FROM dbo.Places) AS TotalPlaces,
                 (SELECT COUNT(1) FROM dbo.Proposals WHERE Status = 0) AS NewProposalsPending,
                 (
@@ -38,9 +38,9 @@ public class AdminDashboardRepository : IAdminDashboardRepository
                 0 AS UrgentSlaBreached,
                 (SELECT COUNT(1) FROM dbo.Reviews) AS TotalReviews,
                 (
-                    SELECT COUNT(1) 
+                    SELECT COUNT(1)
                     FROM dbo.Reviews r
-                    WHERE r.Status = 2 
+                    WHERE r.Status = 2
                        OR EXISTS (SELECT 1 FROM dbo.ReviewReports rr WHERE rr.ReviewId = r.Id AND rr.Status = 0)
                 ) AS ReportedReviews,
                 (SELECT COUNT(1) FROM dbo.Foods) AS TotalFoods,
@@ -50,7 +50,7 @@ public class AdminDashboardRepository : IAdminDashboardRepository
             SELECT TOP 5
                 prov.Name AS Province,
                 COUNT(p.Id) AS PlacesCount,
-                CASE 
+                CASE
                     WHEN COUNT(p.Id) >= 30 THEN 95
                     WHEN COUNT(p.Id) >= 20 THEN 85
                     WHEN COUNT(p.Id) >= 10 THEN 70
@@ -71,7 +71,6 @@ public class AdminDashboardRepository : IAdminDashboardRepository
             parameters.Add("ScopeProvIds", provScopes);
             parameters.Add("ScopeRegIds", regScopes);
 
-            // Điều kiện lọc Scope cho Places
             var placeConds = new List<string>();
             if (catScopes.Count > 0) placeConds.Add("p.CategoryId IN @ScopeCatIds");
             if (provScopes.Count > 0 && regScopes.Count > 0)
@@ -85,10 +84,8 @@ public class AdminDashboardRepository : IAdminDashboardRepository
 
             var placeWhere = placeConds.Count > 0 ? " WHERE " + string.Join(" AND ", placeConds) : "";
 
-            // Blogs
             var blogWhere = catScopes.Count > 0 ? " WHERE b.CategoryId IN @ScopeCatIds" : " WHERE 1 = 0";
 
-            // Foods
             var foodConds = new List<string>();
             if (catScopes.Count > 0)
                 foodConds.Add("EXISTS (SELECT 1 FROM dbo.FoodPlaces fp_pl JOIN dbo.Places pl ON fp_pl.PlaceId = pl.Id WHERE fp_pl.FoodId = f.Id AND pl.CategoryId IN @ScopeCatIds)");
@@ -99,7 +96,6 @@ public class AdminDashboardRepository : IAdminDashboardRepository
             if (foodConds.Count == 0) foodConds.Add("1 = 0");
             var foodWhere = " WHERE (" + string.Join(" OR ", foodConds) + ")";
 
-            // Proposals
             var propConds = new List<string> { "prop.Status = 0" };
             if (catScopes.Count > 0)
                 propConds.Add("COALESCE(prop.CategoryId, targetP.CategoryId) IN @ScopeCatIds");
@@ -113,7 +109,6 @@ public class AdminDashboardRepository : IAdminDashboardRepository
                 propConds.Add("1 = 0");
             var propWhere = " WHERE " + string.Join(" AND ", propConds);
 
-            // Province stats filter
             var provStatsWhere = "";
             if (provScopes.Count > 0 && regScopes.Count > 0)
                 provStatsWhere = " WHERE prov.Id IN @ScopeProvIds OR prov.RegionId IN @ScopeRegIds";
@@ -124,7 +119,7 @@ public class AdminDashboardRepository : IAdminDashboardRepository
 
             combinedSql = $@"
             -- 1. Lấy dữ liệu tổng quan có phân quyền Scope
-            SELECT 
+            SELECT
                 (SELECT COUNT(1) FROM dbo.Places p LEFT JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id {placeWhere}) AS TotalPlaces,
                 (SELECT COUNT(1) FROM dbo.Proposals prop LEFT JOIN dbo.Places targetP ON prop.TargetPlaceId = targetP.Id LEFT JOIN dbo.Provinces prov ON COALESCE(prop.ProvinceId, targetP.ProvinceId) = prov.Id {propWhere}) AS NewProposalsPending,
                 (
@@ -136,7 +131,7 @@ public class AdminDashboardRepository : IAdminDashboardRepository
                 0 AS UrgentSlaBreached,
                 (SELECT COUNT(1) FROM dbo.Reviews r JOIN dbo.Places p ON r.PlaceId = p.Id LEFT JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id {placeWhere}) AS TotalReviews,
                 (
-                    SELECT COUNT(1) 
+                    SELECT COUNT(1)
                     FROM dbo.Reviews r
                     JOIN dbo.Places p ON r.PlaceId = p.Id
                     LEFT JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id
@@ -149,7 +144,7 @@ public class AdminDashboardRepository : IAdminDashboardRepository
             SELECT TOP 5
                 prov.Name AS Province,
                 COUNT(p.Id) AS PlacesCount,
-                CASE 
+                CASE
                     WHEN COUNT(p.Id) >= 30 THEN 95
                     WHEN COUNT(p.Id) >= 20 THEN 85
                     WHEN COUNT(p.Id) >= 10 THEN 70
@@ -226,12 +221,12 @@ public class AdminDashboardRepository : IAdminDashboardRepository
         }
 
         var sql = $@"
-        SELECT 
+        SELECT
             prov.Id,
             prov.Name,
             COUNT(p.Id) AS PlacesCount,
             (SELECT COUNT(1) FROM dbo.FoodProvinces fp WHERE fp.ProvinceId = prov.Id) AS FoodsCount,
-            CASE 
+            CASE
                 WHEN COUNT(p.Id) >= 25 THEN 90
                 WHEN COUNT(p.Id) >= 15 THEN 75
                 WHEN COUNT(p.Id) >= 5 THEN 50

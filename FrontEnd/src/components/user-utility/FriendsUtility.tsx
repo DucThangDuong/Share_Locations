@@ -38,21 +38,17 @@ export const FriendsUtility: React.FC<FriendsUtilityProps> = ({
   const [activeTab, setActiveTab] = useState<FriendTab>('accepted')
   const [isLoading, setIsLoading] = useState(true)
 
-  // Lists from getFriends API
   const [friends, setFriends] = useState<FriendItemDto[]>([])
   const [incomingRequests, setIncomingRequests] = useState<FriendItemDto[]>([])
   const [outgoingRequests, setOutgoingRequests] = useState<FriendItemDto[]>([])
 
-  // Search inside friend list
   const [localSearch, setLocalSearch] = useState('')
 
-  // Global user search in 'search' tab
   const [globalSearch, setGlobalSearch] = useState('')
   const [searchResults, setSearchResults] = useState<FriendItemDto[]>([])
   const [isSearchingGlobal, setIsSearchingGlobal] = useState(false)
   const [sentRequestIds, setSentRequestIds] = useState<number[]>([])
 
-  // Unfriend confirmation modal
   const [unfriendTarget, setUnfriendTarget] = useState<FriendItemDto | null>(null)
   const [isActionPending, setIsActionPending] = useState(false)
 
@@ -82,7 +78,6 @@ export const FriendsUtility: React.FC<FriendsUtilityProps> = ({
     fetchFriendsData()
   }, [fetchFriendsData])
 
-  // Debounced global search for users
   useEffect(() => {
     if (activeTab !== 'search' || !globalSearch.trim()) {
       setSearchResults([])
@@ -106,13 +101,11 @@ export const FriendsUtility: React.FC<FriendsUtilityProps> = ({
     return () => clearTimeout(timer)
   }, [activeTab, globalSearch])
 
-  // Direct Message via Chat Context
   const handleOpenChat = async (userId: number) => {
     onClose?.()
     await openDirectChatWithUser(userId)
   }
 
-  // Accept or Decline Friend Request
   const handleRespondRequest = async (userId: number, accept: boolean) => {
     setIsActionPending(true)
     try {
@@ -136,7 +129,6 @@ export const FriendsUtility: React.FC<FriendsUtilityProps> = ({
     }
   }
 
-  // Send Friend Request
   const handleSendRequest = async (userId: number) => {
     try {
       const res = await friendService.sendFriendRequest(userId)
@@ -151,7 +143,6 @@ export const FriendsUtility: React.FC<FriendsUtilityProps> = ({
     }
   }
 
-  // Confirm Unfriend
   const handleUnfriendConfirm = async () => {
     if (!unfriendTarget) return
     setIsActionPending(true)

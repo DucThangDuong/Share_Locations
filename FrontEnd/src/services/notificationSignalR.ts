@@ -23,7 +23,6 @@ class NotificationSignalRService {
         try {
           await this.connection.stop();
         } catch {
-          // Ignore
         }
       }
 
@@ -83,7 +82,6 @@ class NotificationSignalRService {
       try {
         await this.connection.stop();
       } catch {
-        // Ignore
       }
       this.connection = null;
     }

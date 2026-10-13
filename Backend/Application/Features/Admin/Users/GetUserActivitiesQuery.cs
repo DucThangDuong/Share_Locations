@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
@@ -33,8 +33,8 @@ public class GetUserActivitiesQueryHandler : IRequestHandler<GetUserActivitiesQu
         if (!_currentUserService.IsSystemAdmin && _currentUserService.IsCategoryAdmin)
         {
             var isSelf = _currentUserService.UserId == request.UserId;
-            var targetIsAdmin = targetUser.Roles.Any(r => 
-                r.Equals("CATEGORY_ADMIN", StringComparison.OrdinalIgnoreCase) || 
+            var targetIsAdmin = targetUser.Roles.Any(r =>
+                r.Equals("CATEGORY_ADMIN", StringComparison.OrdinalIgnoreCase) ||
                 r.Equals("SYSTEM_ADMIN", StringComparison.OrdinalIgnoreCase));
 
             if (!isSelf && targetIsAdmin)

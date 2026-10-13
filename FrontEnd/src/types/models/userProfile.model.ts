@@ -149,7 +149,7 @@ export interface UserMapPlaceDto {
   coverImg?: string | null
   category?: string | null
   province?: string | null
-  coordinates: [number, number] // [lng, lat]
+  coordinates: [number, number]
   interactionType: 'review' | 'visit_log' | 'proposal'
   interactionLabel: string
   rating?: number | null

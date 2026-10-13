@@ -1,4 +1,4 @@
-using API.Hubs;
+﻿using API.Hubs;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
@@ -28,10 +28,8 @@ public class ChatNotifier : IChatNotifier
         var groupName = ChatHub.GetRoomGroupName(roomId);
         _logger.LogInformation("Broadcasting message {MessageId} to group {GroupName}", message.Id, groupName);
 
-        // 1. Broadcast to SignalR Room Group
         await _hubContext.Clients.Group(groupName).ReceiveMessage(message);
 
-        // 2. Also send directly to all member user IDs to ensure real-time delivery even if room group wasn't joined
         try
         {
             using var scope = _serviceProvider.CreateScope();

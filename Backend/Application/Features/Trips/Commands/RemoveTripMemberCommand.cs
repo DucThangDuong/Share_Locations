@@ -1,4 +1,4 @@
-using Application.Common;
+﻿using Application.Common;
 using Domain.Interfaces;
 using MediatR;
 
@@ -28,7 +28,6 @@ public class RemoveTripMemberCommandHandler : IRequestHandler<RemoveTripMemberCo
             return Result.Failure("Không thể gỡ bỏ chủ sở hữu khỏi chuyến đi.");
         }
 
-        // BOLA Check: Chỉ Owner được đuổi người, hoặc chính người đó tự rút lui
         bool isOwner = trip.UserId == request.CurrentUserId;
         bool isSelf = request.TargetUserId == request.CurrentUserId;
 

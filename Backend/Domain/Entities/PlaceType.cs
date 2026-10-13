@@ -1,4 +1,4 @@
-using Domain.Enums;
+﻿using Domain.Enums;
 
 namespace Domain.Entities;
 
@@ -12,7 +12,6 @@ public class PlaceType
     public int DisplayOrder { get; private set; }
     public RecordStatus Status { get; private set; } = RecordStatus.Active;
 
-    // Navigation
     private readonly List<Category> _categories = new();
     public virtual IReadOnlyCollection<Category> Categories => _categories.AsReadOnly();
 }

@@ -1,4 +1,4 @@
-using Application.Common;
+﻿using Application.Common;
 using Domain.Enums;
 using Domain.Interfaces;
 using MediatR;
@@ -30,7 +30,6 @@ public class DeleteTripPlaceCommandHandler : IRequestHandler<DeleteTripPlaceComm
             return Result.NotFound("Chuyến đi không tồn tại.");
         }
 
-        // BOLA Check: Owner hoặc Editor
         bool isOwner = trip.UserId == request.UserId;
         if (!isOwner)
         {
@@ -45,7 +44,6 @@ public class DeleteTripPlaceCommandHandler : IRequestHandler<DeleteTripPlaceComm
         _unitOfWork.Trips.RemovePlace(tripPlace);
         await _unitOfWork.SaveChangesAsync(ct);
 
-        // Re-index remaining places
         var remainingPlaces = await _unitOfWork.Trips.GetPlacesByDayIdAsync(dayId, ct);
         int order = 1;
         foreach (var sp in remainingPlaces)

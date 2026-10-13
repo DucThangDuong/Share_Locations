@@ -15,13 +15,11 @@ import type {
   AdminUserItem,
 } from "@/types/admin.types";
 
-// Modular Admin Components
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { AdminTopbar } from "@/components/admin/AdminTopbar";
 import { ModerationDrawer } from "@/components/admin/ModerationDrawer";
 import { AddPlaceModal } from "@/components/admin/modals/AddPlaceModal";
 
-// Modular Tabs
 import { DashboardTab } from "@/components/admin/tabs/DashboardTab";
 import { UsersTab } from "@/components/admin/tabs/UsersTab";
 import { PlacesTab } from "@/components/admin/tabs/PlacesTab";
@@ -38,6 +36,7 @@ import {
   AdminProfileTab,
   NotificationsProfileTab,
   AuditLogsTab,
+  RankingsTab,
 } from "@/components/admin/tabs/OtherTabs";
 
 const TAB_SLUG_MAP: Record<AdminMainTab, string> = {
@@ -56,6 +55,7 @@ const TAB_SLUG_MAP: Record<AdminMainTab, string> = {
   admin_profile: "profile",
   notifications_profile: "settings",
   audit_logs: "audit-logs",
+  rankings: "rankings",
 };
 
 const SLUG_TO_TAB_MAP: Record<string, AdminMainTab> = {
@@ -85,6 +85,9 @@ const SLUG_TO_TAB_MAP: Record<string, AdminMainTab> = {
   notifications_profile: "settings",
   "audit-logs": "audit_logs",
   audit_logs: "audit_logs",
+  rankings: "rankings",
+  "bang-xep-hang": "rankings",
+  leaderboard: "rankings",
 };
 
 export const AdminPage: React.FC = () => {
@@ -120,11 +123,9 @@ export const AdminPage: React.FC = () => {
     "notifications_profile",
   ];
 
-  // Determine active tab from URL path or query params
   const getTabFromUrl = (): AdminMainTab => {
     let resolvedTab: AdminMainTab = "dashboard";
 
-    // 1. Check path e.g. /admin/places or /admin/users
     const pathParts = location.pathname.replace(/\/+$/, "").split("/");
     const adminIndex = pathParts.indexOf("admin");
     if (adminIndex !== -1 && pathParts[adminIndex + 1]) {
@@ -133,7 +134,6 @@ export const AdminPage: React.FC = () => {
         resolvedTab = SLUG_TO_TAB_MAP[subSlug];
       }
     } else {
-      // 2. Check query param e.g. /admin?tab=places
       const params = new URLSearchParams(location.search);
       const queryTab = params.get("tab")?.toLowerCase();
       if (queryTab && SLUG_TO_TAB_MAP[queryTab]) {
@@ -141,7 +141,6 @@ export const AdminPage: React.FC = () => {
       }
     }
 
-    // Guard: Admin cấp 1 cannot access super admin tabs
     if (!isUserSystemAdmin() && SUPER_ADMIN_ONLY_TABS.includes(resolvedTab)) {
       return "dashboard";
     }
@@ -155,16 +154,14 @@ export const AdminPage: React.FC = () => {
     if (type === "place" || type === "review" || type === "comment" || type === "blog" || type === "photo") {
       return type;
     }
-    return "all";
+    return "place";
   };
 
-  // Navigation State initialized from URL
   const [mainTab, setMainTabState] = useState<AdminMainTab>(getTabFromUrl);
   const [reportTargetTypeFilter, setReportTargetTypeFilterState] = useState<"all" | "place" | "review" | "comment" | "blog" | "photo">(getReportTargetTypeFromUrl);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
-  // Sync state when URL changes (e.g. back/forward button)
   useEffect(() => {
     const tabFromUrl = getTabFromUrl();
     if (tabFromUrl !== mainTab) {
@@ -178,7 +175,6 @@ export const AdminPage: React.FC = () => {
     }
   }, [location.pathname, location.search]);
 
-  // Handler to switch tab and update browser URL
   const setMainTab = (tab: AdminMainTab) => {
     if (!isUserSystemAdmin() && SUPER_ADMIN_ONLY_TABS.includes(tab)) {
       showToast("Bạn không có quyền truy cập chức năng này (chỉ dành cho Quản trị viên cấp cao).");
@@ -190,8 +186,9 @@ export const AdminPage: React.FC = () => {
     setMainTabState(tab);
     const slug = TAB_SLUG_MAP[tab];
     let targetPath = slug === "dashboard" ? "/admin" : `/admin/${slug}`;
-    if (tab === "reports" && reportTargetTypeFilter && reportTargetTypeFilter !== "all") {
-      targetPath += `?targetType=${reportTargetTypeFilter}`;
+    if (tab === "reports") {
+      const type = reportTargetTypeFilter && reportTargetTypeFilter !== "all" ? reportTargetTypeFilter : "place";
+      targetPath += `?targetType=${type}`;
     }
     if (location.pathname + location.search !== targetPath) {
       navigate(targetPath);
@@ -199,14 +196,11 @@ export const AdminPage: React.FC = () => {
   };
 
   const setReportTargetTypeFilter = (type: "all" | "place" | "review" | "comment" | "blog" | "photo") => {
-    setReportTargetTypeFilterState(type);
+    const activeType = type || "place";
+    setReportTargetTypeFilterState(activeType);
     setMainTabState("reports");
     const params = new URLSearchParams(location.search);
-    if (type && type !== "all") {
-      params.set("targetType", type);
-    } else {
-      params.delete("targetType");
-    }
+    params.set("targetType", activeType);
     const searchStr = params.toString();
     const targetPath = `/admin/reports${searchStr ? `?${searchStr}` : ""}`;
     if (location.pathname + location.search !== targetPath) {
@@ -219,14 +213,11 @@ export const AdminPage: React.FC = () => {
     setTimeout(() => setToastMsg(null), 3000);
   };
 
-
-  // Global Dashboard Scope
   const [dashRegion, setDashRegion] = useState("all");
   const [dashProvince, setDashProvince] = useState("all");
   const [dashTimeRange, setDashTimeRange] = useState<"today" | "7days" | "30days" | "90days">("7days");
   const [dashboardMetrics, setDashboardMetrics] = useState<AdminMetrics | null>(null);
 
-  // Core Data Stores
   const [usersList, setUsersList] = useState<AdminUserItem[]>([]);
   const [isUsersLoading, setIsUsersLoading] = useState(false);
   const [userFilters, setUserFilters] = useState<{
@@ -301,7 +292,6 @@ export const AdminPage: React.FC = () => {
   }>({ page: 1, pageSize: 10 });
   const [auditLogs] = useState<AdminAuditLog[]>([]);
 
-  // Places Filter & Details State
   const [selectedPlaceId, setSelectedPlaceId] = useState<number | null>(null);
   const [placeSearchText, setPlaceSearchText] = useState("");
   const [placeFilterProvince, setPlaceFilterProvince] = useState("all");
@@ -328,16 +318,13 @@ export const AdminPage: React.FC = () => {
     pageSize?: number;
   }>({ page: 1, pageSize: 10 });
 
-  // Proposals Filter
   const [proposalStatusFilter, setProposalStatusFilter] = useState<"all" | "0" | "1" | "2">("all");
 
-  // Reviews & Comments State
   const [revComTab, setRevComTab] = useState<"reviews" | "comments">("reviews");
   const [revReportFilter, setRevReportFilter] = useState("all");
   const [reviewsList, setReviewsList] = useState<PlaceReviewItem[]>([]);
   const [commentsList, setCommentsList] = useState<PlaceCommentItem[]>([]);
 
-  // Reports Queue State
   const [reportSubTab, setReportSubTab] = useState<"all" | "urgent" | "assigned_to_me" | "resolved">("all");
   const [reportPriorityFilter] = useState<"all" | "urgent" | "high" | "normal" | "low">("all");
   const [reportProvinceFilter, setReportProvinceFilter] = useState("all");
@@ -345,7 +332,6 @@ export const AdminPage: React.FC = () => {
   const [reportCurrentPage, setReportCurrentPage] = useState(1);
   const [selectedReportRowIds, setSelectedReportRowIds] = useState<number[]>([]);
 
-  // Moderation Drawer State
   const [activeReportGroupKey, setActiveReportGroupKey] = useState<string | null>(null);
   const [selectedReportIdInDrawer, setSelectedReportIdInDrawer] = useState<number | null>(null);
   const [drawerDecisionTab, setDrawerDecisionTab] = useState<"accept" | "dismiss">("accept");
@@ -356,7 +342,6 @@ export const AdminPage: React.FC = () => {
   const [drawerAutoNotifyReporters, setDrawerAutoNotifyReporters] = useState(true);
   const [drawerAutoRecalculateRating, setDrawerAutoRecalculateRating] = useState(true);
 
-  // Add Place Modal State
   const [isAddPlaceModalOpen, setIsAddPlaceModalOpen] = useState(false);
   const [newPlaceForm, setNewPlaceForm] = useState({
     name: "",
@@ -630,9 +615,8 @@ export const AdminPage: React.FC = () => {
               page: 1,
               pageSize: 50,
             };
-            if (reportTargetTypeFilter && reportTargetTypeFilter !== "all") {
-              reportParams.targetType = reportTargetTypeFilter;
-            }
+            const activeTargetType = reportTargetTypeFilter && reportTargetTypeFilter !== "all" ? reportTargetTypeFilter : "place";
+            reportParams.targetType = activeTargetType;
             if (reportSubTab && reportSubTab !== "all") {
               reportParams.subTab = reportSubTab;
             }
@@ -664,13 +648,13 @@ export const AdminPage: React.FC = () => {
                   else if (typeNum === 6 || rawType === "6" || rawType === "user") rawType = "user";
                   else if (rawType.includes("comment") || String(item.title || "").toLowerCase().startsWith("bình luận")) rawType = "comment";
                   else if (rawType.includes("review") || String(item.title || "").toLowerCase().startsWith("đánh giá")) rawType = "review";
-                  else if (rawType.includes("blog") || String(item.title || "").toLowerCase().startsWith("bài viết")) rawType = "blog";
+                  else if (rawType.includes("blog") || String(item.title || "").toLowerCase().startsWith("bài viết") || String(item.title || "").toLowerCase().startsWith("cẩm nang") || rawType.includes("cẩm nang")) rawType = "blog";
                   else if (!rawType) rawType = "place";
 
                   return {
                     ...item,
                     id: item.id,
-                    codeId: item.codeId || `REP-${item.id}`,
+                    codeId: item.codeId || `${item.id}`,
                     targetType: rawType as any,
                     targetId: item.targetId || item.placeId || item.reviewId || item.commentId || item.blogId || 0,
                     targetTitle: item.targetTitle || item.title || "Đối tượng báo cáo",
@@ -685,9 +669,11 @@ export const AdminPage: React.FC = () => {
                       item.text ||
                       item.targetDescription ||
                       "",
+                    targetImage: item.targetImage || item.imageUrl || item.coverImageUrl || item.image || "",
                     reporterId: item.reporterId || 0,
                     reporterName:
                       item.reporterName || item.reporter || "Người dùng ẩn danh",
+                    reporterAvatar: item.reporterAvatar || item.avatar || "",
                     reportTypeName:
                       item.reportReasonCategory || item.reason || item.reportTypeName || "Vi phạm quy định",
                     reasonContent:
@@ -931,17 +917,14 @@ export const AdminPage: React.FC = () => {
     };
   }, [mainTab, userFilters, placeFilters, foodFilters, blogFilters, reportTargetTypeFilter, reportSubTab, reportSearchText]);
 
-  // ── AUDIT LOG HELPER ──
   const addAuditLog = (
     _action: string,
     _target: string,
     _details: string,
     _type: "approve" | "reject" | "edit" | "hide" | "create" | "resolve" | "delete"
   ) => {
-    // Audit records are created by the backend transaction; this UI only reads them.
   };
 
-  // Handlers for Places
   const handleTogglePlaceStatus = async (placeId: number) => {
     const place = placesList.find((item) => item.id === placeId);
     const isCurrentlyVisible = place
@@ -1005,7 +988,6 @@ export const AdminPage: React.FC = () => {
     showToast(`Đã cập nhật thông tin "${updatedPlace.name}".`);
   };
 
-  // Handle Add Place Submit
   const handleAddPlaceSubmit = async () => {
     if (!newPlaceForm.name || !newPlaceForm.location) {
       alert("Vui lòng điền đầy đủ tên và địa chỉ địa điểm.");
@@ -1029,7 +1011,6 @@ export const AdminPage: React.FC = () => {
     setIsAddPlaceModalOpen(false);
   };
 
-  // Drawer Open Trigger
   const handleOpenModerationDrawer = (groupKey: string, specificReportId?: number) => {
     setActiveReportGroupKey(groupKey);
     if (specificReportId) {
@@ -1039,7 +1020,6 @@ export const AdminPage: React.FC = () => {
     }
   };
 
-  // Grouped active report calculation for drawer
   const activeReportGroup: GroupedReport | null = activeReportGroupKey
     ? (() => {
       const [targetType, targetIdStr] = activeReportGroupKey.split("_");
@@ -1060,6 +1040,7 @@ export const AdminPage: React.FC = () => {
         targetId: first.targetId,
         targetTitle: first.targetTitle,
         targetSubtitle: first.targetSubtitle,
+        targetImage: first.targetImage,
         targetContent: first.targetContent,
         targetRating: first.targetRating,
         province: first.province,
@@ -1076,7 +1057,6 @@ export const AdminPage: React.FC = () => {
     })()
     : null;
 
-  // Drawer Confirm Resolution
   const handleConfirmDrawerResolution = async () => {
     if (!activeReportGroup) return;
 
@@ -1096,7 +1076,6 @@ export const AdminPage: React.FC = () => {
       resolutionNote: drawerResolutionNote,
     });
 
-    // Cập nhật trạng thái thực thể tại Client theo đúng nghiệp vụ
     if (drawerDecisionTab === "accept" && (effectiveActionTaken.includes("hide_target") || effectiveActionTaken.includes("hide_content"))) {
       const targetId = activeReportGroup.targetId;
       if (activeReportGroup.targetType === "place") {
@@ -1424,6 +1403,7 @@ export const AdminPage: React.FC = () => {
                 />
               )}
               {mainTab === "audit_logs" && <AuditLogsTab />}
+              {mainTab === "rankings" && <RankingsTab showToast={showToast} />}
             </div>
           </main>
         </div>

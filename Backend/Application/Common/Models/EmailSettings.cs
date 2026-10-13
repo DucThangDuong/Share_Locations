@@ -1,4 +1,4 @@
-namespace Application.Common.Models;
+﻿namespace Application.Common.Models;
 
 public class MailSettings
 {
@@ -9,7 +9,6 @@ public class MailSettings
     public string DisplayName { get; set; } = "Hệ thống Chia sẻ Địa điểm";
     public bool EnableSsl { get; set; } = true;
 
-    // Alias properties để tương thích ngược linh hoạt
     public string SmtpServer { get => Server; set => Server = value; }
     public int SmtpPort { get => Port; set => Port = value; }
     public string SenderEmail { get => UserName; set => UserName = value; }
@@ -17,7 +16,6 @@ public class MailSettings
     public string SenderPassword { get => Password; set => Password = value; }
 }
 
-// Alias cho EmailSettings để tương thích với code cũ
 public class EmailSettings : MailSettings
 {
 }

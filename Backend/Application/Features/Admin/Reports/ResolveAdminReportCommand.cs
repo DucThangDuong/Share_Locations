@@ -1,4 +1,4 @@
-using Application.Common;
+﻿using Application.Common;
 using Application.Common.Interfaces.Repositories;
 using Domain.Enums;
 using MediatR;
@@ -9,8 +9,8 @@ public record ResolveAdminReportCommand(
     string TargetType,
     long ReportId,
     long AdminId,
-    string Decision, // "accept" | "dismiss"
-    string? ActionTaken = null, // "hide_target" | "delete_permanently"
+    string Decision,
+    string? ActionTaken = null,
     string? ResolutionNote = null) : IRequest<Result<bool>>;
 
 public class ResolveAdminReportCommandHandler : IRequestHandler<ResolveAdminReportCommand, Result<bool>>

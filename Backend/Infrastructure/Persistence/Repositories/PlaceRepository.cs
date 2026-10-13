@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
 using Dapper;
@@ -75,17 +75,15 @@ public class PlaceRepository : IPlaceRepository
         if (!string.IsNullOrWhiteSpace(p.Keyword))
         {
             whereClauses.Add(@"(
-                p.Name LIKE @Keyword OR 
-                p.Address LIKE @Keyword OR 
-                p.Description LIKE @Keyword OR 
-                prov.Name LIKE @Keyword OR 
+                p.Name LIKE @Keyword OR
+                p.Address LIKE @Keyword OR
+                p.Description LIKE @Keyword OR
+                prov.Name LIKE @Keyword OR
                 (cat.Status = 1 AND cat.Name LIKE @Keyword)
             )");
             parameters.Add("Keyword", $"%{p.Keyword.Trim()}%");
         }
 
-        // Ưu tiên Region hơn Province:
-        // Nếu có Region thì ưu tiên lấy tất cả các Province thuộc các Region đó.
         var regionIds = p.GetEffectiveRegionIds();
         var provinceIds = p.GetEffectiveProvinceIds();
 
@@ -100,7 +98,6 @@ public class PlaceRepository : IPlaceRepository
             parameters.Add("ProvinceIds", provinceIds);
         }
 
-        // Lọc danh mục (hỗ trợ nhiều CategoryId)
         var categoryIds = p.GetEffectiveCategoryIds();
         if (categoryIds.Count > 0)
         {
@@ -108,7 +105,6 @@ public class PlaceRepository : IPlaceRepository
             parameters.Add("CategoryIds", categoryIds);
         }
 
-        // Lọc loại hình địa điểm (hỗ trợ nhiều PlaceTypeId)
         var placeTypeIds = p.GetEffectivePlaceTypeIds();
         if (placeTypeIds.Count > 0)
         {
@@ -116,7 +112,6 @@ public class PlaceRepository : IPlaceRepository
             parameters.Add("PlaceTypeIds", placeTypeIds);
         }
 
-        // Lọc khoảng giá
         if (p.MinPrice.HasValue && p.MinPrice.Value > 0)
         {
             whereClauses.Add("(p.MaxPrice >= @MinPrice OR p.MinPrice >= @MinPrice)");
@@ -129,7 +124,6 @@ public class PlaceRepository : IPlaceRepository
             parameters.Add("MaxPrice", p.MaxPrice.Value);
         }
 
-        // Lọc điểm đánh giá
         if (p.MinRating.HasValue && p.MinRating.Value > 0)
         {
             whereClauses.Add("p.AvgRating >= @MinRating");
@@ -158,10 +152,10 @@ public class PlaceRepository : IPlaceRepository
 
         var dataSql = $@"
             SELECT p.Id, p.Name, p.Description, p.Address, p.ProvinceId, prov.Name AS ProvinceName,
-                   prov.RegionId, r.Name AS RegionName, p.CategoryId, 
+                   prov.RegionId, r.Name AS RegionName, p.CategoryId,
                    CASE WHEN cat.Status = 1 THEN cat.Name ELSE N'Không khả dụng' END AS CategoryName,
-                   cat.PlaceTypeId, 
-                   CASE WHEN pt.Status = 1 THEN pt.Name ELSE N'Không khả dụng' END AS PlaceTypeName, 
+                   cat.PlaceTypeId,
+                   CASE WHEN pt.Status = 1 THEN pt.Name ELSE N'Không khả dụng' END AS PlaceTypeName,
                    p.MinPrice, p.MaxPrice, p.OpeningHours,
                    p.AvgRating, p.ReviewCount, p.Status, p.CreatedAt,
                    (SELECT TOP 1 pm.Url FROM dbo.PlaceMedia pm WHERE pm.PlaceId = p.Id ORDER BY pm.DisplayOrder) AS ThumbnailUrl
@@ -190,10 +184,10 @@ public class PlaceRepository : IPlaceRepository
 
         const string sql = @"
             SELECT p.Id, p.Name, p.Description, p.Address, p.ProvinceId, prov.Name AS ProvinceName,
-                   prov.RegionId, r.Name AS RegionName, p.CategoryId, 
+                   prov.RegionId, r.Name AS RegionName, p.CategoryId,
                    CASE WHEN cat.Status = 1 THEN cat.Name ELSE N'Không khả dụng' END AS CategoryName,
-                   cat.PlaceTypeId, 
-                   CASE WHEN pt.Status = 1 THEN pt.Name ELSE N'Không khả dụng' END AS PlaceTypeName, 
+                   cat.PlaceTypeId,
+                   CASE WHEN pt.Status = 1 THEN pt.Name ELSE N'Không khả dụng' END AS PlaceTypeName,
                    p.MinPrice, p.MaxPrice, p.OpeningHours,
                    p.AvgRating, p.ReviewCount, p.ViewCount, p.Latitude, p.Longitude, p.Phone AS PhoneNumber,
                    p.Website, p.Status, p.CreatedAt, p.CoverImageUrl AS ThumbnailUrl
@@ -355,7 +349,7 @@ public class PlaceRepository : IPlaceRepository
                 p.Name,
                 CASE WHEN cat.Status = 1 THEN cat.Name ELSE N'Không khả dụng' END AS Category,
                 p.CategoryId,
-                CASE 
+                CASE
                     WHEN r.Id = 1 THEN 'north'
                     WHEN r.Id = 2 THEN 'central'
                     WHEN r.Id = 3 THEN 'south'
@@ -366,10 +360,10 @@ public class PlaceRepository : IPlaceRepository
                 p.Address,
                 p.AvgRating,
                 p.ReviewCount,
-                CASE 
-                    WHEN p.MinPrice IS NOT NULL AND p.MaxPrice IS NOT NULL THEN 
+                CASE
+                    WHEN p.MinPrice IS NOT NULL AND p.MaxPrice IS NOT NULL THEN
                         CONCAT(FORMAT(p.MinPrice, '#,##0', 'vi-VN'), N'đ - ', FORMAT(p.MaxPrice, '#,##0', 'vi-VN'), N'đ')
-                    WHEN p.MinPrice IS NOT NULL THEN 
+                    WHEN p.MinPrice IS NOT NULL THEN
                         CONCAT(N'Từ ', FORMAT(p.MinPrice, '#,##0', 'vi-VN'), N'đ')
                     ELSE N'Miễn phí'
                 END AS Price,
@@ -381,7 +375,7 @@ public class PlaceRepository : IPlaceRepository
             INNER JOIN dbo.Regions r ON prov.RegionId = r.Id
             INNER JOIN dbo.Categories cat ON p.CategoryId = cat.Id
             WHERE p.Status = 1
-              AND p.Latitude IS NOT NULL 
+              AND p.Latitude IS NOT NULL
               AND p.Longitude IS NOT NULL
               AND (@Keyword IS NULL OR (p.Name LIKE @Keyword OR p.Address LIKE @Keyword OR prov.Name LIKE @Keyword OR (cat.Status = 1 AND cat.Name LIKE @Keyword)))
               AND (@ProvinceId IS NULL OR p.ProvinceId = @ProvinceId)
@@ -439,7 +433,7 @@ public class PlaceRepository : IPlaceRepository
         var offset = (safePage - 1) * safePageSize;
 
         const string sql = @"
-            SELECT 
+            SELECT
                 COALESCE(p.AvgRating, 0.0) AS AvgRating,
                 COALESCE(p.ReviewCount, 0) AS TotalReviews
             FROM dbo.Places p
@@ -450,7 +444,7 @@ public class PlaceRepository : IPlaceRepository
             WHERE PlaceId = @PlaceId AND (@IncludeHidden = 1 OR Status = 1)
             GROUP BY Rating;
 
-            SELECT 
+            SELECT
                 r.Id,
                 CAST(r.UserId AS VARCHAR(50)) AS UserId,
                 COALESCE(up.FullName, N'Người dùng LangThang') AS UserName,
@@ -511,8 +505,8 @@ public class PlaceRepository : IPlaceRepository
             if (userId.HasValue && userId.Value > 0)
             {
                 const string likeSql = @"
-                    SELECT ReviewId 
-                    FROM dbo.ReviewLikes 
+                    SELECT ReviewId
+                    FROM dbo.ReviewLikes
                     WHERE UserId = @UserId AND ReviewId IN @ReviewIds;";
                 var likedIds = await connection.QueryAsync<long>(likeSql, new { UserId = userId.Value, ReviewIds = reviewIds });
                 userLikedSet = new HashSet<long>(likedIds);
@@ -552,7 +546,6 @@ public class PlaceRepository : IPlaceRepository
         var safeLimit = Math.Clamp(limit, 1, 20);
         var connection = _dbContext.Database.GetDbConnection();
 
-        // 1. Lấy thông tin địa điểm gốc
         const string currentSql = @"
             SELECT p.Id, p.CategoryId, cat.PlaceTypeId, p.ProvinceId, prov.RegionId, p.Latitude, p.Longitude
             FROM dbo.Places p
@@ -566,14 +559,13 @@ public class PlaceRepository : IPlaceRepository
             return Array.Empty<PlaceSummaryDto>();
         }
 
-        // 2. Chấm điểm Scored Waterfall các địa điểm ứng viên
         const string querySql = @"
             SELECT TOP (@Limit)
                 p.Id, p.Name, p.Description, p.Address, p.ProvinceId, prov.Name AS ProvinceName,
-                prov.RegionId, r.Name AS RegionName, p.CategoryId, 
+                prov.RegionId, r.Name AS RegionName, p.CategoryId,
                 CASE WHEN cat.Status = 1 THEN cat.Name ELSE N'Không khả dụng' END AS CategoryName,
-                cat.PlaceTypeId, 
-                CASE WHEN pt.Status = 1 THEN pt.Name ELSE N'Không khả dụng' END AS PlaceTypeName, 
+                cat.PlaceTypeId,
+                CASE WHEN pt.Status = 1 THEN pt.Name ELSE N'Không khả dụng' END AS PlaceTypeName,
                 p.MinPrice, p.MaxPrice, p.OpeningHours,
                 p.AvgRating, p.ReviewCount, p.Status, p.CreatedAt,
                 COALESCE(NULLIF(p.CoverImageUrl, ''), (SELECT TOP 1 pm.Url FROM dbo.PlaceMedia pm WHERE pm.PlaceId = p.Id ORDER BY pm.DisplayOrder)) AS ThumbnailUrl
@@ -586,26 +578,26 @@ public class PlaceRepository : IPlaceRepository
             ORDER BY
                 (
                     -- A. Mức độ khớp Danh mục & Loại hình
-                    CASE 
+                    CASE
                         WHEN p.CategoryId = @CategoryId THEN 50.0
                         WHEN cat.PlaceTypeId = @PlaceTypeId THEN 25.0
-                        ELSE 0.0 
+                        ELSE 0.0
                     END
                     -- B. Mức độ khớp Địa lý Hành chính (Tỉnh / Vùng)
-                    + CASE 
+                    + CASE
                         WHEN p.ProvinceId = @ProvinceId THEN 30.0
                         WHEN prov.RegionId = @RegionId THEN 10.0
-                        ELSE 0.0 
+                        ELSE 0.0
                     END
                     -- C. Điểm thưởng khoảng cách lân cận GPS (nếu cả 2 có toạ độ hợp lệ)
-                    + CASE 
-                        WHEN @Latitude IS NOT NULL AND @Longitude IS NOT NULL 
+                    + CASE
+                        WHEN @Latitude IS NOT NULL AND @Longitude IS NOT NULL
                              AND p.Latitude IS NOT NULL AND p.Longitude IS NOT NULL THEN
                             20.0 / (1.0 + SQRT(
                                 POWER(CAST((p.Latitude - @Latitude) * 111.0 AS FLOAT), 2) +
                                 POWER(CAST((p.Longitude - @Longitude) * 111.0 AS FLOAT) * COS(RADIANS(CAST(@Latitude AS FLOAT))), 2)
                             ))
-                        ELSE 0.0 
+                        ELSE 0.0
                     END
                     -- D. Chất lượng & Mức độ phổ biến
                     + (p.AvgRating * 3.0)

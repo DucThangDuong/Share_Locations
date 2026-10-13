@@ -39,16 +39,13 @@ interface ChatContextType {
   totalUnreadCount: number
   partnerTyping: boolean
 
-  // Real-time Facebook-style Toast Notification
   incomingToast: IncomingMessageToast | null
   dismissIncomingToast: () => void
 
-  // Header Dropdown State
   isHeaderDropdownOpen: boolean
   setIsHeaderDropdownOpen: React.Dispatch<React.SetStateAction<boolean>>
   toggleHeaderDropdown: () => void
 
-  // Floating Chat & Chat Head State
   isFloatingChatOpen: boolean
   isFloatingChatMinimized: boolean
   floatingRoomIds: number[]
@@ -58,7 +55,6 @@ interface ChatContextType {
   closeFloatingChat: () => void
   closeChatHead: (roomId: number) => void
 
-  // Actions
   fetchInbox: () => Promise<void>
   selectRoom: (roomId: number) => Promise<void>
   openDirectChatWithUser: (targetUserId: number) => Promise<number | null>
@@ -90,18 +86,14 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     Record<number, { page: number; hasMore: boolean; isLoadingMore: boolean }>
   >({})
 
-  // Typing state: roomId -> userId -> boolean
   const [typingUsers, setTypingUsers] = useState<Record<number, number[]>>({})
 
-  // Header popup dropdown
   const [isHeaderDropdownOpen, setIsHeaderDropdownOpen] = useState(false)
 
-  // Floating mini chat & Chat Head
   const [isFloatingChatOpen, setIsFloatingChatOpen] = useState(false)
   const [isFloatingChatMinimized, setIsFloatingChatMinimized] = useState(false)
   const [floatingRoomIds, setFloatingRoomIds] = useState<number[]>([])
 
-  // Real-time Facebook-style Toast Notification
   const [incomingToast, setIncomingToast] = useState<IncomingMessageToast | null>(null)
   const dismissIncomingToast = useCallback(() => setIncomingToast(null), [])
 
@@ -115,7 +107,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   floatingRoomIdsRef.current = floatingRoomIds
   const fetchingRoomsRef = useRef<Record<number, boolean>>({})
 
-  // 1. Fetch Inbox from Backend and auto-join all rooms via SignalR
   const fetchInbox = useCallback(async () => {
     if (!isAuthenticated) return
     setIsLoadingInbox(true)
@@ -123,7 +114,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const items = await chatService.getInbox()
       setInbox(items)
 
-      // Auto join all rooms so client receives messages in real time
       if (chatSignalR.isConnected() && items.length > 0) {
         await chatSignalR.joinRooms(items.map((i) => i.roomId))
       }
@@ -134,7 +124,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [isAuthenticated])
 
-  // 2. Fetch Messages for a Room (Page 1)
   const fetchMessages = useCallback(async (roomId: number) => {
     if (fetchingRoomsRef.current[roomId]) return
     fetchingRoomsRef.current[roomId] = true
@@ -172,7 +161,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [])
 
-  // 3. Load Older Messages (Pagination)
   const loadMoreMessages = useCallback(
     async (roomId?: number) => {
       const targetRoomId = roomId || activeRoomIdRef.current
@@ -240,7 +228,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     [paginationMap]
   )
 
-  // 3. SignalR Connection & Real-time Event Subscription
   useEffect(() => {
     if (!isAuthenticated) {
       chatSignalR.stopConnection()
@@ -257,7 +244,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await chatSignalR.startConnection()
       if (!isSubscribed) return
 
-      // Load initial inbox and auto-join all rooms
       try {
         const items = await chatService.getInbox()
         if (!isSubscribed) return
@@ -272,7 +258,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setupSignalR()
 
-    // ── EVENT: OnReconnected (Re-join all rooms automatically) ──
     const unsubReconnect = chatSignalR.onReconnected(async () => {
       try {
         const items = await chatService.getInbox()
@@ -285,7 +270,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     })
 
-    // ── EVENT: ReceiveMessage ──
     const unsubReceive = chatSignalR.onReceiveMessage((newMsg: ChatMessageDto) => {
       const msgRoomId = Number(newMsg.roomId)
       const currentRoomId = activeRoomIdRef.current ? Number(activeRoomIdRef.current) : null
@@ -295,7 +279,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ((isFloatingChatOpenRef.current && !isFloatingChatMinimizedRef.current) ||
           window.location.pathname.startsWith('/chat'))
 
-      // Append to messages map
       setMessagesMap((prev) => {
         const existing = prev[msgRoomId] || []
         if (existing.some((m) => m.id === newMsg.id)) {
@@ -307,7 +290,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       })
 
-      // Update inbox preview and unread count
       let needFetchInbox = false
       setInbox((prev) => {
         const found = prev.find((item) => item.roomId === msgRoomId)
@@ -331,24 +313,20 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         fetchInbox()
       }
 
-      // If message is from friend:
       const currentUserId = user?.id ? Number(user.id) : null
       if (newMsg.senderId !== currentUserId) {
         playChatChime('receive')
 
-        // Automatically add to floatingRoomIds so chat head / lighticon appears (capped at 5 heads)
         setFloatingRoomIds((prev) => {
           const filtered = prev.filter((id) => id !== newMsg.roomId)
           return [newMsg.roomId, ...filtered].slice(0, 5)
         })
 
-        // If chat is actively open for this room, notify backend that it is read immediately
         if (isChatActivelyOpen) {
           chatService.markRoomAsRead(newMsg.roomId).catch((err) => {
             console.warn('[ChatContext] Auto mark read error:', err)
           })
         } else {
-          // Chat is minimized or closed: keep unread, pop up lighticon & toast bubble
           setIsFloatingChatOpen(true)
           setIsFloatingChatMinimized(true)
 
@@ -372,7 +350,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     })
 
-    // ── EVENT: MessageRead ──
     const unsubRead = chatSignalR.onMessageRead((roomId, userId) => {
       const currentUserId = user?.id ? Number(user.id) : null
       if (userId === currentUserId) {
@@ -382,7 +359,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     })
 
-    // ── EVENT: MessageReacted ──
     const unsubReacted = chatSignalR.onMessageReacted((roomId, messageId, reactedUserId, emoji) => {
       setMessagesMap((prev) => {
         const roomMsgs = prev[roomId]
@@ -417,7 +393,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       })
     })
 
-    // ── EVENT: UserTyping ──
     const unsubTyping = chatSignalR.onUserTyping((roomId, typingUserId, isTyping) => {
       const currentUserId = user?.id ? Number(user.id) : null
       if (typingUserId === currentUserId) return
@@ -435,7 +410,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       })
     })
 
-    // ── EVENT: MessageEdited ──
     const unsubEdited = chatSignalR.onMessageEdited((updatedMsg) => {
       const roomId = updatedMsg.roomId
       setMessagesMap((prev) => {
@@ -458,7 +432,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       )
     })
 
-    // ── EVENT: MessageDeleted ──
     const unsubDeleted = chatSignalR.onMessageDeleted((roomId, messageId) => {
       setMessagesMap((prev) => {
         const roomMsgs = prev[roomId]
@@ -483,8 +456,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [isAuthenticated, user?.id, fetchInbox])
 
-  // Select room & join SignalR group
-  // Select room & join SignalR group
   const selectRoom = useCallback(
     async (roomId: number) => {
       setActiveRoomId(roomId)
@@ -496,14 +467,12 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.warn(`[ChatContext] joinRoom failed for ${roomId}:`, err)
       }
 
-      // Always fetch latest room message history from backend API
       try {
         await fetchMessages(roomId)
       } catch (err) {
         console.warn(`[ChatContext] fetchMessages failed for ${roomId}:`, err)
       }
 
-      // Mark room as read
       try {
         await chatService.markRoomAsRead(roomId)
         setInbox((prev) => {
@@ -520,7 +489,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     [fetchMessages]
   )
 
-  // Start 1-1 direct chat with a user
   const openDirectChatWithUser = useCallback(
     async (targetUserId: number): Promise<number | null> => {
       try {
@@ -544,7 +512,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     [selectRoom, fetchInbox]
   )
 
-  // Create Group Chat
   const createGroupChat = useCallback(
     async (name: string, memberIds: number[]): Promise<number | null> => {
       try {
@@ -569,7 +536,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     [fetchInbox, selectRoom]
   )
 
-  // Add Members to Group
   const addMembersToGroup = useCallback(
     async (roomId: number, userIds: number[]) => {
       try {
@@ -583,7 +549,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     [fetchInbox]
   )
 
-  // Rename Group
   const renameGroup = useCallback(
     async (roomId: number, name: string) => {
       try {
@@ -598,7 +563,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     []
   )
 
-  // Remove Member from Group
   const removeMemberFromGroup = useCallback(
     async (roomId: number, userId: number) => {
       await chatService.removeMemberFromRoom(roomId, userId)
@@ -606,7 +570,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     []
   )
 
-  // Open Floating Chat Widget
   const openFloatingChat = useCallback(
     async (roomId?: number, targetUserId?: number) => {
       setIsHeaderDropdownOpen(false)
@@ -701,7 +664,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     [selectRoom]
   )
 
-  // Leave Group Chat
   const leaveGroupChat = useCallback(
     async (roomId: number) => {
       try {
@@ -710,7 +672,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error('[ChatContext] leaveGroupRoom API failed:', err)
         throw err
       }
-      // Dọn dẹp state local sau khi API thành công
       if (activeRoomIdRef.current === roomId) {
         setActiveRoomId(null)
       }
@@ -724,7 +685,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsHeaderDropdownOpen((prev) => !prev)
   }, [])
 
-  // Send Message
   const sendMessage = useCallback(
     async (payload: Omit<SendMessagePayload, 'roomId'>): Promise<ChatMessageDto | null> => {
       const roomId = activeRoomIdRef.current
@@ -736,7 +696,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
           roomId,
         })
 
-        // Optimistically or directly update message list
         if (sentMsg) {
           setMessagesMap((prev) => {
             const existing = prev[roomId] || []
@@ -771,7 +730,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     []
   )
 
-  // Edit Message
   const editMessage = useCallback(
     async (messageId: number, content: string, customRoomId?: number) => {
       const roomId = customRoomId || activeRoomIdRef.current
@@ -801,7 +759,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     []
   )
 
-  // Delete Message
   const deleteMessage = useCallback(
     async (messageId: number, customRoomId?: number) => {
       const roomId = customRoomId || activeRoomIdRef.current
@@ -824,7 +781,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     []
   )
 
-  // Mark room as read
   const markRoomAsRead = useCallback(async (roomId: number) => {
     try {
       await chatService.markRoomAsRead(roomId)
@@ -836,7 +792,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [])
 
-  // Add Reaction
   const addReaction = useCallback(async (messageId: number, emoji: string) => {
     const roomId = activeRoomIdRef.current
     if (!roomId) return
@@ -848,7 +803,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [])
 
-  // Send typing indicator to SignalR
   const sendTyping = useCallback((isTyping: boolean) => {
     const roomId = activeRoomIdRef.current
     if (!roomId) return

@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
@@ -6,8 +6,6 @@ using Application.DTOs.Admin;
 using MediatR;
 
 namespace Application.Features.Admin.Settings;
-
-// === QUERIES ===
 
 public record GetAdminReportTypesQuery(string? TargetScope = null, bool? ActiveOnly = null) : IRequest<Result<IReadOnlyList<AdminReportTypeListItemDto>>>;
 
@@ -47,8 +45,6 @@ public class GetAdminReportTypeByIdQueryHandler : IRequestHandler<GetAdminReport
         return Result<AdminReportTypeListItemDto>.Success(item);
     }
 }
-
-// === COMMANDS ===
 
 public record CreateAdminReportTypeCommand(CreateAdminReportTypeRequest Input) : IRequest<Result<int>>;
 

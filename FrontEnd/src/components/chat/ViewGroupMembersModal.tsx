@@ -68,7 +68,6 @@ export const ViewGroupMembersModal: React.FC<ViewGroupMembersModalProps> = ({
       <div className="fixed inset-0" onClick={onClose} />
 
       <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh] z-10 animate-in zoom-in-95 duration-150">
-        {/* Header */}
         <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
           <div className="flex items-center gap-2 text-slate-900 font-bold text-base">
             <Users className="w-5 h-5 text-[#0084FF]" />
@@ -84,7 +83,6 @@ export const ViewGroupMembersModal: React.FC<ViewGroupMembersModalProps> = ({
           </button>
         </div>
 
-        {/* Search */}
         <div className="px-5 pt-3 pb-2 border-b border-slate-100">
           <div className="relative">
             <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -98,7 +96,6 @@ export const ViewGroupMembersModal: React.FC<ViewGroupMembersModalProps> = ({
           </div>
         </div>
 
-        {/* Member List */}
         <div className="p-4 flex-1 overflow-y-auto max-h-[380px] space-y-1">
           <div className="flex items-center justify-between px-2 py-1 text-xs font-semibold text-slate-500">
             <span>Danh sách ({filteredMembers.length})</span>
@@ -167,7 +164,6 @@ export const ViewGroupMembersModal: React.FC<ViewGroupMembersModalProps> = ({
           )}
         </div>
 
-        {/* Footer */}
         <div className="px-5 py-3 border-t border-slate-100 flex items-center justify-end bg-slate-50/50">
           <button
             type="button"

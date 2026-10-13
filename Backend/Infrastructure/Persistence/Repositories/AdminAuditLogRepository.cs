@@ -1,4 +1,4 @@
-using Application.Common;
+﻿using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs.Admin;
@@ -28,7 +28,6 @@ public class AdminAuditLogRepository : IAdminAuditLogRepository
         var whereClauses = new List<string>();
         var parameters = new DynamicParameters();
 
-        // Kiểm tra phân quyền: CategoryAdmin chỉ xem được nhật ký của chính mình
         if (!_currentUserService.IsSystemAdmin)
         {
             var currentUserId = _currentUserService.UserId ?? 0;
@@ -96,7 +95,7 @@ public class AdminAuditLogRepository : IAdminAuditLogRepository
         parameters.Add("PageSize", pageSize);
 
         var dataSql = $@"
-            SELECT 
+            SELECT
                 l.Id,
                 l.AdminId,
                 ISNULL(up.FullName, u.Email) AS AdminName,
@@ -130,7 +129,7 @@ public class AdminAuditLogRepository : IAdminAuditLogRepository
         var connection = _dbContext.Database.GetDbConnection();
 
         const string sql = @"
-            SELECT 
+            SELECT
                 l.Id,
                 l.AdminId,
                 ISNULL(up.FullName, u.Email) AS AdminName,
@@ -158,7 +157,6 @@ public class AdminAuditLogRepository : IAdminAuditLogRepository
         var detail = await connection.QueryFirstOrDefaultAsync<AdminAuditLogDetailDto>(sql, new { Id = id });
         if (detail == null) return null;
 
-        // Nếu là CategoryAdmin, chỉ được xem log của chính mình
         if (!_currentUserService.IsSystemAdmin && detail.AdminId != _currentUserService.UserId)
         {
             return null;

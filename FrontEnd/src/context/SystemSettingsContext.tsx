@@ -32,7 +32,6 @@ export const SystemSettingsProvider: React.FC<{ children: React.ReactNode }> = (
         return { ...DEFAULT_SYSTEM_SETTINGS, ...JSON.parse(cached) };
       }
     } catch {
-      // Ignore localStorage parse error
     }
     return DEFAULT_SYSTEM_SETTINGS;
   });
@@ -59,13 +58,11 @@ export const SystemSettingsProvider: React.FC<{ children: React.ReactNode }> = (
           try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
           } catch {
-            // Ignore storage write error
           }
           return next;
         });
       }
     } catch {
-      // Keep existing settings / defaults on error
     } finally {
       setIsLoading(false);
     }

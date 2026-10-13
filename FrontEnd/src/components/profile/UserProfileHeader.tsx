@@ -39,7 +39,6 @@ export const UserProfileHeader: React.FC<UserProfileHeaderProps> = ({
     profile.coverUrl ||
     'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1600&h=400&fit=crop'
 
-
   return (
     <div className="bg-white border-b border-slate-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6">

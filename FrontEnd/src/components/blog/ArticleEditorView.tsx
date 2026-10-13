@@ -262,8 +262,6 @@ export interface ArticleEditorRef {
   handlePublish: () => Promise<void>
 }
 
-
-
 const COVER_PRESETS = [
   { label: 'Huế cố đô', url: 'https://images.unsplash.com/photo-1569271532956-3fb81a207115?w=1000&h=600&fit=crop&auto=format' },
   { label: 'Đà Nẵng biển', url: 'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=1000&h=600&fit=crop&auto=format' },

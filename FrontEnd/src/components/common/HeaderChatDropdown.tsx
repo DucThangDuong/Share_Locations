@@ -49,7 +49,6 @@ export const HeaderChatDropdown: React.FC<HeaderChatDropdownProps> = ({ onClose 
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      // Don't close if create group modal is open
       if (isCreateGroupOpen) return
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         onClose()
@@ -242,7 +241,6 @@ export const HeaderChatDropdown: React.FC<HeaderChatDropdownProps> = ({ onClose 
                 onClick={() => handleSelectRoom(item.roomId)}
                 className="w-full flex items-center gap-3 p-2 rounded-xl text-left hover:bg-slate-100 transition-colors cursor-pointer group"
               >
-                {/* Avatar */}
                 <div className="relative flex-shrink-0">
                   <img
                     src={avatar}
@@ -251,7 +249,6 @@ export const HeaderChatDropdown: React.FC<HeaderChatDropdownProps> = ({ onClose 
                   />
                 </div>
 
-                {/* Text Details */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-1 mb-0.5">
                     <h3

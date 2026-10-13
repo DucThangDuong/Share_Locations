@@ -1,4 +1,4 @@
-namespace Application.DTOs;
+﻿namespace Application.DTOs;
 
 public class UserTripSummaryDto
 {
@@ -185,4 +185,3 @@ public class PublishTripRequestDto
     public string Description { get; set; } = string.Empty;
     public string? Title { get; set; }
 }
-

@@ -157,7 +157,6 @@ export const UserProfilePage: React.FC = () => {
     }
   }, [id, targetUserId, isCurrentUser, currentUser, nameFromQuery, locationState])
 
-  // Handle Social Actions
   const handleSendMessage = () => {
     if (!profile) return
     openFloatingChat(undefined, profile.id)

@@ -1,4 +1,4 @@
-using Application.Common;
+﻿using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs.Admin;
@@ -36,7 +36,6 @@ public class AdminBlogRepository : IAdminBlogRepository
         var whereClauses = new List<string>();
         var parameters = new DynamicParameters();
 
-        // Áp dụng giới hạn phân quyền theo Category Scope của Admin cấp 1
         AdminScopeFilterHelper.ApplyBlogScope(_currentUserService, whereClauses, parameters, "b");
 
         if (categoryId.HasValue && categoryId.Value > 0)
@@ -75,7 +74,7 @@ public class AdminBlogRepository : IAdminBlogRepository
         {whereSql};
 
         -- Query 2: Lấy dữ liệu phân trang
-        SELECT 
+        SELECT
             b.Id,
             b.Title,
             COALESCE(prof.FullName, u.Email, N'Người dùng') AS AuthorName,
@@ -84,7 +83,7 @@ public class AdminBlogRepository : IAdminBlogRepository
             b.CategoryId,
             b.CreatedAt AS PublishedAt,
             b.ViewCount AS Views,
-            CASE 
+            CASE
                 WHEN b.Status = 1 THEN 'published'
                 WHEN b.Status = 0 THEN 'draft'
                 ELSE 'hidden'
@@ -141,7 +140,7 @@ public class AdminBlogRepository : IAdminBlogRepository
         var connection = _dbContext.Database.GetDbConnection();
 
         const string sql = @"
-            SELECT 
+            SELECT
                 b.Id,
                 b.Title,
                 COALESCE(prof.FullName, u.Email, N'Người dùng') AS AuthorName,
@@ -150,7 +149,7 @@ public class AdminBlogRepository : IAdminBlogRepository
                 b.CategoryId,
                 b.CreatedAt AS PublishedAt,
                 b.ViewCount AS Views,
-                CASE 
+                CASE
                     WHEN b.Status = 1 THEN 'published'
                     WHEN b.Status = 0 THEN 'draft'
                     ELSE 'hidden'

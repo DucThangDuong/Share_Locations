@@ -27,11 +27,6 @@ export const ProvinceHeroBento: React.FC<ProvinceHeroBentoProps> = ({ data }) =>
 
   const currentImage = images[currentIdx] || images[0]
 
-  // Priority for tagline:
-  // 1. data.province?.tagline
-  // 2. data.tagline
-  // 3. data.heroHeadline (if not starting with "Khám phá ")
-  // 4. data.heroSubheadline (if data.province?.description exists so subheadline isn't duplicated)
   const tagline =
     data.province?.tagline ||
     data.tagline ||
@@ -39,11 +34,6 @@ export const ProvinceHeroBento: React.FC<ProvinceHeroBentoProps> = ({ data }) =>
     (data.province?.description && data.heroSubheadline ? data.heroSubheadline : '') ||
     ''
 
-  // Priority for description:
-  // 1. data.province?.description
-  // 2. data.description
-  // 3. data.heroSubheadline (if different from tagline)
-  // 4. data.heroHeadline
   const description =
     data.province?.description ||
     data.description ||

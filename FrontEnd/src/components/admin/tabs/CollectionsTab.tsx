@@ -54,7 +54,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
   const location = useLocation();
 
   const getIdFromUrl = useCallback((): number | "new" | null => {
-    // 1. Path checking: e.g. /admin/collections/123 or /admin/collections/new
     const pathParts = location.pathname.replace(/\/+$/, "").split("/");
     const colIndex = pathParts.indexOf("collections");
     if (colIndex !== -1 && pathParts[colIndex + 1]) {
@@ -64,7 +63,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
       if (!isNaN(parsed) && parsed > 0) return parsed;
     }
 
-    // 2. Query param checking: e.g. ?id=123 or ?collectionId=123
     const params = new URLSearchParams(location.search);
     const queryId = params.get("id") || params.get("collectionId");
     if (queryId === "new") return "new";
@@ -119,7 +117,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
     placeCount: 0
   });
 
-  // Collections state
   const [collections, setCollections] = useState<AdminCollectionSummary[]>([]);
   const [collectionPlaces, setCollectionPlaces] = useState<AdminCollectionPlaceDetail[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -127,16 +124,13 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
   const [isSavingPlaces, setIsSavingPlaces] = useState<boolean>(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
 
-  // List View Filters
   const [searchCatalogQuery, setSearchCatalogQuery] = useState("");
   const [selectedProvinceCatalog, setSelectedProvinceCatalog] = useState<string>("all");
 
-  // Provinces & Filter Options
   const [provinces, setProvinces] = useState<ProvinceDto[]>([]);
   const [filterCategories, setFilterCategories] = useState<LookupItemDto[]>([]);
   const [filterRegions, setFilterRegions] = useState<RegionLookupDto[]>([]);
 
-  // Detail / Place Search & Filter State
   const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);
@@ -150,7 +144,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
   const [isSearchingPlaces, setIsSearchingPlaces] = useState<boolean>(false);
   const [searchPlacesViewMode, setSearchPlacesViewMode] = useState<"grid" | "list">("grid");
 
-  // Inline editing in Detail Toolbar
   const [isInlineEditingTitle, setIsInlineEditingTitle] = useState<boolean>(false);
   const [inlineTitleValue, setInlineTitleValue] = useState<string>("");
   const [isInlineEditingDescription, setIsInlineEditingDescription] = useState<boolean>(false);
@@ -167,10 +160,9 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
         alert(msg);
       }
     },
-    [] // stable forever — no deps
+    []
   );
 
-  // 1. Fetch Collections from API (/api/admin/collections)
   const fetchCollections = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -201,7 +193,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
   useEffect(() => {
     fetchCollections();
 
-    // Fetch Provinces
     geographyService
       .getProvinces()
       .then((res) => {
@@ -214,7 +205,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
       })
       .catch(() => { });
 
-    // Fetch Filter Options (Categories & Regions)
     placeService
       .getFilterOptions()
       .then((res) => {
@@ -226,14 +216,12 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
       .catch(() => { });
   }, [fetchCollections]);
 
-  // Active Collection (from server collections list or draft)
   const activeCollection = useMemo(() => {
     if (activeCollectionId === null) return null;
     if (activeCollectionId === "new") return draftCollection;
     return collections.find((c) => c.id === activeCollectionId) || null;
   }, [collections, activeCollectionId, draftCollection]);
 
-  // 2. Fetch Places of Active Collection (/api/admin/collections/{collectionId}/places)
   const fetchActiveCollectionPlaces = useCallback(async (colId: number) => {
     setIsLoadingPlaces(true);
     try {
@@ -257,12 +245,10 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
         isActive: p.isActive !== undefined ? Boolean(p.isActive) : true
       }));
 
-      // Sort by displayOrder
       mapped.sort((a, b) => a.displayOrder - b.displayOrder);
 
       setCollectionPlaces(mapped);
 
-      // Update placeCount, description, and metadata in collections summary
       setCollections((prev) => {
         const exists = prev.some((c) => c.id === colId);
         if (exists) {
@@ -326,7 +312,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
     }
   }, [activeCollectionId, fetchActiveCollectionPlaces]);
 
-  // Fetch Places for Place Search & Filter in Detail View (/api/places)
   const fetchPlacesForPicker = useCallback(async () => {
     if (activeCollectionId === null) return;
     setIsSearchingPlaces(true);
@@ -373,14 +358,12 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
     }
   }, [activeCollectionId, fetchPlacesForPicker]);
 
-  // Search Submit Handler in Detail View
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setSearchQuery(searchInput);
     setSearchCurrentPage(1);
   };
 
-  // Reset Filters in Detail View
   const handleResetDetailFilters = () => {
     setSearchInput("");
     setSearchQuery("");
@@ -390,7 +373,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
     setSearchCurrentPage(1);
   };
 
-  // Category Toggle
   const handleCategoryToggle = (catId: number) => {
     setSelectedCategoryIds((prev) =>
       prev.includes(catId) ? prev.filter((id) => id !== catId) : [...prev, catId]
@@ -398,7 +380,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
     setSearchCurrentPage(1);
   };
 
-  // Province Toggle
   const handleProvinceToggle = (provId: number) => {
     setSelectedProvinceIds((prev) =>
       prev.includes(provId) ? prev.filter((id) => id !== provId) : [...prev, provId]
@@ -406,7 +387,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
     setSearchCurrentPage(1);
   };
 
-  // Toggle Region Accordion
   const toggleRegionAccordion = (regionKey: string) => {
     setOpenRegionAccordion((prev) => ({
       ...prev,
@@ -414,7 +394,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
     }));
   };
 
-  // Open Draft Editor (No API call until user clicks Save)
   const handleCreateNewCollection = () => {
     const defaultTitle = `Bộ sưu tập mới #${collections.length + 1}`;
     const defaultProvId = provinces && provinces.length > 0 ? provinces[0].id : null;
@@ -442,7 +421,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
     notify(`Đang tạo "${defaultTitle}". Hãy đặt tên, thêm mô tả, chọn địa điểm và bấm "Tạo & Lưu bộ sưu tập".`);
   };
 
-  // Delete Collection
   const handleDeleteCollection = async (e: React.MouseEvent, id: number, title: string) => {
     e.stopPropagation();
     if (activeCollectionId === "new" || id === 0) {
@@ -456,7 +434,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
     try {
       await adminService.deleteCollection(id);
     } catch {
-      // Optimistic delete
     }
 
     setCollections((prev) => prev.filter((c) => c.id !== id));
@@ -466,7 +443,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
     notify(`Đã xóa bộ sưu tập "${title}".`);
   };
 
-  // 3. Add Place to Current Collection (Thêm tạm thời vào danh sách giao diện)
   const handleAddPlaceToCollection = (place: PlaceSummaryDto) => {
     if (activeCollectionId === null) return;
 
@@ -488,7 +464,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
       coverUrl: place.thumbnailUrl || (Array.isArray(place.mediaUrls) && place.mediaUrls.length > 0 ? place.mediaUrls[0] : null)
     };
 
-    // Cập nhật state danh sách ngay lập tức
     const nextPlaces = [...collectionPlaces, newPlaceItem];
     setCollectionPlaces(nextPlaces);
     setHasUnsavedChanges(true);
@@ -504,7 +479,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
     notify(`Đã thêm "${newPlaceItem.name}" vào danh sách.`);
   };
 
-  // 4. Save Collection (Tạo mới nếu "new" hoặc cập nhật địa điểm nếu đã có)
   const handleSaveCollectionPlaces = async () => {
     if (activeCollectionId === null || isSavingPlaces || !activeCollection) return;
     setIsSavingPlaces(true);
@@ -518,7 +492,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
       const finalDesc = isInlineEditingDescription ? inlineDescriptionValue.trim() : (activeCollection.description?.trim() || inlineDescriptionValue.trim() || null);
 
       if (activeCollectionId === "new") {
-        // ── TẠO MỚI BỘ SƯU TẬP TRÊN SERVER (POST /api/admin/collections) ──
         const createPayload: CreateCollectionRequest = {
           title: finalTitle,
           name: finalTitle,
@@ -559,7 +532,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
           throw new Error("Không thể xác định ID bộ sưu tập từ máy chủ.");
         }
 
-        // Lưu danh sách địa điểm theo đúng DTO backend (đồng bộ kép đảm bảo an toàn)
         if (placesList.length > 0 || finalDesc) {
           try {
             await adminService.updateCollectionPlaces(createdId, {
@@ -571,7 +543,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
               replaceExisting: true
             });
           } catch {
-            // ignore
           }
         }
 
@@ -583,7 +554,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
         setActiveCollectionId(null);
         await fetchCollections();
       } else {
-        // ── CẬP NHẬT ĐỊA ĐIỂM & THÔNG TIN BỘ SƯU TẬP ĐÃ CÓ ──
         const payload: UpdateCollectionPlacesRequest = {
           collectionId: activeCollectionId,
           title: finalTitle,
@@ -616,7 +586,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
     }
   };
 
-  // Remove Place from Collection
   const handleRemovePlaceFromCollection = (placeId: number, name: string) => {
     if (activeCollectionId === null) return;
 
@@ -637,7 +606,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
     notify(`Đã xóa "${name}" khỏi danh sách tạm. Nhấn "Lưu thay đổi" để cập nhật.`);
   };
 
-  // Reorder Places in Current Collection
   const handleReorderPlace = (placeIdx: number, direction: "up" | "down") => {
     if (activeCollectionId === null) return;
 
@@ -649,7 +617,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
     newPlaces[placeIdx] = newPlaces[targetIdx];
     newPlaces[targetIdx] = temp;
 
-    // Re-assign displayOrder 1..N
     const reindexed = newPlaces.map((p, idx) => ({ ...p, displayOrder: idx + 1 }));
     setCollectionPlaces(reindexed);
     setHasUnsavedChanges(true);
@@ -682,7 +649,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
     notify("Đã cập nhật tên bộ sưu tập. Nhấn \"Lưu thay đổi\" để hoàn tất.");
   };
 
-  // Inline Description Save (Cập nhật mô tả cục bộ & đánh dấu có thay đổi)
   const handleSaveInlineDescription = () => {
     const trimmed = inlineDescriptionValue.trim();
 
@@ -705,7 +671,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
     notify("Đã cập nhật mô tả bộ sưu tập. Nhấn \"Lưu thay đổi\" để hoàn tất.");
   };
 
-  // Discard all unsaved changes
   const handleDiscardChanges = async () => {
     if (activeCollectionId === "new") {
       setActiveCollectionId(null);
@@ -752,7 +717,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
     }
   };
 
-  // Filtered Collections in Catalog View
   const filteredCollections = useMemo(() => {
     return collections.filter((c) => {
       const q = searchCatalogQuery.toLowerCase().trim();
@@ -848,7 +812,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
                   </div>
                 )}
 
-                {/* Description View & Edit */}
                 {isInlineEditingDescription ? (
                   <div className="mt-2 flex items-start gap-2 max-w-xl">
                     <textarea
@@ -977,7 +940,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
               </div>
             </div>
 
-            {/* Header Right Actions */}
             <div className="flex items-center gap-2 shrink-0 flex-wrap">
               {hasUnsavedChanges && !isCreatingNew && (
                 <button
@@ -1007,7 +969,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
                 </button>
               )}
 
-              {/* Nút Lưu thay đổi / Tạo bộ sưu tập */}
               <button
                 type="button"
                 disabled={isSavingPlaces || (!hasUnsavedChanges && !isCreatingNew)}
@@ -1090,14 +1051,12 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
                     className="p-3 sm:p-3.5 rounded-xl border border-slate-200/90 bg-white hover:border-emerald-400 hover:shadow-xs transition-all flex items-center justify-between gap-3 text-xs"
                   >
                     <div className="flex items-center gap-3 min-w-0 flex-1">
-                      {/* Order Circle */}
                       <div
                         className={`w-6 h-6 rounded-lg ${colTheme.badgeBg} text-white font-extrabold text-xs flex items-center justify-center shrink-0 shadow-2xs`}
                       >
                         {place.displayOrder || pIdx + 1}
                       </div>
 
-                      {/* Thumbnail */}
                       {place.coverUrl ? (
                         <img
                           src={place.coverUrl}
@@ -1120,7 +1079,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
                         <span className="text-[8px] font-semibold text-slate-400 leading-tight">Không ảnh</span>
                       </div>
 
-                      {/* Place Info */}
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <Link
@@ -1162,9 +1120,7 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
                       </div>
                     </div>
 
-                    {/* Place Actions */}
                     <div className="flex items-center gap-1.5 shrink-0">
-                      {/* Move Up/Down */}
                       <div className="flex items-center bg-slate-100 rounded-lg p-0.5 border border-slate-200">
                         <button
                           type="button"
@@ -1186,7 +1142,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
                         </button>
                       </div>
 
-                      {/* Remove */}
                       <button
                         type="button"
                         onClick={() => handleRemovePlaceFromCollection(place.id, place.name)}
@@ -1203,7 +1158,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
           </div>
         </div>
         <div className="space-y-4 pt-2">
-          {/* Top Search Bar */}
           <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-2xs">
             <form onSubmit={handleSearchSubmit} className="flex items-center gap-3">
               <div className="relative flex-1">
@@ -1259,14 +1213,12 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
                 )}
               </div>
 
-              {/* 1. DANH MỤC TRẢI NGHIỆM */}
               <div className="space-y-2.5">
                 <div className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
                   DANH MỤC TRẢI NGHIỆM
                 </div>
 
                 <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
-                  {/* Tất cả danh mục */}
                   <label
                     onClick={() => {
                       setSelectedCategoryIds([]);
@@ -1288,7 +1240,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
                     <span className="text-xs">Tất cả danh mục</span>
                   </label>
 
-                  {/* Danh mục con */}
                   {filterCategories.map((cat) => {
                     const isChecked = selectedCategoryIds.includes(cat.id);
                     return (
@@ -1315,7 +1266,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
                 </div>
               </div>
 
-              {/* 2. VÙNG MIỀN & TỈNH THÀNH */}
               <div className="space-y-2.5 pt-3 border-t border-slate-100">
                 <div className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
                   VÙNG MIỀN &amp; TỈNH THÀNH
@@ -1368,7 +1318,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
                 </div>
               </div>
 
-              {/* 3. MỨC ĐÁNH GIÁ (RATING) */}
               <div className="space-y-2.5 pt-3 border-t border-slate-100">
                 <div className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
                   ĐÁNH GIÁ TỐI THIỂU
@@ -1399,7 +1348,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
             </div>
 
             <div className="lg:col-span-3 space-y-4">
-              {/* Header Bar */}
               <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center justify-between gap-3">
                 <div className="text-xs font-medium text-slate-500">
                   Tìm thấy <strong className="text-slate-900 font-extrabold">{searchTotalElements}</strong> địa điểm
@@ -1431,7 +1379,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
                 </div>
               </div>
 
-              {/* Places List / Grid */}
               {isSearchingPlaces ? (
                 <div className="py-20 flex flex-col items-center justify-center text-slate-400 gap-2 bg-white rounded-2xl border border-slate-200">
                   <Loader2 size={26} className="animate-spin text-emerald-800" />
@@ -1469,7 +1416,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
                           : "border-slate-200 hover:border-slate-300 hover:shadow-xs"
                           }`}
                       >
-                        {/* Image Header */}
                         <div className="relative h-44 w-full bg-slate-100 overflow-hidden group flex items-center justify-center">
                           {rawThumbnail ? (
                             <img
@@ -1498,7 +1444,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
 
                           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
 
-                          {/* Location & Rating Badge */}
                           <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between text-white text-[11px] font-bold z-10">
                             <span className="flex items-center gap-1 truncate max-w-[170px] drop-shadow-xs">
                               <MapPin size={11} className="text-emerald-400 shrink-0" />
@@ -1512,7 +1457,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
                           </div>
                         </div>
 
-                        {/* Card Body */}
                         <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
                           <div>
                             <h4 className="font-extrabold text-sm text-slate-900 line-clamp-1 hover:text-emerald-800 transition-colors">
@@ -1525,7 +1469,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
                             </p>
                           </div>
 
-                          {/* Card Actions */}
                           <div className="pt-2 border-t border-slate-100">
                             <button
                               type="button"
@@ -1646,7 +1589,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
                 </div>
               )}
 
-              {/* Pagination */}
               {searchTotalPages > 1 && (
                 <div className="bg-white p-3 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center justify-between gap-3">
                   <button
@@ -1683,10 +1625,8 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
 
   return (
     <div className="space-y-6 animate-in fade-in duration-150 text-xs">
-      {/* ── TOOLBAR & FILTER BAR ── */}
       <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-2xs space-y-3">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-          {/* Search Input */}
           <div className="relative flex-1">
             <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
@@ -1707,7 +1647,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
             )}
           </div>
 
-          {/* Action Buttons */}
           <div className="flex items-center gap-2 flex-wrap">
             <button
               type="button"
@@ -1720,7 +1659,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
           </div>
         </div>
 
-        {/* Filters */}
         <div className="flex items-center justify-between gap-3 pt-2 border-t border-slate-100 flex-wrap">
           <div className="flex items-center gap-2 flex-wrap">
             <CustomSelect

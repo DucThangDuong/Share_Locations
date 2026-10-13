@@ -74,7 +74,6 @@ export const navigateToAuthorProfile = async (
         }
       }
     } catch {
-      // search fallback
     }
 
     navigate(`/profile?name=${encodeURIComponent(authorName.trim())}`, {

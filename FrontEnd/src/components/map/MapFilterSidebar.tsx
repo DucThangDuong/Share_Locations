@@ -45,7 +45,6 @@ export const MapFilterSidebar: React.FC<MapFilterSidebarProps> = ({
   return (
     <div className="absolute inset-0 z-30 bg-slate-900/40 backdrop-blur-xs flex justify-start animate-in fade-in duration-200">
       <div className="w-full max-w-sm h-full bg-white shadow-2xl flex flex-col animate-in slide-in-from-left duration-300">
-        {/* Header */}
         <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-100 bg-white shrink-0">
           <div className="flex items-center gap-2 text-slate-900 font-extrabold text-sm">
             <Sliders className="w-4 h-4 text-emerald-700" />
@@ -66,7 +65,6 @@ export const MapFilterSidebar: React.FC<MapFilterSidebarProps> = ({
           </button>
         </div>
 
-        {/* Scrollable Filter Body */}
         <div className="flex-1 overflow-y-auto p-4 space-y-5">
           <div className="space-y-2.5">
             <div className="flex items-center justify-between">
@@ -239,7 +237,6 @@ export const MapFilterSidebar: React.FC<MapFilterSidebarProps> = ({
           </div>
         </div>
 
-        {/* Footer Actions */}
         <div className="p-3.5 border-t border-slate-100 bg-slate-50/60 flex items-center justify-between gap-2 shrink-0">
           <button
             type="button"

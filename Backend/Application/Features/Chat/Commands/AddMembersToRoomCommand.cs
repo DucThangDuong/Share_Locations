@@ -1,4 +1,4 @@
-using Application.Common;
+﻿using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
@@ -56,7 +56,6 @@ public class AddMembersToRoomCommandHandler : IRequestHandler<AddMembersToRoomCo
 
         await _chatRepository.AddMembersToRoomAsync(request.RoomId, validUserIds, ct);
 
-        // Bắn thông báo cho từng thành viên mới được thêm vào phòng chat
         var roomName = !string.IsNullOrWhiteSpace(room.Name) ? room.Name : "Nhóm trò chuyện";
         foreach (var memberId in validUserIds)
         {
@@ -81,7 +80,6 @@ public class AddMembersToRoomCommandHandler : IRequestHandler<AddMembersToRoomCo
             }
             catch
             {
-                // Non-blocking notification dispatch
             }
         }
 

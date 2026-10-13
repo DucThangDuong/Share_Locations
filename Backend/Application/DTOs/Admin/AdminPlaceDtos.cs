@@ -1,4 +1,4 @@
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 using Application.Common.Converters;
 
 namespace Application.DTOs.Admin;
@@ -19,7 +19,7 @@ public class AdminPlaceListItemDto
     public string? Hours { get; set; }
     public string? Phone { get; set; }
     public string? Website { get; set; }
-    public int StatusNum { get; set; } // 0: Pending, 1: Approved, 2: Rejected, 3: Hidden
+    public int StatusNum { get; set; }
     public string Status => StatusNum switch
     {
         0 => "Chờ duyệt",
@@ -32,7 +32,6 @@ public class AdminPlaceListItemDto
     public int ReviewsCount { get; set; }
     public string? Img { get; set; }
 
-    // Frontend compatibility aliases
     public string Address
     {
         get => Location;
@@ -307,7 +306,7 @@ public class UpdateAdminPlaceInput
 
 public class UpdatePlaceStatusInput
 {
-    public int StatusNum { get; set; } // 1: Approved, 3: Hidden, 0: Pending, 2: Rejected
+    public int StatusNum { get; set; }
     public string? Reason { get; set; }
 }
 
@@ -320,4 +319,3 @@ public class PlaceMediaItemDto
     public bool IsVerified { get; set; }
     public DateTime CreatedAt { get; set; }
 }
-

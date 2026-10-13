@@ -84,7 +84,6 @@ export interface PlaceFilterParams {
   pageSize?: number
 }
 
-
 export interface FoodItemDto {
   id: number
   name: string

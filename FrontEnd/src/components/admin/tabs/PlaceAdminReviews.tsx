@@ -55,7 +55,6 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
 }) => {
   const { user } = useAuth()
 
-  // Main Review State
   const [reviews, setReviews] = useState<ReviewItemDto[]>([])
   const [totalReviews, setTotalReviews] = useState<number>(0)
   const [avgRating, setAvgRating] = useState<number>(0)
@@ -64,16 +63,13 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
   const [errorMsg, setErrorMsg] = useState<string>('')
   const [successToast, setSuccessToast] = useState<string>('')
 
-  // Filters & Sorting
   const [searchKeyword, setSearchKeyword] = useState<string>('')
   const [selectedRatingFilter, setSelectedRatingFilter] = useState<string>('all')
   const [mediaOnlyFilter, setMediaOnlyFilter] = useState<boolean>(false)
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'hidden'>('all')
 
-  // Review Status Override Tracker (local state for optimistic UI)
   const [reviewStatusOverrides, setReviewStatusOverrides] = useState<Record<number, 'active' | 'hidden'>>({})
 
-  // Comments Thread State
   const [openCommentsReviewId, setOpenCommentsReviewId] = useState<number | null>(null)
   const [commentsByReviewId, setCommentsByReviewId] = useState<Record<number, CommentDto[]>>({})
   const [loadingCommentsReviewId, setLoadingCommentsReviewId] = useState<number | null>(null)
@@ -81,22 +77,17 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
   const [replyInputText, setReplyInputText] = useState<string>('')
   const [isSubmittingReply, setIsSubmittingReply] = useState<boolean>(false)
 
-  // Quick Admin Comment to Review
   const [newAdminCommentText, setNewAdminCommentText] = useState<Record<number, string>>({})
   const [isSubmittingAdminComment, setIsSubmittingAdminComment] = useState<boolean>(false)
 
-  // Inline Comment Editing
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null)
   const [editingCommentContent, setEditingCommentContent] = useState<string>('')
   const [isSavingCommentEdit, setIsSavingCommentEdit] = useState<boolean>(false)
 
-  // Lightbox Media Preview
   const [lightboxMedia, setLightboxMedia] = useState<{ url: string; type: 'image' | 'video' } | null>(null)
 
-  // Create Review Form
   const [isCreateFormOpen, setIsCreateFormOpen] = useState<boolean>(false)
 
-  // Delete Confirmation Modal
   const [deleteTarget, setDeleteTarget] = useState<DeleteConfirmModalState | null>(null)
   const [isDeleting, setIsDeleting] = useState<boolean>(false)
 
@@ -105,7 +96,6 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
     setTimeout(() => setSuccessToast(''), 3500)
   }
 
-  // 1. Fetch Reviews & Analytics from server
   const fetchReviews = useCallback(async () => {
     if (!placeId) return
     setIsLoading(true)
@@ -136,11 +126,9 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
     fetchReviews()
   }, [fetchReviews])
 
-  // 2. Fetch Comments for a specific Review (GET /api/admin/comments)
   const fetchReviewComments = useCallback(async (reviewId: number) => {
     setLoadingCommentsReviewId(reviewId)
     try {
-      // 1. Try Admin comments endpoint first
       const adminCommentsRes = await adminService.getComments({ page: 1, pageSize: 50, reviewId })
       const rawAdminItems = extractList(adminCommentsRes?.data || adminCommentsRes)
       const matchingComments = rawAdminItems.filter(
@@ -168,7 +156,6 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
         return
       }
 
-      // 2. Fallback to review comments endpoint
       const res = await placeService.getReviewComments(reviewId)
       if (res.success && res.data) {
         setCommentsByReviewId((prev) => ({
@@ -186,7 +173,6 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
           }))
         }
       } catch {
-        // Fallback
       }
     } finally {
       setLoadingCommentsReviewId(null)
@@ -204,7 +190,6 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
     }
   }
 
-  // 3. Admin: Toggle Review Status (Ẩn / Hiện Review)
   const handleToggleReviewStatus = async (review: ReviewItemDto, e?: React.MouseEvent) => {
     e?.stopPropagation()
     const currentStatus: 'active' | 'hidden' =
@@ -231,7 +216,6 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
     }
   }
 
-  // 3.1 Admin: Toggle Comment Status (Ẩn / Hiện Comment)
   const handleToggleCommentStatus = async (reviewId: number, commentId: number, e?: React.MouseEvent) => {
     e?.stopPropagation()
     const list = commentsByReviewId[reviewId] || []
@@ -294,7 +278,6 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
     }
   }
 
-  // 4. Admin: Delete Review
   const handleConfirmDelete = async () => {
     if (!deleteTarget) return
     setIsDeleting(true)
@@ -331,7 +314,6 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
           return { ...prev, [reviewId]: filtered }
         })
 
-        // Update comment count on the review item
         setReviews((prev) =>
           prev.map((r) =>
             r.id === reviewId ? { ...r, commentsCount: Math.max(0, (r.commentsCount || 1) - 1) } : r
@@ -347,7 +329,6 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
     }
   }
 
-  // 5. Admin: Add Comment to Review
   const handleSendAdminComment = async (reviewId: number) => {
     const text = (newAdminCommentText[reviewId] || '').trim()
     if (!text) return
@@ -380,7 +361,6 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
     }
   }
 
-  // 7. Admin: Reply to Nested Comment
   const handleSendReply = async (reviewId: number, parentId: number) => {
     if (!replyInputText.trim()) return
 
@@ -423,7 +403,6 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
     }
   }
 
-  // 8. Admin: Save Comment Edit
   const handleSaveCommentEdit = async (reviewId: number, commentId: number) => {
     if (!editingCommentContent.trim()) return
     setIsSavingCommentEdit(true)
@@ -462,7 +441,6 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
     }
   }
 
-  // 9. Admin: Submit New Review (Seeding / Test)
   const handleCreateReviewSubmit = async (data: CreateReviewRequest) => {
     try {
       const res = await placeService.submitReview(data)
@@ -480,11 +458,9 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
     }
   }
 
-  // Computed & Filtered Reviews
   const filteredAndSortedReviews = useMemo(() => {
     return reviews
       .filter((rev) => {
-        // Keyword
         if (searchKeyword.trim()) {
           const q = searchKeyword.toLowerCase()
           const matchUser = (rev.userName || '').toLowerCase().includes(q)
@@ -493,20 +469,17 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
           if (!matchUser && !matchContent && !matchId) return false
         }
 
-        // Rating
         if (selectedRatingFilter !== 'all') {
           const rVal = parseInt(selectedRatingFilter, 10)
           if (Math.round(rev.rating) !== rVal) return false
         }
 
-        // Media only
         if (mediaOnlyFilter) {
           const hasImg = Array.isArray(rev.images) && rev.images.length > 0
           const hasVid = Array.isArray(rev.videos) && rev.videos.length > 0
           if (!hasImg && !hasVid) return false
         }
 
-        // Status
         const st = reviewStatusOverrides[rev.id] || 'active'
         if (statusFilter !== 'all' && st !== statusFilter) return false
 
@@ -516,7 +489,6 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200 text-xs">
-      {/* Toast Notification */}
       {successToast && (
         <div className="fixed top-5 right-5 z-50 p-4 rounded-2xl bg-emerald-900 text-white shadow-xl flex items-center gap-2.5 border border-emerald-700 animate-in slide-in-from-top-3">
           <CheckCircle2 size={18} className="text-emerald-400 shrink-0" />
@@ -581,9 +553,7 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
           </div>
         </div>
 
-        {/* Rating Breakdown Grid */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 bg-slate-50/70 p-5 rounded-2xl border border-slate-200/80 items-center">
-          {/* Average Rating Big Box */}
           <div className="md:col-span-4 flex flex-col items-center justify-center text-center md:border-r md:border-slate-200 md:pr-6 py-2">
             <div className="text-4xl sm:text-5xl font-black text-slate-900 tracking-tight">
               {avgRating.toFixed(1)}
@@ -605,7 +575,6 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
             </div>
           </div>
 
-          {/* Star Distribution Progress Bars */}
           <div className="md:col-span-8 space-y-2">
             {[5, 4, 3, 2, 1].map((star) => {
               const count = ratingBreakdown[String(star)] || 0
@@ -670,7 +639,6 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
 
       <div className="bg-white p-4 sm:p-5 rounded-3xl border border-slate-200/90 shadow-2xs space-y-3">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
-          {/* Keyword Search */}
           <div className="md:col-span-5 relative">
             <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
@@ -691,7 +659,6 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
             )}
           </div>
 
-          {/* Rating Dropdown */}
           <div className="md:col-span-3">
             <CustomSelect
               value={selectedRatingFilter}
@@ -708,7 +675,6 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
             />
           </div>
 
-          {/* Status Dropdown */}
           <div className="md:col-span-2">
             <CustomSelect
               value={statusFilter}
@@ -723,7 +689,6 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
           </div>
         </div>
 
-        {/* Quick Filter Tags Bar */}
         <div className="flex items-center justify-between gap-3 pt-2 border-t border-slate-100 flex-wrap text-[11px]">
           <div className="flex items-center gap-2 flex-wrap">
             <button
@@ -792,10 +757,8 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
                 className={`bg-white rounded-3xl border transition-all shadow-2xs overflow-hidden ${isHidden ? 'border-amber-200/90 bg-amber-50/20 opacity-80' : 'border-slate-200/90 hover:border-slate-300'
                   }`}
               >
-                {/* Review Header Card */}
                 <div className="p-5 sm:p-6 space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    {/* User Profile & Rating */}
                     <div className="flex items-center gap-3">
                       {rev.userAvatar ? (
                         <img
@@ -851,9 +814,7 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
                       </div>
                     </div>
 
-                    {/* Admin Action Toolbar */}
                     <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0">
-                      {/* Toggle Visibility */}
                       <button
                         type="button"
                         onClick={(e) => handleToggleReviewStatus(rev, e)}
@@ -867,7 +828,6 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
                         <span>{isHidden ? 'Hiện' : 'Ẩn'}</span>
                       </button>
 
-                      {/* Delete Review */}
                       <button
                         type="button"
                         onClick={() =>
@@ -885,12 +845,10 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
                     </div>
                   </div>
 
-                  {/* Review Content */}
                   <div className="text-xs text-slate-800 leading-relaxed font-normal whitespace-pre-line pl-0.5">
                     {rev.content || <span className="italic text-slate-400">Người dùng không để lại lời bình luận.</span>}
                   </div>
 
-                  {/* Media Gallery (Images & Videos) */}
                   {((rev.images && rev.images.length > 0) || (rev.videos && rev.videos.length > 0)) && (
                     <div className="flex flex-wrap gap-2.5 pt-1">
                       {rev.images?.map((imgUrl, i) => (
@@ -924,7 +882,6 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
                     </div>
                   )}
 
-                  {/* Footer Interaction & Toggle Comment Thread */}
                   <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs text-slate-500 flex-wrap gap-2">
                     <div className="flex items-center gap-4">
                       <span className="flex items-center gap-1.5 font-bold text-slate-600">
@@ -970,7 +927,6 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
                       </button>
                     </div>
 
-                    {/* Quick Admin Reply Box */}
                     <div className="flex items-start gap-2.5 bg-white p-3 rounded-2xl border border-slate-200/90 shadow-2xs">
                       <div className="w-8 h-8 rounded-full bg-emerald-800 text-white font-bold text-xs flex items-center justify-center shrink-0">
                         {user?.fullName ? user.fullName.charAt(0).toUpperCase() : 'A'}
@@ -1010,7 +966,6 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
                       </div>
                     </div>
 
-                    {/* Comments List */}
                     {isLoadingComments ? (
                       <div className="py-6 flex items-center justify-center text-slate-400 gap-2">
                         <Loader2 size={18} className="animate-spin text-emerald-700" />
@@ -1024,7 +979,6 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
                       <div className="space-y-3 pt-1">
                         {commentsList.map((comment) => (
                           <div key={comment.id} className="space-y-2">
-                            {/* Parent Comment Card */}
                             <div className="p-3.5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs space-y-2 group">
                               <div className="flex items-center justify-between gap-2">
                                 <div className="flex items-center gap-2">
@@ -1049,7 +1003,6 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
                                   </div>
                                 </div>
 
-                                {/* Admin Action Toolbar on Comment */}
                                 <div className="flex items-center gap-1.5">
                                   <button
                                     type="button"
@@ -1065,7 +1018,6 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
                                     Phản hồi
                                   </button>
 
-                                  {/* Toggle Comment Visibility */}
                                   <button
                                     type="button"
                                     onClick={(e) => handleToggleCommentStatus(rev.id, comment.id, e)}
@@ -1109,7 +1061,6 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
                                 </div>
                               </div>
 
-                              {/* Comment Content (View or Edit Mode) */}
                               {editingCommentId === comment.id ? (
                                 <div className="space-y-2 pt-1">
                                   <textarea
@@ -1143,7 +1094,6 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
                               )}
                             </div>
 
-                            {/* Reply Input Box */}
                             {replyingToCommentId === comment.id && (
                               <div className="ml-6 flex items-start gap-2 bg-white p-2.5 rounded-2xl border border-emerald-300 shadow-2xs animate-in fade-in">
                                 <CornerDownRight size={14} className="text-emerald-700 mt-1 shrink-0" />
@@ -1176,7 +1126,6 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
                               </div>
                             )}
 
-                            {/* Nested Replies List */}
                             {comment.replies && comment.replies.length > 0 && (
                               <div className="ml-6 space-y-2 border-l-2 border-slate-200 pl-3">
                                 {comment.replies.map((reply) => (
@@ -1206,7 +1155,6 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
                                       </div>
 
                                       <div className="flex items-center gap-1">
-                                        {/* Toggle Reply Visibility */}
                                         <button
                                           type="button"
                                           onClick={(e) => handleToggleCommentStatus(rev.id, reply.id, e)}

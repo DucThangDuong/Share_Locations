@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using Application.Common.Interfaces.Repositories;
@@ -99,7 +99,7 @@ public class BlogRepository : IBlogRepository
         parameters.Add("PageSize", Math.Max(1, p.PageSize));
 
         var sql = $@"
-            SELECT 
+            SELECT
                 b.Id,
                 b.AuthorId,
                 b.CategoryId,
@@ -160,7 +160,7 @@ public class BlogRepository : IBlogRepository
         if (long.TryParse(idOrSlug, out var blogId))
         {
             const string sqlById = @"
-                SELECT 
+                SELECT
                     b.Id,
                     b.AuthorId,
                     b.CategoryId,
@@ -184,7 +184,7 @@ public class BlogRepository : IBlogRepository
         else
         {
             const string sqlAll = @"
-                SELECT 
+                SELECT
                     b.Id,
                     b.AuthorId,
                     b.CategoryId,
@@ -234,7 +234,7 @@ public class BlogRepository : IBlogRepository
         var connection = _dbContext.Database.GetDbConnection();
 
         const string sql = @"
-            SELECT 
+            SELECT
                 b.Id,
                 b.AuthorId,
                 b.Title,
@@ -256,4 +256,3 @@ public class BlogRepository : IBlogRepository
         return await connection.QueryFirstOrDefaultAsync<BlogForEditDto>(sql, new { Id = blogId, UserId = userId });
     }
 }
-

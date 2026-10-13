@@ -30,7 +30,6 @@ export const ExplorePage: React.FC = () => {
   const appliedFilters = useMemo(() => {
     const q = searchParams.get('q') || ''
 
-    // Categories: multi-select support (comma-separated or single)
     const catStr = searchParams.get('cat') || searchParams.get('cats') || ''
     const catIdStr = searchParams.get('catId') || searchParams.get('catIds') || searchParams.get('categoryIds') || ''
     const catNames = catStr ? catStr.split(',').map((s) => s.trim()).filter(Boolean) : []
@@ -96,7 +95,6 @@ export const ExplorePage: React.FC = () => {
       })
     }
 
-    // Automatically synchronize region IDs based on whether ALL their provinces are in resolvedProvIds
     if (regions.length > 0) {
       regions.forEach((reg) => {
         const rProvIds = (reg.provinces || []).map((p) => p.id)
@@ -269,13 +267,11 @@ export const ExplorePage: React.FC = () => {
     let nextRegs = [...appliedFilters.regions]
 
     if (isAllSelected) {
-      // Uncheck all provinces of this region
       nextProvIds = nextProvIds.filter((id) => !regionProvinceIds.includes(id))
       nextProvs = nextProvs.filter((name) => !regionProvinceNames.includes(name))
       nextRegIds = nextRegIds.filter((id) => id !== region.id)
       nextRegs = nextRegs.filter((name) => name !== region.name)
     } else {
-      // Check all provinces of this region
       regionProvinces.forEach((p) => {
         if (!nextProvIds.includes(p.id)) nextProvIds.push(p.id)
         if (!nextProvs.includes(p.name)) nextProvs.push(p.name)
@@ -317,7 +313,6 @@ export const ExplorePage: React.FC = () => {
       nextProvs.push(province.name)
     }
 
-    // Check parent region state: if even 1 province is unselected, region check disappears; if all are selected, region check appears
     const parentRegion = regions.find((r) =>
       (r.provinces || []).some((p) => p.id === province.id)
     )
@@ -515,7 +510,6 @@ export const ExplorePage: React.FC = () => {
       })
     })
 
-    // If an entire region is selected, show region chip, else show individual province chips
     const fullySelectedRegionNames = new Set(appliedFilters.regions)
 
     appliedFilters.regions.forEach((reg) => {
@@ -529,7 +523,6 @@ export const ExplorePage: React.FC = () => {
       const pObj = allProvinces.find((p) => p.name === prov)
       const parentRegion = pObj ? regions.find((r) => (r.provinces || []).some((p) => p.id === pObj.id)) : null
 
-      // Only show province chip if its entire parent region is not already shown as a region chip
       if (!parentRegion || !fullySelectedRegionNames.has(parentRegion.name)) {
         chips.push({
           label: `Tỉnh: ${prov}`,

@@ -1,4 +1,4 @@
-using Domain.Enums;
+﻿using Domain.Enums;
 
 namespace Domain.Entities;
 
@@ -19,7 +19,6 @@ public class Proposal
     public DateTime CreatedAt { get; private set; }
     public DateTime UpdatedAt { get; private set; }
 
-    // Navigation
     public virtual User User { get; private set; } = null!;
     public virtual Place? TargetPlace { get; private set; }
     public virtual Category? Category { get; private set; }

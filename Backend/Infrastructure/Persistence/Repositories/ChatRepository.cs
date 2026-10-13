@@ -1,4 +1,4 @@
-using Application.Common.Interfaces.Repositories;
+﻿using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
 using Dapper;
 using Domain.Entities;
@@ -22,24 +22,24 @@ public class ChatRepository : IChatRepository
         var connection = _dbContext.Database.GetDbConnection();
 
         const string sql = @"
-            SELECT 
+            SELECT
                 cr.Id AS RoomId,
                 cr.IsGroup,
-                CASE 
+                CASE
                     WHEN cr.IsGroup = 1 THEN cr.Name
                     ELSE COALESCE(otherProf.FullName, otherU.Email, N'Người dùng')
                 END AS Name,
-                CASE 
+                CASE
                     WHEN cr.IsGroup = 1 THEN NULL
                     ELSE otherProf.AvatarUrl
                 END AS AvatarUrl,
-                CASE 
+                CASE
                     WHEN cr.IsGroup = 1 THEN NULL
                     ELSE otherM.UserId
                 END AS OtherUserId,
                 COALESCE(
                     lastMsg.Content,
-                    CASE 
+                    CASE
                         WHEN EXISTS (SELECT 1 FROM dbo.MessageAttachments ma WHERE ma.MessageId = lastMsg.Id AND ma.AttachmentType = 1) THEN N'[Địa điểm]'
                         WHEN EXISTS (SELECT 1 FROM dbo.MessageAttachments ma WHERE ma.MessageId = lastMsg.Id AND ma.AttachmentType = 2) THEN N'[Món ăn]'
                         WHEN EXISTS (SELECT 1 FROM dbo.MessageAttachments ma WHERE ma.MessageId = lastMsg.Id AND ma.AttachmentType = 3) THEN N'[Lịch trình]'
@@ -50,16 +50,16 @@ public class ChatRepository : IChatRepository
                 ) AS LastMessage,
                 lastMsg.CreatedAt AS LastMessageAt,
                 (
-                    SELECT COUNT(1) 
-                    FROM dbo.Messages unreadM 
-                    WHERE unreadM.ChatRoomId = cr.Id 
+                    SELECT COUNT(1)
+                    FROM dbo.Messages unreadM
+                    WHERE unreadM.ChatRoomId = cr.Id
                       AND (myM.LastReadAt IS NULL OR unreadM.CreatedAt > myM.LastReadAt)
                 ) AS UnreadCount
             FROM dbo.ChatRoomMembers myM
             INNER JOIN dbo.ChatRooms cr ON myM.ChatRoomId = cr.Id
             OUTER APPLY (
-                SELECT TOP 1 m2.UserId 
-                FROM dbo.ChatRoomMembers m2 
+                SELECT TOP 1 m2.UserId
+                FROM dbo.ChatRoomMembers m2
                 WHERE m2.ChatRoomId = cr.Id AND m2.UserId <> @CurrentUserId
             ) otherM
             LEFT JOIN dbo.Users otherU ON otherM.UserId = otherU.Id
@@ -97,7 +97,6 @@ public class ChatRepository : IChatRepository
             return existingRoomId.Value;
         }
 
-        // Tạo phòng mới qua EF Core
         var newRoom = new ChatRoom(name: null, isGroup: false);
         _dbContext.ChatRooms.Add(newRoom);
         await _dbContext.SaveChangesAsync(ct);
@@ -114,8 +113,8 @@ public class ChatRepository : IChatRepository
     {
         var connection = _dbContext.Database.GetDbConnection();
         const string sql = @"
-            SELECT COUNT(1) 
-            FROM dbo.ChatRoomMembers 
+            SELECT COUNT(1)
+            FROM dbo.ChatRoomMembers
             WHERE ChatRoomId = @RoomId AND UserId = @UserId;";
 
         var count = await connection.ExecuteScalarAsync<int>(sql, new { RoomId = roomId, UserId = userId });
@@ -133,7 +132,7 @@ public class ChatRepository : IChatRepository
         var offset = (page - 1) * limit;
 
         const string messagesSql = @"
-            SELECT 
+            SELECT
                 m.Id,
                 m.ChatRoomId AS RoomId,
                 m.SenderId,
@@ -168,9 +167,8 @@ public class ChatRepository : IChatRepository
 
         var messageIds = messages.Select(m => m.Id).ToList();
 
-        // 1. Lấy Attachments
         const string attachmentsSql = @"
-            SELECT 
+            SELECT
                 ma.Id,
                 ma.MessageId,
                 ma.AttachmentType,
@@ -198,9 +196,8 @@ public class ChatRepository : IChatRepository
         var attachmentRows = (await connection.QueryAsync(attachmentsSql, new { MessageIds = messageIds })).ToList();
         var attachmentsByMsg = attachmentRows.ToLookup(r => (long)r.MessageId);
 
-        // 2. Lấy Reactions
         const string reactionsSql = @"
-            SELECT 
+            SELECT
                 mr.MessageId,
                 mr.UserId,
                 COALESCE(prof.FullName, u.Email, N'Người dùng') AS UserName,
@@ -246,7 +243,6 @@ public class ChatRepository : IChatRepository
             }
         }
 
-        // Đảo lại thứ tự thời gian tăng dần để client hiển thị từ trên xuống dưới
         messages.Reverse();
         return messages;
     }
@@ -256,7 +252,7 @@ public class ChatRepository : IChatRepository
         var connection = _dbContext.Database.GetDbConnection();
 
         const string messageSql = @"
-            SELECT 
+            SELECT
                 m.Id,
                 m.ChatRoomId AS RoomId,
                 m.SenderId,
@@ -278,9 +274,8 @@ public class ChatRepository : IChatRepository
         var msg = await connection.QueryFirstOrDefaultAsync<ChatMessageDto>(messageSql, new { MessageId = messageId });
         if (msg == null) return null;
 
-        // Attachments
         const string attachmentsSql = @"
-            SELECT 
+            SELECT
                 ma.Id,
                 ma.MessageId,
                 ma.AttachmentType,
@@ -326,9 +321,8 @@ public class ChatRepository : IChatRepository
             TripCoverUrl = (string?)a.TripCoverUrl
         }).ToList();
 
-        // Reactions
         const string reactionsSql = @"
-            SELECT 
+            SELECT
                 mr.MessageId,
                 mr.UserId,
                 COALESCE(prof.FullName, u.Email, N'Người dùng') AS UserName,
@@ -379,7 +373,6 @@ public class ChatRepository : IChatRepository
 
         _dbContext.Messages.Add(message);
 
-        // Tự động cập nhật LastReadAt cho người gửi
         var member = await _dbContext.ChatRoomMembers
             .FirstOrDefaultAsync(m => m.ChatRoomId == roomId && m.UserId == senderId, ct);
 
@@ -410,7 +403,6 @@ public class ChatRepository : IChatRepository
     {
         var connection = _dbContext.Database.GetDbConnection();
 
-        // Kiểm tra xem tin nhắn có tồn tại không
         const string checkSql = "SELECT COUNT(1) FROM dbo.Messages WHERE Id = @MessageId;";
         var exists = await connection.ExecuteScalarAsync<int>(checkSql, new { MessageId = messageId });
         if (exists == 0) return false;
@@ -441,12 +433,10 @@ public class ChatRepository : IChatRepository
         _dbContext.ChatRooms.Add(newRoom);
         await _dbContext.SaveChangesAsync(ct);
 
-        // 1. Tạo và lưu Quản trị viên (người gửi yêu cầu tạo nhóm) ĐẦU TIÊN
         var creatorMember = new ChatRoomMember(newRoom.Id, creatorId);
         _dbContext.ChatRoomMembers.Add(creatorMember);
         await _dbContext.SaveChangesAsync(ct);
 
-        // 2. Thêm các thành viên còn lại
         var otherMemberIds = memberIds
             .Where(id => id > 0 && id != creatorId)
             .Distinct()
@@ -543,17 +533,17 @@ public class ChatRepository : IChatRepository
     {
         var connection = _dbContext.Database.GetDbConnection();
         const string sql = @"
-            SELECT 
+            SELECT
                 m.UserId,
                 COALESCE(p.FullName, u.Email, N'Người dùng') AS Name,
                 p.AvatarUrl,
                 u.Email,
                 m.JoinedAt,
-                CASE 
+                CASE
                     WHEN ROW_NUMBER() OVER (ORDER BY m.JoinedAt ASC) = 1 THEN CAST(1 AS BIT)
                     ELSE CAST(0 AS BIT)
                 END AS IsAdmin,
-                CASE 
+                CASE
                     WHEN ROW_NUMBER() OVER (ORDER BY m.JoinedAt ASC) = 1 THEN 'Admin'
                     ELSE 'Member'
                 END AS Role

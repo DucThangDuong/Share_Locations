@@ -166,11 +166,9 @@ export const ItineraryPlacePickerDrawer: React.FC<ItineraryPlacePickerDrawerProp
     let nextRegIds = [...selectedRegionIds]
 
     if (isAllSelected) {
-      // Uncheck all provinces of this region
       nextProvIds = nextProvIds.filter((id) => !regionProvinceIds.includes(id))
       nextRegIds = nextRegIds.filter((id) => id !== region.id)
     } else {
-      // Check all provinces of this region
       regionProvinces.forEach((p) => {
         if (!nextProvIds.includes(p.id)) nextProvIds.push(p.id)
       })

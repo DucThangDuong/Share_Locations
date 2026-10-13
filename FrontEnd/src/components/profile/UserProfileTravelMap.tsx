@@ -18,7 +18,7 @@ export interface UserMapPlaceItem {
   coverImg?: string | null
   category?: string | null
   province?: string | null
-  coordinates: [number, number] // [lng, lat]
+  coordinates: [number, number]
   interactionType: 'review' | 'visit_log' | 'proposal'
   interactionLabel: string
   rating?: number
@@ -49,7 +49,6 @@ export const UserProfileTravelMap: React.FC<UserProfileTravelMapProps> = ({
 
   const token = (import.meta.env.VITE_MAPBOX_ACCESS_TOKEN as string | undefined)?.trim()
 
-  // Extract / synthesize all map places from backend mapPlaces or fallback from reviews, visit logs, proposals
   const allMapPlaces = useMemo<UserMapPlaceItem[]>(() => {
     if (mapPlaces && mapPlaces.length > 0) {
       return mapPlaces.map((p) => ({
@@ -69,10 +68,7 @@ export const UserProfileTravelMap: React.FC<UserProfileTravelMapProps> = ({
 
     const list: UserMapPlaceItem[] = []
 
-    // 1. Places from Reviews
     reviews.forEach((r, idx) => {
-      // Demo coordinates if none stored, or lat/lng
-      // Distributed around famous Vietnam spots if coords not present
       const defaultLngs = [108.22, 106.66, 105.85, 108.45, 107.59, 109.19, 103.96]
       const defaultLats = [16.05, 10.76, 21.02, 11.94, 16.46, 12.23, 10.28]
       const coordLng = defaultLngs[idx % defaultLngs.length] + (idx * 0.02)
@@ -93,7 +89,6 @@ export const UserProfileTravelMap: React.FC<UserProfileTravelMapProps> = ({
       })
     })
 
-    // 2. Places from Visit Logs
     visitLogs.forEach((v, idx) => {
       const lng = v.lng || 106.70 + (idx * 0.03)
       const lat = v.lat || 10.78 + (idx * 0.02)
@@ -112,7 +107,6 @@ export const UserProfileTravelMap: React.FC<UserProfileTravelMapProps> = ({
       })
     })
 
-    // 3. Places from Proposals
     proposals.forEach((p, idx) => {
       const lng = p.longitude || 105.83 + (idx * 0.04)
       const lat = p.latitude || 21.03 + (idx * 0.03)
@@ -134,13 +128,11 @@ export const UserProfileTravelMap: React.FC<UserProfileTravelMapProps> = ({
     return list
   }, [mapPlaces, reviews, visitLogs, proposals])
 
-  // Filter places based on active tab
   const filteredPlaces = useMemo(() => {
     if (activeFilter === 'all') return allMapPlaces
     return allMapPlaces.filter((p) => p.interactionType === activeFilter)
   }, [allMapPlaces, activeFilter])
 
-  // Initialize Mapbox map
   useEffect(() => {
     if (!token || !mapContainerRef.current) {
       setHasMapboxToken(false)
@@ -154,7 +146,7 @@ export const UserProfileTravelMap: React.FC<UserProfileTravelMapProps> = ({
       const map = new mapboxgl.Map({
         container: mapContainerRef.current,
         style: 'mapbox://styles/mapbox/streets-v12',
-        center: [108.2022, 16.0544], // Center of Vietnam
+        center: [108.2022, 16.0544],
         zoom: 5.5
       })
 
@@ -170,7 +162,6 @@ export const UserProfileTravelMap: React.FC<UserProfileTravelMapProps> = ({
     }
   }, [token])
 
-  // Render Markers on Map
   useEffect(() => {
     const map = mapInstanceRef.current
     if (!map || !hasMapboxToken) return
@@ -187,7 +178,6 @@ export const UserProfileTravelMap: React.FC<UserProfileTravelMapProps> = ({
 
       bounds.extend(item.coordinates)
 
-      // Marker element with badge colors
       const el = document.createElement('div')
       el.className = 'group/marker relative cursor-pointer select-none transition-transform hover:scale-125 hover:z-30'
 

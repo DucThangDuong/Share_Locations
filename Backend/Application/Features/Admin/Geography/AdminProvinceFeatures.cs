@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
@@ -8,8 +8,6 @@ using Application.Features.Admin.Catalog;
 using MediatR;
 
 namespace Application.Features.Admin.Geography;
-
-// === QUERIES ===
 
 public record GetAdminProvincesQuery(
     int? RegionId,
@@ -64,8 +62,6 @@ public class GetAdminProvinceByIdQueryHandler : IRequestHandler<GetAdminProvince
     }
 }
 
-// === COMMANDS ===
-
 public record CreateAdminProvinceCommand(CreateAdminProvinceRequest Input) : IRequest<Result<int>>;
 
 public class CreateAdminProvinceCommandHandler : IRequestHandler<CreateAdminProvinceCommand, Result<int>>
@@ -104,8 +100,8 @@ public class CreateAdminProvinceCommandHandler : IRequestHandler<CreateAdminProv
 }
 
 public record UpdateAdminProvinceCommand(
-    int Id, 
-    UpdateAdminProvinceRequest Input, 
+    int Id,
+    UpdateAdminProvinceRequest Input,
     FileUploadModel? ImageFile = null) : IRequest<Result<bool>>;
 
 public class UpdateAdminProvinceCommandHandler : IRequestHandler<UpdateAdminProvinceCommand, Result<bool>>
@@ -116,7 +112,7 @@ public class UpdateAdminProvinceCommandHandler : IRequestHandler<UpdateAdminProv
     private readonly ICacheService _cacheService;
 
     public UpdateAdminProvinceCommandHandler(
-        IAdminGeographyRepository repo, 
+        IAdminGeographyRepository repo,
         ICurrentUserService currentUserService,
         IBlobService blobService,
         ICacheService cacheService)
@@ -138,10 +134,9 @@ public class UpdateAdminProvinceCommandHandler : IRequestHandler<UpdateAdminProv
         if (request.Input.RegionId <= 0)
             return Result<bool>.Failure("Vui lòng chọn Vùng/miền trực thuộc hợp lệ.", HttpStatusCode.BadRequest);
 
-        // Upload hình ảnh lên Azure Blob Storage nếu có tệp đính kèm
         if (request.ImageFile != null && request.ImageFile.Content != null && request.ImageFile.Content.Length > 0)
         {
-            const long maxFileSize = 10 * 1024 * 1024; // 10MB
+            const long maxFileSize = 10 * 1024 * 1024;
             if (request.ImageFile.Content.Length > maxFileSize)
             {
                 return Result<bool>.Failure("Dung lượng ảnh vượt quá giới hạn cho phép (tối đa 10MB).", HttpStatusCode.BadRequest);
@@ -170,7 +165,7 @@ public class UpdateAdminProvinceCommandHandler : IRequestHandler<UpdateAdminProv
                 return Result<bool>.Failure($"Lỗi khi tải ảnh tỉnh/thành lên Azure Blob Storage: {ex.Message}", HttpStatusCode.InternalServerError);
             }
         }
-        else if (!string.IsNullOrWhiteSpace(request.Input.ImageUrl) && 
+        else if (!string.IsNullOrWhiteSpace(request.Input.ImageUrl) &&
                  request.Input.ImageUrl.StartsWith("data:image", StringComparison.OrdinalIgnoreCase))
         {
             try
@@ -214,7 +209,7 @@ public class UpdateAdminProvinceStatusCommandHandler : IRequestHandler<UpdateAdm
     private readonly ICacheService _cacheService;
 
     public UpdateAdminProvinceStatusCommandHandler(
-        IAdminGeographyRepository repo, 
+        IAdminGeographyRepository repo,
         ICurrentUserService currentUserService,
         ICacheService cacheService)
     {

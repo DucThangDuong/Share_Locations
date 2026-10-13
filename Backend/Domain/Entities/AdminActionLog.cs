@@ -1,4 +1,4 @@
-namespace Domain.Entities;
+﻿namespace Domain.Entities;
 
 public class AdminActionLog
 {
@@ -8,7 +8,7 @@ public class AdminActionLog
     public string ActionType { get; private set; } = string.Empty;
     public string TargetTable { get; private set; } = string.Empty;
     public long TargetId { get; private set; }
-    public byte ActionStatus { get; private set; } = 1; // 1: Success, 2: Failed
+    public byte ActionStatus { get; private set; } = 1;
     public string? Reason { get; private set; }
     public string? OldDataJSON { get; private set; }
     public string? NewDataJSON { get; private set; }
@@ -19,7 +19,6 @@ public class AdminActionLog
     public string? UserAgent { get; private set; }
     public DateTime CreatedAt { get; private set; }
 
-    // Navigation
     public virtual User Admin { get; private set; } = null!;
 
     protected AdminActionLog() { }

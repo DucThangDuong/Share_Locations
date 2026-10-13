@@ -25,6 +25,7 @@ const NotFoundPage = lazy(() => import('@/pages/NotFoundPage').then((m) => ({ de
 const AdminPage = lazy(() => import('@/pages/AdminPage').then((m) => ({ default: m.AdminPage })))
 const UserProfilePage = lazy(() => import('@/pages/UserProfilePage').then((m) => ({ default: m.UserProfilePage })))
 const DirectionsPage = lazy(() => import('@/pages/DirectionsPage').then((m) => ({ default: m.DirectionsPage })))
+const RankingsPage = lazy(() => import('@/pages/RankingsPage').then((m) => ({ default: m.RankingsPage })))
 const ChatPage = lazy(() => import('@/pages/ChatPage'))
 
 const ChatRoute: React.FC = () => {
@@ -88,6 +89,10 @@ export const App: React.FC = () => {
                 <Route path="tinh-thanh" element={<ProvincePage />} />
                 <Route path="tinh-thanh/:provinceId" element={<ProvincePage />} />
                 <Route path="tinh/:provinceId" element={<ProvincePage />} />
+                <Route path="rankings" element={<RankingsPage />} />
+                <Route path="bang-xep-hang" element={<RankingsPage />} />
+                <Route path="bxh" element={<RankingsPage />} />
+                <Route path="leaderboard" element={<RankingsPage />} />
                 <Route path="propose-place" element={<ProposePlacePage />} />
                 <Route path="de-xuat" element={<ProposePlacePage />} />
                 <Route path="de-xuat-dia-diem" element={<ProposePlacePage />} />
@@ -103,7 +108,6 @@ export const App: React.FC = () => {
                 <Route path="*" element={<NotFoundPage />} />
               </Route>
 
-              {/* Dedicated Chat Layout without Footer */}
               <Route path="/chat" element={<ChatLayout />}>
                 <Route index element={<ChatRoute />} />
               </Route>

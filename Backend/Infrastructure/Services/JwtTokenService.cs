@@ -1,4 +1,4 @@
-using System.IdentityModel.Tokens.Jwt;
+﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -18,11 +18,11 @@ public class JwtTokenService : IJwtTokenService
 
     public JwtTokenService(IConfiguration configuration)
     {
-        _secretKey = configuration["Jwt:SecretKey"] 
+        _secretKey = configuration["Jwt:SecretKey"]
             ?? throw new InvalidOperationException("CRITICAL: JWT SecretKey is not configured!");
-        _issuer = configuration["Jwt:Issuer"] 
+        _issuer = configuration["Jwt:Issuer"]
             ?? throw new InvalidOperationException("CRITICAL: JWT Issuer is not configured!");
-        _audience = configuration["Jwt:Audience"] 
+        _audience = configuration["Jwt:Audience"]
             ?? throw new InvalidOperationException("CRITICAL: JWT Audience is not configured!");
         _expireMinutes = int.TryParse(configuration["Jwt:ExpireMinutes"], out var exp) ? exp : 15;
     }
@@ -64,7 +64,6 @@ public class JwtTokenService : IJwtTokenService
             new(ClaimTypes.Email, user.Email)
         };
 
-        // 1. Phân giải vai trò (Roles) từ bảng liên kết UserRoles
         var activeRoleCodes = user.UserRoles
             .Where(ur => ur.Role != null && ur.Role.IsActive && (!ur.ExpiresAt.HasValue || ur.ExpiresAt.Value > DateTime.UtcNow))
             .Select(ur => ur.Role.Code)
@@ -80,7 +79,6 @@ public class JwtTokenService : IJwtTokenService
             r.Equals("SYSTEM_ADMIN", StringComparison.OrdinalIgnoreCase) ||
             r.Equals("SystemAdmin", StringComparison.OrdinalIgnoreCase));
 
-        // Thêm Claims Role (cả dạng PascalCase và DB uppercase để tương thích mọi cấu hình)
         var distinctRoleCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var r in activeRoleCodes)
         {
@@ -95,7 +93,6 @@ public class JwtTokenService : IJwtTokenService
             claims.Add(new Claim("role", r));
         }
 
-        // 2. Quyền hạn (Permissions) - Admin hệ thống là quyền tối cao có thể làm bất cứ điều gì
         var distinctPermissions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         if (isSystemAdmin)
         {
@@ -126,7 +123,6 @@ public class JwtTokenService : IJwtTokenService
             claims.Add(new Claim("permission", perm));
         }
 
-        // 3. Phạm vi quản lý (Scopes) cho CategoryAdmin
         if (!isSystemAdmin)
         {
             foreach (var scope in user.AdminCategoryScopes)
@@ -145,7 +141,6 @@ public class JwtTokenService : IJwtTokenService
             }
         }
 
-        // 4. Thông tin hồ sơ (Profile)
         if (user.Profile != null)
         {
             if (!string.IsNullOrWhiteSpace(user.Profile.FullName))

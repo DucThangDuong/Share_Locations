@@ -1,4 +1,4 @@
-namespace Domain.Constants;
+﻿namespace Domain.Constants;
 
 public static class AppRoles
 {
@@ -13,28 +13,28 @@ public static class AppRoles
     public const byte UserRoleId = 1;
     public const byte CategoryAdminRoleId = 2;
     public const byte SystemAdminRoleId = 3;
-    
-    public static readonly string[] SuperAdminOnly = 
-    { 
-        SystemAdmin, 
-        DbSystemAdmin 
-    };
-    
-    public static readonly string[] AnyAdmin = 
-    { 
-        CategoryAdmin, 
-        SystemAdmin, 
-        DbCategoryAdmin, 
-        DbSystemAdmin 
+
+    public static readonly string[] SuperAdminOnly =
+    {
+        SystemAdmin,
+        DbSystemAdmin
     };
 
-    public static readonly string[] AllAuthenticated = 
-    { 
-        User, 
-        CategoryAdmin, 
-        SystemAdmin, 
-        DbUser, 
-        DbCategoryAdmin, 
-        DbSystemAdmin 
+    public static readonly string[] AnyAdmin =
+    {
+        CategoryAdmin,
+        SystemAdmin,
+        DbCategoryAdmin,
+        DbSystemAdmin
+    };
+
+    public static readonly string[] AllAuthenticated =
+    {
+        User,
+        CategoryAdmin,
+        SystemAdmin,
+        DbUser,
+        DbCategoryAdmin,
+        DbSystemAdmin
     };
 }

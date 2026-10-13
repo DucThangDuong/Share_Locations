@@ -1,4 +1,4 @@
-using Application.Common.Interfaces;
+﻿using Application.Common.Interfaces;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using Microsoft.AspNetCore.Http;
@@ -108,7 +108,6 @@ public class AzureBlobService : IBlobService
             throw new ArgumentException("Dữ liệu Base64 không được để trống.", nameof(base64Data));
         }
 
-        // Nếu đã là link URL tuyệt đối (http/https), giữ nguyên
         if (base64Data.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
             base64Data.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
         {
@@ -119,7 +118,6 @@ public class AzureBlobService : IBlobService
         string contentType = "image/jpeg";
         string fileExtension = ".jpg";
 
-        // Xử lý data URI scheme (data:image/webp;base64,xxxx)
         if (base64Data.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
         {
             var commaIndex = base64Data.IndexOf(',');
@@ -185,7 +183,7 @@ public class AzureBlobService : IBlobService
             throw new ArgumentException("Stream is null or empty.");
         }
 
-        const long videoSizeLimit = 30 * 1024 * 1024; // 30 MB
+        const long videoSizeLimit = 30 * 1024 * 1024;
         if (stream.Length > videoSizeLimit)
         {
             throw new ArgumentException("Dung lượng video vượt quá giới hạn 30 MB.");
@@ -281,14 +279,12 @@ public class AzureBlobService : IBlobService
                 return false;
             }
 
-            // JPEG: FF D8 FF
             if (header[0] == 0xFF && header[1] == 0xD8 && header[2] == 0xFF)
             {
                 detectedContentType = "image/jpeg";
                 return true;
             }
 
-            // PNG: 89 50 4E 47 0D 0A 1A 0A
             if (bytesRead >= 8 &&
                 header[0] == 0x89 && header[1] == 0x50 && header[2] == 0x4E && header[3] == 0x47 &&
                 header[4] == 0x0D && header[5] == 0x0A && header[6] == 0x1A && header[7] == 0x0A)
@@ -297,7 +293,6 @@ public class AzureBlobService : IBlobService
                 return true;
             }
 
-            // WebP: RIFF .... WEBP
             if (bytesRead >= 12 &&
                 header[0] == 0x52 && header[1] == 0x49 && header[2] == 0x46 && header[3] == 0x46 &&
                 header[8] == 0x57 && header[9] == 0x45 && header[10] == 0x42 && header[11] == 0x50)

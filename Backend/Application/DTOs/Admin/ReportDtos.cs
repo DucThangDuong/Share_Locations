@@ -1,4 +1,4 @@
-namespace Application.DTOs.Admin;
+﻿namespace Application.DTOs.Admin;
 
 public class ReportReasonDto
 {
@@ -14,7 +14,7 @@ public class ReportQueueItemDto
 {
     public long Id { get; set; }
     public string CodeId { get; set; } = string.Empty;
-    public string TargetType { get; set; } = string.Empty; // place, review, comment, blog
+    public string TargetType { get; set; } = string.Empty;
     public long TargetId { get; set; }
     public string TargetTitle { get; set; } = string.Empty;
     public string? TargetSubtitle { get; set; }
@@ -28,8 +28,8 @@ public class ReportQueueItemDto
     public string ReasonContent { get; set; } = string.Empty;
     public string? Description { get; set; }
     public DateTime SubmittedAt { get; set; }
-    public string Priority { get; set; } = "normal"; // urgent, high, normal, low
-    public int Status { get; set; } // 0: Pending, 1: Resolved, 2: Dismissed
+    public string Priority { get; set; } = "normal";
+    public int Status { get; set; }
     public string StatusText => Status switch
     {
         0 => "Chờ xử lý",
@@ -45,7 +45,7 @@ public class ReportQueueItemDto
 
 public class GroupedReportDto
 {
-    public string GroupKey { get; set; } = string.Empty; // e.g. "review_503"
+    public string GroupKey { get; set; } = string.Empty;
     public string TargetType { get; set; } = string.Empty;
     public long TargetId { get; set; }
     public string TargetTitle { get; set; } = string.Empty;
@@ -64,7 +64,7 @@ public class GroupedReportDto
 
 public class CreateReportInput
 {
-    public string TargetType { get; set; } = string.Empty; // place, review, comment, blog
+    public string TargetType { get; set; } = string.Empty;
     public long TargetId { get; set; }
     public int ReasonId { get; set; }
     public string? Description { get; set; }
@@ -73,8 +73,8 @@ public class CreateReportInput
 
 public class ResolveReportInput
 {
-    public string Decision { get; set; } = "accept"; // "accept" | "dismiss"
-    public string? ActionTaken { get; set; } // "hide_target" | "delete_permanently"
+    public string Decision { get; set; } = "accept";
+    public string? ActionTaken { get; set; }
     public string? ResolutionNote { get; set; }
     public string? DismissReason { get; set; }
     public bool AutoCloseDuplicates { get; set; } = true;

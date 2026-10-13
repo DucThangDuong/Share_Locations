@@ -57,7 +57,6 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
   return (
     <header className="h-16 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-6 flex items-center justify-between sticky top-0 z-20">
       <div className="flex items-center gap-3">
-        {/* Mobile menu toggle */}
         <button
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
           className="p-2 rounded-xl border border-slate-200/80 hover:bg-slate-50 text-slate-600 transition-colors cursor-pointer lg:hidden"
@@ -66,7 +65,6 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
           <Menu size={18} />
         </button>
 
-        {/* Clean Breadcrumb */}
         <div className="flex items-center gap-2 text-xs font-medium">
           <span className="text-slate-900 font-bold">
             {mainTab === "dashboard" && "Tổng quan (Dashboard)"}
@@ -89,7 +87,6 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
       </div>
 
       <div className="flex items-center gap-3 sm:gap-4">
-        {/* Notifications */}
         <div className="relative">
           <button
             onClick={() => {
@@ -119,7 +116,6 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
           )}
         </div>
 
-        {/* Admin profile chip */}
         <div className="flex items-center gap-2.5 pl-3 border-l border-slate-200">
           {adminAvatar ? (
             <img

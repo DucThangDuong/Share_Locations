@@ -1,4 +1,4 @@
-using Domain.Enums;
+﻿using Domain.Enums;
 
 namespace Domain.Entities;
 
@@ -32,7 +32,6 @@ public class Place
     public DateTime UpdatedAt { get; private set; }
     public bool IsDeleted { get; private set; }
 
-    // Navigation
     public virtual Province Province { get; private set; } = null!;
     public virtual Category Category { get; private set; } = null!;
     public virtual User? Creator { get; private set; }

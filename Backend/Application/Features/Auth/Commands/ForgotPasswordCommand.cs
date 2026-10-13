@@ -1,4 +1,4 @@
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using Application.Common;
 using Application.Common.Events;
 using Application.Common.Interfaces;
@@ -45,16 +45,13 @@ public class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswordComman
             return Result<bool>.Forbidden("Tài khoản này hiện đang bị khóa.");
         }
 
-        // Sinh mã OTP 6 chữ số ngẫu nhiên chuẩn Cryptographic (100000 - 999999)
         var otpCode = RandomNumberGenerator.GetInt32(100000, 1000000).ToString("D6");
 
-        // Lưu vào Redis với TTL đúng 6 phút (360 giây)
         var cacheKey = $"forgot_password:otp:{normalizedEmail}";
         await _cacheService.SetAsync(cacheKey, otpCode, TimeSpan.FromMinutes(6), ct);
 
         _logger.LogInformation("🔑 Đã tạo mã OTP cho {Email}, lưu Redis key {CacheKey}, TTL 6 phút.", normalizedEmail, cacheKey);
 
-        // Publish sự kiện lên RabbitMQ
         await _publishEndpoint.Publish(new SendForgotPasswordEmailEvent
         {
             Email = normalizedEmail,

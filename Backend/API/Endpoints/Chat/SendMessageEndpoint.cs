@@ -17,12 +17,10 @@ public class SendMessageRequest
     public string? Content { get; set; }
     public long? ReplyToMessageId { get; set; }
 
-    // Chia sẻ thực thể du lịch (Địa điểm, Món ăn, Lịch trình)
     public long? PlaceId { get; set; }
     public long? FoodId { get; set; }
     public long? TripId { get; set; }
 
-    // Tệp đa phương tiện đính kèm (ảnh, video, file)
     public List<IFormFile>? Files { get; set; }
 }
 

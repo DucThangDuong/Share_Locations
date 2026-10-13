@@ -75,7 +75,6 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
         </button>
       </div>
 
-      {/* Search Bar */}
       <div className="px-4 py-1.5">
         <div className="relative">
           <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#65676B]" />
@@ -98,7 +97,6 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
         </div>
       </div>
 
-      {/* Filter Tabs Bar */}
       <div className="px-4 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar">
         <button
           type="button"
@@ -126,7 +124,6 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
         </button>
       </div>
 
-      {/* Conversation List */}
       <div className="flex-1 min-h-0 overflow-y-auto px-2 py-1 space-y-0.5 overscroll-contain">
         {isLoading ? (
           <div className="py-12 flex flex-col items-center justify-center text-slate-400 gap-2 text-xs">
@@ -200,7 +197,6 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
         )}
       </div>
 
-      {/* Modal Tạo Nhóm */}
       <CreateGroupModal
         isOpen={isCreateGroupOpen}
         onClose={() => setIsCreateGroupOpen(false)}

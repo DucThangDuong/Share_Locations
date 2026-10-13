@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using Application.Common.Interfaces;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,7 +19,7 @@ public class CacheService : ICacheService
     };
 
     public CacheService(
-        IDistributedCache cache, 
+        IDistributedCache cache,
         ILogger<CacheService> logger,
         IServiceProvider serviceProvider)
     {

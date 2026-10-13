@@ -1,4 +1,4 @@
-namespace Infrastructure.Persistence.Configurations;
+﻿namespace Infrastructure.Persistence.Configurations;
 
 public class UserConfiguration : IEntityTypeConfiguration<User>
 {
@@ -35,7 +35,6 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(e => e.IsDeleted)
             .HasDefaultValue(false);
 
-        // Relationships
         builder.HasOne(e => e.Profile)
             .WithOne(p => p.User)
             .HasForeignKey<UserProfile>(p => p.UserId)

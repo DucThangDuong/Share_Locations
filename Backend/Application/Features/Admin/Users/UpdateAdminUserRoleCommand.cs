@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
@@ -31,15 +31,13 @@ public class UpdateAdminUserRoleCommandHandler : IRequestHandler<UpdateAdminUser
 
     public async Task<Result<UpdateAdminUserRoleResponseDto>> Handle(UpdateAdminUserRoleCommand request, CancellationToken ct)
     {
-        // 1. Chỉ SystemAdmin mới có quyền thay đổi vai trò
         if (!_currentUserService.IsSystemAdmin)
         {
             return Result<UpdateAdminUserRoleResponseDto>.Failure(
-                "Chỉ Quản trị viên hệ thống (SystemAdmin) mới có quyền gán hoặc thay đổi vai trò người dùng.", 
+                "Chỉ Quản trị viên hệ thống (SystemAdmin) mới có quyền gán hoặc thay đổi vai trò người dùng.",
                 HttpStatusCode.Forbidden);
         }
 
-        // 2. Chuẩn hóa Role mục tiêu
         var normalizedRole = request.Role?.Trim().ToUpperInvariant() ?? string.Empty;
         byte targetRoleId;
 
@@ -73,7 +71,6 @@ public class UpdateAdminUserRoleCommandHandler : IRequestHandler<UpdateAdminUser
                     HttpStatusCode.BadRequest);
         }
 
-        // 3. Kiểm tra người dùng mục tiêu
         var targetUser = await _userRepository.GetUserDetailByIdAsync(request.UserId, ct);
         if (targetUser == null)
         {
@@ -82,7 +79,6 @@ public class UpdateAdminUserRoleCommandHandler : IRequestHandler<UpdateAdminUser
 
         var currentAdminId = _currentUserService.UserId ?? 1;
 
-        // 4. Bảo vệ an toàn: Không cho phép tự hạ quyền của chính mình
         if (currentAdminId == request.UserId && targetRoleId != AppRoles.SystemAdminRoleId)
         {
             return Result<UpdateAdminUserRoleResponseDto>.Failure(
@@ -92,7 +88,6 @@ public class UpdateAdminUserRoleCommandHandler : IRequestHandler<UpdateAdminUser
 
         try
         {
-            // 5. Thực hiện đổi vai trò qua Repository
             var result = await _userRepository.UpdateUserRoleAsync(
                 request.UserId,
                 targetRoleId,

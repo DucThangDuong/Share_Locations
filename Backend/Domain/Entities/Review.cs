@@ -1,4 +1,4 @@
-using Domain.Enums;
+﻿using Domain.Enums;
 
 namespace Domain.Entities;
 
@@ -20,7 +20,6 @@ public class Review
     public DateTime CreatedAt { get; private set; }
     public DateTime UpdatedAt { get; private set; }
 
-    // Navigation
     public virtual Place Place { get; private set; } = null!;
     public virtual User User { get; private set; } = null!;
     public virtual User? HiddenByUser { get; private set; }

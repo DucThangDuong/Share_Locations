@@ -44,7 +44,6 @@ export const ChangeRoleModal: React.FC<ChangeRoleModalProps> = ({
   const { user: currentUser } = useAuth()
   const currentLoggedInUserId = currentUser?.id ? Number(currentUser.id) : null
 
-  // Target user data
   const targetUserId = user ? (user.userId || (user as any).id) : null
   const currentRoles = (user?.roles || []).map((r) => String(r).toUpperCase().trim())
   
@@ -58,7 +57,6 @@ export const ChangeRoleModal: React.FC<ChangeRoleModalProps> = ({
     return 'USER'
   }, [currentRoles])
 
-  // Form states
   const [selectedRole, setSelectedRole] = useState<RoleType>(currentRoleType)
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([])
   const [selectedProvinceIds, setSelectedProvinceIds] = useState<number[]>([])
@@ -66,16 +64,13 @@ export const ChangeRoleModal: React.FC<ChangeRoleModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  // Master lists
   const [categoriesList, setCategoriesList] = useState<CategoryItem[]>([])
   const [provincesList, setProvincesList] = useState<ProvinceDto[]>([])
   const [isLoadingLists, setIsLoadingLists] = useState(false)
 
-  // Search filters
   const [catSearch, setCatSearch] = useState('')
   const [provSearch, setProvSearch] = useState('')
 
-  // Sync state on open
   useEffect(() => {
     if (isOpen && user) {
       setSelectedRole(currentRoleType)
@@ -84,13 +79,11 @@ export const ChangeRoleModal: React.FC<ChangeRoleModalProps> = ({
       setCatSearch('')
       setProvSearch('')
 
-      // Initialize scopes from user
       const catIds = user.categoryScopes?.map((c: any) => c.categoryId) || []
       const provIds = user.provinceScopes?.map((p: any) => p.provinceId) || []
       setSelectedCategoryIds(catIds)
       setSelectedProvinceIds(provIds)
 
-      // Fetch master categories & provinces
       const loadMasterData = async () => {
         setIsLoadingLists(true)
         try {
@@ -108,7 +101,6 @@ export const ChangeRoleModal: React.FC<ChangeRoleModalProps> = ({
             setProvincesList(provRes.value.data)
           }
         } catch {
-          // Ignore
         } finally {
           setIsLoadingLists(false)
         }
@@ -120,17 +112,14 @@ export const ChangeRoleModal: React.FC<ChangeRoleModalProps> = ({
 
   if (!isOpen || !user) return null
 
-  // Filtered categories
   const filteredCategories = categoriesList.filter((c) =>
     c.name.toLowerCase().includes(catSearch.toLowerCase().trim())
   )
 
-  // Filtered provinces
   const filteredProvinces = provincesList.filter((p) =>
     p.name.toLowerCase().includes(provSearch.toLowerCase().trim())
   )
 
-  // Self-demotion check
   const isSelfDemotion =
     currentLoggedInUserId &&
     targetUserId &&
@@ -138,21 +127,18 @@ export const ChangeRoleModal: React.FC<ChangeRoleModalProps> = ({
     currentRoleType === 'SYSTEM_ADMIN' &&
     selectedRole !== 'SYSTEM_ADMIN'
 
-  // Toggle category selection
   const toggleCategory = (id: number) => {
     setSelectedCategoryIds((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
     )
   }
 
-  // Toggle province selection
   const toggleProvince = (id: number) => {
     setSelectedProvinceIds((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
     )
   }
 
-  // Select all categories
   const handleSelectAllCategories = () => {
     if (selectedCategoryIds.length === categoriesList.length) {
       setSelectedCategoryIds([])
@@ -161,7 +147,6 @@ export const ChangeRoleModal: React.FC<ChangeRoleModalProps> = ({
     }
   }
 
-  // Select all provinces
   const handleSelectAllProvinces = () => {
     if (selectedProvinceIds.length === provincesList.length) {
       setSelectedProvinceIds([])
@@ -170,7 +155,6 @@ export const ChangeRoleModal: React.FC<ChangeRoleModalProps> = ({
     }
   }
 
-  // Submit Handler
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!targetUserId) return
@@ -225,7 +209,6 @@ export const ChangeRoleModal: React.FC<ChangeRoleModalProps> = ({
         className="relative w-full max-w-2xl max-h-[90vh] bg-white rounded-3xl shadow-2xl border border-slate-200/90 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Modal Header */}
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center border border-emerald-100 shadow-2xs">
@@ -252,9 +235,7 @@ export const ChangeRoleModal: React.FC<ChangeRoleModalProps> = ({
           </button>
         </div>
 
-        {/* Modal Body */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5">
-          {/* Target User Card */}
           <div className="flex items-center gap-4 p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80">
             {user.avatarUrl ? (
               <img
@@ -308,7 +289,6 @@ export const ChangeRoleModal: React.FC<ChangeRoleModalProps> = ({
             </div>
           </div>
 
-          {/* Error Banner */}
           {errorMessage && (
             <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-2xl text-xs font-semibold text-rose-800 flex items-start gap-2.5">
               <AlertTriangle size={16} className="text-rose-600 shrink-0 mt-0.5" />
@@ -316,7 +296,6 @@ export const ChangeRoleModal: React.FC<ChangeRoleModalProps> = ({
             </div>
           )}
 
-          {/* Self-Demotion Warning */}
           {isSelfDemotion && (
             <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-2xl text-xs font-semibold text-amber-900 flex items-start gap-2.5">
               <AlertTriangle size={16} className="text-amber-600 shrink-0 mt-0.5" />
@@ -326,14 +305,12 @@ export const ChangeRoleModal: React.FC<ChangeRoleModalProps> = ({
             </div>
           )}
 
-          {/* Choose Role Radio Cards */}
           <div className="space-y-2.5">
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
               Chọn vai trò muốn gán <span className="text-rose-500">*</span>
             </label>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {/* Option 1: USER */}
               <button
                 type="button"
                 onClick={() => setSelectedRole('USER')}
@@ -368,7 +345,6 @@ export const ChangeRoleModal: React.FC<ChangeRoleModalProps> = ({
                 </div>
               </button>
 
-              {/* Option 2: CATEGORY_ADMIN */}
               <button
                 type="button"
                 onClick={() => setSelectedRole('CATEGORY_ADMIN')}
@@ -403,7 +379,6 @@ export const ChangeRoleModal: React.FC<ChangeRoleModalProps> = ({
                 </div>
               </button>
 
-              {/* Option 3: SYSTEM_ADMIN */}
               <button
                 type="button"
                 onClick={() => setSelectedRole('SYSTEM_ADMIN')}
@@ -440,7 +415,6 @@ export const ChangeRoleModal: React.FC<ChangeRoleModalProps> = ({
             </div>
           </div>
 
-          {/* Conditional Scopes Section for CATEGORY_ADMIN */}
           {selectedRole === 'CATEGORY_ADMIN' && (
             <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-4 animate-in fade-in duration-150">
               <div className="flex items-center justify-between">
@@ -462,7 +436,6 @@ export const ChangeRoleModal: React.FC<ChangeRoleModalProps> = ({
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Category Scopes */}
                   <div className="bg-white p-3.5 rounded-xl border border-slate-200 flex flex-col h-60">
                     <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                       <span className="text-xs font-bold text-slate-800">
@@ -525,7 +498,6 @@ export const ChangeRoleModal: React.FC<ChangeRoleModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Province Scopes */}
                   <div className="bg-white p-3.5 rounded-xl border border-slate-200 flex flex-col h-60">
                     <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                       <span className="text-xs font-bold text-slate-800">
@@ -592,7 +564,6 @@ export const ChangeRoleModal: React.FC<ChangeRoleModalProps> = ({
             </div>
           )}
 
-          {/* Automatic cleanup notice when demoting to USER or promoting to SYSTEM_ADMIN */}
           {selectedRole === 'USER' && currentRoleType !== 'USER' && (
             <div className="p-3 bg-blue-50 border border-blue-200/80 rounded-2xl text-xs text-blue-900 flex items-center gap-2">
               <Info size={16} className="text-blue-600 shrink-0" />
@@ -611,7 +582,6 @@ export const ChangeRoleModal: React.FC<ChangeRoleModalProps> = ({
             </div>
           )}
 
-          {/* Reason Input */}
           <div className="space-y-1.5">
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
               Lý do thay đổi vai trò (Lưu vào nhật ký kiểm toán)
@@ -626,7 +596,6 @@ export const ChangeRoleModal: React.FC<ChangeRoleModalProps> = ({
           </div>
         </form>
 
-        {/* Modal Footer */}
         <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-end gap-3 bg-slate-50 shrink-0">
           <button
             type="button"

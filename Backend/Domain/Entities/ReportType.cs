@@ -1,4 +1,4 @@
-namespace Domain.Entities;
+﻿namespace Domain.Entities;
 
 public class ReportType
 {
@@ -9,7 +9,6 @@ public class ReportType
     public bool IsActive { get; private set; } = true;
     public int DisplayOrder { get; private set; }
 
-    // Navigation
     private readonly List<PlaceReport> _placeReports = new();
     public virtual IReadOnlyCollection<PlaceReport> PlaceReports => _placeReports.AsReadOnly();
 

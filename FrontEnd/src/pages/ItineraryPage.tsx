@@ -1317,7 +1317,6 @@ export const ItineraryPage: React.FC = () => {
       const res = await tripService.inviteMember(plannerTrip.id, { email, role })
       if (res.success) {
         showToast(res.message || `Đã thêm thành viên: ${email}`)
-        // Refresh trip detail to obtain full updated members list from backend
         try {
           const detailRes = await tripService.getTripDetail(plannerTrip.id)
           if (detailRes.success && detailRes.data?.members) {

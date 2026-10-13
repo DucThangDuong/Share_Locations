@@ -1,4 +1,4 @@
-using Application.Common.Interfaces;
+﻿using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
 using Dapper;
@@ -32,7 +32,7 @@ public class NotificationRepository : INotificationRepository
 
         const string sql = @"
             -- 1. Lấy danh sách thông báo
-            SELECT 
+            SELECT
                 n.Id,
                 n.UserId,
                 n.ActorUserId,
@@ -55,24 +55,24 @@ public class NotificationRepository : INotificationRepository
                 n.UpdatedAt
             FROM dbo.Notifications n
             LEFT JOIN dbo.UserProfiles prof ON n.ActorUserId = prof.UserId
-            WHERE n.UserId = @UserId 
+            WHERE n.UserId = @UserId
               AND n.ArchivedAt IS NULL
               AND (@UnreadOnly IS NULL OR @UnreadOnly = 0 OR n.IsRead = 0)
             ORDER BY n.CreatedAt DESC
             OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;
 
             -- 2. Đếm tổng số lượng bản ghi thỏa mãn điều kiện lọc
-            SELECT COUNT(*) 
+            SELECT COUNT(*)
             FROM dbo.Notifications n
-            WHERE n.UserId = @UserId 
+            WHERE n.UserId = @UserId
               AND n.ArchivedAt IS NULL
               AND (@UnreadOnly IS NULL OR @UnreadOnly = 0 OR n.IsRead = 0);
 
             -- 3. Đếm số lượng chưa đọc toàn bộ
-            SELECT COUNT(*) 
+            SELECT COUNT(*)
             FROM dbo.Notifications n
-            WHERE n.UserId = @UserId 
-              AND n.ArchivedAt IS NULL 
+            WHERE n.UserId = @UserId
+              AND n.ArchivedAt IS NULL
               AND n.IsRead = 0;
         ";
 
@@ -85,7 +85,6 @@ public class NotificationRepository : INotificationRepository
         var totalCount = await multi.ReadFirstAsync<int>();
         var unreadCount = await multi.ReadFirstAsync<int>();
 
-        // Cache unread count
         await _cacheService.SetAsync(UnreadCountCacheKey(userId), unreadCount, TimeSpan.FromSeconds(60), ct);
 
         return new NotificationPagedResultDto
@@ -109,10 +108,10 @@ public class NotificationRepository : INotificationRepository
 
         var connection = _dbContext.Database.GetDbConnection();
         const string sql = @"
-            SELECT COUNT(*) 
-            FROM dbo.Notifications 
-            WHERE UserId = @UserId 
-              AND ArchivedAt IS NULL 
+            SELECT COUNT(*)
+            FROM dbo.Notifications
+            WHERE UserId = @UserId
+              AND ArchivedAt IS NULL
               AND IsRead = 0;";
 
         var count = await connection.ExecuteScalarAsync<int>(new CommandDefinition(
@@ -184,18 +183,17 @@ public class NotificationRepository : INotificationRepository
     {
         var connection = _dbContext.Database.GetDbConnection();
 
-        // 1. CHỐNG TRÙNG LẶP (Deduplication): Nếu có DeduplicationKey gần nhất trong 60 giây -> bỏ qua, trả về bản ghi cũ
         if (!string.IsNullOrWhiteSpace(input.DeduplicationKey))
         {
             const string dedupSql = @"
-                SELECT TOP 1 
+                SELECT TOP 1
                     n.Id, n.UserId, n.ActorUserId, prof.FullName AS ActorName, prof.AvatarUrl AS ActorAvatarUrl,
                     n.Title, n.Content, n.Type, n.Priority, n.GroupKey, n.DeduplicationKey,
                     n.EntityType, n.EntityId, n.ReferenceId, n.TargetUrl, n.IsRead, n.ReadAt,
                     n.DataJSON, n.CreatedAt, n.UpdatedAt
                 FROM dbo.Notifications n
                 LEFT JOIN dbo.UserProfiles prof ON n.ActorUserId = prof.UserId
-                WHERE n.UserId = @UserId 
+                WHERE n.UserId = @UserId
                   AND n.DeduplicationKey = @DeduplicationKey
                   AND n.CreatedAt >= DATEADD(second, -60, SYSUTCDATETIME());";
 
@@ -210,14 +208,13 @@ public class NotificationRepository : INotificationRepository
             }
         }
 
-        // 2. GOM NHÓM THÔNG BÁO (Aggregation): Nếu có GroupKey và tồn tại bản ghi chưa đọc cùng nhóm trong 24h
         if (!string.IsNullOrWhiteSpace(input.GroupKey))
         {
             const string groupSql = @"
-                SELECT TOP 1 
+                SELECT TOP 1
                     n.Id
                 FROM dbo.Notifications n
-                WHERE n.UserId = @UserId 
+                WHERE n.UserId = @UserId
                   AND n.GroupKey = @GroupKey
                   AND n.IsRead = 0
                   AND n.ArchivedAt IS NULL
@@ -239,7 +236,7 @@ public class NotificationRepository : INotificationRepository
                         UpdatedAt = SYSUTCDATETIME()
                     WHERE Id = @Id;
 
-                    SELECT 
+                    SELECT
                         n.Id, n.UserId, n.ActorUserId, prof.FullName AS ActorName, prof.AvatarUrl AS ActorAvatarUrl,
                         n.Title, n.Content, n.Type, n.Priority, n.GroupKey, n.DeduplicationKey,
                         n.EntityType, n.EntityId, n.ReferenceId, n.TargetUrl, n.IsRead, n.ReadAt,
@@ -258,14 +255,13 @@ public class NotificationRepository : INotificationRepository
             }
         }
 
-        // 3. TẠO THÔNG BÁO MỚI (INSERT)
         const string insertSql = @"
             INSERT INTO dbo.Notifications (
                 UserId, ActorUserId, Title, Content, Type, Priority,
                 GroupKey, DeduplicationKey, EntityType, EntityId, ReferenceId,
                 TargetUrl, IsRead, DataJSON, ExpiresAt, CreatedAt, UpdatedAt
             )
-            OUTPUT 
+            OUTPUT
                 INSERTED.Id, INSERTED.UserId, INSERTED.ActorUserId,
                 INSERTED.Title, INSERTED.Content, INSERTED.Type, INSERTED.Priority,
                 INSERTED.GroupKey, INSERTED.DeduplicationKey, INSERTED.EntityType,
@@ -299,7 +295,6 @@ public class NotificationRepository : INotificationRepository
             },
             cancellationToken: ct));
 
-        // Bổ sung thông tin Actor nếu có
         if (input.ActorUserId.HasValue)
         {
             const string actorSql = "SELECT FullName AS ActorName, AvatarUrl AS ActorAvatarUrl FROM dbo.UserProfiles WHERE UserId = @ActorUserId;";

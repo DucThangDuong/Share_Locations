@@ -1,4 +1,4 @@
-using Domain.Enums;
+﻿using Domain.Enums;
 
 namespace Domain.Entities;
 
@@ -14,7 +14,6 @@ public class Collection
     public RecordStatus Status { get; private set; } = RecordStatus.Active;
     public DateTime CreatedAt { get; private set; }
 
-    // Navigation
     public virtual Province? Province { get; private set; }
 
     private readonly List<CollectionPlace> _collectionPlaces = new();

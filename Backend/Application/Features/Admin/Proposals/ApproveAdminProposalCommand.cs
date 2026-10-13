@@ -1,4 +1,4 @@
-using Application.Common;
+﻿using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using MediatR;
@@ -67,7 +67,6 @@ public class ApproveAdminProposalCommandHandler : IRequestHandler<ApproveAdminPr
             }
             catch
             {
-                // Non-blocking notification dispatch
             }
         }
 

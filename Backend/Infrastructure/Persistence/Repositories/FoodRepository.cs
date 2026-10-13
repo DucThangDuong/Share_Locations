@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
 using Dapper;
@@ -109,7 +109,7 @@ public class FoodRepository : IFoodRepository
         var foodIds = foodRows.Select(x => x.Id).Distinct().ToList();
 
         const string placesSql = @"
-            SELECT 
+            SELECT
                 fp.FoodId,
                 p.Id AS PlaceId,
                 p.Name,

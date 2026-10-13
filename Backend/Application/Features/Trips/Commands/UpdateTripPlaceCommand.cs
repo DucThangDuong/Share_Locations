@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using Application.Common;
 using Application.DTOs;
 using Domain.Enums;
@@ -32,7 +32,6 @@ public class UpdateTripPlaceCommandHandler : IRequestHandler<UpdateTripPlaceComm
             return Result.NotFound("Chuyến đi không tồn tại.");
         }
 
-        // BOLA Check: Owner hoặc Editor
         bool isOwner = trip.UserId == request.UserId;
         if (!isOwner)
         {

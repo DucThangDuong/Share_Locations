@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
@@ -27,7 +27,6 @@ public class GetAdminAccessHistoryQueryHandler : IRequestHandler<GetAdminAccessH
 
     public async Task<Result<AdminAccessHistoryResultDto>> Handle(GetAdminAccessHistoryQuery request, CancellationToken ct)
     {
-        // Chỉ có SystemAdmin hoặc chính Admin đó mới được xem lịch sử thao tác của mình!
         if (!_currentUserService.IsSystemAdmin && _currentUserService.UserId != request.UserId)
         {
             return Result<AdminAccessHistoryResultDto>.Failure("Bạn không có quyền xem nhật ký kiểm toán của quản trị viên khác.", HttpStatusCode.Forbidden);

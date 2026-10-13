@@ -1,4 +1,4 @@
-using Application.Common;
+﻿using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs.Admin;
@@ -39,7 +39,6 @@ public class AdminPlaceRepository : IAdminPlaceRepository
         var whereClauses = new List<string>();
         var parameters = new DynamicParameters();
 
-        // Áp dụng giới hạn phân quyền theo Scope (Category, Province, Region) của Admin cấp 1
         AdminScopeFilterHelper.ApplyPlaceScope(_currentUserService, whereClauses, parameters, "p", "prov");
 
         if (provinceId.HasValue && provinceId.Value > 0)
@@ -69,9 +68,9 @@ public class AdminPlaceRepository : IAdminPlaceRepository
         var whereSql = whereClauses.Count > 0 ? " WHERE " + string.Join(" AND ", whereClauses) : "";
 
         var countSql = $@"
-            SELECT COUNT(1) 
-            FROM dbo.Places p 
-            LEFT JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id 
+            SELECT COUNT(1)
+            FROM dbo.Places p
+            LEFT JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id
             {whereSql};";
         var totalCount = await connection.ExecuteScalarAsync<int>(countSql, parameters);
 
@@ -80,7 +79,7 @@ public class AdminPlaceRepository : IAdminPlaceRepository
         parameters.Add("PageSize", pageSize);
 
         var dataSql = $@"
-            SELECT 
+            SELECT
                 p.Id,
                 p.Name,
                 cat.Name AS Category,
@@ -115,7 +114,7 @@ public class AdminPlaceRepository : IAdminPlaceRepository
         var connection = _dbContext.Database.GetDbConnection();
 
         const string sql = @"
-            SELECT 
+            SELECT
                 p.Id,
                 p.Name,
                 cat.Name AS Category,
@@ -145,7 +144,6 @@ public class AdminPlaceRepository : IAdminPlaceRepository
         var detail = await connection.QueryFirstOrDefaultAsync<AdminPlaceDetailDto>(sql, new { Id = id });
         if (detail == null) return null;
 
-        // Kiểm tra quyền hạn phạm vi quản lý của Admin cấp 1
         if (!await AdminScopeFilterHelper.IsPlaceInScopeAsync(_currentUserService, connection, id))
         {
             return null;
@@ -156,7 +154,7 @@ public class AdminPlaceRepository : IAdminPlaceRepository
         detail.Photos = photos;
 
         const string foodsSql = @"
-            SELECT 
+            SELECT
                 f.Id,
                 f.Name,
                 f.MinPrice,
@@ -411,7 +409,6 @@ public class AdminPlaceRepository : IAdminPlaceRepository
         if (place == null) return false;
 
         var oldStatus = place.Status;
-        // Xóa các bảng phụ thuộc hoặc xóa mềm sang Hidden
         place.UpdateStatus(PlaceStatus.Hidden);
         await _dbContext.SaveChangesAsync(ct);
 
@@ -525,7 +522,7 @@ public class AdminPlaceRepository : IAdminPlaceRepository
             return new List<PlaceMediaItemDto>();
 
         const string sql = @"
-            SELECT 
+            SELECT
                 Id,
                 PlaceId,
                 Url,

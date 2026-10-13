@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
@@ -7,8 +7,6 @@ using Application.DTOs.Admin;
 using MediatR;
 
 namespace Application.Features.Admin.Catalog;
-
-// === QUERIES ===
 
 public record GetAdminCategoriesPagedQuery(
     int? PlaceTypeId,
@@ -61,10 +59,8 @@ public class GetAdminCategoryTaxonomyByIdQueryHandler : IRequestHandler<GetAdmin
     }
 }
 
-// === COMMANDS ===
-
 public record CreateAdminCategoryCommand(
-    CreateAdminCategoryRequest Input, 
+    CreateAdminCategoryRequest Input,
     FileUploadModel? ImageFile = null) : IRequest<Result<int>>;
 
 public class CreateAdminCategoryCommandHandler : IRequestHandler<CreateAdminCategoryCommand, Result<int>>
@@ -75,7 +71,7 @@ public class CreateAdminCategoryCommandHandler : IRequestHandler<CreateAdminCate
     private readonly ICacheService _cacheService;
 
     public CreateAdminCategoryCommandHandler(
-        IAdminCatalogTaxonomyRepository repo, 
+        IAdminCatalogTaxonomyRepository repo,
         ICurrentUserService currentUserService,
         IBlobService blobService,
         ICacheService cacheService)
@@ -97,10 +93,9 @@ public class CreateAdminCategoryCommandHandler : IRequestHandler<CreateAdminCate
         if (request.Input.PlaceTypeId <= 0)
             return Result<int>.Failure("Vui lòng chọn Loại hình/Trụ cột trực thuộc hợp lệ.", HttpStatusCode.BadRequest);
 
-        // Upload hình ảnh lên Azure Blob Storage nếu có tệp đính kèm
         if (request.ImageFile != null && request.ImageFile.Content != null && request.ImageFile.Content.Length > 0)
         {
-            const long maxFileSize = 10 * 1024 * 1024; // 10MB
+            const long maxFileSize = 10 * 1024 * 1024;
             if (request.ImageFile.Content.Length > maxFileSize)
             {
                 return Result<int>.Failure("Dung lượng ảnh vượt quá giới hạn cho phép (tối đa 10MB).", HttpStatusCode.BadRequest);
@@ -129,7 +124,7 @@ public class CreateAdminCategoryCommandHandler : IRequestHandler<CreateAdminCate
                 return Result<int>.Failure($"Lỗi khi tải ảnh danh mục lên Azure Blob Storage: {ex.Message}", HttpStatusCode.InternalServerError);
             }
         }
-        else if (!string.IsNullOrWhiteSpace(request.Input.ImageUrl) && 
+        else if (!string.IsNullOrWhiteSpace(request.Input.ImageUrl) &&
                  request.Input.ImageUrl.StartsWith("data:image", StringComparison.OrdinalIgnoreCase))
         {
             try
@@ -162,8 +157,8 @@ public class CreateAdminCategoryCommandHandler : IRequestHandler<CreateAdminCate
 }
 
 public record UpdateAdminCategoryCommand(
-    int Id, 
-    UpdateAdminCategoryRequest Input, 
+    int Id,
+    UpdateAdminCategoryRequest Input,
     FileUploadModel? ImageFile = null) : IRequest<Result<bool>>;
 
 public class UpdateAdminCategoryCommandHandler : IRequestHandler<UpdateAdminCategoryCommand, Result<bool>>
@@ -174,7 +169,7 @@ public class UpdateAdminCategoryCommandHandler : IRequestHandler<UpdateAdminCate
     private readonly ICacheService _cacheService;
 
     public UpdateAdminCategoryCommandHandler(
-        IAdminCatalogTaxonomyRepository repo, 
+        IAdminCatalogTaxonomyRepository repo,
         ICurrentUserService currentUserService,
         IBlobService blobService,
         ICacheService cacheService)
@@ -196,10 +191,9 @@ public class UpdateAdminCategoryCommandHandler : IRequestHandler<UpdateAdminCate
         if (request.Input.PlaceTypeId <= 0)
             return Result<bool>.Failure("Vui lòng chọn Loại hình/Trụ cột trực thuộc hợp lệ.", HttpStatusCode.BadRequest);
 
-        // Upload hình ảnh lên Azure Blob Storage nếu có tệp đính kèm
         if (request.ImageFile != null && request.ImageFile.Content != null && request.ImageFile.Content.Length > 0)
         {
-            const long maxFileSize = 10 * 1024 * 1024; // 10MB
+            const long maxFileSize = 10 * 1024 * 1024;
             if (request.ImageFile.Content.Length > maxFileSize)
             {
                 return Result<bool>.Failure("Dung lượng ảnh vượt quá giới hạn cho phép (tối đa 10MB).", HttpStatusCode.BadRequest);
@@ -228,7 +222,7 @@ public class UpdateAdminCategoryCommandHandler : IRequestHandler<UpdateAdminCate
                 return Result<bool>.Failure($"Lỗi khi tải ảnh danh mục lên Azure Blob Storage: {ex.Message}", HttpStatusCode.InternalServerError);
             }
         }
-        else if (!string.IsNullOrWhiteSpace(request.Input.ImageUrl) && 
+        else if (!string.IsNullOrWhiteSpace(request.Input.ImageUrl) &&
                  request.Input.ImageUrl.StartsWith("data:image", StringComparison.OrdinalIgnoreCase))
         {
             try
@@ -272,7 +266,7 @@ public class UpdateAdminCategoryStatusCommandHandler : IRequestHandler<UpdateAdm
     private readonly ICacheService _cacheService;
 
     public UpdateAdminCategoryStatusCommandHandler(
-        IAdminCatalogTaxonomyRepository repo, 
+        IAdminCatalogTaxonomyRepository repo,
         ICurrentUserService currentUserService,
         ICacheService cacheService)
     {

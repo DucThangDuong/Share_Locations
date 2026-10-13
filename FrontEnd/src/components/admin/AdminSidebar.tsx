@@ -19,6 +19,7 @@ import {
   History,
   Compass,
   Settings,
+  Trophy,
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -70,7 +71,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   }, [mainTab]);
   return (
     <>
-      {/* Mobile backdrop */}
       {isSidebarOpen && (
         <div
           className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-30 lg:hidden"
@@ -83,7 +83,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           } fixed lg:sticky top-0 h-screen bg-white border-r border-slate-200/80 flex flex-col justify-between shrink-0 transition-all duration-300 ease-in-out z-40 select-none shadow-[2px_0_12px_rgba(0,0,0,0.02)]`}
       >
         <div className="flex flex-col h-full overflow-hidden">
-          {/* Brand Header & Toggle */}
           <div className="h-16 px-5 flex items-center justify-between shrink-0 border-b border-slate-100">
             <div className="flex items-center gap-3 overflow-hidden">
               {isSidebarOpen && (
@@ -98,7 +97,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               )}
             </div>
 
-            {/* Desktop Toggle Button */}
             <button
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
               className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer shrink-0 hidden lg:block"
@@ -108,7 +106,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             </button>
           </div>
 
-          {/* Navigation Items */}
           <div className="px-3 py-3 space-y-4 flex-1 overflow-y-auto text-xs">
             <div className="space-y-1">
               {isSidebarOpen && (
@@ -158,11 +155,11 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                 );
               })}
 
-              {/* DROPDOWN: BÁO CÁO VI PHẠM */}
               <div>
                 <button
                   onClick={() => {
                     setMainTab("reports");
+                    setReportTargetTypeFilter?.("place");
                     setSelectedPlaceId(null);
                     if (isSidebarOpen) {
                       setIsReportsDropdownOpen((prev) => !prev);
@@ -198,7 +195,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                   )}
                 </button>
 
-                {/* Sub-menu options when expanded */}
                 {isSidebarOpen && isReportsDropdownOpen && (
                   <div className="pl-3.5 ml-3.5 border-l-2 border-emerald-100 space-y-0.5 mt-1 animate-in fade-in slide-in-from-top-1 duration-150">
                     {[
@@ -219,7 +215,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                       },
                       {
                         id: "blog" as const,
-                        label: "Báo cáo bài viết",
+                        label: "Báo cáo cẩm nang",
                         count: blogReportsCount,
                       },
                     ].map((sub) => {
@@ -251,7 +247,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               </div>
             </div>
 
-            {/* GROUP 2: CONTENT & CATALOG */}
             <div className="space-y-1 pt-1 border-t border-slate-100">
               {isSidebarOpen && (
                 <div className="px-3 pt-2 pb-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
@@ -263,6 +258,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                 { id: "foods", label: "Ẩm thực", icon: Utensils },
                 { id: "collections", label: "Bộ sưu tập", icon: FolderHeart },
                 { id: "blogs", label: "Cẩm nang", icon: BookOpen },
+                { id: "rankings", label: "Bảng xếp hạng", icon: Trophy },
                 ...(isSystemAdmin ? [{ id: "provinces", label: "Tỉnh thành", icon: Compass }] : []),
                 ...(isSystemAdmin ? [{ id: "categories", label: "Danh mục", icon: Layers }] : []),
                 ...(isSystemAdmin ? [{ id: "settings", label: "Cài đặt", icon: Settings }] : []),
@@ -300,7 +296,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             </div>
           </div>
 
-          {/* Footer Back to User App */}
           <div className="p-3 border-t border-slate-100 shrink-0">
             <button
               onClick={onBackToUserView}

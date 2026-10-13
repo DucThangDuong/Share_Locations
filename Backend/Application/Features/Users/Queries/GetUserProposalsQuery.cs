@@ -1,4 +1,4 @@
-using Application.Common;
+﻿using Application.Common;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
 using MediatR;
@@ -23,7 +23,6 @@ public class GetUserProposalsQueryHandler : IRequestHandler<GetUserProposalsQuer
 
     public async Task<Result<UserProposalPagedResultDto>> Handle(GetUserProposalsQuery request, CancellationToken ct)
     {
-        // Chỉ lấy các địa điểm đã được công bố / phê duyệt thành công (Status = 1)
         const int approvedStatus = 1;
 
         var result = await _repo.GetProposalsAsync(

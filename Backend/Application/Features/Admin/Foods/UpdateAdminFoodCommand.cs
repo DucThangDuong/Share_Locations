@@ -1,4 +1,4 @@
-using Application.Common;
+﻿using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
@@ -8,8 +8,8 @@ using MediatR;
 namespace Application.Features.Admin.Foods;
 
 public record UpdateAdminFoodCommand(
-    long Id, 
-    UpdateAdminFoodInput Input, 
+    long Id,
+    UpdateAdminFoodInput Input,
     FileUploadModel? ImageFile = null) : IRequest<Result<AdminFoodUpdatedResultDto>>;
 
 public class UpdateAdminFoodCommandHandler : IRequestHandler<UpdateAdminFoodCommand, Result<AdminFoodUpdatedResultDto>>
@@ -32,10 +32,9 @@ public class UpdateAdminFoodCommandHandler : IRequestHandler<UpdateAdminFoodComm
             return Result<AdminFoodUpdatedResultDto>.Failure("Tên món ăn không được để trống.");
         }
 
-        // 1. Tải lên tệp ảnh qua multipart/form-data trực tiếp lên Azure Blob
         if (request.ImageFile != null && request.ImageFile.Content != null && request.ImageFile.Content.Length > 0)
         {
-            const long maxFileSize = 10 * 1024 * 1024; // 10MB
+            const long maxFileSize = 10 * 1024 * 1024;
             if (request.ImageFile.Content.Length > maxFileSize)
             {
                 return Result<AdminFoodUpdatedResultDto>.Failure("Dung lượng ảnh vượt quá giới hạn cho phép (tối đa 10MB).");
@@ -64,8 +63,7 @@ public class UpdateAdminFoodCommandHandler : IRequestHandler<UpdateAdminFoodComm
                 return Result<AdminFoodUpdatedResultDto>.Failure($"Lỗi khi tải ảnh món ăn lên máy chủ Azure Blob: {ex.Message}");
             }
         }
-        // 2. Tải lên ảnh Base64 lên Azure Blob nếu gửi qua JSON
-        else if (!string.IsNullOrWhiteSpace(request.Input.CoverImg) && 
+        else if (!string.IsNullOrWhiteSpace(request.Input.CoverImg) &&
                  request.Input.CoverImg.StartsWith("data:image", StringComparison.OrdinalIgnoreCase))
         {
             try
@@ -99,4 +97,3 @@ public class UpdateAdminFoodCommandHandler : IRequestHandler<UpdateAdminFoodComm
         return Result<AdminFoodUpdatedResultDto>.Success(resultDto, "Cập nhật món ăn thành công.");
     }
 }
-

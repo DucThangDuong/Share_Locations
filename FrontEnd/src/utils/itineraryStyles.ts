@@ -193,7 +193,6 @@ export const normalizeTimeToHHmm = (timeStr?: string | null): string => {
   if (!timeStr) return ''
   const trimmed = timeStr.trim()
 
-  // Match 12h formats with SA/CH or AM/PM (e.g., 09:00 SA, 02:30 CH, 9:00 AM)
   const match12h = trimmed.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(SA|CH|AM|PM)?$/i)
   if (match12h) {
     let hours = parseInt(match12h[1], 10)
@@ -208,7 +207,6 @@ export const normalizeTimeToHHmm = (timeStr?: string | null): string => {
     return `${String(hours).padStart(2, '0')}:${minutes}`
   }
 
-  // Standard 24h format HH:mm or HH:mm:ss
   const match24h = trimmed.match(/^(\d{1,2}):(\d{2})/)
   if (match24h) {
     const hh = match24h[1].padStart(2, '0')

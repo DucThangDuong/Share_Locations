@@ -1,11 +1,10 @@
-using Application.Common;
+﻿using Application.Common;
 using Application.DTOs.Admin;
 
 namespace Application.Common.Interfaces.Repositories;
 
 public interface IAdminGeographyRepository
 {
-    // === REGIONS ===
     Task<IReadOnlyList<AdminRegionListItemDto>> GetRegionsAsync(bool? activeOnly = null, CancellationToken ct = default);
     Task<AdminRegionListItemDto?> GetRegionByIdAsync(int id, CancellationToken ct = default);
     Task<int> CreateRegionAsync(CreateAdminRegionRequest input, long adminId, CancellationToken ct = default);
@@ -13,7 +12,6 @@ public interface IAdminGeographyRepository
     Task<bool> UpdateRegionStatusAsync(int id, byte status, string? reason, long adminId, CancellationToken ct = default);
     Task<(bool Success, string? ErrorMessage)> DeleteRegionAsync(int id, long adminId, CancellationToken ct = default);
 
-    // === PROVINCES ===
     Task<PagedResult<AdminProvinceListItemDto>> GetProvincesAsync(
         int? regionId,
         byte? status,

@@ -67,7 +67,6 @@ export const ProposePlacePage: React.FC = () => {
   const [phone, setPhone] = useState(passedProposal?.phone || '')
   const [website, setWebsite] = useState(passedProposal?.website || '')
 
-  // Mapbox & OSM address autocomplete & reverse geocoding states
   const [addressSuggestions, setAddressSuggestions] = useState<AddressSuggestion[]>([])
   const [isSearchingAddress, setIsSearchingAddress] = useState(false)
   const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false)
@@ -155,7 +154,6 @@ export const ProposePlacePage: React.FC = () => {
     setImageItems(imgs.map((url, idx) => ({ id: `apply-${idx}`, url })))
   }
 
-  // Close address suggestions on click outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -217,7 +215,6 @@ export const ProposePlacePage: React.FC = () => {
     loadMetadata()
   }, [viewId])
 
-  // Reverse geocoding when clicking on map or dragging marker
   const handleReverseGeocode = async (targetLng: number, targetLat: number) => {
     if (reverseAbortControllerRef.current) {
       reverseAbortControllerRef.current.abort()
@@ -238,13 +235,11 @@ export const ProposePlacePage: React.FC = () => {
         }
       }
     } catch {
-      // Ignored
     } finally {
       setIsReverseGeocoding(false)
     }
   }
 
-  // Initialize Mapbox map instance
   useEffect(() => {
     if (!isAuthenticated || !mapContainerRef.current) return
 
@@ -317,7 +312,6 @@ export const ProposePlacePage: React.FC = () => {
     }
   }
 
-  // Handle typing address with Mapbox Geocoding Autocomplete
   const handleAddressChange = (newVal: string) => {
     setAddress(newVal)
     if (isViewMode) return
@@ -361,7 +355,6 @@ export const ProposePlacePage: React.FC = () => {
     }, 300)
   }
 
-  // Handle selecting an address suggestion from dropdown
   const handleSelectAddressSuggestion = (suggestion: AddressSuggestion) => {
     setAddress(suggestion.fullAddress)
     setIsSuggestionsOpen(false)
@@ -446,7 +439,6 @@ export const ProposePlacePage: React.FC = () => {
     })
   }
 
-  // Cleanup blob URLs on unmount
   useEffect(() => {
     return () => {
       imageItems.forEach((item) => {

@@ -1,4 +1,4 @@
-namespace Application.DTOs.Admin;
+﻿namespace Application.DTOs.Admin;
 
 public class AdminUserListItemDto
 {
@@ -23,18 +23,15 @@ public class AdminUserListItemDto
     public DateTime CreatedAt { get; set; }
     public DateTime? LastLoginAt { get; set; }
     public List<string> Roles { get; set; } = new();
-    
-    // Counts across system
+
     public int CategoryAdminsCount { get; set; }
     public int SystemAdminsCount { get; set; }
     public int RegularUsersCount { get; set; }
 
-    // Scopes names conforming to Frontend SPEC
     public List<AdminScopeCategoryDto> CategoryScopes { get; set; } = new();
     public List<AdminScopeProvinceDto> ProvinceScopes { get; set; } = new();
     public List<AdminScopeRegionDto> RegionScopes { get; set; } = new();
 
-    // Alias properties for backwards compatibility
     public List<AdminScopeCategoryDto> ManagedCategories
     {
         get => CategoryScopes;
@@ -73,12 +70,10 @@ public class AdminUserDetailDto
     public DateTime? LastLoginAt { get; set; }
     public List<string> Roles { get; set; } = new();
 
-    // Admin Level 1 scopes
     public List<AdminScopeCategoryDto> CategoryScopes { get; set; } = new();
     public List<AdminScopeProvinceDto> ProvinceScopes { get; set; } = new();
     public List<AdminScopeRegionDto> RegionScopes { get; set; } = new();
 
-    // Activity statistics for Admin
     public AdminStatisticsDto? Statistics { get; set; }
 }
 
@@ -125,7 +120,7 @@ public class UpdateAdminScopesResponseDto
 
 public class UpdateUserStatusRequest
 {
-    public string Status { get; set; } = "1"; // "1": Active, "0": Locked/Banned
+    public string Status { get; set; } = "1";
     public string? Reason { get; set; }
 }
 
@@ -221,4 +216,3 @@ public class UpdateAdminUserRoleResponseDto
     public int ScopeRegionsCount { get; set; }
     public string Message { get; set; } = string.Empty;
 }
-

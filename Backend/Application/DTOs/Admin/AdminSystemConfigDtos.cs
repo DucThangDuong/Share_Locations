@@ -1,4 +1,4 @@
-using Domain.Constants;
+﻿using Domain.Constants;
 
 namespace Application.DTOs.Admin;
 
@@ -41,10 +41,10 @@ public class AdminSystemSettingDto
     public string SettingValue { get; set; } = string.Empty;
     public string SettingGroup { get; set; } = "GENERAL";
     public string SettingGroupName => AdminDisplayNames.GetSettingGroupName(SettingGroup);
-    public string? Description 
-    { 
-        get => AdminDisplayNames.StripParentheses(_description); 
-        set => _description = value; 
+    public string? Description
+    {
+        get => AdminDisplayNames.StripParentheses(_description);
+        set => _description = value;
     }
     public DateTime UpdatedAt { get; set; }
     public long? UpdatedBy { get; set; }

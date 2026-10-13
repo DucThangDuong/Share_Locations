@@ -169,7 +169,6 @@ export const BlogPage: React.FC = () => {
           }
         })
         .catch(() => {
-          // Fallback to getBlogDetail
           blogService.getBlogDetail(editId).then((res) => {
             if (res.success && res.data) {
               const d = res.data

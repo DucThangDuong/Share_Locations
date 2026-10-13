@@ -1,4 +1,4 @@
-using Application.Common;
+﻿using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs.Admin;
@@ -39,7 +39,6 @@ public class AdminReviewRepository : IAdminReviewRepository
         var whereClauses = new List<string>();
         var parameters = new DynamicParameters();
 
-        // Áp dụng giới hạn phân quyền theo Scope của Admin cấp 1
         AdminScopeFilterHelper.ApplyPlaceScope(_currentUserService, whereClauses, parameters, "p", "prov");
 
         if (placeId.HasValue && placeId.Value > 0)
@@ -100,7 +99,7 @@ public class AdminReviewRepository : IAdminReviewRepository
         parameters.Add("PageSize", pageSize);
 
         var dataSql = $@"
-            SELECT 
+            SELECT
                 r.Id,
                 r.PlaceId,
                 p.Name AS PlaceName,
@@ -116,7 +115,7 @@ public class AdminReviewRepository : IAdminReviewRepository
                 r.Rating,
                 r.Content,
                 r.CreatedAt,
-                CASE 
+                CASE
                     WHEN r.Status = 0 THEN 'hidden'
                     WHEN r.Status = 2 THEN 'reported'
                     ELSE 'active'
@@ -148,7 +147,6 @@ public class AdminReviewRepository : IAdminReviewRepository
                     item.Images = mediaLookup[item.Id].ToList();
                 }
 
-                // Nếu review không có ảnh riêng đính kèm, dùng ảnh chính của địa điểm để không bị trống
                 if (item.Images.Count == 0 && !string.IsNullOrWhiteSpace(item.PlaceCoverImg))
                 {
                     item.Images.Add(item.PlaceCoverImg);
@@ -226,7 +224,6 @@ public class AdminReviewRepository : IAdminReviewRepository
         var whereClauses = new List<string>();
         var parameters = new DynamicParameters();
 
-        // Áp dụng giới hạn phân quyền theo Scope của Admin cấp 1
         AdminScopeFilterHelper.ApplyPlaceScope(_currentUserService, whereClauses, parameters, "p", "prov");
 
         if (reviewId.HasValue && reviewId.Value > 0)
@@ -284,7 +281,7 @@ public class AdminReviewRepository : IAdminReviewRepository
         parameters.Add("PageSize", pageSize);
 
         var dataSql = $@"
-            SELECT 
+            SELECT
                 c.Id,
                 NULL AS BlogId,
                 NULL AS BlogTitle,
@@ -364,7 +361,7 @@ public class AdminReviewRepository : IAdminReviewRepository
         var connection = _dbContext.Database.GetDbConnection();
         const string sql = @"
             UPDATE dbo.Places
-            SET 
+            SET
                 AvgRating = COALESCE((SELECT AVG(CAST(Rating AS DECIMAL(3,2))) FROM dbo.Reviews WHERE PlaceId = @PlaceId AND Status = 1), 0),
                 ReviewCount = (SELECT COUNT(1) FROM dbo.Reviews WHERE PlaceId = @PlaceId AND Status = 1)
             WHERE Id = @PlaceId;";

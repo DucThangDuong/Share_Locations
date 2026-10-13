@@ -1,4 +1,4 @@
-using Application.Common;
+﻿using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
@@ -129,7 +129,7 @@ public class CollectionRepository : ICollectionRepository
         }
 
         var requestedPlaceIds = places.Select(p => p.PlaceId).Distinct().ToList();
-        
+
         foreach (var pId in requestedPlaceIds)
         {
             if (!await AdminScopeFilterHelper.IsPlaceInScopeAsync(_currentUserService, connection, pId))
@@ -166,14 +166,12 @@ public class CollectionRepository : ICollectionRepository
                 .Select(p => p.PlaceId)
                 .ToHashSet();
 
-            // 1. Xóa các địa điểm cũ không còn trong danh sách yêu cầu
             var toRemove = existingPlaces.Where(cp => !requestedValidPlaceIds.Contains(cp.PlaceId)).ToList();
             if (toRemove.Count > 0)
             {
                 _dbContext.CollectionPlaces.RemoveRange(toRemove);
             }
 
-            // 2. Cập nhật thứ tự cho địa điểm đã có hoặc thêm mới vào DbSet
             int autoOrder = 1;
             foreach (var item in places)
             {
@@ -222,7 +220,6 @@ public class CollectionRepository : ICollectionRepository
 
         await _dbContext.SaveChangesAsync(ct);
 
-        // Lấy lại danh sách địa điểm của collection kèm media để trả về
         var updatedPlaceRows = await (
             from cp in _dbContext.CollectionPlaces
             join p in _dbContext.Places on cp.PlaceId equals p.Id
@@ -307,13 +304,13 @@ public class CollectionRepository : ICollectionRepository
         var whereSql = " WHERE " + string.Join(" AND ", whereClauses);
 
         var sql = $@"
-            SELECT 
-                c.Id, 
-                c.ProvinceId, 
-                COALESCE(prov.Name, N'Toàn quốc') AS ProvinceName, 
-                c.Title, 
+            SELECT
+                c.Id,
+                c.ProvinceId,
+                COALESCE(prov.Name, N'Toàn quốc') AS ProvinceName,
+                c.Title,
                 c.Description,
-                c.IsFeatured, 
+                c.IsFeatured,
                 c.DisplayOrder,
                 CAST(c.Status AS INT) AS Status,
                 (SELECT COUNT(1) FROM dbo.CollectionPlaces cp WHERE cp.CollectionId = c.Id) AS PlaceCount
@@ -336,22 +333,22 @@ public class CollectionRepository : ICollectionRepository
         }
 
         const string sql = @"
-            SELECT 
-                c.Id, 
-                c.Title, 
-                c.Description, 
-                c.ProvinceId, 
-                COALESCE(prov.Name, N'Toàn quốc') AS ProvinceName, 
-                c.CoverImageUrl AS CoverUrl, 
-                c.IsFeatured, 
-                c.DisplayOrder, 
+            SELECT
+                c.Id,
+                c.Title,
+                c.Description,
+                c.ProvinceId,
+                COALESCE(prov.Name, N'Toàn quốc') AS ProvinceName,
+                c.CoverImageUrl AS CoverUrl,
+                c.IsFeatured,
+                c.DisplayOrder,
                 CAST(c.Status AS INT) AS Status,
                 (SELECT COUNT(1) FROM dbo.CollectionPlaces cp WHERE cp.CollectionId = c.Id) AS PlaceCount
             FROM dbo.Collections c
             LEFT JOIN dbo.Provinces prov ON c.ProvinceId = prov.Id
             WHERE c.Id = @CollectionId;
 
-            SELECT 
+            SELECT
                 p.Id,
                 p.Name,
                 p.Description,

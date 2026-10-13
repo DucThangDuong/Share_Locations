@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.DTOs.Blogs;
 using API.Extensions;
 using Application.DTOs;
@@ -62,7 +62,6 @@ public class GetBlogsEndpoint : Endpoint<GetBlogsRequest, ApiSuccessResponse<IRe
             }
         }
 
-        // Hỗ trợ trích xuất từ Query string kể cả khi truyền dạng chuỗi comma-separated: ?regionIds=1,2,3 hoặc ?regionId=1,2
         var query = HttpContext.Request.Query;
         foreach (var key in new[] { keyPlural, keySingular })
         {

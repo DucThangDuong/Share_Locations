@@ -115,7 +115,6 @@ class ChatSignalRService {
     }
   }
 
-  // Event handlers
   public onReceiveMessage(handler: (message: ChatMessageDto) => void): () => void {
     if (!this.connection) return () => {}
     this.connection.on('ReceiveMessage', handler)

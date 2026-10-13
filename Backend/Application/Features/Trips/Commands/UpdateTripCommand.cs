@@ -1,4 +1,4 @@
-using Application.Common;
+﻿using Application.Common;
 using Application.DTOs;
 using Domain.Enums;
 using Domain.Interfaces;
@@ -25,7 +25,6 @@ public class UpdateTripCommandHandler : IRequestHandler<UpdateTripCommand, Resul
             return Result.NotFound("Chuyến đi không tồn tại.");
         }
 
-        // BOLA Check: Phải là Owner hoặc Editor
         bool isOwner = trip.UserId == request.UserId;
         TripMember? member = null;
         if (!isOwner)
@@ -52,7 +51,6 @@ public class UpdateTripCommandHandler : IRequestHandler<UpdateTripCommand, Resul
         trip.UpdateInfo(dto.Title.Trim(), dto.Description?.Trim(), dto.CoverImageUrl?.Trim());
         trip.UpdateDates(dto.StartDate, dto.EndDate);
 
-        // Chỉ Owner mới được đổi Privacy
         if (dto.Privacy.HasValue)
         {
             if (!isOwner)

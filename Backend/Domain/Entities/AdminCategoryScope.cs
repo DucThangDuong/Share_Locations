@@ -1,4 +1,4 @@
-namespace Domain.Entities;
+﻿namespace Domain.Entities;
 
 public class AdminCategoryScope
 {
@@ -7,7 +7,6 @@ public class AdminCategoryScope
     public long? AssignedBy { get; private set; }
     public DateTime AssignedAt { get; private set; }
 
-    // Navigation
     public virtual User User { get; private set; } = null!;
     public virtual Category Category { get; private set; } = null!;
     public virtual User? AssignedByUser { get; private set; }

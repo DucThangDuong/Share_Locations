@@ -85,7 +85,6 @@ export const FoodsTab: React.FC<FoodsTabProps> = ({
   const [provincesList, setProvincesList] = useState<ProvinceDto[]>([]);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Fetch provinces on mount
   useEffect(() => {
     geographyService
       .getProvinces()
@@ -102,7 +101,6 @@ export const FoodsTab: React.FC<FoodsTabProps> = ({
 
   const currentFood = selectedFoodId ? foodsList.find((f) => f.id === selectedFoodId) : null;
 
-  // Filter foods
   const filteredFoods = foodsList.filter((f) => {
     if (foodFilterProvince !== "all" && f.province !== foodFilterProvince) return false;
     if (foodFilterStatus !== "all") {
@@ -182,7 +180,6 @@ export const FoodsTab: React.FC<FoodsTabProps> = ({
     }
   };
 
-  // If create mode is triggered, render FoodDetailEditor in create mode
   if (isCreatingFood) {
     return (
       <FoodDetailEditor
@@ -205,7 +202,6 @@ export const FoodsTab: React.FC<FoodsTabProps> = ({
     );
   }
 
-  // If a food item is selected, render full FoodDetailEditor in edit mode
   if (selectedFoodId && currentFood) {
     return (
       <FoodDetailEditor
@@ -242,7 +238,6 @@ export const FoodsTab: React.FC<FoodsTabProps> = ({
   return (
     <div className="space-y-6 animate-in fade-in duration-150 text-xs font-sans">
       <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
-        {/* Search & Filter Controls (Matching PlacesTab) */}
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="relative flex-1 min-w-[240px]">
             <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -329,7 +324,6 @@ export const FoodsTab: React.FC<FoodsTabProps> = ({
                     className="hover:bg-slate-50/60 transition-colors group cursor-pointer"
                     onClick={() => setSelectedFoodId(food.id)}
                   >
-                    {/* Food Image & Name */}
                     <td className="p-3.5 pl-4 font-bold text-slate-900">
                       <div className="flex items-center gap-3">
                         {cover ? (
@@ -366,13 +360,10 @@ export const FoodsTab: React.FC<FoodsTabProps> = ({
                       </div>
                     </td>
 
-                    {/* Province */}
                     <td className="p-3.5 text-slate-700 font-medium">{food.province || (food as any)?.provinceName || "--"}</td>
 
-                    {/* Price Range */}
                     <td className="p-3.5 font-bold text-emerald-800">{priceText}</td>
 
-                    {/* Status */}
                     <td className="p-3.5">
                       <span
                         className={`inline-flex items-center justify-center px-3.5 py-1 rounded-xl text-xs font-bold border transition-colors ${isHidden
@@ -384,7 +375,6 @@ export const FoodsTab: React.FC<FoodsTabProps> = ({
                       </span>
                     </td>
 
-                    {/* View Details */}
                     <td className="p-3.5 text-center" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() => setSelectedFoodId(food.id)}
@@ -413,7 +403,6 @@ export const FoodsTab: React.FC<FoodsTabProps> = ({
           ) : null}
         </div>
 
-        {/* Pagination Bar */}
         {pagination && pagination.totalElements > 0 && (
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 px-1 border-t border-slate-100 text-xs text-slate-500 font-medium">
             <div>
@@ -520,7 +509,6 @@ const FoodDetailEditor: React.FC<FoodDetailEditorProps> = ({
   const [errorMsg, setErrorMsg] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Initialize provinceId if missing
   useEffect(() => {
     if (provincesList && provincesList.length > 0) {
       if (provinceId) {
@@ -557,13 +545,11 @@ const FoodDetailEditor: React.FC<FoodDetailEditorProps> = ({
     if (!e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
 
-    // Validate size (<= 10MB)
     if (file.size > 10 * 1024 * 1024) {
       setErrorMsg("Dung lượng ảnh vượt quá giới hạn cho phép (tối đa 10MB).");
       return;
     }
 
-    // Validate type (.jpg, .jpeg, .png, .webp)
     const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
     if (!allowedTypes.includes(file.type.toLowerCase())) {
       setErrorMsg("Định dạng ảnh không hợp lệ. Vui lòng chọn tệp .jpg, .jpeg, .png hoặc .webp.");
@@ -596,7 +582,6 @@ const FoodDetailEditor: React.FC<FoodDetailEditorProps> = ({
     setIsSaving(true);
 
     try {
-      // 1. Upload new image file if selected
       let serverCoverImg = coverImg && !coverImg.startsWith("blob:") ? coverImg : "";
       if (imageFile) {
         try {
@@ -605,11 +590,9 @@ const FoodDetailEditor: React.FC<FoodDetailEditorProps> = ({
             serverCoverImg = uploadRes[0];
           }
         } catch {
-          // Fallback to existing coverImg
         }
       }
 
-      // 2. Build JSON payload matching backend UpdateAdminFoodInput DTO
       const jsonPayload = {
         name: name.trim(),
         provinceId: provinceId ? Number(provinceId) : null,
@@ -621,7 +604,6 @@ const FoodDetailEditor: React.FC<FoodDetailEditorProps> = ({
         status: status || "active",
       };
 
-      // Also prepare fallback FormData in case backend endpoint expects multipart
       const formData = new FormData();
       formData.append("name", name.trim());
       if (provinceId) {
@@ -733,7 +715,6 @@ const FoodDetailEditor: React.FC<FoodDetailEditorProps> = ({
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200 text-xs font-sans pb-16">
-      {/* Top Header */}
       <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <button
@@ -770,7 +751,6 @@ const FoodDetailEditor: React.FC<FoodDetailEditorProps> = ({
           </div>
         </div>
 
-        {/* Action Buttons */}
         <div className="flex items-center gap-2 flex-wrap">
           {!isCreateMode && onToggleStatus && (
             <button
@@ -813,7 +793,6 @@ const FoodDetailEditor: React.FC<FoodDetailEditorProps> = ({
         </div>
       </div>
 
-      {/* Notifications */}
       {errorMsg && (
         <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium flex items-center gap-2 animate-in fade-in">
           <AlertCircle className="w-4 h-4 shrink-0" />
@@ -828,12 +807,9 @@ const FoodDetailEditor: React.FC<FoodDetailEditorProps> = ({
         </div>
       )}
 
-      {/* Main Grid Layout - 12 Columns */}
       <form onSubmit={handleFormSubmit}>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Left Column (8 cols): Form Sections */}
           <div className="lg:col-span-8 space-y-6">
-            {/* Section 1: Basic Information */}
             <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-5">
               <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
                 <FileText className="w-4 h-4 text-emerald-700" />
@@ -912,7 +888,6 @@ const FoodDetailEditor: React.FC<FoodDetailEditorProps> = ({
               </div>
             </div>
 
-            {/* Section 2: Pricing */}
             <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-5">
               <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
                 <DollarSign className="w-4 h-4 text-emerald-700" />
@@ -948,7 +923,6 @@ const FoodDetailEditor: React.FC<FoodDetailEditorProps> = ({
               </div>
             </div>
 
-            {/* Section 3: Image Management (Direct Azure Blob Upload) */}
             <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
@@ -1030,7 +1004,6 @@ const FoodDetailEditor: React.FC<FoodDetailEditorProps> = ({
                 </span>
               </div>
 
-              {/* Food Discovery Card Replica */}
               <div className="group flex flex-col select-none bg-white rounded-2xl border border-slate-200/80 p-3 shadow-2xs space-y-3">
                 <div className="relative aspect-4/3 w-full rounded-xl overflow-hidden bg-slate-100 flex items-center justify-center">
                   {coverImg ? (

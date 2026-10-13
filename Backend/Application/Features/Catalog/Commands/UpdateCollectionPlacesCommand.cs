@@ -1,4 +1,4 @@
-using Application.Common;
+﻿using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
@@ -38,7 +38,6 @@ public class UpdateCollectionPlacesCommandHandler : IRequestHandler<UpdateCollec
 
         if (result.IsSuccess)
         {
-            // Xóa cache các danh sách collection nổi bật để đồng bộ dữ liệu mới nhất
             await _cacheService.RemoveAsync("catalog:collections:featured:v2:6", ct);
             await _cacheService.RemoveAsync("catalog:collections:featured:v2:12", ct);
             await _cacheService.RemoveAsync("catalog:collections:featured:v2:50", ct);

@@ -1,4 +1,4 @@
-using Application.Common;
+﻿using Application.Common;
 using Application.Common.Interfaces;
 using Domain.Interfaces;
 using MediatR;
@@ -29,7 +29,6 @@ public class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand,
 
     public async Task<Result<bool>> Handle(ResetPasswordCommand request, CancellationToken ct)
     {
-        // 1. Kiểm tra ResetToken trong Redis
         var resetTokenKey = $"forgot_password:reset_token:{request.ResetToken.Trim()}";
         var userEmail = await _cacheService.GetAsync<string>(resetTokenKey, ct);
 
@@ -38,21 +37,18 @@ public class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand,
             return Result<bool>.Failure("Phiên đặt lại mật khẩu đã hết hạn hoặc không hợp lệ. Vui lòng thực hiện lại từ đầu.");
         }
 
-        // 2. Tìm người dùng theo email đã lưu trong token
         var user = await _unitOfWork.Users.GetByEmailAsync(userEmail, ct);
         if (user == null)
         {
             return Result<bool>.Failure("Không tìm thấy thông tin tài khoản người dùng.");
         }
 
-        // 3. Hash mật khẩu mới và lưu vào cơ sở dữ liệu
         var newHash = _passwordHasher.HashPassword(request.NewPassword);
         user.SetPasswordHash(newHash);
 
         _unitOfWork.Users.Update(user);
         await _unitOfWork.SaveChangesAsync(ct);
 
-        // 4. Xóa ResetToken khỏi Redis ngay lập tức (One-Time Token)
         await _cacheService.RemoveAsync(resetTokenKey, ct);
 
         _logger.LogInformation("🔒 Đã đặt lại mật khẩu thành công cho tài khoản {Email} qua ResetToken.", userEmail);

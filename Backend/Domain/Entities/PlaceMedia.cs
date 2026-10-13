@@ -1,4 +1,4 @@
-using Domain.Enums;
+﻿using Domain.Enums;
 
 namespace Domain.Entities;
 
@@ -15,7 +15,6 @@ public class PlaceMedia
     public DateTime? ReviewedAt { get; private set; }
     public DateTime CreatedAt { get; private set; }
 
-    // Navigation
     public virtual Place Place { get; private set; } = null!;
     public virtual User? Uploader { get; private set; }
     public virtual User? ReviewerAdmin { get; private set; }

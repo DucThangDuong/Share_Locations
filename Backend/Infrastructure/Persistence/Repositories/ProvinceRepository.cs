@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text.RegularExpressions;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
@@ -24,7 +24,7 @@ public class ProvinceRepository : IProvinceRepository
         var connection = _dbContext.Database.GetDbConnection();
 
         const string sql = @"
-            SELECT 
+            SELECT
                 p.Id,
                 p.RegionId,
                 r.Name AS RegionName,
@@ -49,7 +49,7 @@ public class ProvinceRepository : IProvinceRepository
         var connection = _dbContext.Database.GetDbConnection();
 
         const string allProvSql = @"
-            SELECT 
+            SELECT
                 p.Id,
                 p.RegionId,
                 r.Name AS RegionName,
@@ -109,9 +109,8 @@ public class ProvinceRepository : IProvinceRepository
             HeroSubheadline = provDto.Tagline ?? $"Hành trình trải nghiệm trọn vẹn văn hoá, ẩm thực và danh thắng tại {provName}"
         };
 
-        // 1. Hero Images (from places in this province)
         const string heroImgSql = @"
-            SELECT TOP 5 COALESCE(pl.CoverImageUrl, pm.Url) AS Url, pl.Name AS Title, @ProvName AS Location, 
+            SELECT TOP 5 COALESCE(pl.CoverImageUrl, pm.Url) AS Url, pl.Name AS Title, @ProvName AS Location,
                    CASE WHEN cat.Status = 1 THEN ISNULL(cat.Name, N'Địa danh nổi bật') ELSE N'Không khả dụng' END AS Tag
             FROM dbo.Places pl
             LEFT JOIN dbo.PlaceMedia pm ON pm.PlaceId = pl.Id
@@ -148,7 +147,6 @@ public class ProvinceRepository : IProvinceRepository
         }
         dto.HeroImages = heroImages;
 
-        // 2. Collections (STRICTLY for this province only)
         var provPattern = $"%{provName}%";
         const string collectionsSql = @"
             SELECT
@@ -179,8 +177,8 @@ public class ProvinceRepository : IProvinceRepository
             var colIds = collectionRows.Select(c => (long)c.Id).ToList();
 
             const string colPlacesSql = @"
-                SELECT cp.CollectionId, p.Id, p.Name, p.AvgRating, p.ReviewCount, 
-                       CASE WHEN cat.Status = 1 THEN cat.Name ELSE N'Không khả dụng' END AS CategoryName, 
+                SELECT cp.CollectionId, p.Id, p.Name, p.AvgRating, p.ReviewCount,
+                       CASE WHEN cat.Status = 1 THEN cat.Name ELSE N'Không khả dụng' END AS CategoryName,
                        p.CoverImageUrl
                 FROM dbo.CollectionPlaces cp
                 INNER JOIN dbo.Places p ON cp.PlaceId = p.Id
@@ -248,7 +246,6 @@ public class ProvinceRepository : IProvinceRepository
         }
         dto.Collections = collections;
 
-        // 3. Landmarks (STRICTLY in this province)
         const string landmarksSql = @"
             SELECT TOP 8
                 p.Id,
@@ -325,7 +322,6 @@ public class ProvinceRepository : IProvinceRepository
         }
         dto.Landmarks = landmarks;
 
-        // 4. Foods (STRICTLY belonging to or having places in this province)
         const string foodsSql = @"
             SELECT TOP 8
                 f.Id,
@@ -448,7 +444,6 @@ public class ProvinceRepository : IProvinceRepository
         }
         dto.Foods = foods;
 
-        // 5. Blog Posts (STRICTLY matching this province)
         const string blogsSql = @"
             SELECT TOP 4
                 b.Id,
@@ -504,7 +499,6 @@ public class ProvinceRepository : IProvinceRepository
         }
         dto.BlogPosts = blogPosts;
 
-        // 6. Itineraries (STRICTLY matching this province or having places in this province)
         const string itinerariesSql = @"
             SELECT TOP 6
                 t.Id,
@@ -559,7 +553,6 @@ public class ProvinceRepository : IProvinceRepository
         }
         dto.Itineraries = itineraries;
 
-        // 7. Reviews (STRICTLY in this province)
         const string reviewsSql = @"
             SELECT TOP 6
                 rev.Id,
@@ -627,7 +620,6 @@ public class ProvinceRepository : IProvinceRepository
         }
         dto.Reviews = reviews;
 
-        // 8. Spotlight (from top landmark in this province)
         if (landmarks.Count > 0)
         {
             var topPlace = landmarks[0];

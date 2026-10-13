@@ -1,4 +1,4 @@
-namespace Domain.Entities;
+﻿namespace Domain.Entities;
 
 public class TripPlace
 {
@@ -12,7 +12,6 @@ public class TripPlace
     public string? TransportMode { get; private set; }
     public string? Note { get; private set; }
 
-    // Navigation
     public virtual TripDay TripDay { get; private set; } = null!;
     public virtual Place Place { get; private set; } = null!;
 

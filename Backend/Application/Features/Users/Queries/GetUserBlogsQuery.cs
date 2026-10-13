@@ -1,4 +1,4 @@
-using Application.Common;
+﻿using Application.Common;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
 using MediatR;
@@ -23,7 +23,6 @@ public class GetUserBlogsQueryHandler : IRequestHandler<GetUserBlogsQuery, Resul
 
     public async Task<Result<PagedResult<UserBlogItemDto>>> Handle(GetUserBlogsQuery request, CancellationToken ct)
     {
-        // Khi xem cẩm nang của người dùng, luôn chỉ lấy các bài viết đã được công bố / phê duyệt (Status = 1)
         const int publishedStatus = 1;
 
         var result = await _repo.GetBlogsAsync(

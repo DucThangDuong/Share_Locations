@@ -181,7 +181,6 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
   const [categories, setCategories] = useState<PlaceTypeDto[]>([]);
   const [provinces, setProvinces] = useState<ProvinceDto[]>([]);
 
-  // Form Fields
   const [name, setName] = useState(place?.name || "");
   const [categoryId, setCategoryId] = useState<number>(Number(place?.categoryId || 1));
   const [provinceId, setProvinceId] = useState<number>(Number(place?.provinceId || 1));
@@ -190,7 +189,6 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
   const [phone, setPhone] = useState(place?.phone || "");
   const [website, setWebsite] = useState(place?.website || "");
 
-  // Coordinates
   const [lat, setLat] = useState<string>(() => {
     if (place?.latitude) return String(place.latitude);
     if (place?.lat) return String(place.lat);
@@ -203,7 +201,6 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
   });
   const [isLocating, setIsLocating] = useState(false);
 
-  // Operating Hours
   const [is24Hours, setIs24Hours] = useState(() => {
     const h = (place?.hours || "").toLowerCase();
     return h.includes("24/7") || h.includes("24h") || h.includes("cả ngày");
@@ -219,7 +216,6 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
     return matches && matches.length > 1 ? matches[1] : "22:00";
   });
 
-  // Price
   const [isFree, setIsFree] = useState(() => {
     const p = (place?.price || "").toLowerCase();
     return p.includes("miễn phí") || place?.minPrice === 0 && place?.maxPrice === 0;
@@ -245,14 +241,12 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
     return "75000";
   });
 
-  // Description
   const [description, setDescription] = useState(
     place?.description ||
     place?.desc ||
     ""
   );
 
-  // Images & Media State
   const [mediaItems, setMediaItems] = useState<{ id?: number; url: string }[]>(() => {
     if (Array.isArray(place?.media) && place.media.length > 0) {
       return place.media.map((m: any) => ({ id: m.id, url: m.url || m.imageUrl || "" })).filter((m: any) => m.url);
@@ -280,7 +274,6 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
   const [isUploadingImages, setIsUploadingImages] = useState(false);
   const [isTogglingStatus, setIsTogglingStatus] = useState(false);
 
-  // Moderation / Status fields (1: visible / active, 0: hidden / suspended)
   const [statusNum, setStatusNum] = useState<number>(() => {
     const isVis =
       place?.status === 1 ||
@@ -293,7 +286,6 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
   });
   const rating = place?.rating;
 
-  // Active Editor Tab ('info' for place info/media, 'foods' for specialties/foods, 'reviews' for reviews & comments)
   const [activeEditorTab, setActiveEditorTab] = useState<"info" | "foods" | "reviews">("info");
   const [foodsCount, setFoodsCount] = useState<number>(
     Array.isArray(place?.foods) ? place.foods.length : (Array.isArray(place?.foodIds) ? place.foodIds.length : 0)
@@ -302,7 +294,6 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
     place?.reviewCount || place?.reviewsCount || (Array.isArray(place?.reviews) ? place.reviews.length : 0)
   );
 
-  // Associated Foods State
   const [associatedFoods, setAssociatedFoods] = useState<AdminPlaceFoodDto[]>(() => {
     const rawFoods = (place?.foods || place?.Foods || []) as any[];
     return rawFoods.map((f: any) => ({
@@ -340,12 +331,10 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
     }));
   });
 
-  // Initial snapshot to track dirty changes
   const [initialSnapshot, setInitialSnapshot] = useState<PlaceFormSnapshot>(() =>
     buildInitialSnapshot(place)
   );
 
-  // Check if foods differ from initial snapshot
   const hasFoodChanges = useMemo(() => {
     if (associatedFoods.length !== initialFoodsSnapshot.length) return true;
     for (let i = 0; i < associatedFoods.length; i++) {
@@ -359,7 +348,6 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
     setFoodsCount(updatedFoods.length);
   }, []);
 
-  // Check if current form values differ from initialSnapshot
   const hasInfoChanges = useMemo(() => {
     if (!initialSnapshot) return false;
     if (name.trim() !== initialSnapshot.name.trim()) return true;
@@ -410,7 +398,6 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
 
   const hasChanges = hasInfoChanges || hasFoodChanges;
 
-  // Handle Cancel / Reset to initialSnapshot
   const handleCancel = () => {
     if (initialSnapshot) {
       setName(initialSnapshot.name);
@@ -442,7 +429,6 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
     setTimeout(() => setSaveSuccessMsg(""), 3000);
   };
 
-  // Refs
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<mapboxgl.Map | null>(null);
@@ -452,7 +438,6 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
     (import.meta.env.VITE_MAPBOX_ACCESS_TOKEN as string | undefined)?.trim() ||
     "pk.eyJ1IjoibGFuZ3RoYW5nLXZuIiwiYSI6ImNtODFhYmNkZTAxMzAya3B0eGZjcHB0ZmoifQ.placeholder";
 
-  // Load fresh place data from API on open
   useEffect(() => {
     if (!place?.id) return;
     let mounted = true;
@@ -553,7 +538,6 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
           setInitialSnapshot(freshSnapshot);
         }
       } catch {
-        // fallback
       }
     };
     fetchFreshPlace();
@@ -562,7 +546,6 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
     };
   }, [place?.id]);
 
-  // Load Categories & Provinces from real API endpoints
   useEffect(() => {
     let mounted = true;
     const loadMetadata = async () => {
@@ -582,7 +565,6 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
           }
         }
       } catch {
-        // network fallback
       }
     };
     loadMetadata();
@@ -591,7 +573,6 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
     };
   }, []);
 
-  // Mapbox initialization
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
@@ -636,7 +617,6 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
         map.remove();
       };
     } catch {
-      // Mapbox load error fallback
     }
   }, []);
 
@@ -677,7 +657,6 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
     );
   };
 
-  // Helper to read file as data url for instant preview and persistent fallback
   const readFileAsDataUrl = (file: File): Promise<string> => {
     return new Promise((resolve) => {
       const reader = new FileReader();
@@ -770,7 +749,6 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
     }
   };
 
-  // 3. Delete Media Endpoint: DELETE /api/admin/places/{id}/media/{mediaId}
   const handleRemoveImage = async (index: number) => {
     const itemToRemove = mediaItems[index];
     if (itemToRemove?.id && place?.id) {
@@ -828,7 +806,6 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
     }
   };
 
-  // Handle Save
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
@@ -968,7 +945,6 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
           </div>
         </div>
 
-        {/* Action Buttons */}
         <div className="flex items-center gap-2 flex-wrap">
           {onToggleStatus && (
             <button
@@ -985,7 +961,6 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
             </button>
           )}
 
-          {/* Nút Hủy có dirty tracking */}
           <button
             type="button"
             disabled={!hasChanges || isSaving}
@@ -1004,7 +979,6 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
             <span>Hủy</span>
           </button>
 
-          {/* Nút Lưu thay đổi */}
           <button
             type="button"
             onClick={handleFormSubmit}
@@ -1025,7 +999,6 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
         </div>
       </div>
 
-      {/* Navigation Tabs */}
       <div className="flex items-center gap-2 border-b border-slate-200/80 pb-3 flex-wrap">
         <button
           type="button"
@@ -1086,7 +1059,6 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
 
       {activeEditorTab === "info" ? (
         <>
-          {/* Notifications */}
           {errorMsg && (
             <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium flex items-center gap-2 animate-in fade-in">
               <AlertCircle className="w-4 h-4 shrink-0" />
@@ -1101,12 +1073,9 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
             </div>
           )}
 
-          {/* Main Grid Layout - 12 Columns */}
           <form onSubmit={handleFormSubmit}>
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-              {/* Left Column (8 cols): All Form Sections */}
               <div className="lg:col-span-8 space-y-6">
-                {/* Section 1: Basic Information */}
                 <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-5">
                   <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
                     <FileText className="w-4 h-4 text-emerald-700" />
@@ -1205,7 +1174,6 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
                   </div>
                 </div>
 
-                {/* Section 2: Interactive Map & Coordinates */}
                 <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
                     <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
@@ -1265,7 +1233,6 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
                   </div>
                 </div>
 
-                {/* Section 3: Operating Hours & Ticket / Price */}
                 <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-5">
                   <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
                     <Clock className="w-4 h-4 text-emerald-700" />
@@ -1380,7 +1347,6 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
                   </div>
                 </div>
 
-                {/* Section 4: Image Gallery & Uploads */}
                 <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-6">
                   <div className="space-y-4">
                     <input
@@ -1477,9 +1443,7 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
                 </div>
               </div>
 
-              {/* Right Column (4 cols, sticky): Live Preview Card & Admin Meta */}
               <div className="lg:col-span-4 space-y-6 sticky top-6">
-                {/* Live Preview Card */}
                 <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-4">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                     <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
@@ -1488,7 +1452,6 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
                     </h3>
                   </div>
 
-                  {/* Discovery Card Component Replica */}
                   <div className="group flex flex-col select-none bg-white rounded-2xl border border-slate-200/80 p-3 shadow-2xs space-y-3">
                     {images.length > 0 ? (
                       <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-slate-100">

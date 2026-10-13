@@ -1,4 +1,4 @@
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using Application.Common;
 using Application.Common.Interfaces;
 using Application.DTOs.Auth;
@@ -24,7 +24,6 @@ public class VerifyResetOtpCommandHandler : IRequestHandler<VerifyResetOtpComman
     {
         var normalizedEmail = request.Email.Trim().ToLowerInvariant();
 
-        // 1. Kiểm tra mã OTP trong Redis
         var otpKey = $"forgot_password:otp:{normalizedEmail}";
         var cachedOtp = await _cacheService.GetAsync<string>(otpKey, ct);
 
@@ -38,15 +37,12 @@ public class VerifyResetOtpCommandHandler : IRequestHandler<VerifyResetOtpComman
             return Result<VerifyResetOtpResponse>.Failure("Mã xác thực không chính xác. Vui lòng kiểm tra lại.");
         }
 
-        // 2. Xóa mã OTP sau khi xác thực thành công (tránh tái sử dụng OTP)
         await _cacheService.RemoveAsync(otpKey, ct);
 
-        // 3. Sinh một ResetToken ngẫu nhiên bảo mật 64 hex characters
         var randomBytes = new byte[32];
         RandomNumberGenerator.Fill(randomBytes);
         var resetToken = Convert.ToHexString(randomBytes).ToLowerInvariant();
 
-        // 4. Lưu ResetToken vào Redis với giá trị là email của user, TTL 10 phút
         var resetTokenKey = $"forgot_password:reset_token:{resetToken}";
         var expiration = TimeSpan.FromMinutes(10);
         await _cacheService.SetAsync(resetTokenKey, normalizedEmail, expiration, ct);

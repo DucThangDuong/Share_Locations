@@ -1,4 +1,4 @@
-using Domain.Enums;
+﻿using Domain.Enums;
 
 namespace Domain.Entities;
 
@@ -13,7 +13,6 @@ public class VisitLog
     public byte? Rating { get; private set; }
     public DateTime CreatedAt { get; private set; }
 
-    // Navigation
     public virtual User User { get; private set; } = null!;
     public virtual Place Place { get; private set; } = null!;
 

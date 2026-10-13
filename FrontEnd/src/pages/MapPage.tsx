@@ -15,7 +15,6 @@ export const MapPage = () => {
   const [regions, setRegions] = useState<RegionLookupDto[]>([])
   const [loading, setLoading] = useState(true)
 
-  // Sync state with URL params
   const searchKeyword = searchParams.get('q') || searchParams.get('keyword') || searchParams.get('search') || ''
   const selectedCategoryId = useMemo(() => {
     const raw = searchParams.get('catId') || searchParams.get('categoryId') || searchParams.get('cat')
@@ -157,7 +156,6 @@ export const MapPage = () => {
     }
   }, [token])
 
-  // Trigger Mapbox resize when sidebar opens/collapses
   useEffect(() => {
     const timer = setTimeout(() => {
       mapInstanceRef.current?.resize()

@@ -1,4 +1,4 @@
-namespace Application.DTOs.Admin;
+﻿namespace Application.DTOs.Admin;
 
 public class AdminFoodItemDto
 {
@@ -10,7 +10,7 @@ public class AdminFoodItemDto
     public decimal? MaxPrice { get; set; }
     public string? CoverImg { get; set; }
     public string? Desc { get; set; }
-    public string Status { get; set; } = "active"; // "active" | "hidden"
+    public string Status { get; set; } = "active";
     public int StatusNum => Status == "active" ? 1 : 0;
     public int PlacesCount { get; set; }
     public DateTime CreatedAt { get; set; }
@@ -46,4 +46,3 @@ public class AdminFoodUpdatedResultDto
     public string? CoverImg { get; set; }
     public bool Success { get; set; } = true;
 }
-

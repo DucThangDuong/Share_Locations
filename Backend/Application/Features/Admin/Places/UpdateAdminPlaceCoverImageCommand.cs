@@ -1,4 +1,4 @@
-using Application.Common;
+﻿using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
@@ -28,7 +28,7 @@ public class UpdateAdminPlaceCoverImageCommandHandler : IRequestHandler<UpdateAd
             return Result<string>.Failure("Tệp ảnh không hợp lệ hoặc rỗng.");
         }
 
-        const long maxFileSize = 10 * 1024 * 1024; // 10MB
+        const long maxFileSize = 10 * 1024 * 1024;
         if (request.File.Content.Length > maxFileSize)
         {
             return Result<string>.Failure("Dung lượng ảnh vượt quá giới hạn cho phép (tối đa 10MB).");
@@ -41,7 +41,6 @@ public class UpdateAdminPlaceCoverImageCommandHandler : IRequestHandler<UpdateAd
             return Result<string>.Failure($"Định dạng tệp '{ext}' không được hỗ trợ. Chỉ chấp nhận .jpg, .jpeg, .png, .webp.");
         }
 
-        // Upload trực tiếp lên Azure Blob Storage (container 'places')
         string newImageUrl;
         try
         {
@@ -57,16 +56,13 @@ public class UpdateAdminPlaceCoverImageCommandHandler : IRequestHandler<UpdateAd
             return Result<string>.Failure($"Lỗi khi tải ảnh lên máy chủ lưu trữ Azure: {ex.Message}");
         }
 
-        // Cập nhật đường link nguyên vẹn vào DB và kiểm tra scoping quyền hạn của Admin
         var (success, oldCoverUrl) = await _placeRepository.UpdateCoverImageAsync(request.PlaceId, newImageUrl, ct);
         if (!success)
         {
-            // Nếu không có quyền hoặc không tìm thấy địa điểm, dọn dẹp blob vừa tạo
             await _blobService.DeleteImageAsync(newImageUrl, "places", ct);
             return Result<string>.NotFound("Không tìm thấy địa điểm hoặc bạn không có quyền quản lý địa điểm này.");
         }
 
-        // Tự động dọn dẹp ảnh cũ trên Azure Blob nếu có để tiết kiệm dung lượng
         if (!string.IsNullOrWhiteSpace(oldCoverUrl) && oldCoverUrl.Contains(".blob.core.windows.net/"))
         {
             _ = Task.Run(async () =>
@@ -77,7 +73,6 @@ public class UpdateAdminPlaceCoverImageCommandHandler : IRequestHandler<UpdateAd
                 }
                 catch
                 {
-                    // Ignore background cleanup failure
                 }
             }, CancellationToken.None);
         }

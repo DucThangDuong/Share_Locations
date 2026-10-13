@@ -1,4 +1,4 @@
-using Domain.Constants;
+﻿using Domain.Constants;
 
 namespace Application.DTOs.Admin;
 
@@ -17,7 +17,7 @@ public class AdminAuditLogListItemDto
     public string TargetTableName => AdminDisplayNames.GetTargetTableName(TargetTable);
     public long TargetId { get; set; }
     public string? TargetName { get; set; }
-    public byte ActionStatus { get; set; } = 1; // 1: Success, 2: Failed
+    public byte ActionStatus { get; set; } = 1;
     public string ActionStatusText => ActionStatus == 1 ? "Thành công" : "Thất bại";
     public string? Reason { get; set; }
     public string? IpAddress { get; set; }

@@ -117,7 +117,6 @@ export const AddMembersModal: React.FC<AddMembersModalProps> = ({
       <div className="fixed inset-0" onClick={() => !isSubmitting && onClose()} />
 
       <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh] z-10 animate-in zoom-in-95 duration-150">
-        {/* Header */}
         <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
           <div className="flex items-center gap-2 text-slate-900 font-bold text-base">
             <UserPlus className="w-5 h-5 text-[#0084FF]" />
@@ -135,9 +134,7 @@ export const AddMembersModal: React.FC<AddMembersModalProps> = ({
         </div>
 
         <form onSubmit={handleAdd} className="flex flex-col flex-1 min-h-0">
-          {/* Body */}
           <div className="p-5 space-y-4 flex-1 overflow-y-auto">
-            {/* Search */}
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">
                 Chọn bạn bè
@@ -155,7 +152,6 @@ export const AddMembersModal: React.FC<AddMembersModalProps> = ({
               </div>
             </div>
 
-            {/* Selected chips */}
             {selectedFriends.length > 0 && (
               <div className="flex items-center gap-1.5 flex-wrap pt-1">
                 {selectedFriends.map((f) => (
@@ -181,7 +177,6 @@ export const AddMembersModal: React.FC<AddMembersModalProps> = ({
               </div>
             )}
 
-            {/* Friend List */}
             <div className="border border-slate-200 rounded-xl overflow-hidden bg-slate-50/50">
               <div className="px-3 py-2 bg-slate-100/80 text-[11px] font-bold text-slate-500 uppercase flex justify-between">
                 <span>Danh sách bạn bè ({filteredFriends.length})</span>
@@ -254,7 +249,6 @@ export const AddMembersModal: React.FC<AddMembersModalProps> = ({
             )}
           </div>
 
-          {/* Footer Actions */}
           <div className="px-5 py-3.5 border-t border-slate-100 flex items-center justify-end gap-2 bg-slate-50/50">
             <button
               type="button"

@@ -61,7 +61,6 @@ export const DirectionsPage: React.FC = () => {
         return
       }
 
-      // Pick route with shortest distance
       const shortestRoute = data.routes.reduce((prev: any, curr: any) =>
         prev.distance < curr.distance ? prev : curr
       )
@@ -102,7 +101,6 @@ export const DirectionsPage: React.FC = () => {
         })
       }
 
-      // Fit map bounds to whole route
       const coordinates = shortestRoute.geometry.coordinates
       const bounds = coordinates.reduce(
         (b: mapboxgl.LngLatBounds, coord: [number, number]) => b.extend(coord),
@@ -155,7 +153,6 @@ export const DirectionsPage: React.FC = () => {
     )
   }
 
-  // Initialize Mapbox map
   useEffect(() => {
     if (!mapContainerRef.current || !token) return
 
@@ -172,13 +169,11 @@ export const DirectionsPage: React.FC = () => {
     map.on('load', () => {
       mapRef.current = map
 
-      // Add Destination Marker (Red)
       destMarkerRef.current = new mapboxgl.Marker({ color: '#e11d48' })
         .setLngLat(destination)
         .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(`<b>${placeName}</b><br/>${placeAddress}`))
         .addTo(map)
 
-      // Request location on load
       requestUserLocation()
     })
 
@@ -187,7 +182,6 @@ export const DirectionsPage: React.FC = () => {
     }
   }, [token])
 
-  // Refetch route when profile changes
   const handleProfileChange = (newProfile: 'driving' | 'cycling' | 'walking') => {
     setProfile(newProfile)
     if (userLocation) {
@@ -197,13 +191,10 @@ export const DirectionsPage: React.FC = () => {
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-slate-900 font-sans">
-      {/* Map Container */}
       <div ref={mapContainerRef} className="w-full h-full" />
-
 
       <div className="absolute top-4 left-4 right-4 sm:right-auto sm:w-96 z-20 flex flex-col gap-3">
         <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200/80 p-4 transition-all">
-          {/* Header */}
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
             <button
               onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/'))}
@@ -224,7 +215,6 @@ export const DirectionsPage: React.FC = () => {
             </Link>
           </div>
 
-          {/* Place info */}
           <div className="mt-3 flex items-start gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
               <MapPin className="w-4 h-4" />

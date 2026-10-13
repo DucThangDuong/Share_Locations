@@ -1,4 +1,4 @@
-using Application.Common;
+﻿using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
@@ -54,7 +54,6 @@ public class CreateGroupRoomCommandHandler : IRequestHandler<CreateGroupRoomComm
 
         var roomId = await _chatRepository.CreateGroupRoomAsync(cleanName, request.CreatorId, validMemberIds, ct);
 
-        // Gửi thông báo đến từng thành viên được thêm vào nhóm chat mới
         try
         {
             var creatorProfile = await _unitOfWork.UserProfiles.GetByUserIdAsync(request.CreatorId, ct);
@@ -82,7 +81,6 @@ public class CreateGroupRoomCommandHandler : IRequestHandler<CreateGroupRoomComm
         }
         catch
         {
-            // Non-blocking notification dispatch
         }
 
         return Result<long>.Success(roomId, "Tạo nhóm trò chuyện thành công.");

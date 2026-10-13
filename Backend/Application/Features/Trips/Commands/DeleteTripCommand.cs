@@ -1,4 +1,4 @@
-using Application.Common;
+﻿using Application.Common;
 using Domain.Interfaces;
 using MediatR;
 
@@ -23,7 +23,6 @@ public class DeleteTripCommandHandler : IRequestHandler<DeleteTripCommand, Resul
             return Result.NotFound("Chuyến đi không tồn tại.");
         }
 
-        // BOLA Check: CHỈ Owner mới được xóa trip
         if (trip.UserId != request.UserId)
         {
             return Result.Forbidden("Chỉ chủ sở hữu mới có quyền xóa chuyến đi.");

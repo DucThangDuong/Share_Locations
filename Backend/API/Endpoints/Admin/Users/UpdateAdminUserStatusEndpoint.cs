@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.Extensions;
 using Application.Features.Admin.Users;
 using FastEndpoints;
@@ -10,7 +10,7 @@ namespace API.Endpoints.Admin.Users;
 public class UpdateAdminUserStatusApiRequest
 {
     public long UserId { get; set; }
-    public string Status { get; set; } = "1"; // "1": Active, "0": Locked
+    public string Status { get; set; } = "1";
     public string? Reason { get; set; }
 }
 
@@ -32,7 +32,7 @@ public class UpdateAdminUserStatusEndpoint : Endpoint<UpdateAdminUserStatusApiRe
 
     public override async Task HandleAsync(UpdateAdminUserStatusApiRequest req, CancellationToken ct)
     {
-        byte statusByte = req.Status == "1" || req.Status.Equals("ACTIVE", StringComparison.OrdinalIgnoreCase) ? (byte)1 : (byte)0; // 1: Active, 2: Inactive/Banned
+        byte statusByte = req.Status == "1" || req.Status.Equals("ACTIVE", StringComparison.OrdinalIgnoreCase) ? (byte)1 : (byte)0;
 
         var result = await Mediator.Send(
             new UpdateAdminUserStatusCommand(

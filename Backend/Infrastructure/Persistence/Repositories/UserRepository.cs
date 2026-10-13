@@ -1,4 +1,4 @@
-using Domain.Entities;
+﻿using Domain.Entities;
 using Domain.Enums;
 using Domain.Interfaces;
 using Infrastructure.Persistence;
@@ -77,14 +77,14 @@ public class UserRepository : IUserRepository
         }
         else if (long.TryParse(raw, out var numericId))
         {
-            query = query.Where(u => u.Id == numericId 
-                || (u.Profile != null && EF.Functions.Like(u.Profile.FullName, $"%{raw}%")) 
+            query = query.Where(u => u.Id == numericId
+                || (u.Profile != null && EF.Functions.Like(u.Profile.FullName, $"%{raw}%"))
                 || EF.Functions.Like(u.Email, $"%{raw}%"));
         }
         else
         {
-            query = query.Where(u => 
-                (u.Profile != null && EF.Functions.Like(u.Profile.FullName, $"%{raw}%")) 
+            query = query.Where(u =>
+                (u.Profile != null && EF.Functions.Like(u.Profile.FullName, $"%{raw}%"))
                 || EF.Functions.Like(u.Email, $"%{raw}%"));
         }
 

@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
@@ -38,17 +38,15 @@ public class UpdateAdminUserStatusCommandHandler : IRequestHandler<UpdateAdminUs
             return Result<bool>.Failure("Không tìm thấy người dùng.", HttpStatusCode.NotFound);
         }
 
-        // Không được phép tự khóa chính mình
         if (_currentUserService.UserId == request.UserId && request.Status != 1)
         {
             return Result<bool>.Failure("Bạn không thể tự khóa tài khoản của chính mình.", HttpStatusCode.BadRequest);
         }
 
-        // Category Admin chỉ được khóa/mở khóa USER thường, không được can thiệp Admin khác
         if (!_currentUserService.IsSystemAdmin && _currentUserService.IsCategoryAdmin)
         {
-            var targetIsAdmin = targetUser.Roles.Any(r => 
-                r.Equals("CATEGORY_ADMIN", StringComparison.OrdinalIgnoreCase) || 
+            var targetIsAdmin = targetUser.Roles.Any(r =>
+                r.Equals("CATEGORY_ADMIN", StringComparison.OrdinalIgnoreCase) ||
                 r.Equals("SYSTEM_ADMIN", StringComparison.OrdinalIgnoreCase));
 
             if (targetIsAdmin)
@@ -71,7 +69,7 @@ public class UpdateAdminUserStatusCommandHandler : IRequestHandler<UpdateAdminUs
                 var isBanned = request.Status == 2;
                 var title = isBanned ? "Cảnh báo: Tài khoản của bạn đã bị khóa" : "Tài khoản của bạn đã được mở khóa";
                 var reasonText = !string.IsNullOrWhiteSpace(request.Reason) ? $". Lý do: {request.Reason}" : "";
-                var content = isBanned 
+                var content = isBanned
                     ? $"Tài khoản của bạn đã bị tạm dừng hoạt động do vi phạm tiêu chuẩn cộng đồng{reasonText}."
                     : "Tài khoản của bạn đã được kích hoạt lại. Chào mừng bạn quay trở lại!";
 
@@ -92,11 +90,10 @@ public class UpdateAdminUserStatusCommandHandler : IRequestHandler<UpdateAdminUs
             }
             catch
             {
-                // Non-blocking notification dispatch
             }
         }
 
-        return success 
+        return success
             ? Result<bool>.Success(true)
             : Result<bool>.Failure("Cập nhật trạng thái người dùng không thành công.", HttpStatusCode.BadRequest);
     }

@@ -1,4 +1,4 @@
-using Application.Common;
+﻿using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs.Admin;
@@ -20,16 +20,12 @@ public class AdminGeographyRepository : IAdminGeographyRepository
         _auditLogService = auditLogService;
     }
 
-    // ==========================================
-    // 1. REGIONS (VÙNG / MIỀN)
-    // ==========================================
-
     public async Task<IReadOnlyList<AdminRegionListItemDto>> GetRegionsAsync(bool? activeOnly = null, CancellationToken ct = default)
     {
         var connection = _dbContext.Database.GetDbConnection();
 
         var sql = @"
-            SELECT 
+            SELECT
                 r.Id,
                 r.Name,
                 r.Slug,
@@ -53,7 +49,7 @@ public class AdminGeographyRepository : IAdminGeographyRepository
         var connection = _dbContext.Database.GetDbConnection();
 
         const string sql = @"
-            SELECT 
+            SELECT
                 r.Id,
                 r.Name,
                 r.Slug,
@@ -223,7 +219,6 @@ public class AdminGeographyRepository : IAdminGeographyRepository
         var old = await connection.QueryFirstOrDefaultAsync(selectSql, new { Id = id });
         if (old == null) return (false, "Không tìm thấy vùng/miền cần xóa.");
 
-        // Kiểm tra ràng buộc: Có tỉnh trực thuộc không?
         const string countProvSql = "SELECT COUNT(1) FROM dbo.Provinces WHERE RegionId = @Id;";
         var provCount = await connection.ExecuteScalarAsync<int>(countProvSql, new { Id = id });
         if (provCount > 0)
@@ -246,10 +241,6 @@ public class AdminGeographyRepository : IAdminGeographyRepository
 
         return (true, null);
     }
-
-    // ==========================================
-    // 2. PROVINCES (TỈNH / THÀNH PHỐ)
-    // ==========================================
 
     public async Task<PagedResult<AdminProvinceListItemDto>> GetProvincesAsync(
         int? regionId,
@@ -299,7 +290,7 @@ public class AdminGeographyRepository : IAdminGeographyRepository
         parameters.Add("PageSize", pageSize);
 
         var dataSql = $@"
-            SELECT 
+            SELECT
                 p.Id,
                 p.RegionId,
                 r.Name AS RegionName,
@@ -329,7 +320,7 @@ public class AdminGeographyRepository : IAdminGeographyRepository
         var connection = _dbContext.Database.GetDbConnection();
 
         const string sql = @"
-            SELECT 
+            SELECT
                 p.Id,
                 p.RegionId,
                 r.Name AS RegionName,
@@ -356,7 +347,6 @@ public class AdminGeographyRepository : IAdminGeographyRepository
     {
         var connection = _dbContext.Database.GetDbConnection();
 
-        // 1. Kiểm tra RegionId có hợp lệ không
         const string checkRegSql = "SELECT COUNT(1) FROM dbo.Regions WHERE Id = @RegionId;";
         var regExists = await connection.ExecuteScalarAsync<int>(checkRegSql, new { RegionId = input.RegionId });
         if (regExists == 0)
@@ -421,7 +411,6 @@ public class AdminGeographyRepository : IAdminGeographyRepository
         var old = await connection.QueryFirstOrDefaultAsync(selectSql, new { Id = id });
         if (old == null) return false;
 
-        // Kiểm tra RegionId
         const string checkRegSql = "SELECT COUNT(1) FROM dbo.Regions WHERE Id = @RegionId;";
         var regExists = await connection.ExecuteScalarAsync<int>(checkRegSql, new { RegionId = input.RegionId });
         if (regExists == 0)
@@ -531,7 +520,6 @@ public class AdminGeographyRepository : IAdminGeographyRepository
         var old = await connection.QueryFirstOrDefaultAsync(selectSql, new { Id = id });
         if (old == null) return (false, "Không tìm thấy tỉnh/thành phố cần xóa.");
 
-        // Kiểm tra an toàn: Có địa điểm hoặc món ăn gắn với tỉnh không?
         const string checkPlacesSql = "SELECT COUNT(1) FROM dbo.Places WHERE ProvinceId = @Id;";
         var placeCount = await connection.ExecuteScalarAsync<int>(checkPlacesSql, new { Id = id });
 
@@ -543,7 +531,6 @@ public class AdminGeographyRepository : IAdminGeographyRepository
             return (false, $"Không thể xóa tỉnh '{old.Name}' vì đang có {placeCount} địa điểm và {foodCount} món ăn liên kết. Vui lòng chuyển trạng thái tỉnh sang Tạm ẩn (Inactive) để bảo toàn dữ liệu.");
         }
 
-        // Xóa các scope phụ trách cũ nếu có
         await connection.ExecuteAsync("DELETE FROM dbo.AdminProvinceScopes WHERE ProvinceId = @Id;", new { Id = id });
         await connection.ExecuteAsync("DELETE FROM dbo.Provinces WHERE Id = @Id;", new { Id = id });
 

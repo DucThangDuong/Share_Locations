@@ -1,4 +1,4 @@
-using Domain.Enums;
+﻿using Domain.Enums;
 
 namespace Domain.Entities;
 
@@ -11,7 +11,6 @@ public class ReviewMedia
     public int DisplayOrder { get; private set; }
     public DateTime CreatedAt { get; private set; }
 
-    // Navigation
     public virtual Review Review { get; private set; } = null!;
 
     protected ReviewMedia() { }

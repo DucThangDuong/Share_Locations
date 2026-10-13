@@ -71,14 +71,12 @@ export const PlaceAdminFoods: React.FC<PlaceAdminFoodsProps> = ({
   const onFoodsCountChangeRef = useRef(onFoodsCountChange);
   onFoodsCountChangeRef.current = onFoodsCountChange;
 
-  // Toast ref for stable notify
   const showToastRef = useRef(showToast);
   showToastRef.current = showToast;
   const notify = useCallback((msg: string) => {
     if (showToastRef.current) showToastRef.current(msg);
   }, []);
 
-  // 1. Associated Foods State (Current Foods in this Place)
   const [localAssociatedFoods, setLocalAssociatedFoods] = useState<AdminPlaceFoodDto[]>(initialFoods || []);
   const [internalLoading, setInternalLoading] = useState(false);
 
@@ -96,7 +94,6 @@ export const PlaceAdminFoods: React.FC<PlaceAdminFoodsProps> = ({
     []
   );
 
-  // 2. Discover / Search Foods State
   const [availableFoods, setAvailableFoods] = useState<AdminFoodItem[]>([]);
   const [isLoadingAvailableFoods, setIsLoadingAvailableFoods] = useState(false);
   const [searchInput, setSearchInput] = useState("");
@@ -109,7 +106,6 @@ export const PlaceAdminFoods: React.FC<PlaceAdminFoodsProps> = ({
   const [provincesList, setProvincesList] = useState<ProvinceDto[]>([]);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Fetch real provinces from GET /api/provinces
   useEffect(() => {
     geographyService
       .getProvinces()
@@ -122,7 +118,6 @@ export const PlaceAdminFoods: React.FC<PlaceAdminFoodsProps> = ({
       .catch(() => { });
   }, []);
 
-  // Load place detail to get initial linked foods (only if not provided via props)
   const fetchPlaceFoods = useCallback(async () => {
     if (!placeId) return;
     setInternalLoading(true);
@@ -157,13 +152,11 @@ export const PlaceAdminFoods: React.FC<PlaceAdminFoodsProps> = ({
   }, [placeId, placeProvinceId, placeProvinceName, setAssociatedFoods]);
 
   useEffect(() => {
-    // If associatedFoods is passed from parent or already initialized, don't trigger re-fetching
     if (propAssociatedFoods !== undefined) return;
     if (initialFoods && initialFoods.length > 0) return;
     fetchPlaceFoods();
   }, [propAssociatedFoods, initialFoods, fetchPlaceFoods]);
 
-  // Fetch available foods for picker (matching FoodsTab and AdminPage API logic)
   const fetchAvailableFoods = useCallback(async () => {
     setIsLoadingAvailableFoods(true);
     try {
@@ -262,12 +255,10 @@ export const PlaceAdminFoods: React.FC<PlaceAdminFoodsProps> = ({
     fetchAvailableFoods();
   }, [fetchAvailableFoods]);
 
-  // Set of linked Food IDs for instant check
   const associatedFoodIds = useMemo(() => {
     return new Set(associatedFoods.map((f) => f.id));
   }, [associatedFoods]);
 
-  // Filter available foods for instant alignment if backend returns mixed list
   const displayedAvailableFoods = useMemo(() => {
     return availableFoods.filter((f) => {
       if (selectedProvince !== "all") {
@@ -291,8 +282,6 @@ export const PlaceAdminFoods: React.FC<PlaceAdminFoodsProps> = ({
     });
   }, [availableFoods, selectedProvince, selectedStatus, provincesList]);
 
-
-  // Add food to current place
   const handleAddFoodToPlace = (food: AdminFoodItem) => {
     if (associatedFoodIds.has(food.id)) {
       notify(`Món "${food.name}" đã có trong danh sách món ăn của địa điểm.`);
@@ -321,7 +310,6 @@ export const PlaceAdminFoods: React.FC<PlaceAdminFoodsProps> = ({
     notify(`Đã thêm món "${food.name}". Nhấn nút "Lưu thay đổi" ở phía trên để lưu đồng bộ.`);
   };
 
-  // Remove food from current place
   const handleRemoveFoodFromPlace = (foodId: number, foodName: string) => {
     const nextList = associatedFoods.filter((f) => f.id !== foodId);
     setAssociatedFoods(nextList);
@@ -329,7 +317,6 @@ export const PlaceAdminFoods: React.FC<PlaceAdminFoodsProps> = ({
     notify(`Đã gỡ món "${foodName}". Nhấn nút "Lưu thay đổi" ở phía trên để lưu.`);
   };
 
-  // Reorder foods
   const handleReorderFood = (index: number, direction: "up" | "down") => {
     if (direction === "up" && index === 0) return;
     if (direction === "down" && index === associatedFoods.length - 1) return;
@@ -343,7 +330,6 @@ export const PlaceAdminFoods: React.FC<PlaceAdminFoodsProps> = ({
     setAssociatedFoods(nextList);
   };
 
-  // Handlers for search & filters matching FoodsTab
   const handleSearchChange = (val: string) => {
     setSearchInput(val);
     if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
@@ -442,7 +428,6 @@ export const PlaceAdminFoods: React.FC<PlaceAdminFoodsProps> = ({
                       {fIdx + 1}
                     </div>
 
-                    {/* Thumbnail */}
                     {cover ? (
                       <img
                         src={cover}
@@ -465,7 +450,6 @@ export const PlaceAdminFoods: React.FC<PlaceAdminFoodsProps> = ({
                       <span className="text-[8px] font-semibold text-slate-400 leading-tight">Không ảnh</span>
                     </div>
 
-                    {/* Food Info */}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-extrabold text-slate-900 text-sm hover:text-emerald-800 transition-colors">
@@ -514,7 +498,6 @@ export const PlaceAdminFoods: React.FC<PlaceAdminFoodsProps> = ({
                     </div>
                   </div>
 
-                  {/* Actions: Move Up / Down & Remove */}
                   <div className="flex items-center gap-1.5 shrink-0">
                     <div className="flex items-center bg-slate-100 rounded-lg p-0.5 border border-slate-200">
                       <button
@@ -554,7 +537,6 @@ export const PlaceAdminFoods: React.FC<PlaceAdminFoodsProps> = ({
       </div>
 
       <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
-        {/* Search & Filter Controls (Matching FoodsTab) */}
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="relative flex-1 min-w-[240px]">
             <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -614,7 +596,6 @@ export const PlaceAdminFoods: React.FC<PlaceAdminFoodsProps> = ({
           </div>
         </div>
 
-        {/* Foods Table (Layout Matching FoodsTab) */}
         <div className="overflow-x-auto rounded-xl border border-slate-200/80">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -643,7 +624,6 @@ export const PlaceAdminFoods: React.FC<PlaceAdminFoodsProps> = ({
                     className={`hover:bg-slate-50/60 transition-colors group ${isAdded ? "bg-emerald-50/30" : ""
                       }`}
                   >
-                    {/* Food Image & Name */}
                     <td className="p-3.5 pl-4 font-bold text-slate-900">
                       <div className="flex items-center gap-3">
                         {cover ? (
@@ -680,17 +660,14 @@ export const PlaceAdminFoods: React.FC<PlaceAdminFoodsProps> = ({
                       </div>
                     </td>
 
-                    {/* Province */}
                     <td className="p-3.5 text-slate-700 font-medium text-xs">
                       {food.province || "Toàn quốc"}
                     </td>
 
-                    {/* Price Range */}
                     <td className="p-3.5 font-bold text-emerald-800 text-xs">
                       {priceText}
                     </td>
 
-                    {/* Status */}
                     <td className="p-3.5">
                       <span
                         className={`inline-flex items-center justify-center px-3.5 py-1 rounded-xl text-xs font-bold border transition-colors ${isHidden
@@ -702,7 +679,6 @@ export const PlaceAdminFoods: React.FC<PlaceAdminFoodsProps> = ({
                       </span>
                     </td>
 
-                    {/* Action Buttons */}
                     <td className="p-3.5 text-right pr-4">
                       {isAdded ? (
                         <button
@@ -745,7 +721,6 @@ export const PlaceAdminFoods: React.FC<PlaceAdminFoodsProps> = ({
           ) : null}
         </div>
 
-        {/* Pagination Bar (Matching FoodsTab) */}
         {totalElements > 0 && (
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 px-1 border-t border-slate-100 text-xs text-slate-500 font-medium">
             <div>

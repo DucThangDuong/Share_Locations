@@ -31,7 +31,6 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
-  // Load friends on open
   useEffect(() => {
     if (!isOpen) return
 
@@ -62,7 +61,6 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
     fetchFriends()
   }, [isOpen])
 
-  // ESC key support
   useEffect(() => {
     if (!isOpen) return
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -143,7 +141,6 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
 
         <form onSubmit={handleCreate} className="flex flex-col flex-1 min-h-0">
           <div className="p-5 space-y-4 flex-1 overflow-y-auto">
-            {/* Tên nhóm */}
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">
                 Tên nhóm <span className="text-rose-500">*</span>
@@ -163,7 +160,6 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
               </div>
             </div>
 
-            {/* Tìm kiếm bạn bè */}
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wide">
                 Thêm thành viên
@@ -180,7 +176,6 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
               </div>
             </div>
 
-            {/* Chips đã chọn */}
             {selectedFriends.length > 0 && (
               <div className="flex items-center gap-1.5 flex-wrap pt-1">
                 {selectedFriends.map((f) => (
@@ -206,7 +201,6 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
               </div>
             )}
 
-            {/* Danh sách bạn bè */}
             <div className="border border-slate-200 rounded-xl overflow-hidden bg-slate-50/50">
               <div className="px-3 py-2 bg-slate-100/80 text-[11px] font-bold text-slate-500 uppercase flex justify-between">
                 <span>Danh sách bạn bè ({filteredFriends.length})</span>
@@ -257,7 +251,6 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                           </div>
                         </div>
 
-                        {/* Checkbox circle */}
                         <div
                           className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-colors ${isSelected
                             ? 'bg-[#0084FF] border-[#0084FF] text-white'
@@ -273,7 +266,6 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
               </div>
             </div>
 
-            {/* Thông báo lỗi nếu có */}
             {errorMsg && (
               <div className="p-2.5 bg-rose-50 border border-rose-200 text-rose-600 text-xs font-medium rounded-xl">
                 {errorMsg}

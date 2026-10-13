@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
@@ -6,10 +6,6 @@ using Application.DTOs;
 using MediatR;
 
 namespace Application.Features.Notifications;
-
-// ==========================================
-// 1. QUERIES
-// ==========================================
 
 public record GetMyNotificationsQuery(int Page = 1, int PageSize = 20, bool? UnreadOnly = null)
     : IRequest<Result<NotificationPagedResultDto>>;
@@ -63,10 +59,6 @@ public class GetMyUnreadNotificationCountQueryHandler : IRequestHandler<GetMyUnr
     }
 }
 
-// ==========================================
-// 2. COMMANDS
-// ==========================================
-
 public record MarkNotificationAsReadCommand(long Id) : IRequest<Result<bool>>;
 
 public class MarkNotificationAsReadCommandHandler : IRequestHandler<MarkNotificationAsReadCommand, Result<bool>>
@@ -95,7 +87,6 @@ public class MarkNotificationAsReadCommandHandler : IRequestHandler<MarkNotifica
         if (!ok)
             return Result<bool>.Failure("Không tìm thấy thông báo hoặc thông báo đã được đọc.", HttpStatusCode.NotFound);
 
-        // Update realtime unread count
         var unread = await _repo.GetUnreadCountAsync(userId.Value, ct);
         await _notifier.NotifyUnreadCountAsync(userId.Value, unread, ct);
 
@@ -129,7 +120,6 @@ public class MarkAllNotificationsAsReadCommandHandler : IRequestHandler<MarkAllN
 
         var count = await _repo.MarkAllAsReadAsync(userId.Value, ct);
 
-        // Update realtime unread count to 0
         await _notifier.NotifyUnreadCountAsync(userId.Value, 0, ct);
 
         return Result<int>.Success(count, $"Đã đánh dấu toàn bộ {count} thông báo là đã đọc.");
@@ -188,7 +178,6 @@ public class CreateNotificationCommandHandler : IRequestHandler<CreateNotificati
     {
         var dto = await _repo.CreateNotificationAsync(request.Input, ct);
 
-        // Realtime push notification & updated badge count
         var unread = await _repo.GetUnreadCountAsync(request.Input.UserId, ct);
         await _notifier.NotifyAsync(request.Input.UserId, dto, unread, ct);
 

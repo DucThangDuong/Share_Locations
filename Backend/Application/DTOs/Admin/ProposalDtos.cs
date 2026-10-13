@@ -1,4 +1,4 @@
-namespace Application.DTOs.Admin;
+﻿namespace Application.DTOs.Admin;
 
 public class AdminProposalSummaryDto
 {
@@ -10,12 +10,11 @@ public class AdminProposalSummaryDto
     public string? ProvinceName { get; set; }
     public string ProposerName { get; set; } = string.Empty;
     public string? ProposerAvatar { get; set; }
-    public int Status { get; set; } // 0: Pending, 1: Approved, 2: Rejected
+    public int Status { get; set; }
     public DateTime SubmittedAt { get; set; }
     public string? AdminNote { get; set; }
     public string? RejectReason { get; set; }
 
-    // Aliases hỗ trợ tương thích Frontend
     public string? Category { get => CategoryName; set => CategoryName = value; }
     public string? Province { get => ProvinceName; set => ProvinceName = value; }
     public string ProposedBy { get => ProposerName; set => ProposerName = value; }

@@ -1,4 +1,3 @@
-// Web Audio Synthesizer for message chimes (No external audio file needed)
 export function playChatChime(type: 'send' | 'receive' = 'receive') {
   try {
     const AudioContextClass =
@@ -39,6 +38,5 @@ export function playChatChime(type: 'send' | 'receive' = 'receive') {
       osc2.stop(ctx.currentTime + 0.29)
     }
   } catch {
-    // AudioContext might be blocked before first user interaction
   }
 }

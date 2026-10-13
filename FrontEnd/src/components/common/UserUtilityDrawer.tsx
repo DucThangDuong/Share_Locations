@@ -73,7 +73,6 @@ export const UserUtilityDrawer: React.FC<UserUtilityDrawerProps> = ({
     }
   }, [isOpen, initialUtility])
 
-  // Keyboard Navigation (Escape key)
   useEffect(() => {
     if (!isOpen) return
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -89,7 +88,6 @@ export const UserUtilityDrawer: React.FC<UserUtilityDrawerProps> = ({
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [isOpen, activeUtility, onClose])
 
-  // Body scroll lock
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden'
@@ -174,7 +172,6 @@ export const UserUtilityDrawer: React.FC<UserUtilityDrawerProps> = ({
         : 'opacity-0 pointer-events-none invisible'
         }`}
     >
-      {/* Backdrop overlay */}
       <div
         className={`fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity duration-300 ease-in-out ${isOpen ? 'opacity-100' : 'opacity-0'
           }`}
@@ -186,7 +183,6 @@ export const UserUtilityDrawer: React.FC<UserUtilityDrawerProps> = ({
         className={`${isOpen ? 'translate-x-0' : 'translate-x-full'
           } relative w-full max-w-md sm:max-w-lg bg-white h-screen shadow-2xl flex flex-col z-10 transition-transform duration-300 ease-in-out border-l border-slate-200 overflow-hidden`}
       >
-        {/* Toast Alert */}
         {toastMsg && (
           <div className="absolute top-4 left-4 right-4 z-50 p-3 bg-slate-900 text-white text-xs font-semibold rounded-xl shadow-xl flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-150">
             <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
@@ -195,7 +191,6 @@ export const UserUtilityDrawer: React.FC<UserUtilityDrawerProps> = ({
         )}
         {!activeUtility && (
           <div className="flex flex-col h-full overflow-y-auto">
-            {/* User Profile Banner */}
             <div className="p-5 border-b border-slate-100 bg-gradient-to-br from-slate-50 to-white flex items-center justify-between">
               <div className="flex items-center gap-3.5 min-w-0">
                 <div className="relative shrink-0">
@@ -240,7 +235,6 @@ export const UserUtilityDrawer: React.FC<UserUtilityDrawerProps> = ({
               </button>
             </div>
 
-            {/* Section Header */}
             <div className="px-5 pt-4 pb-1">
               <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                 Tiện ích cá nhân ({utilityMenuItems.length})
@@ -276,7 +270,6 @@ export const UserUtilityDrawer: React.FC<UserUtilityDrawerProps> = ({
               })}
             </div>
 
-            {/* Bottom Actions */}
             <div className="p-4 border-t border-slate-100 bg-slate-50/60 space-y-1">
               <Link
                 to="/settings"

@@ -18,7 +18,6 @@ export function decodeJwtPayload(token?: string | null): Record<string, any> | n
   }
 }
 export function getUserRoleId(token?: string | null): number {
-  // Check user_info in localStorage first for explicit roleId
   try {
     const stored = JSON.parse(localStorage.getItem('user_info') || '{}')
     if (stored.roleId !== undefined && stored.roleId !== null) {
@@ -34,7 +33,6 @@ export function getUserRoleId(token?: string | null): number {
     }
   } catch {}
 
-  // Check JWT Payload
   const payload = decodeJwtPayload(token)
   if (payload) {
     const rId = payload.roleId ?? payload['roleId'] ?? payload['RoleId']
@@ -52,7 +50,7 @@ export function getUserRoleId(token?: string | null): number {
     }
   }
 
-  return 1 // Default to regular user
+  return 1
 }
 
 export function getUserRoles(token?: string | null): string[] {
@@ -90,7 +88,7 @@ export function isUserCategoryAdmin(token?: string | null): boolean {
 export function isUserSystemAdmin(token?: string | null): boolean {
   const roleId = getUserRoleId(token)
   if (roleId === 3) return true
-  if (roleId === 2) return false // Category admin is never system admin
+  if (roleId === 2) return false
   const roles = getUserRoles(token).map((r) => r.toUpperCase().trim())
   return roles.some((r) => r === 'SYSTEM_ADMIN' || r === 'SYSTEMADMIN' || r === 'SUPERADMIN' || r === '3')
 }

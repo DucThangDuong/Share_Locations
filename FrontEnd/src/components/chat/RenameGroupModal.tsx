@@ -63,7 +63,6 @@ export const RenameGroupModal: React.FC<RenameGroupModalProps> = ({
       <div className="fixed inset-0" onClick={onClose} />
 
       <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-10 animate-in zoom-in-95 duration-150">
-        {/* Header */}
         <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-2 text-slate-900 font-bold text-base">
             <Pencil className="w-4 h-4 text-[#0084FF]" />
@@ -79,7 +78,6 @@ export const RenameGroupModal: React.FC<RenameGroupModalProps> = ({
           </button>
         </div>
 
-        {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <p className="text-xs text-slate-500">
             Mọi người trong đoạn chat đều sẽ thấy tên mới này khi bạn thay đổi.

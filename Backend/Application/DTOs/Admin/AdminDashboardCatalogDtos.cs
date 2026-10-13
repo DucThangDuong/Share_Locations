@@ -1,4 +1,4 @@
-namespace Application.DTOs.Admin;
+﻿namespace Application.DTOs.Admin;
 
 public class AdminDashboardSummaryDto
 {
@@ -16,7 +16,7 @@ public class AdminProvinceStatDto
 {
     public string Province { get; set; } = string.Empty;
     public int PlacesCount { get; set; }
-    public int Completeness { get; set; } // Percentage e.g. 85%
+    public int Completeness { get; set; }
 }
 
 public class AdminDashboardMetricsDto

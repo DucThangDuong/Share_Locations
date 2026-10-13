@@ -1,4 +1,4 @@
-using Application.Common;
+﻿using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs.Admin;
@@ -70,30 +70,45 @@ public class AdminReportRepository : IAdminReportRepository
 
     public async Task<long> CreateReportAsync(string targetType, long targetId, int reportTypeId, string? reason, long? reporterId, CancellationToken ct = default)
     {
-        // Fallback user if reporterId is null (system guest account ID = 1 or first user)
         long actualReporterId = reporterId ?? 1;
 
         switch (targetType.Trim().ToLowerInvariant())
         {
             case "place":
+                if (await _dbContext.PlaceReports.AnyAsync(r => r.ReporterId == actualReporterId && r.PlaceId == targetId && r.Status == ReportStatus.Pending, ct))
+                {
+                    throw new ArgumentException("Bạn đã gửi báo cáo cho địa điểm này trước đó và đang chờ kiểm duyệt.");
+                }
                 var placeReport = new PlaceReport(actualReporterId, targetId, reportTypeId, reason);
                 _dbContext.PlaceReports.Add(placeReport);
                 await _dbContext.SaveChangesAsync(ct);
                 return placeReport.Id;
 
             case "review":
+                if (await _dbContext.ReviewReports.AnyAsync(r => r.ReporterId == actualReporterId && r.ReviewId == targetId && r.Status == ReportStatus.Pending, ct))
+                {
+                    throw new ArgumentException("Bạn đã gửi báo cáo cho đánh giá này trước đó và đang chờ kiểm duyệt.");
+                }
                 var reviewReport = new ReviewReport(actualReporterId, targetId, reportTypeId, reason);
                 _dbContext.ReviewReports.Add(reviewReport);
                 await _dbContext.SaveChangesAsync(ct);
                 return reviewReport.Id;
 
             case "comment":
+                if (await _dbContext.CommentReports.AnyAsync(r => r.ReporterId == actualReporterId && r.CommentId == targetId && r.Status == ReportStatus.Pending, ct))
+                {
+                    throw new ArgumentException("Bạn đã gửi báo cáo cho bình luận này trước đó và đang chờ kiểm duyệt.");
+                }
                 var commentReport = new CommentReport(actualReporterId, targetId, reportTypeId, reason);
                 _dbContext.CommentReports.Add(commentReport);
                 await _dbContext.SaveChangesAsync(ct);
                 return commentReport.Id;
 
             case "blog":
+                if (await _dbContext.BlogReports.AnyAsync(r => r.ReporterId == actualReporterId && r.BlogId == targetId && r.Status == ReportStatus.Pending, ct))
+                {
+                    throw new ArgumentException("Bạn đã gửi báo cáo cho bài viết này trước đó và đang chờ kiểm duyệt.");
+                }
                 var blogReport = new BlogReport(actualReporterId, targetId, reportTypeId, reason);
                 _dbContext.BlogReports.Add(blogReport);
                 await _dbContext.SaveChangesAsync(ct);
@@ -109,7 +124,7 @@ public class AdminReportRepository : IAdminReportRepository
         var connection = _dbContext.Database.GetDbConnection();
 
         const string sql = @"
-            SELECT 
+            SELECT
                 pr.Id,
                 CONCAT('REP-P', pr.Id) AS CodeId,
                 'place' AS TargetType,
@@ -126,7 +141,7 @@ public class AdminReportRepository : IAdminReportRepository
 
             UNION ALL
 
-            SELECT 
+            SELECT
                 rr.Id,
                 CONCAT('REP-R', rr.Id) AS CodeId,
                 'review' AS TargetType,
@@ -144,7 +159,7 @@ public class AdminReportRepository : IAdminReportRepository
 
             UNION ALL
 
-            SELECT 
+            SELECT
                 cr.Id,
                 CONCAT('REP-C', cr.Id) AS CodeId,
                 'comment' AS TargetType,
@@ -160,7 +175,7 @@ public class AdminReportRepository : IAdminReportRepository
 
             UNION ALL
 
-            SELECT 
+            SELECT
                 br.Id,
                 CONCAT('REP-B', br.Id) AS CodeId,
                 'blog' AS TargetType,
@@ -194,7 +209,7 @@ public class AdminReportRepository : IAdminReportRepository
 
         const string baseSql = @"
             WITH AllReports AS (
-                SELECT 
+                SELECT
                     pr.Id,
                     CONCAT('REP-P', pr.Id) AS CodeId,
                     'place' AS TargetType,
@@ -211,7 +226,7 @@ public class AdminReportRepository : IAdminReportRepository
                     pr.Reason AS ReasonContent,
                     pr.Reason AS Description,
                     pr.CreatedAt AS SubmittedAt,
-                    CASE 
+                    CASE
                         WHEN rt.Code IN ('PLACE_CLOSED', 'CONTENT_SPAM', 'CONTENT_OFFENSIVE') THEN 'urgent'
                         WHEN rt.Code IN ('CONTENT_FAKE', 'CONTENT_COPYRIGHT') THEN 'high'
                         ELSE 'normal'
@@ -236,7 +251,7 @@ public class AdminReportRepository : IAdminReportRepository
 
                 UNION ALL
 
-                SELECT 
+                SELECT
                     rr.Id,
                     CONCAT('REP-R', rr.Id) AS CodeId,
                     'review' AS TargetType,
@@ -253,7 +268,7 @@ public class AdminReportRepository : IAdminReportRepository
                     rr.Reason AS ReasonContent,
                     rr.Reason AS Description,
                     rr.CreatedAt AS SubmittedAt,
-                    CASE 
+                    CASE
                         WHEN rt.Code IN ('CONTENT_OFFENSIVE', 'CONTENT_SPAM') THEN 'urgent'
                         WHEN rt.Code IN ('CONTENT_FAKE', 'CONTENT_COPYRIGHT') THEN 'high'
                         ELSE 'normal'
@@ -279,7 +294,7 @@ public class AdminReportRepository : IAdminReportRepository
 
                 UNION ALL
 
-                SELECT 
+                SELECT
                     cr.Id,
                     CONCAT('REP-C', cr.Id) AS CodeId,
                     'comment' AS TargetType,
@@ -319,7 +334,7 @@ public class AdminReportRepository : IAdminReportRepository
 
                 UNION ALL
 
-                SELECT 
+                SELECT
                     br.Id,
                     CONCAT('REP-B', br.Id) AS CodeId,
                     'blog' AS TargetType,
@@ -358,7 +373,6 @@ public class AdminReportRepository : IAdminReportRepository
         var whereClauses = new List<string>();
         var parameters = new DynamicParameters();
 
-        // Áp dụng giới hạn phân quyền theo Scope của Admin cấp 1
         if (!_currentUserService.IsSystemAdmin)
         {
             var catScopes = _currentUserService.CategoryScopes;
@@ -684,7 +698,7 @@ public class AdminReportRepository : IAdminReportRepository
         var connection = _dbContext.Database.GetDbConnection();
         const string sql = @"
             UPDATE dbo.Places
-            SET 
+            SET
                 AvgRating = COALESCE((SELECT AVG(CAST(Rating AS DECIMAL(3,2))) FROM dbo.Reviews WHERE PlaceId = @PlaceId AND Status = 1), 0),
                 ReviewCount = (SELECT COUNT(1) FROM dbo.Reviews WHERE PlaceId = @PlaceId AND Status = 1)
             WHERE Id = @PlaceId;";

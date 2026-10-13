@@ -85,7 +85,6 @@ export interface ChatRoomMemberDto {
 }
 
 export const chatService = {
-  // 1. Lấy danh sách hộp thư (Inbox)
   getInbox: async (): Promise<InboxItemDto[]> => {
     const response = await apiClient.get<any>('/api/chat/inbox')
     const payload = response.data
@@ -96,14 +95,12 @@ export const chatService = {
     return []
   },
 
-  // 2. Lấy hoặc tạo phòng chat 1-1 với người dùng khác
   getOrCreateDirectRoom: async (targetUserId: number): Promise<number> => {
     const response = await apiClient.post<any>(`/api/chat/direct/${targetUserId}`)
     const payload = response.data
     return payload?.data?.roomId ?? payload?.roomId ?? payload?.data ?? payload
   },
 
-  // 3. Lấy lịch sử tin nhắn của phòng chat
   getRoomMessages: async (roomId: number, page = 1, limit = 50): Promise<ChatMessageDto[]> => {
     const response = await apiClient.get<any>(`/api/chat/rooms/${roomId}/messages`, {
       params: { page, limit },
@@ -116,7 +113,6 @@ export const chatService = {
     return []
   },
 
-  // 4. Gửi tin nhắn vào phòng chat (hỗ trợ text, quote reply, thẻ địa điểm/món ăn/lịch trình, tệp đính kèm)
   sendMessage: async (payload: SendMessagePayload): Promise<ChatMessageDto> => {
     const formData = new FormData()
     formData.append('roomId', payload.roomId.toString())
@@ -138,12 +134,10 @@ export const chatService = {
     return response.data?.data
   },
 
-  // 5. Đánh dấu đã đọc phòng chat
   markRoomAsRead: async (roomId: number): Promise<void> => {
     await apiClient.put(`/api/chat/rooms/${roomId}/read`)
   },
 
-  // 6. Thả cảm xúc (reaction) cho tin nhắn
   addMessageReaction: async (roomId: number, messageId: number, emoji: string): Promise<void> => {
     await apiClient.post(`/api/chat/messages/${messageId}/reactions`, {
       roomId,
@@ -152,7 +146,6 @@ export const chatService = {
     })
   },
 
-  // 7. Tạo phòng chat nhóm
   createGroupRoom: async (payload: { name: string; memberIds: number[] }): Promise<number> => {
     const response = await apiClient.post<any>('/api/chat/group', {
       name: payload.name,
@@ -163,14 +156,12 @@ export const chatService = {
     return Number(roomId)
   },
 
-  // 8. Mời thêm thành viên vào nhóm
   addMembersToRoom: async (roomId: number, userIds: number[]): Promise<void> => {
     await apiClient.post(`/api/chat/rooms/${roomId}/members`, {
       userIds,
     })
   },
 
-  // 9. Lấy danh sách thành viên phòng chat
   getRoomMembers: async (roomId: number): Promise<ChatRoomMemberDto[]> => {
     try {
       const response = await apiClient.get<any>(`/api/chat/rooms/${roomId}/members`)
@@ -196,22 +187,18 @@ export const chatService = {
     }
   },
 
-  // 10. Đổi tên phòng chat nhóm
   renameGroupRoom: async (roomId: number, name: string): Promise<void> => {
     await apiClient.put(`/api/chat/rooms/${roomId}/name`, { roomId, name })
   },
 
-  // 11. Xóa thành viên khỏi phòng chat nhóm
   removeMemberFromRoom: async (roomId: number, userId: number): Promise<void> => {
     await apiClient.delete(`/api/chat/rooms/${roomId}/members/${userId}`)
   },
 
-  // 12. Rời khỏi phòng chat nhóm
   leaveGroupRoom: async (roomId: number): Promise<void> => {
     await apiClient.post(`/api/chat/rooms/${roomId}/leave`)
   },
 
-  // 13. Sửa tin nhắn
   editMessage: async (messageId: number, content: string, roomId?: number): Promise<ChatMessageDto> => {
     try {
       const response = await apiClient.put<any>(`/api/chat/messages/${messageId}`, {
@@ -232,7 +219,6 @@ export const chatService = {
     }
   },
 
-  // 14. Xóa tin nhắn
   deleteMessage: async (messageId: number, roomId?: number): Promise<void> => {
     try {
       await apiClient.delete(`/api/chat/messages/${messageId}`)

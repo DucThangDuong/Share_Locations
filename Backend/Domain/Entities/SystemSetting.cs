@@ -1,4 +1,4 @@
-namespace Domain.Entities;
+﻿namespace Domain.Entities;
 
 public class SystemSetting
 {
@@ -10,7 +10,6 @@ public class SystemSetting
     public DateTime UpdatedAt { get; private set; }
     public long? UpdatedBy { get; private set; }
 
-    // Navigation
     public virtual User? UpdatedByUser { get; private set; }
 
     protected SystemSetting() { }

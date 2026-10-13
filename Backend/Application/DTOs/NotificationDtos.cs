@@ -1,4 +1,4 @@
-using Domain.Constants;
+﻿using Domain.Constants;
 using Domain.Enums;
 
 namespace Application.DTOs;
@@ -14,7 +14,7 @@ public class NotificationDto
     public string Content { get; set; } = string.Empty;
     public NotificationType Type { get; set; }
     public string TypeName => AdminDisplayNames.GetNotificationTypeName(Type);
-    public byte Priority { get; set; } = 2; // 1: Urgent, 2: Normal, 3: Low
+    public byte Priority { get; set; } = 2;
     public string? GroupKey { get; set; }
     public string? DeduplicationKey { get; set; }
     public string? EntityType { get; set; }

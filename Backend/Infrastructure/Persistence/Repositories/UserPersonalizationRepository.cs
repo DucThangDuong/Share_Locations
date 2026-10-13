@@ -1,4 +1,4 @@
-using System.Data;
+﻿using System.Data;
 using System.Text.Json;
 using Application.Common;
 using Application.Common.Interfaces.Repositories;
@@ -271,10 +271,10 @@ public class UserPersonalizationRepository : IUserPersonalizationRepository
                 CAST(pr.ProposalType AS INT) AS ProposalType,
                 COALESCE(pr.TargetPlaceId, p.Id) AS TargetPlaceId,
                 pr.CategoryId,
-                CASE 
-                    WHEN (cat.Id IS NOT NULL AND cat.Status = 1) THEN cat.Name 
-                    WHEN (pCat.Id IS NOT NULL AND pCat.Status = 1) THEN pCat.Name 
-                    ELSE N'Không khả dụng' 
+                CASE
+                    WHEN (cat.Id IS NOT NULL AND cat.Status = 1) THEN cat.Name
+                    WHEN (pCat.Id IS NOT NULL AND pCat.Status = 1) THEN pCat.Name
+                    ELSE N'Không khả dụng'
                 END AS CategoryName,
                 pr.ProvinceId,
                 COALESCE(prov.Name, pProv.Name) AS ProvinceName,
@@ -289,10 +289,10 @@ public class UserPersonalizationRepository : IUserPersonalizationRepository
                 COUNT(1) OVER() AS TotalCount
             FROM dbo.Proposals pr
             LEFT JOIN dbo.Places p ON pr.TargetPlaceId = p.Id
-            LEFT JOIN dbo.Categories cat ON (pr.CategoryId IS NOT NULL AND pr.CategoryId = cat.Id) 
+            LEFT JOIN dbo.Categories cat ON (pr.CategoryId IS NOT NULL AND pr.CategoryId = cat.Id)
                 OR (pr.CategoryId IS NULL AND JSON_VALUE(pr.ProposedDataJSON, '$.categoryId') = CAST(cat.Id AS NVARCHAR(10)))
             LEFT JOIN dbo.Categories pCat ON p.CategoryId = pCat.Id
-            LEFT JOIN dbo.Provinces prov ON (pr.ProvinceId IS NOT NULL AND pr.ProvinceId = prov.Id) 
+            LEFT JOIN dbo.Provinces prov ON (pr.ProvinceId IS NOT NULL AND pr.ProvinceId = prov.Id)
                 OR (pr.ProvinceId IS NULL AND JSON_VALUE(pr.ProposedDataJSON, '$.provinceId') = CAST(prov.Id AS NVARCHAR(10)))
             LEFT JOIN dbo.Provinces pProv ON p.ProvinceId = pProv.Id
             WHERE pr.UserId = @UserId
@@ -366,7 +366,6 @@ public class UserPersonalizationRepository : IUserPersonalizationRepository
             }
             catch
             {
-                // Fallback on JSON parse error
             }
 
             if (string.IsNullOrWhiteSpace(coverImg))
@@ -469,7 +468,7 @@ public class UserPersonalizationRepository : IUserPersonalizationRepository
         using var connection = CreateConnection();
 
         const string userSql = @"
-            SELECT 
+            SELECT
                 u.Id,
                 u.CreatedAt,
                 p.FullName,
@@ -501,8 +500,8 @@ public class UserPersonalizationRepository : IUserPersonalizationRepository
             long u2 = Math.Max(currentUserId.Value, targetUserId);
 
             const string friendSql = @"
-                SELECT Status, ActionUserId 
-                FROM dbo.Friendships 
+                SELECT Status, ActionUserId
+                FROM dbo.Friendships
                 WHERE User1Id = @U1 AND User2Id = @U2;";
 
             var friendRow = await connection.QuerySingleOrDefaultAsync(friendSql, new { U1 = u1, U2 = u2 });
@@ -511,12 +510,12 @@ public class UserPersonalizationRepository : IUserPersonalizationRepository
                 int status = (int)friendRow.Status;
                 long actionUserId = (long)friendRow.ActionUserId;
 
-                if (status == 1) // Accepted
+                if (status == 1)
                 {
                     isFriend = true;
                     friendStatus = "accepted";
                 }
-                else if (status == 0) // Pending
+                else if (status == 0)
                 {
                     isFriend = false;
                     friendStatus = (actionUserId == currentUserId.Value) ? "pending_sent" : "pending_received";
@@ -578,7 +577,7 @@ public class UserPersonalizationRepository : IUserPersonalizationRepository
         using var connection = CreateConnection();
 
         const string sql = @"
-            SELECT 
+            SELECT
                 r.Id,
                 r.PlaceId,
                 p.Name AS Title,
@@ -595,14 +594,14 @@ public class UserPersonalizationRepository : IUserPersonalizationRepository
             INNER JOIN dbo.Places p ON r.PlaceId = p.Id
             LEFT JOIN dbo.Categories cat ON p.CategoryId = cat.Id
             LEFT JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id
-            WHERE r.UserId = @TargetUserId 
-              AND r.Status = 1 
-              AND p.Latitude IS NOT NULL 
+            WHERE r.UserId = @TargetUserId
+              AND r.Status = 1
+              AND p.Latitude IS NOT NULL
               AND p.Longitude IS NOT NULL
 
             UNION ALL
 
-            SELECT 
+            SELECT
                 v.Id,
                 v.PlaceId,
                 p.Name AS Title,
@@ -621,12 +620,12 @@ public class UserPersonalizationRepository : IUserPersonalizationRepository
             LEFT JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id
             WHERE v.UserId = @TargetUserId
               AND (@IsCurrentUser = 1 OR v.Privacy = 0)
-              AND p.Latitude IS NOT NULL 
+              AND p.Latitude IS NOT NULL
               AND p.Longitude IS NOT NULL
 
             UNION ALL
 
-            SELECT 
+            SELECT
                 pr.Id,
                 ISNULL(pr.TargetPlaceId, 0) AS PlaceId,
                 ISNULL(p.Name, JSON_VALUE(pr.ProposedDataJSON, '$.name')) AS Title,
@@ -715,10 +714,10 @@ public class UserPersonalizationRepository : IUserPersonalizationRepository
                 CAST(p.AvgRating AS FLOAT) AS PlaceRating,
                 p.ReviewCount AS PlaceReviewCount,
                 r.LikesCount AS LikeCount,
-                CASE 
-                    WHEN @CurrentUserId IS NOT NULL AND EXISTS (SELECT 1 FROM dbo.ReviewLikes rl WHERE rl.ReviewId = r.Id AND rl.UserId = @CurrentUserId) 
-                    THEN CAST(1 AS BIT) 
-                    ELSE CAST(0 AS BIT) 
+                CASE
+                    WHEN @CurrentUserId IS NOT NULL AND EXISTS (SELECT 1 FROM dbo.ReviewLikes rl WHERE rl.ReviewId = r.Id AND rl.UserId = @CurrentUserId)
+                    THEN CAST(1 AS BIT)
+                    ELSE CAST(0 AS BIT)
                 END AS IsLiked,
                 r.CreatedAt,
                 COUNT(1) OVER() AS TotalCount

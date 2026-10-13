@@ -15,10 +15,10 @@ interface ProvincePlaceSectionProps {
 const getResponsiveBatchSize = () => {
   if (typeof window === 'undefined') return 12
   const width = window.innerWidth
-  if (width >= 1024) return 12 // 4 columns x 3 rows = 12
-  if (width >= 768) return 9   // 3 columns x 3 rows = 9
-  if (width >= 640) return 6   // 2 columns x 3 rows = 6
-  return 6                     // 1 column x 6 rows = 6
+  if (width >= 1024) return 12
+  if (width >= 768) return 9
+  if (width >= 640) return 6
+  return 6
 }
 
 export const ProvincePlaceSection: React.FC<ProvincePlaceSectionProps> = ({
@@ -42,7 +42,6 @@ export const ProvincePlaceSection: React.FC<ProvincePlaceSectionProps> = ({
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  // Reset visible count when category, province or batch size changes
   useEffect(() => {
     setVisibleCount(batchSize)
   }, [selectedCategoryId, provinceName, batchSize])

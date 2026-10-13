@@ -1,4 +1,4 @@
-using Domain.Enums;
+﻿using Domain.Enums;
 
 namespace Domain.Entities;
 
@@ -15,7 +15,6 @@ public class ReviewReport
     public DateTime? ResolvedAt { get; private set; }
     public DateTime CreatedAt { get; private set; }
 
-    // Navigation
     public virtual User Reporter { get; private set; } = null!;
     public virtual Review Review { get; private set; } = null!;
     public virtual ReportType ReportType { get; private set; } = null!;

@@ -83,7 +83,6 @@ export const UserProfileTripCard: React.FC<UserProfileTripCardProps> = ({ trip }
         }
         setPreviewTrip(detailed)
       } else {
-        // Fallback preview
         setPreviewTrip({
           id: trip.id,
           title: trip.title,

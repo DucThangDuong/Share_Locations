@@ -113,14 +113,12 @@ export const ProvinceItinerarySection: React.FC<ProvinceItinerarySectionProps> =
           const allDtos = res.data
           const target = cleanName(provinceName)
 
-          // 1. First priority: match by destination or title with province name
           let matched = allDtos.filter((item) => {
             const dest = cleanName(item.destination || '')
             const tit = cleanName(item.title || '')
             return dest.includes(target) || tit.includes(target) || target.includes(dest)
           })
 
-          // 2. Second priority: match with initialItineraries IDs if present
           if (matched.length === 0 && (initialItineraries || itineraries)?.length) {
             const initials = initialItineraries || itineraries || []
             const initialIds = new Set(initials.map((i) => i.id))

@@ -1,4 +1,4 @@
-using System.Text.Encodings.Web;
+﻿using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Application.Common.Interfaces;
@@ -54,7 +54,6 @@ public class AuditLogService : IAuditLogService
             var adminId = customAdminId ?? _currentUserService.UserId;
             if (!adminId.HasValue || adminId.Value <= 0)
             {
-                // Nếu không có thông tin AdminId (ví dụ request unauthenticated hoặc hệ thống), bỏ qua để tránh vi phạm NOT NULL
                 return;
             }
 
@@ -103,7 +102,6 @@ public class AuditLogService : IAuditLogService
         }
         catch (Exception ex)
         {
-            // Ponytail principle: Audit log failure must NEVER crash the business transaction
             _logger.LogWarning(ex, "Failed to record audit log for Action: {ActionType}, Target: {TargetTable} #{TargetId}",
                 actionType, targetTable, targetId);
         }

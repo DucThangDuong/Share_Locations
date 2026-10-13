@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
@@ -29,7 +29,6 @@ public class UpdateAdminUserScopesCommandHandler : IRequestHandler<UpdateAdminUs
 
     public async Task<Result<UpdateAdminScopesResponseDto>> Handle(UpdateAdminUserScopesCommand request, CancellationToken ct)
     {
-        // Chỉ có SYSTEM_ADMIN mới có quyền gán hoặc cập nhật phạm vi quản trị!
         if (!_currentUserService.IsSystemAdmin)
         {
             return Result<UpdateAdminScopesResponseDto>.Failure("Chỉ Admin hệ thống (SystemAdmin) mới có quyền phân công phạm vi quản lý.", HttpStatusCode.Forbidden);

@@ -92,10 +92,8 @@ export const BlogsUtility: React.FC<BlogsUtilityProps> = ({
   const handleSelectBlog = (blog: UserBlogItemDto) => {
     onClose?.()
     if (blog.status === 0 || blog.status === 2) {
-      // Bản nháp (0) hoặc Chờ duyệt (2) -> mở trong editor (trạng thái 2 sẽ tự động khóa chỉ cho xem)
       navigate(`/blog?edit=${blog.id}`, { state: { editBlog: blog } })
     } else {
-      // Đã xuất bản (1) -> mở trong reader
       navigate(`/blog/${blog.id}`)
     }
   }

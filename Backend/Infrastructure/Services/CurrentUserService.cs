@@ -1,4 +1,4 @@
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using Application.Common.Interfaces;
 using Infrastructure.Persistence;
 using Microsoft.AspNetCore.Http;
@@ -69,7 +69,6 @@ public class CurrentUserService : ICurrentUserService
 
             if (scopes.Count > 0) return scopes;
 
-            // Fallback DB nếu token cũ chưa chứa scopes
             if (IsCategoryAdmin && UserId.HasValue)
             {
                 var dbContext = _httpContextAccessor.HttpContext?.RequestServices.GetService<TravelReviewDbContext>();
@@ -100,7 +99,6 @@ public class CurrentUserService : ICurrentUserService
 
             if (scopes.Count > 0) return scopes;
 
-            // Fallback DB nếu token cũ chưa chứa scopes
             if (IsCategoryAdmin && UserId.HasValue)
             {
                 var dbContext = _httpContextAccessor.HttpContext?.RequestServices.GetService<TravelReviewDbContext>();
@@ -131,7 +129,6 @@ public class CurrentUserService : ICurrentUserService
 
             if (scopes.Count > 0) return scopes;
 
-            // Fallback DB nếu token cũ chưa chứa scopes
             if (IsCategoryAdmin && UserId.HasValue)
             {
                 var dbContext = _httpContextAccessor.HttpContext?.RequestServices.GetService<TravelReviewDbContext>();

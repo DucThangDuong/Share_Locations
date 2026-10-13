@@ -1,4 +1,4 @@
-using Domain.Enums;
+﻿using Domain.Enums;
 
 namespace Domain.Entities;
 
@@ -13,7 +13,6 @@ public class Region
     public int OrderIndex { get; private set; }
     public RecordStatus Status { get; private set; } = RecordStatus.Active;
 
-    // Navigation
     private readonly List<Province> _provinces = new();
     public virtual IReadOnlyCollection<Province> Provinces => _provinces.AsReadOnly();
 

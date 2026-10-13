@@ -1,4 +1,4 @@
-using Application.Common;
+﻿using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
@@ -70,7 +70,6 @@ public class CreateReviewCommentCommandHandler : IRequestHandler<CreateReviewCom
         await _unitOfWork.Comments.AddAsync(comment, ct);
         await _unitOfWork.SaveChangesAsync(ct);
 
-        // Gửi thông báo cho tác giả bài viết hoặc tác giả bình luận cha
         var targetReceiverId = parentComment != null ? parentComment.UserId : review.UserId;
         if (targetReceiverId != request.UserId)
         {
@@ -102,7 +101,6 @@ public class CreateReviewCommentCommandHandler : IRequestHandler<CreateReviewCom
             }
             catch
             {
-                // Non-blocking notification dispatch
             }
         }
 

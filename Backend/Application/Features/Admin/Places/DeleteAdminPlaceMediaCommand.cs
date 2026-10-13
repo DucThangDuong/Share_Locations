@@ -1,4 +1,4 @@
-using Application.Common;
+﻿using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using MediatR;
@@ -38,7 +38,6 @@ public class DeleteAdminPlaceMediaCommandHandler : IRequestHandler<DeleteAdminPl
                 }
                 catch
                 {
-                    // Ignore background cleanup failure
                 }
             }, CancellationToken.None);
         }

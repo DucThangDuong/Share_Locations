@@ -20,16 +20,14 @@ import type { ApiErrorResponse } from '@/types/auth'
 
 type ForgotStep = 'email' | 'otp' | 'new-password' | 'success'
 
-const OTP_INITIAL_TIME = 360 // 6 minutes in seconds
+const OTP_INITIAL_TIME = 360
 
 export const ForgotPasswordPage: React.FC = () => {
   const navigate = useNavigate()
 
-  // Multi-step state
   const [step, setStep] = useState<ForgotStep>('email')
   const [email, setEmail] = useState('')
 
-  // Step 2 OTP State
   const [otp, setOtp] = useState<string[]>(['', '', '', '', '', ''])
   const [timeLeft, setTimeLeft] = useState<number>(OTP_INITIAL_TIME)
   const [isTimerActive, setIsTimerActive] = useState(false)
@@ -37,20 +35,16 @@ export const ForgotPasswordPage: React.FC = () => {
   const [resetToken, setResetToken] = useState('')
   const otpInputsRef = useRef<(HTMLInputElement | null)[]>([])
 
-  // Step 3 Password State
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
-  // Status & Feedback State
   const [loading, setLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
 
-  // Auto redirect countdown on success
   const [redirectCount, setRedirectCount] = useState(5)
 
-  // Timer countdown for OTP (6 minutes)
   useEffect(() => {
     let timer: ReturnType<typeof setInterval>
     if (isTimerActive && timeLeft > 0) {
@@ -63,7 +57,6 @@ export const ForgotPasswordPage: React.FC = () => {
     return () => clearInterval(timer)
   }, [isTimerActive, timeLeft])
 
-  // Timer for resend cooldown (30s)
   useEffect(() => {
     let timer: ReturnType<typeof setInterval>
     if (resendCooldown > 0) {
@@ -74,7 +67,6 @@ export const ForgotPasswordPage: React.FC = () => {
     return () => clearInterval(timer)
   }, [resendCooldown])
 
-  // Redirect countdown on success step
   useEffect(() => {
     let timer: ReturnType<typeof setInterval>
     if (step === 'success' && redirectCount > 0) {
@@ -87,7 +79,6 @@ export const ForgotPasswordPage: React.FC = () => {
     return () => clearInterval(timer)
   }, [step, redirectCount, navigate])
 
-  // Focus first OTP input when reaching OTP step
   useEffect(() => {
     if (step === 'otp') {
       setTimeout(() => {
@@ -96,14 +87,12 @@ export const ForgotPasswordPage: React.FC = () => {
     }
   }, [step])
 
-  // Format seconds to mm:ss
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
   }
 
-  // Helper to extract API error message
   const extractErrorMessage = (err: unknown, defaultMsg: string) => {
     const axiosError = err as AxiosError<ApiErrorResponse>
     const errorData = axiosError.response?.data
@@ -119,7 +108,6 @@ export const ForgotPasswordPage: React.FC = () => {
     return defaultMsg
   }
 
-  // ===================== STEP 1: SEND EMAIL =====================
   const handleSendEmail = async (e?: React.FormEvent, isResend: boolean = false) => {
     if (e) e.preventDefault()
     const targetEmail = email.trim()
@@ -148,18 +136,15 @@ export const ForgotPasswordPage: React.FC = () => {
     }
   }
 
-  // ===================== STEP 2: OTP INPUT HANDLERS =====================
   const handleOtpChange = (index: number, value: string) => {
-    // Only accept numeric characters
     const cleanValue = value.replace(/\D/g, '')
     if (!cleanValue && value !== '') return
 
     const newOtp = [...otp]
-    newOtp[index] = cleanValue.slice(-1) // Take last typed digit
+    newOtp[index] = cleanValue.slice(-1)
     setOtp(newOtp)
     setErrorMessage('')
 
-    // Auto-focus next input box
     if (cleanValue && index < 5) {
       otpInputsRef.current[index + 1]?.focus()
     }
@@ -168,7 +153,6 @@ export const ForgotPasswordPage: React.FC = () => {
   const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Backspace') {
       if (!otp[index] && index > 0) {
-        // If current is empty, focus previous and clear it
         const newOtp = [...otp]
         newOtp[index - 1] = ''
         setOtp(newOtp)
@@ -197,7 +181,6 @@ export const ForgotPasswordPage: React.FC = () => {
     setOtp(newOtp)
     setErrorMessage('')
 
-    // Focus on the next empty input or last input
     const nextEmptyIndex = Math.min(pastedData.length, 5)
     otpInputsRef.current[nextEmptyIndex]?.focus()
   }
@@ -236,7 +219,6 @@ export const ForgotPasswordPage: React.FC = () => {
     }
   }
 
-  // ===================== STEP 3: RESET PASSWORD =====================
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrorMessage('')
@@ -277,7 +259,6 @@ export const ForgotPasswordPage: React.FC = () => {
     }
   }
 
-  // Password strength helper
   const getPasswordStrength = (pass: string) => {
     if (!pass) return { score: 0, label: '', color: '' }
     let score = 0

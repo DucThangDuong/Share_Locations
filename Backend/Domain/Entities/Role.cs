@@ -1,4 +1,4 @@
-namespace Domain.Entities;
+﻿namespace Domain.Entities;
 
 public class Role
 {
@@ -9,7 +9,6 @@ public class Role
     public bool IsSystemRole { get; private set; }
     public bool IsActive { get; private set; } = true;
 
-    // Navigation
     private readonly List<RolePermission> _rolePermissions = new();
     public virtual IReadOnlyCollection<RolePermission> RolePermissions => _rolePermissions.AsReadOnly();
 

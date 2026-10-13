@@ -1,4 +1,4 @@
-using Application.Common.Interfaces;
+﻿using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs.Admin;
 using Dapper;
@@ -19,16 +19,12 @@ public class AdminSystemConfigRepository : IAdminSystemConfigRepository
         _auditLogService = auditLogService;
     }
 
-    // ==========================================
-    // 1. REPORT TYPES
-    // ==========================================
-
     public async Task<IReadOnlyList<AdminReportTypeListItemDto>> GetReportTypesAsync(string? targetScope = null, bool? activeOnly = null, CancellationToken ct = default)
     {
         var connection = _dbContext.Database.GetDbConnection();
 
         var sql = @"
-            SELECT 
+            SELECT
                 rt.Id,
                 rt.Code,
                 rt.Name,
@@ -55,7 +51,7 @@ public class AdminSystemConfigRepository : IAdminSystemConfigRepository
         var connection = _dbContext.Database.GetDbConnection();
 
         const string sql = @"
-            SELECT 
+            SELECT
                 rt.Id,
                 rt.Code,
                 rt.Name,
@@ -213,7 +209,7 @@ public class AdminSystemConfigRepository : IAdminSystemConfigRepository
         if (old == null) return (false, "Không tìm thấy lý do báo cáo cần xóa.");
 
         const string checkSql = @"
-            SELECT 
+            SELECT
                 (SELECT COUNT(1) FROM dbo.PlaceReports WHERE ReportTypeId = @Id) +
                 (SELECT COUNT(1) FROM dbo.ReviewReports WHERE ReportTypeId = @Id) +
                 (SELECT COUNT(1) FROM dbo.CommentReports WHERE ReportTypeId = @Id) +
@@ -241,16 +237,12 @@ public class AdminSystemConfigRepository : IAdminSystemConfigRepository
         return (true, null);
     }
 
-    // ==========================================
-    // 2. SYSTEM SETTINGS
-    // ==========================================
-
     public async Task<IReadOnlyList<AdminSystemSettingDto>> GetSystemSettingsAsync(string? group = null, CancellationToken ct = default)
     {
         var connection = _dbContext.Database.GetDbConnection();
 
         var sql = @"
-            SELECT 
+            SELECT
                 s.Id,
                 s.SettingKey,
                 s.SettingValue,
@@ -273,7 +265,7 @@ public class AdminSystemConfigRepository : IAdminSystemConfigRepository
         var connection = _dbContext.Database.GetDbConnection();
 
         const string sql = @"
-            SELECT 
+            SELECT
                 s.Id,
                 s.SettingKey,
                 s.SettingValue,

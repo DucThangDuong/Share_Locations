@@ -1,4 +1,4 @@
-using Application.Common;
+﻿using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
@@ -108,7 +108,6 @@ public class SendMessageCommandHandler : IRequestHandler<SendMessageCommand, Res
             attachmentInputs,
             ct);
 
-        // Bắn thông báo thời gian thực qua SignalR
         await _chatNotifier.NotifyMessageReceivedAsync(request.RoomId, messageDto, ct);
 
         return Result<ChatMessageDto>.Success(messageDto);

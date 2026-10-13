@@ -1,4 +1,4 @@
-using Application.Common;
+﻿using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
@@ -61,11 +61,9 @@ public class SendFriendRequestCommandHandler : IRequestHandler<SendFriendRequest
                     return Result.Failure("Bạn đã gửi lời mời kết bạn trước đó rồi.");
                 }
 
-                // Đối phương đã gửi lời mời cho mình trước -> chấp nhận kết bạn ngay lập tức
                 existing.Accept(request.UserId);
                 await _unitOfWork.SaveChangesAsync(ct);
 
-                // Gửi thông báo chấp nhận kết bạn cho đối phương
                 try
                 {
                     var senderProfile = await _unitOfWork.UserProfiles.GetByUserIdAsync(request.UserId, ct);
@@ -90,7 +88,6 @@ public class SendFriendRequestCommandHandler : IRequestHandler<SendFriendRequest
                 }
                 catch
                 {
-                    // Non-blocking notification dispatch
                 }
 
                 return Result.Success("Hai bạn đã trở thành bạn bè!");
@@ -101,7 +98,6 @@ public class SendFriendRequestCommandHandler : IRequestHandler<SendFriendRequest
         await _unitOfWork.Friendships.AddAsync(friendship, ct);
         await _unitOfWork.SaveChangesAsync(ct);
 
-        // Gửi thông báo lời mời kết bạn mới cho đối phương (TargetUserId)
         try
         {
             var senderProfile = await _unitOfWork.UserProfiles.GetByUserIdAsync(request.UserId, ct);
@@ -126,7 +122,6 @@ public class SendFriendRequestCommandHandler : IRequestHandler<SendFriendRequest
         }
         catch
         {
-            // Non-blocking notification dispatch
         }
 
         return Result.Success("Đã gửi lời mời kết bạn thành công.");

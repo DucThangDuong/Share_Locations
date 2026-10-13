@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using Application.Common;
 using Application.DTOs;
 using Domain.Entities;
@@ -27,7 +27,6 @@ public class AddTripPlaceCommandHandler : IRequestHandler<AddTripPlaceCommand, R
             return Result<TripPlaceDetailDto>.NotFound("Chuyến đi không tồn tại.");
         }
 
-        // BOLA Check: Owner hoặc Editor
         bool isOwner = trip.UserId == request.UserId;
         if (!isOwner)
         {
@@ -38,14 +37,12 @@ public class AddTripPlaceCommandHandler : IRequestHandler<AddTripPlaceCommand, R
             }
         }
 
-        // Kiểm tra PlaceId tồn tại
         var place = await _unitOfWork.Places.GetByIdAsync(request.Dto.PlaceId, ct);
         if (place == null)
         {
             return Result<TripPlaceDetailDto>.NotFound("Địa điểm không tồn tại.");
         }
 
-        // Lấy hoặc tạo mới TripDay
         var day = await _unitOfWork.Trips.GetDayByTripAndNumberAsync(request.TripId, request.DayNumber, ct);
         if (day == null)
         {
@@ -63,7 +60,6 @@ public class AddTripPlaceCommandHandler : IRequestHandler<AddTripPlaceCommand, R
         }
         else
         {
-            // Dời các stop có visitOrder >= vị trí cần chèn
             foreach (var sp in existingPlaces.Where(p => p.VisitOrder >= visitOrder))
             {
                 sp.UpdateSchedule(sp.VisitOrder + 1, sp.StartTime, sp.EndTime, sp.EstimatedCost, sp.TransportMode, sp.Note);

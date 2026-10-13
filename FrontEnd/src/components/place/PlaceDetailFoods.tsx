@@ -48,7 +48,6 @@ export const PlaceDetailFoods = ({ foods }: PlaceDetailFoodsProps) => {
                 key={food.id}
                 className="group relative flex gap-4 p-3.5 rounded-xl border border-gray-100 bg-gray-50/50 hover:bg-white hover:border-gray-200 hover:shadow-sm transition-all duration-200"
               >
-                {/* Thumbnail */}
                 {allImages.length > 0 ? (
                   <div
                     className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-lg overflow-hidden shrink-0 cursor-pointer"
@@ -73,7 +72,6 @@ export const PlaceDetailFoods = ({ foods }: PlaceDetailFoodsProps) => {
                   </div>
                 )}
 
-                {/* Content */}
                 <div className="flex flex-col justify-center min-w-0 flex-1">
                   <h3 className="text-sm sm:text-base font-bold text-gray-900 truncate">
                     {food.name}
@@ -111,7 +109,6 @@ export const PlaceDetailFoods = ({ foods }: PlaceDetailFoodsProps) => {
         </div>
       </div>
 
-      {/* Lightbox */}
       {lightboxFood && lightboxImages.length > 0 && (
         <div
           className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
@@ -121,7 +118,6 @@ export const PlaceDetailFoods = ({ foods }: PlaceDetailFoodsProps) => {
             className="relative max-w-3xl w-full"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Close */}
             <button
               onClick={closeLightbox}
               className="absolute -top-12 right-0 p-2 text-white/70 hover:text-white transition-colors cursor-pointer"
@@ -129,12 +125,10 @@ export const PlaceDetailFoods = ({ foods }: PlaceDetailFoodsProps) => {
               <X className="w-6 h-6" />
             </button>
 
-            {/* Title */}
             <div className="absolute -top-12 left-0 text-white font-semibold text-lg truncate max-w-[60%]">
               {lightboxFood.name}
             </div>
 
-            {/* Image */}
             <div className="relative rounded-xl overflow-hidden bg-black">
               <img
                 src={lightboxImages[lightboxIdx]}
@@ -142,7 +136,6 @@ export const PlaceDetailFoods = ({ foods }: PlaceDetailFoodsProps) => {
                 className="w-full max-h-[75vh] object-contain"
               />
 
-              {/* Prev / Next */}
               {lightboxImages.length > 1 && (
                 <>
                   <button
@@ -160,7 +153,6 @@ export const PlaceDetailFoods = ({ foods }: PlaceDetailFoodsProps) => {
                 </>
               )}
 
-              {/* Counter */}
               {lightboxImages.length > 1 && (
                 <div className="absolute bottom-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-black/60 text-white text-xs font-medium rounded-full backdrop-blur-sm">
                   {lightboxIdx + 1} / {lightboxImages.length}

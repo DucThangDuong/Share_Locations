@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import {
   Calendar,
   Eye,
-  ArrowRight
+  ArrowRight,
+  Image
 } from 'lucide-react'
 import type { UserBlogItem } from '@/types/models/userProfile.model'
 
@@ -14,9 +15,7 @@ interface UserProfileBlogCardProps {
 export const UserProfileBlogCard: React.FC<UserProfileBlogCardProps> = ({ blog }) => {
   const navigate = useNavigate()
 
-  const coverImage =
-    blog.coverImageUrl ||
-    'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=600&h=350&fit=crop'
+  const coverImage = blog.coverImageUrl
 
   const handleOpenBlogDetail = (e?: React.MouseEvent) => {
     e?.stopPropagation()
@@ -29,12 +28,29 @@ export const UserProfileBlogCard: React.FC<UserProfileBlogCardProps> = ({ blog }
       onClick={handleOpenBlogDetail}
       className="bg-white rounded-2xl overflow-hidden border border-slate-200/90 shadow-2xs hover:shadow-md hover:border-emerald-300 transition-all group flex flex-col sm:flex-row cursor-pointer"
     >
-      <div className="relative w-full sm:w-48 md:w-56 h-44 sm:h-auto shrink-0 overflow-hidden bg-slate-100">
-        <img
-          src={coverImage}
-          alt={blog.title}
-          className="w-full h-full object-cover"
-        />
+      <div className="relative w-full sm:w-48 md:w-56 h-44 sm:h-auto shrink-0 overflow-hidden bg-slate-100 flex items-center justify-center">
+        {coverImage ? (
+          <img
+            src={coverImage}
+            alt={blog.title}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+              const parent = target.parentElement;
+              if (parent && !parent.querySelector('.no-img-placeholder')) {
+                const fallback = document.createElement('div');
+                fallback.className = 'no-img-placeholder w-full h-full min-h-[140px] flex items-center justify-center bg-slate-50 text-slate-300 select-none';
+                fallback.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-300"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>';
+                parent.appendChild(fallback);
+              }
+            }}
+          />
+        ) : (
+          <div className="w-full h-full min-h-[140px] flex items-center justify-center bg-slate-50 text-slate-300 select-none">
+            <Image size={32} className="text-slate-300" />
+          </div>
+        )}
         <div className="absolute inset-0 bg-white/0 group-hover:bg-white/15 transition-colors duration-300 pointer-events-none" />
       </div>
 

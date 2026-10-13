@@ -157,7 +157,7 @@ export const PlaceDetailPage = () => {
       const res = await userService.createVisitLog({
         placeId: targetId,
         visitedDate: todayStr,
-        privacy: 1 // Private
+        privacy: 1
       })
       if (res.success) {
         setIsVisited(true)
@@ -262,7 +262,6 @@ export const PlaceDetailPage = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-8">
         <PlaceDetailGallery images={images} placeName={place.name} />
 
-        {/* Top Info & Sidebar (2 Columns): Sidebar stays sticky only through Overview + Foods */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
           <div className="lg:col-span-2 space-y-8">
             <PlaceDetailOverview
@@ -284,10 +283,8 @@ export const PlaceDetailPage = () => {
           <PlaceDetailSidebar place={place} />
         </div>
 
-        {/* Full-width Related / Similar Places (Above Reviews) */}
         <PlaceDetailRelated currentPlaceId={place.id} />
 
-        {/* Full-width Community Reviews */}
         <PlaceDetailReviews
           placeId={place.id}
           reviews={reviewsList}

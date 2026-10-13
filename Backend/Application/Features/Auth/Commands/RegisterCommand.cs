@@ -1,4 +1,4 @@
-using Application.Common;
+﻿using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
@@ -43,7 +43,6 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, Result<lo
         await _unitOfWork.Users.AddAsync(user, ct);
         await _unitOfWork.SaveChangesAsync(ct);
 
-        // Gửi thông báo chào mừng thành viên mới gia nhập hệ thống
         try
         {
             await _notificationRepository.CreateNotificationAsync(new CreateNotificationInput
@@ -59,7 +58,6 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, Result<lo
         }
         catch
         {
-            // Non-blocking notification dispatch
         }
 
         return Result<long>.Success(user.Id, "Đăng ký tài khoản thành công.");

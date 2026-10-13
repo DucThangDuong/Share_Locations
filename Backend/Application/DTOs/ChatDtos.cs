@@ -1,4 +1,4 @@
-using Domain.Enums;
+﻿using Domain.Enums;
 
 namespace Application.DTOs;
 
@@ -40,17 +40,14 @@ public class MessageAttachmentDto
     public int? DurationSeconds { get; set; }
     public int DisplayOrder { get; set; }
 
-    // Place attachment preview
     public long? PlaceId { get; set; }
     public string? PlaceName { get; set; }
     public string? PlaceCoverUrl { get; set; }
 
-    // Food attachment preview
     public long? FoodId { get; set; }
     public string? FoodName { get; set; }
     public string? FoodCoverUrl { get; set; }
 
-    // Trip attachment preview
     public long? TripId { get; set; }
     public string? TripTitle { get; set; }
     public string? TripCoverUrl { get; set; }
@@ -76,7 +73,6 @@ public class CreateAttachmentInput
     public long? FoodId { get; set; }
     public long? TripId { get; set; }
 }
-
 
 public class ChatRoomMemberDto
 {

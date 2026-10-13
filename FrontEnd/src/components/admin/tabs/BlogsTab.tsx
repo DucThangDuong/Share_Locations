@@ -19,8 +19,8 @@ import {
   ChevronRight,
   Loader2,
   X,
-  ImageIcon,
   User,
+  Image,
 } from "lucide-react";
 import type { AdminBlogItem } from "@/types/admin.types";
 import { CustomSelect } from "@/components/common/CustomSelect";
@@ -91,12 +91,10 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
   const [blogFilterStatus, setBlogFilterStatus] = useState("all");
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-
   const currentBlog = selectedBlogId
     ? blogsList.find((b) => b.id === selectedBlogId)
     : null;
 
-  // Filter logic
   const filteredBlogs = blogsList.filter((b) => {
     if (blogFilterCategory !== "all" && b.category !== blogFilterCategory)
       return false;
@@ -203,8 +201,6 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
     }
   };
 
-
-  // If a blog is selected, render full BlogDetailViewer & Editor
   if (selectedBlogId && currentBlog) {
     return (
       <BlogDetailViewer
@@ -240,7 +236,6 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
   return (
     <div className="space-y-6 animate-in fade-in duration-150 text-xs font-sans">
       <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
-        {/* Search & Filter Controls */}
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="relative flex-1 min-w-[240px]">
             <Search
@@ -314,7 +309,6 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
                     className="hover:bg-slate-50/60 transition-colors group cursor-pointer"
                     onClick={() => setSelectedBlogId(blog.id)}
                   >
-                    {/* Blog Cover & Title */}
                     <td className="p-3.5 pl-4 font-bold text-slate-900">
                       <div className="flex items-center gap-3">
                         {blog.coverImg ? (
@@ -331,12 +325,12 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
                           />
                         ) : null}
                         <div
-                          className={`w-12 h-10 rounded-lg bg-slate-100 border border-slate-200 items-center justify-center text-slate-400 shrink-0 ${
+                          className={`w-12 h-10 rounded-lg bg-slate-50 border border-slate-200 items-center justify-center text-slate-300 shrink-0 ${
                             blog.coverImg ? "hidden" : "flex"
                           }`}
                           title="Không có hình ảnh"
                         >
-                          <ImageIcon size={14} className="text-slate-300" />
+                          <Image size={16} className="text-slate-300" />
                         </div>
                         <div className="max-w-md">
                           <div className="font-bold text-slate-900 group-hover:text-emerald-700 transition-colors line-clamp-1 text-xs sm:text-sm">
@@ -353,7 +347,6 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
                       </div>
                     </td>
 
-                    {/* Author & Date */}
                     <td className="p-3.5 text-slate-700 font-medium">
                       <div className="flex items-center gap-2">
                         {blog.authorAvatar ? (
@@ -389,7 +382,6 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
                       </div>
                     </td>
 
-                    {/* Views & Likes */}
                     <td className="p-3.5 text-slate-700 font-medium">
                       <div className="flex items-center gap-3">
                         <span
@@ -412,7 +404,6 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
                       </div>
                     </td>
 
-                    {/* Status */}
                     <td className="p-3.5">
                       <span
                         className={`inline-flex items-center justify-center px-3.5 py-1 rounded-xl text-xs font-bold border transition-colors ${isHidden || isDraft
@@ -424,7 +415,6 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
                       </span>
                     </td>
 
-                    {/* View Details */}
                     <td
                       className="p-3.5 text-center"
                       onClick={(e) => e.stopPropagation()}
@@ -456,7 +446,6 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
           ) : null}
         </div>
 
-        {/* Pagination Bar */}
         {pagination && pagination.totalElements > 0 && (
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 px-1 border-t border-slate-100 text-xs text-slate-500 font-medium">
             <div>
@@ -517,8 +506,6 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
         )}
       </div>
 
-      {/* Add Blog Modal */}
-
     </div>
   );
 };
@@ -539,10 +526,8 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
   onToggleStatus,
   onDelete,
 }) => {
-  // Mode: "reader" (exact BlogReaderView layout) or "editor" (form inputs + live preview)
   const [activeMode, setActiveMode] = useState<"reader" | "editor">("reader");
 
-  // State for form and view
   const [title, setTitle] = useState(blog.title || "");
   const [category, setCategory] = useState(
     blog.category || ""
@@ -574,7 +559,6 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
   const [readProgress, setReadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch full details if content is missing or for full accuracy
   useEffect(() => {
     if (blog.id) {
       blogService.getBlogDetail(blog.id).then((res) => {
@@ -600,7 +584,6 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
     }
   }, [blog.id]);
 
-  // Reading progress scroll tracking
   useEffect(() => {
     const handleScroll = () => {
       const total = document.documentElement.scrollHeight - window.innerHeight;
@@ -613,7 +596,6 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Process HTML and extract Table of Contents (Matching BlogReaderView)
   const { processedHtml, extractedHeadings } = useMemo(() => {
     const raw = content || "";
     if (!raw.trim()) {
@@ -682,13 +664,11 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200 text-xs font-sans pb-16 relative">
-      {/* Top Reading Progress Bar (Matching BlogReaderView) */}
       <div
         className="fixed top-0 left-0 h-1 bg-emerald-600 z-50 transition-all duration-100"
         style={{ width: `${readProgress}%` }}
       />
 
-      {/* Top Admin Navigation & Toolbar Header (Not sticky, scrolls away) */}
       <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <button
@@ -765,7 +745,6 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
         </div>
       </div>
 
-      {/* Alert Notifications */}
       {errorMsg && (
         <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium flex items-center gap-2 animate-in fade-in">
           <AlertCircle className="w-4 h-4 shrink-0" />
@@ -783,9 +762,7 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
       {activeMode === "reader" && (
         <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200/80 shadow-xs animate-in fade-in duration-150">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
-            {/* Left Column (8 cols): Full Article Reader (Matching BlogReaderView.tsx) */}
             <div className="lg:col-span-8 space-y-8 min-w-0">
-              {/* Category & Title Header */}
               <div className="space-y-4">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold">
                   <span>{category || "Cẩm nang du lịch"}</span>
@@ -802,7 +779,6 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
                 )}
               </div>
 
-              {/* Author & Meta Row */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4 border-y border-slate-200">
                 <div className="flex items-center gap-3">
                   {authorAvatar ? (
@@ -839,7 +815,6 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
                 </div>
               </div>
 
-              {/* Hero Cover Image */}
               {coverImg ? (
                 <div className="rounded-3xl overflow-hidden shadow-md border border-slate-200 bg-slate-100">
                   <img
@@ -854,7 +829,6 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
                 </div>
               )}
 
-              {/* Processed Article Body Content */}
               <div className="space-y-8 text-base text-slate-800 leading-relaxed font-normal pt-2">
                 {processedHtml ? (
                   <div
@@ -868,7 +842,6 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
                 )}
               </div>
 
-              {/* Author Footer Bio Card */}
               <div className="pt-8 border-t border-slate-200 space-y-6">
                 <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200 flex flex-col sm:flex-row items-center gap-4">
                   {authorAvatar ? (
@@ -905,9 +878,7 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
               </div>
             </div>
 
-            {/* Right Column (4 cols Sticky): Table of Contents */}
             <aside className="lg:col-span-4 space-y-6 sticky top-6">
-              {/* Table of Contents (Matching BlogTableOfContents from BlogReaderView) */}
               {extractedHeadings && extractedHeadings.length > 0 && (
                 <BlogTableOfContents
                   headings={extractedHeadings}
@@ -922,9 +893,7 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
       {activeMode === "editor" && (
         <form onSubmit={handleFormSubmit}>
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            {/* Left Column (8 cols): Form Sections */}
             <div className="lg:col-span-8 space-y-6">
-              {/* Section 1: Basic Blog Meta */}
               <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-5">
                 <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
                   <FileText className="w-4 h-4 text-emerald-700" />
@@ -1010,7 +979,6 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
                 </div>
               </div>
 
-              {/* Section 2: Summary / Sapo */}
               <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-4">
                 <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
                   <Sparkles className="w-4 h-4 text-emerald-700" />
@@ -1031,7 +999,6 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
                 </div>
               </div>
 
-              {/* Section 3: Cover Image */}
               <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-4">
                 <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
                   <UploadCloud className="w-4 h-4 text-emerald-700" />
@@ -1091,7 +1058,6 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
                 </div>
               </div>
 
-              {/* Section 4: Full Content */}
               <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-4">
                 <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
                   <BookOpen className="w-4 h-4 text-emerald-700" />
@@ -1112,7 +1078,6 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
                 </div>
               </div>
 
-              {/* Section 5: Stats */}
               <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-4">
                 <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
                   <BarChart3 className="w-4 h-4 text-emerald-700" />
@@ -1148,7 +1113,6 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
                 </div>
               </div>
 
-              {/* Bottom Action Bar */}
               <div className="p-6 bg-white rounded-3xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="text-xs text-slate-500">
                   Mọi thông tin chỉnh sửa sẽ được cập nhật trực tiếp trên trang Cẩm nang &amp; Blog du lịch.
@@ -1184,7 +1148,6 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
               </div>
             </div>
 
-            {/* Right Column (4 cols, sticky): Live Preview Card */}
             <div className="lg:col-span-4 space-y-6 sticky top-24">
               <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -1197,7 +1160,6 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
                   </span>
                 </div>
 
-                {/* Blog Discovery Card Replica */}
                 <div className="group flex flex-col select-none bg-white rounded-2xl border border-slate-200/80 p-3 shadow-2xs space-y-3">
                   <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-slate-100">
                     <img
@@ -1249,7 +1211,6 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
                 </div>
               </div>
 
-              {/* Quick Status Control */}
               <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-3.5">
                 <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
                   <Sparkles className="w-4 h-4 text-emerald-700" />

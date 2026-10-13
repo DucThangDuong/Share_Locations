@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   Send,
   User,
+  AlertCircle,
 } from "lucide-react";
 import type { ReportTargetType, ReportTargetInfo } from "@/types/admin.types";
 import { reportService } from "@/services/reportService";
@@ -39,6 +40,7 @@ interface SubmittedUserReport {
 }
 
 interface ReasonItem {
+  id: number;
   code: string;
   name: string;
   desc?: string;
@@ -132,40 +134,41 @@ const REASON_DICTIONARY: Record<string, { name: string; desc: string }> = {
 };
 
 const DEFAULT_REASONS_BY_TARGET: Record<string, ReasonItem[]> = {
+  blog: [
+    { id: 5, code: "BLOG_SPAM", name: "Quảng cáo rác / Spam", desc: "Bài viết chứa nhiều liên kết quảng cáo spam và thông tin sai lệch" },
+    { id: 1, code: "BLOG_COPYRIGHT", name: "Vi phạm bản quyền nội dung / ảnh", desc: "Sao chép bài viết của tác giả khác không xin phép" },
+    { id: 2, code: "BLOG_MISINFO", name: "Thông tin sai sự thật / Nguy hiểm", desc: "Cung cấp chỉ dẫn sai lệch gây nguy hiểm cho người đi du lịch" },
+    { id: 3, code: "BLOG_OFFENSIVE", name: "Nội dung phản cảm", desc: "Vi phạm thuần phong mỹ tục hoặc tiêu chuẩn cộng đồng" },
+    { id: 4, code: "CONTENT_OFFENSIVE", name: "Ngôn từ thô tục / Xúc phạm", desc: "Chửi bới, công kích cá nhân, đe dọa hoặc phân biệt đối xử" },
+    { id: 6, code: "OTHER", name: "Lý do khác", desc: "Vấn đề khác cần xử lý" },
+  ],
   place: [
-    { code: "PLACE_WRONG_INFO", name: "Thông tin sai lệch", desc: "Địa chỉ, số điện thoại, giờ mở cửa hoặc vị trí bản đồ không đúng" },
-    { code: "PLACE_CLOSED", name: "Địa điểm đã đóng cửa", desc: "Cơ sở đã ngừng kinh doanh vĩnh viễn hoặc tạm ngưng dài hạn" },
-    { code: "PLACE_WRONG_PRICE", name: "Giá cả không chính xác", desc: "Mức giá thực tế chênh lệch nhiều so với thông tin niêm yết" },
-    { code: "PLACE_DUPLICATE", name: "Địa điểm bị trùng lặp", desc: "Đã có địa điểm tương tự đang cùng tồn tại trên hệ thống" },
-    { code: "PLACE_INAPPROPRIATE", name: "Địa điểm không có thật / Vi phạm", desc: "Cơ sở ảo hoặc vi phạm thuần phong mỹ tục" },
-    { code: "OTHER", name: "Lý do khác", desc: "Vấn đề khác cần Quản trị viên xác minh" },
+    { id: 1, code: "PLACE_WRONG_INFO", name: "Thông tin sai lệch", desc: "Địa chỉ, số điện thoại, giờ mở cửa hoặc vị trí bản đồ không đúng" },
+    { id: 2, code: "PLACE_CLOSED", name: "Địa điểm đã đóng cửa", desc: "Cơ sở đã ngừng kinh doanh vĩnh viễn hoặc tạm ngưng dài hạn" },
+    { id: 3, code: "PLACE_WRONG_PRICE", name: "Giá cả không chính xác", desc: "Mức giá thực tế chênh lệch nhiều so với thông tin niêm yết" },
+    { id: 4, code: "PLACE_DUPLICATE", name: "Địa điểm bị trùng lặp", desc: "Đã có địa điểm tương tự đang cùng tồn tại trên hệ thống" },
+    { id: 5, code: "PLACE_INAPPROPRIATE", name: "Địa điểm không có thật / Vi phạm", desc: "Cơ sở ảo hoặc vi phạm thuần phong mỹ tục" },
+    { id: 6, code: "OTHER", name: "Lý do khác", desc: "Vấn đề khác cần Quản trị viên xác minh" },
   ],
   review: [
-    { code: "CONTENT_SPAM", name: "Quảng cáo rác / Spam", desc: "Chèn link tiếp thị, bán hàng hoặc bình luận lặp lại vô nghĩa" },
-    { code: "CONTENT_OFFENSIVE", name: "Ngôn từ thô tục / Xúc phạm", desc: "Chửi bới, công kích cá nhân, xúc phạm hoặc đe dọa" },
-    { code: "CONTENT_FAKE", name: "Đánh giá giả mạo / Chưa trải nghiệm", desc: "Đánh giá ảo, vu khống hoặc có dấu hiệu cạnh tranh không lành mạnh" },
-    { code: "DEFAMATION", name: "Bôi nhọ / Xuyên tạc danh dự", desc: "Vu khống gây ảnh hưởng tiêu cực tới uy tín cơ sở" },
-    { code: "INAPPROPRIATE", name: "Hình ảnh / Nội dung phản cảm", desc: "Đính kèm ảnh nhạy cảm hoặc không liên quan tới địa điểm" },
-    { code: "OTHER", name: "Lý do khác", desc: "Vi phạm khác cần Quản trị viên can thiệp" },
+    { id: 7, code: "CONTENT_SPAM", name: "Quảng cáo rác / Spam", desc: "Chèn link tiếp thị, bán hàng hoặc bình luận lặp lại vô nghĩa" },
+    { id: 8, code: "CONTENT_OFFENSIVE", name: "Ngôn từ thô tục / Xúc phạm", desc: "Chửi bới, công kích cá nhân, xúc phạm hoặc đe dọa" },
+    { id: 9, code: "CONTENT_FAKE", name: "Đánh giá giả mạo / Chưa trải nghiệm", desc: "Đánh giá ảo, vu khống hoặc có dấu hiệu cạnh tranh không lành mạnh" },
+    { id: 10, code: "DEFAMATION", name: "Bôi nhọ / Xuyên tạc danh dự", desc: "Vu khống gây ảnh hưởng tiêu cực tới uy tín cơ sở" },
+    { id: 11, code: "INAPPROPRIATE", name: "Hình ảnh / Nội dung phản cảm", desc: "Đính kèm ảnh nhạy cảm hoặc không liên quan tới địa điểm" },
+    { id: 12, code: "OTHER", name: "Lý do khác", desc: "Vi phạm khác cần Quản trị viên can thiệp" },
   ],
   comment: [
-    { code: "CONTENT_SPAM", name: "Bình luận spam / Quảng cáo", desc: "Chèn link tiếp thị hoặc lặp lại bình luận nhiều lần" },
-    { code: "CONTENT_OFFENSIVE", name: "Ngôn từ xúc phạm / Khiếm nhã", desc: "Công kích cá nhân, xúc phạm hoặc khiêu khích" },
-    { code: "DEFAMATION", name: "Xuyên tạc / Vu khống", desc: "Thông tin bịa đặt gây ảnh hưởng tới người khác" },
-    { code: "OTHER", name: "Lý do khác", desc: "Vi phạm khác cần can thiệp" },
-  ],
-  blog: [
-    { code: "BLOG_COPYRIGHT", name: "Vi phạm bản quyền nội dung / ảnh", desc: "Sao chép bài viết của tác giả khác không xin phép" },
-    { code: "BLOG_MISINFO", name: "Thông tin sai sự thật / Nguy hiểm", desc: "Cung cấp chỉ dẫn sai lệch gây nguy hiểm cho người đi du lịch" },
-    { code: "BLOG_SPAM", name: "Bài viết quảng cáo / Rác", desc: "Nội dung bán hàng bừa bãi, link cờ bạc, lừa đảo" },
-    { code: "BLOG_OFFENSIVE", name: "Nội dung phản cảm", desc: "Vi phạm thuần phong mỹ tục hoặc tiêu chuẩn cộng đồng" },
-    { code: "OTHER", name: "Lý do khác", desc: "Vấn đề khác cần xử lý" },
+    { id: 13, code: "CONTENT_SPAM", name: "Bình luận spam / Quảng cáo", desc: "Chèn link tiếp thị hoặc lặp lại bình luận nhiều lần" },
+    { id: 14, code: "CONTENT_OFFENSIVE", name: "Ngôn từ xúc phạm / Khiếm nhã", desc: "Công kích cá nhân, xúc phạm hoặc khiêu khích" },
+    { id: 15, code: "DEFAMATION", name: "Xuyên tạc / Vu khống", desc: "Thông tin bịa đặt gây ảnh hưởng tới người khác" },
+    { id: 16, code: "OTHER", name: "Lý do khác", desc: "Vi phạm khác cần can thiệp" },
   ],
   user: [
-    { code: "USER_IMPERSONATION", name: "Mạo danh người khác", desc: "Sử dụng thông tin, hình ảnh của người khác trái phép" },
-    { code: "CONTENT_SPAM", name: "Tài khoản spam / Lừa đảo", desc: "Liên tục đăng tải nội dung rác hoặc có hành vi gian lận" },
-    { code: "CONTENT_OFFENSIVE", name: "Hành vi xúc phạm / Quấy rối", desc: "Quấy rối thành viên khác qua tin nhắn hoặc bình luận" },
-    { code: "OTHER", name: "Lý do khác", desc: "Vi phạm khác cần báo cáo" },
+    { id: 17, code: "USER_IMPERSONATION", name: "Mạo danh người khác", desc: "Sử dụng thông tin, hình ảnh của người khác trái phép" },
+    { id: 18, code: "CONTENT_SPAM", name: "Tài khoản spam / Lừa đảo", desc: "Liên tục đăng tải nội dung rác hoặc có hành vi gian lận" },
+    { id: 19, code: "CONTENT_OFFENSIVE", name: "Hành vi xúc phạm / Quấy rối", desc: "Quấy rối thành viên khác qua tin nhắn hoặc bình luận" },
+    { id: 20, code: "OTHER", name: "Lý do khác", desc: "Vi phạm khác cần báo cáo" },
   ],
 };
 
@@ -182,7 +185,6 @@ export const ReportModal: React.FC<ReportModalProps> = ({
 
   const [modalView, setModalView] = useState<"form" | "history">(defaultTab);
 
-  // Determine target information
   const targetInfo: ReportTargetInfo = initialTarget || {
     targetType: "place",
     targetId: placeId,
@@ -192,15 +194,14 @@ export const ReportModal: React.FC<ReportModalProps> = ({
 
   const targetType = targetInfo.targetType;
 
-  // Form State
-  const [selectedReasonId, setSelectedReasonId] = useState<string | null>(null);
+  const [selectedReasonId, setSelectedReasonId] = useState<number | null>(null);
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [submittedReportId, setSubmittedReportId] = useState<number | null>(null);
   const [myReports, setMyReports] = useState<SubmittedUserReport[]>([]);
   const [rawApiReasons, setRawApiReasons] = useState<any[]>([]);
 
-  // Close on Escape key
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -211,7 +212,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
 
   useEffect(() => {
     void Promise.all([
-      reportService.getReasons(),
+      reportService.getReasons(targetType),
       defaultTab === "history" ? reportService.getMyReports() : Promise.resolve(null),
     ])
       .then(([reasonsRes, historyRes]) => {
@@ -224,9 +225,8 @@ export const ReportModal: React.FC<ReportModalProps> = ({
         }
       })
       .catch(() => undefined);
-  }, [defaultTab]);
+  }, [defaultTab, targetType]);
 
-  // Lock body scroll
   useEffect(() => {
     if (!isOpen) {
       document.body.style.overflow = "";
@@ -240,38 +240,36 @@ export const ReportModal: React.FC<ReportModalProps> = ({
   }, [isOpen]);
 
   const processedReasons = useMemo<ReasonItem[]>(() => {
-    const defaultList = DEFAULT_REASONS_BY_TARGET[targetType] || DEFAULT_REASONS_BY_TARGET.place;
+    const defaultList = DEFAULT_REASONS_BY_TARGET[targetType] || DEFAULT_REASONS_BY_TARGET.blog;
 
     if (!rawApiReasons || rawApiReasons.length === 0) {
       return defaultList;
     }
 
-    return rawApiReasons.map((item) => {
-      const code = typeof item === "string" ? item : item.code || item.id || item.name || "OTHER";
+    const filtered = rawApiReasons.filter((item) => {
+      if (!item || typeof item !== "object") return true;
+      if (!item.targetType) return true;
+      const t = String(item.targetType).toLowerCase();
+      return t === targetType.toLowerCase() || t === "all";
+    });
+
+    const listToProcess = filtered.length > 0 ? filtered : rawApiReasons;
+
+    return listToProcess.map((item, idx) => {
+      const code = typeof item === "string" ? item : item.code || item.codeId || item.reportTypeCode || item.name || "OTHER";
       const uppercaseCode = String(code).toUpperCase().trim();
       const mapped = REASON_DICTIONARY[uppercaseCode];
 
-      if (mapped) {
-        return {
-          code: uppercaseCode,
-          name: mapped.name,
-          desc: mapped.desc,
-        };
-      }
-
-      // If item already has a meaningful name from backend that is not equal to raw uppercase code
-      if (typeof item === "object" && item.name && item.name !== uppercaseCode) {
-        return {
-          code: uppercaseCode,
-          name: item.name,
-          desc: item.desc || item.description || undefined,
-        };
-      }
+      const matchedDefault = defaultList.find((d) => d.code === uppercaseCode);
+      const id = typeof item === "object" && (item.id || item.reasonId)
+        ? Number(item.id || item.reasonId)
+        : (matchedDefault?.id || (idx + 1));
 
       return {
+        id,
         code: uppercaseCode,
-        name: uppercaseCode.replace(/_/g, " "),
-        desc: undefined,
+        name: mapped?.name || (typeof item === "object" && item.name ? item.name : uppercaseCode.replace(/_/g, " ")),
+        desc: mapped?.desc || (typeof item === "object" ? item.desc || item.description : undefined),
       };
     });
   }, [rawApiReasons, targetType]);
@@ -312,23 +310,23 @@ export const ReportModal: React.FC<ReportModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedReasonId) return;
+    if (selectedReasonId === null || selectedReasonId === undefined) return;
 
     setIsSubmitting(true);
-    const chosenReason = processedReasons.find((r) => r.code === selectedReasonId);
-    const reasonText = chosenReason?.name || selectedReasonId;
+    setSubmitError(null);
+    const chosenReason = processedReasons.find((r) => r.id === selectedReasonId);
+    const reasonText = chosenReason?.name || "Báo cáo vi phạm";
+    const finalDesc = description.trim() || (chosenReason?.desc ? chosenReason.desc : `Nội dung vi phạm: ${reasonText}`);
+    const targetNumId = Number(targetInfo.targetId || placeId || 0);
 
     try {
       const response = await reportService.submitReport({
         targetType: targetInfo.targetType,
-        targetId: targetInfo.targetId,
-        placeId: targetInfo.targetType === "place" ? targetInfo.targetId : undefined,
-        reviewId: targetInfo.targetType === "review" ? targetInfo.targetId : undefined,
-        commentId: targetInfo.targetType === "comment" ? targetInfo.targetId : undefined,
-        blogId: targetInfo.targetType === "blog" ? targetInfo.targetId : undefined,
+        targetId: targetNumId,
+        reasonId: selectedReasonId,
+        description: finalDesc,
         reason: reasonText,
-        reasonCode: selectedReasonId,
-        description: description.trim() || "Người dùng gửi báo cáo vi phạm.",
+        reasonCode: chosenReason?.code,
       });
 
       const reportId = Number(response?.data?.id || response?.data || Date.now());
@@ -339,7 +337,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
         targetType: targetType,
         targetTitle: targetInfo.targetTitle,
         reasonContent: reasonText,
-        description: description.trim() || "Người dùng không để lại mô tả thêm.",
+        description: finalDesc,
         submittedAt: "Vừa xong",
         status: "pending",
       };
@@ -348,25 +346,15 @@ export const ReportModal: React.FC<ReportModalProps> = ({
       if (onSubmittedReport) {
         onSubmittedReport(newReportEntry);
       }
-    } catch {
-      // Fallback for UI confirmation in local/development environment
-      const reportId = Date.now();
-      setSubmittedReportId(reportId);
-
-      const newReportEntry: SubmittedUserReport = {
-        id: reportId,
-        targetType: targetType,
-        targetTitle: targetInfo.targetTitle,
-        reasonContent: reasonText,
-        description: description.trim() || "Người dùng không để lại mô tả thêm.",
-        submittedAt: "Vừa xong",
-        status: "pending",
-      };
-
-      setMyReports((prev) => [newReportEntry, ...prev]);
-      if (onSubmittedReport) {
-        onSubmittedReport(newReportEntry);
-      }
+    } catch (err: any) {
+      console.error("Lỗi khi gửi báo cáo:", err);
+      const errorMsg =
+        err?.response?.data?.message ||
+        err?.response?.data?.title ||
+        (err?.response?.status === 401
+          ? "Bạn cần đăng nhập để gửi báo cáo vi phạm."
+          : "Gửi báo cáo thất bại. Vui lòng kiểm tra lại thông tin và thử lại sau.");
+      setSubmitError(errorMsg);
     } finally {
       setIsSubmitting(false);
     }
@@ -434,7 +422,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
                 Đã tiếp nhận báo cáo của bạn
               </h4>
               <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                Mã theo dõi: <strong className="text-emerald-700">#REP-{submittedReportId}</strong>
+                Mã theo dõi: <strong className="text-emerald-700">{submittedReportId}</strong>
               </p>
             </div>
 
@@ -548,11 +536,14 @@ export const ReportModal: React.FC<ReportModalProps> = ({
 
                 <div className="space-y-1.5">
                   {processedReasons.map((r) => {
-                    const isSelected = selectedReasonId === r.code;
+                    const isSelected = selectedReasonId === r.id;
                     return (
                       <div
-                        key={r.code}
-                        onClick={() => setSelectedReasonId(r.code)}
+                        key={`${r.id}-${r.code}`}
+                        onClick={() => {
+                          setSelectedReasonId(r.id);
+                          setSubmitError(null);
+                        }}
                         className={`flex items-start gap-3 p-2.5 sm:p-3 rounded-xl border transition-all cursor-pointer ${isSelected
                           ? "border-rose-500 bg-rose-50/60 shadow-2xs"
                           : "border-slate-200 bg-white hover:bg-slate-50/70"
@@ -602,11 +593,21 @@ export const ReportModal: React.FC<ReportModalProps> = ({
                   rows={3}
                   maxLength={500}
                   value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                  onChange={(e) => {
+                    setDescription(e.target.value);
+                    if (submitError) setSubmitError(null);
+                  }}
                   placeholder="Vui lòng cung cấp thêm thông tin hoặc dẫn chứng để Quản trị viên dễ dàng xác minh..."
                   className="w-full text-xs p-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 transition-all resize-none"
                 />
               </div>
+
+              {submitError && (
+                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-center gap-2">
+                  <AlertCircle size={16} className="shrink-0 text-rose-600" />
+                  <span>{submitError}</span>
+                </div>
+              )}
 
               <div className="flex items-center gap-2 p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-[11px] text-emerald-900">
                 <ShieldCheck size={16} className="text-emerald-600 shrink-0" />
@@ -634,8 +635,8 @@ export const ReportModal: React.FC<ReportModalProps> = ({
 
                 <button
                   type="submit"
-                  disabled={!selectedReasonId || isSubmitting}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold text-white flex items-center gap-1.5 transition-all shadow-xs ${selectedReasonId && !isSubmitting
+                  disabled={selectedReasonId === null || isSubmitting}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold text-white flex items-center gap-1.5 transition-all shadow-xs ${selectedReasonId !== null && !isSubmitting
                     ? "bg-rose-600 hover:bg-rose-700 shadow-rose-600/20 cursor-pointer"
                     : "bg-slate-300 text-slate-500 cursor-not-allowed"
                     }`}

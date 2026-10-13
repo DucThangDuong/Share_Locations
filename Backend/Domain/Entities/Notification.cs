@@ -1,4 +1,4 @@
-using Domain.Enums;
+﻿using Domain.Enums;
 
 namespace Domain.Entities;
 
@@ -10,7 +10,7 @@ public class Notification
     public string Title { get; private set; } = string.Empty;
     public string Content { get; private set; } = string.Empty;
     public NotificationType Type { get; private set; } = NotificationType.System;
-    public byte Priority { get; private set; } = 2;  // 1: Urgent, 2: Normal, 3: Low
+    public byte Priority { get; private set; } = 2;
     public string? GroupKey { get; private set; }
     public string? DeduplicationKey { get; private set; }
     public string? EntityType { get; private set; }
@@ -25,7 +25,6 @@ public class Notification
     public DateTime CreatedAt { get; private set; }
     public DateTime UpdatedAt { get; private set; }
 
-    // Navigation
     public virtual User User { get; private set; } = null!;
     public virtual User? ActorUser { get; private set; }
 

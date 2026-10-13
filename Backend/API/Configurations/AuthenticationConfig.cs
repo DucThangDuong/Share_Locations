@@ -1,4 +1,4 @@
-using System.IdentityModel.Tokens.Jwt;
+﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Application.Common.Interfaces;
@@ -12,11 +12,11 @@ public static class AuthenticationConfig
 {
     public static IServiceCollection AddAppJwtAuthentication(this IServiceCollection services, IConfiguration configuration)
     {
-        var jwtSecret = configuration["Jwt:SecretKey"] 
+        var jwtSecret = configuration["Jwt:SecretKey"]
             ?? throw new InvalidOperationException("CRITICAL: JWT SecretKey is not configured!");
-        var jwtIssuer = configuration["Jwt:Issuer"] 
+        var jwtIssuer = configuration["Jwt:Issuer"]
             ?? throw new InvalidOperationException("CRITICAL: JWT Issuer is not configured!");
-        var jwtAudience = configuration["Jwt:Audience"] 
+        var jwtAudience = configuration["Jwt:Audience"]
             ?? throw new InvalidOperationException("CRITICAL: JWT Audience is not configured!");
 
         services.AddAuthentication(options =>

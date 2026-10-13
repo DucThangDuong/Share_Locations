@@ -1,4 +1,4 @@
-using Application.Common;
+﻿using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
@@ -32,7 +32,7 @@ public class UploadAdminPlaceMediaCommandHandler : IRequestHandler<UploadAdminPl
             return Result<List<PlaceMediaItemDto>>.Failure("Vui lòng chọn ít nhất một hình ảnh.");
         }
 
-        const long maxFileSize = 10 * 1024 * 1024; // 10MB
+        const long maxFileSize = 10 * 1024 * 1024;
         var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
         var uploadedUrls = new List<string>();
 
@@ -71,7 +71,6 @@ public class UploadAdminPlaceMediaCommandHandler : IRequestHandler<UploadAdminPl
             var items = await _placeRepository.AddPlaceMediaAsync(request.PlaceId, uploadedUrls, request.UploaderId, ct);
             if (items == null || items.Count == 0)
             {
-                // Xóa các blob vừa upload nếu không lưu được vào db do quyền hạn hoặc place không tồn tại
                 foreach (var url in uploadedUrls)
                 {
                     await _blobService.DeleteImageAsync(url, "places", ct);

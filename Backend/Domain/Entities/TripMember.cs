@@ -1,4 +1,4 @@
-using Domain.Enums;
+﻿using Domain.Enums;
 
 namespace Domain.Entities;
 
@@ -9,7 +9,6 @@ public class TripMember
     public TripMemberRole Role { get; private set; } = TripMemberRole.Member;
     public DateTime JoinedAt { get; private set; }
 
-    // Navigation
     public virtual Trip Trip { get; private set; } = null!;
     public virtual User User { get; private set; } = null!;
 

@@ -50,7 +50,6 @@ export const SharePlaceModal: React.FC<SharePlaceModalProps> = ({
   const [sentContactIds, setSentContactIds] = useState<Set<string>>(new Set())
   const [isCopied, setIsCopied] = useState(false)
 
-  // Fetch recent inbox rooms and friends
   useEffect(() => {
     if (!isOpen || !isAuthenticated) return
 
@@ -68,7 +67,6 @@ export const SharePlaceModal: React.FC<SharePlaceModalProps> = ({
         const combinedList: ShareContact[] = []
         const seenIds = new Set<string>()
 
-        // 1. Add active chat rooms (Group & Direct)
         if (Array.isArray(inboxItems)) {
           inboxItems.forEach((room) => {
             const key = `room-${room.roomId}`
@@ -86,7 +84,6 @@ export const SharePlaceModal: React.FC<SharePlaceModalProps> = ({
           })
         }
 
-        // 2. Add remaining friends that might not have active recent rooms
         if (friendsRes?.success && friendsRes.data?.friends) {
           friendsRes.data.friends.forEach((f) => {
             const hasExisting = combinedList.some(
@@ -133,7 +130,6 @@ export const SharePlaceModal: React.FC<SharePlaceModalProps> = ({
 
   const currentUrl = typeof window !== 'undefined' ? window.location.href : ''
 
-  // Handle Send Place Attachment to a Chat Contact
   const handleSendToChat = async (contact: ShareContact) => {
     if (!isAuthenticated) {
       alert('Vui lòng đăng nhập để gửi địa điểm qua tin nhắn!')
@@ -146,7 +142,6 @@ export const SharePlaceModal: React.FC<SharePlaceModalProps> = ({
     try {
       let targetRoomId = contact.roomId
 
-      // If room doesn't exist yet, get or create direct room with friend
       if (!targetRoomId && contact.userId) {
         targetRoomId = await chatService.getOrCreateDirectRoom(contact.userId)
       }
@@ -155,14 +150,12 @@ export const SharePlaceModal: React.FC<SharePlaceModalProps> = ({
         throw new Error('Không tìm thấy phòng trò chuyện phù hợp.')
       }
 
-      // Send place attachment with optional message note
       await chatService.sendMessage({
         roomId: targetRoomId,
         content: messageNote.trim() || undefined,
         placeId: Number(place.id)
       })
 
-      // Update sent list & notify
       setSentContactIds((prev) => new Set(prev).add(contact.id))
       await fetchInbox().catch(() => { })
 
@@ -175,7 +168,6 @@ export const SharePlaceModal: React.FC<SharePlaceModalProps> = ({
     }
   }
 
-  // Handle Copy Link
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(currentUrl)
@@ -187,7 +179,6 @@ export const SharePlaceModal: React.FC<SharePlaceModalProps> = ({
     }
   }
 
-  // Handle Social Sharing
   const handleShareFacebook = () => {
     const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}`
     window.open(url, '_blank', 'noopener,noreferrer,width=600,height=500')
@@ -225,7 +216,6 @@ export const SharePlaceModal: React.FC<SharePlaceModalProps> = ({
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
       <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
 
-        {/* Header */}
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-800 flex items-center justify-center font-bold">
@@ -244,10 +234,8 @@ export const SharePlaceModal: React.FC<SharePlaceModalProps> = ({
           </button>
         </div>
 
-        {/* Scrollable Body */}
         <div className="p-6 overflow-y-auto space-y-6">
 
-          {/* Place Preview Card */}
           <div className="flex items-center gap-3.5 p-3 rounded-2xl bg-slate-50 border border-slate-200/80 shadow-2xs">
             {coverPhoto ? (
               <img
@@ -278,7 +266,6 @@ export const SharePlaceModal: React.FC<SharePlaceModalProps> = ({
             </div>
           </div>
 
-          {/* Optional Message Note */}
           <div>
             <label className="block text-xs font-bold text-slate-600 mb-1.5">
               Lời nhắn gửi kèm
@@ -322,7 +309,6 @@ export const SharePlaceModal: React.FC<SharePlaceModalProps> = ({
               </div>
             ) : (
               <div className="space-y-3">
-                {/* Search Bar for Contacts */}
                 {contacts.length > 5 && (
                   <div className="relative">
                     <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -371,7 +357,6 @@ export const SharePlaceModal: React.FC<SharePlaceModalProps> = ({
                             </div>
                           )}
 
-                          {/* Status Badge */}
                           {isSending && (
                             <div className="absolute inset-0 bg-slate-900/40 rounded-full flex items-center justify-center">
                               <Loader2 size={16} className="animate-spin text-white" />

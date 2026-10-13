@@ -1,4 +1,4 @@
-using Application.Common;
+﻿using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs.Admin;
@@ -17,7 +17,7 @@ public class AdminFoodRepository : IAdminFoodRepository
     private readonly IAuditLogService _auditLogService;
 
     public AdminFoodRepository(
-        TravelReviewDbContext dbContext, 
+        TravelReviewDbContext dbContext,
         ICurrentUserService currentUserService,
         IAuditLogService auditLogService,
         IBlobService? blobService = null)
@@ -41,7 +41,6 @@ public class AdminFoodRepository : IAdminFoodRepository
         var whereClauses = new List<string>();
         var parameters = new DynamicParameters();
 
-        // Áp dụng giới hạn phân quyền theo Scope của Admin cấp 1
         AdminScopeFilterHelper.ApplyFoodScope(_currentUserService, whereClauses, parameters, "f");
 
         if (provinceId.HasValue && provinceId.Value > 0)
@@ -72,7 +71,7 @@ public class AdminFoodRepository : IAdminFoodRepository
         parameters.Add("PageSize", pageSize);
 
         var dataSql = $@"
-            SELECT 
+            SELECT
                 f.Id,
                 f.Name,
                 (SELECT TOP 1 prov.Name FROM dbo.FoodProvinces fp INNER JOIN dbo.Provinces prov ON fp.ProvinceId = prov.Id WHERE fp.FoodId = f.Id) AS Province,
@@ -170,7 +169,6 @@ public class AdminFoodRepository : IAdminFoodRepository
         food.UpdateDetails(input.Name, input.Desc, input.HistoryInfo, effectiveCoverImg);
         food.UpdatePrice(input.MinPrice, input.MaxPrice);
 
-        // Đồng bộ lại URL thực tế vào input để caller nắm được giá trị cuối cùng
         input.CoverImg = effectiveCoverImg;
 
         var status = input.Status.Equals("hidden", StringComparison.OrdinalIgnoreCase)
@@ -218,11 +216,10 @@ public class AdminFoodRepository : IAdminFoodRepository
             },
             ct: ct);
 
-        // Tự động dọn dẹp blob cũ nếu đã được thay thế bằng ảnh mới
-        if (_blobService != null && 
-            !string.IsNullOrWhiteSpace(oldCoverUrl) && 
-            !string.IsNullOrWhiteSpace(input.CoverImg) && 
-            !string.Equals(oldCoverUrl, input.CoverImg, StringComparison.OrdinalIgnoreCase) && 
+        if (_blobService != null &&
+            !string.IsNullOrWhiteSpace(oldCoverUrl) &&
+            !string.IsNullOrWhiteSpace(input.CoverImg) &&
+            !string.Equals(oldCoverUrl, input.CoverImg, StringComparison.OrdinalIgnoreCase) &&
             oldCoverUrl.Contains(".blob.core.windows.net/"))
         {
             _ = Task.Run(async () =>
@@ -233,7 +230,6 @@ public class AdminFoodRepository : IAdminFoodRepository
                 }
                 catch
                 {
-                    // Ignore background cleanup failure
                 }
             });
         }

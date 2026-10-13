@@ -148,7 +148,6 @@ export const ItineraryCatalogView: React.FC<ItineraryCatalogViewProps> = ({
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 font-sans">
-      {/* Search Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-slate-200">
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
           {onSearchChange && (
@@ -212,7 +211,6 @@ export const ItineraryCatalogView: React.FC<ItineraryCatalogViewProps> = ({
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-2xs space-y-4">
-        {/* Duration & Budget Filters */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="space-y-1.5">
             <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
@@ -306,7 +304,6 @@ export const ItineraryCatalogView: React.FC<ItineraryCatalogViewProps> = ({
                   onClick={() => handleOpenPreview(itinerary)}
                   className="bg-white rounded-2xl overflow-hidden border border-slate-200/90 hover:border-emerald-600/70 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group shadow-2xs"
                 >
-                  {/* Trip Cover Image Header */}
                   <div className="relative w-full h-52 sm:h-56 bg-slate-100 overflow-hidden shrink-0">
                     {coverImage ? (
                       <img
@@ -322,7 +319,6 @@ export const ItineraryCatalogView: React.FC<ItineraryCatalogViewProps> = ({
                       </div>
                     )}
 
-                    {/* Subtle white hover overlay */}
                     <div className="absolute inset-0 bg-white/0 group-hover:bg-white/15 transition-colors duration-300 pointer-events-none" />
                   </div>
 

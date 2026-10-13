@@ -1,4 +1,4 @@
-using Application.Common;
+﻿using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs.Admin;
@@ -20,16 +20,12 @@ public class AdminCatalogTaxonomyRepository : IAdminCatalogTaxonomyRepository
         _auditLogService = auditLogService;
     }
 
-    // ==========================================
-    // 1. PLACE TYPES (TRỤ CỘT / LOẠI ĐỊA ĐIỂM)
-    // ==========================================
-
     public async Task<IReadOnlyList<AdminPlaceTypeListItemDto>> GetPlaceTypesAsync(bool? activeOnly = null, CancellationToken ct = default)
     {
         var connection = _dbContext.Database.GetDbConnection();
 
         var sql = @"
-            SELECT 
+            SELECT
                 pt.Id,
                 pt.Name,
                 pt.Slug,
@@ -50,7 +46,7 @@ public class AdminCatalogTaxonomyRepository : IAdminCatalogTaxonomyRepository
         var connection = _dbContext.Database.GetDbConnection();
 
         const string sql = @"
-            SELECT 
+            SELECT
                 pt.Id,
                 pt.Name,
                 pt.Slug,
@@ -201,10 +197,6 @@ public class AdminCatalogTaxonomyRepository : IAdminCatalogTaxonomyRepository
         return false;
     }
 
-    // ==========================================
-    // 2. CATEGORIES (DANH MỤC CHI TIẾT)
-    // ==========================================
-
     public async Task<PagedResult<AdminCategoryTaxonomyListItemDto>> GetCategoriesAsync(
         int? placeTypeId,
         byte? status,
@@ -246,7 +238,7 @@ public class AdminCatalogTaxonomyRepository : IAdminCatalogTaxonomyRepository
         parameters.Add("PageSize", pageSize);
 
         var dataSql = $@"
-            SELECT 
+            SELECT
                 c.Id,
                 c.PlaceTypeId,
                 pt.Name AS PlaceTypeName,
@@ -274,7 +266,7 @@ public class AdminCatalogTaxonomyRepository : IAdminCatalogTaxonomyRepository
         var connection = _dbContext.Database.GetDbConnection();
 
         const string sql = @"
-            SELECT 
+            SELECT
                 c.Id,
                 c.PlaceTypeId,
                 pt.Name AS PlaceTypeName,
@@ -297,7 +289,6 @@ public class AdminCatalogTaxonomyRepository : IAdminCatalogTaxonomyRepository
     {
         var connection = _dbContext.Database.GetDbConnection();
 
-        // 1. Kiểm tra PlaceTypeId có tồn tại không
         const string checkPtSql = "SELECT COUNT(1) FROM dbo.PlaceTypes WHERE Id = @PlaceTypeId;";
         var ptExists = await connection.ExecuteScalarAsync<int>(checkPtSql, new { PlaceTypeId = input.PlaceTypeId });
         if (ptExists == 0)

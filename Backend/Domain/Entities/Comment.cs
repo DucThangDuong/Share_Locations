@@ -1,4 +1,4 @@
-using Domain.Enums;
+﻿using Domain.Enums;
 
 namespace Domain.Entities;
 
@@ -15,7 +15,6 @@ public class Comment
     public DateTime? HiddenAt { get; private set; }
     public DateTime CreatedAt { get; private set; }
 
-    // Navigation
     public virtual Review Review { get; private set; } = null!;
     public virtual User User { get; private set; } = null!;
     public virtual User? HiddenByUser { get; private set; }

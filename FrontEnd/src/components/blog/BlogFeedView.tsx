@@ -8,8 +8,8 @@ import {
   Eye,
   Tag,
   RotateCcw,
-  BookOpen,
-  Check
+  Check,
+  Image,
 } from 'lucide-react'
 import { navigateToAuthorProfile } from '@/utils/authorNavigation'
 import type { BlogListItemDto } from '@/types/models/blogArticle.model'
@@ -46,7 +46,6 @@ export const BlogFeedView: React.FC<BlogFeedViewProps> = ({
   const [displayCount, setDisplayCount] = useState(9)
   const [localSearch, setLocalSearch] = useState(searchQuery)
 
-  // Sync external search changes into local input value
   useEffect(() => {
     setLocalSearch(searchQuery)
   }, [searchQuery])
@@ -77,7 +76,6 @@ export const BlogFeedView: React.FC<BlogFeedViewProps> = ({
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 font-sans">
-      {/* Header Search & Actions */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-slate-200">
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
           <form onSubmit={handleSearchSubmit} className="flex items-center gap-2 flex-1 md:w-auto">
@@ -138,7 +136,6 @@ export const BlogFeedView: React.FC<BlogFeedViewProps> = ({
         )}
       </div>
 
-      {/* Categories Filter Card */}
       {categories.length > 0 && (
         <div className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-2xs space-y-3">
           <div className="flex items-center justify-between text-xs font-bold text-slate-700">
@@ -189,7 +186,6 @@ export const BlogFeedView: React.FC<BlogFeedViewProps> = ({
         </div>
       )}
 
-      {/* Result Count */}
       <div className="flex items-center justify-between text-xs text-slate-500 font-medium px-1">
         <span>
           Tìm thấy <strong className="text-slate-900 font-bold">{articles.length}</strong> bài viết cẩm nang
@@ -197,7 +193,6 @@ export const BlogFeedView: React.FC<BlogFeedViewProps> = ({
         </span>
       </div>
 
-      {/* Articles Grid or Empty State */}
       <div>
         {articles.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-3">
@@ -242,10 +237,21 @@ export const BlogFeedView: React.FC<BlogFeedViewProps> = ({
                         alt={art.title}
                         className="w-full h-full object-cover group-hover:scale-102 transition-all duration-300"
                         loading="lazy"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          const parent = target.parentElement;
+                          if (parent && !parent.querySelector('.no-img-placeholder')) {
+                            const fallback = document.createElement('div');
+                            fallback.className = 'no-img-placeholder w-full h-full flex items-center justify-center bg-slate-50 text-slate-300 select-none';
+                            fallback.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-300"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>';
+                            parent.appendChild(fallback);
+                          }
+                        }}
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-emerald-900/10 to-teal-900/20 text-emerald-800">
-                        <BookOpen size={32} />
+                      <div className="w-full h-full flex items-center justify-center bg-slate-50 text-slate-300 select-none">
+                        <Image size={36} className="text-slate-300" />
                       </div>
                     )}
                   </div>

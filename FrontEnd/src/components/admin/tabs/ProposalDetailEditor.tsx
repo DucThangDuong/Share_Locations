@@ -52,7 +52,6 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
   const [categories, setCategories] = useState<PlaceTypeDto[]>([]);
   const [provinces, setProvinces] = useState<ProvinceDto[]>([]);
 
-  // Proposer Info
   const [proposer, setProposer] = useState<{
     id?: number;
     name?: string;
@@ -64,11 +63,9 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
     email: proposal.proposer?.email || "",
   }));
 
-  // Moderation text inputs
   const [adminNotesInput, setAdminNotesInput] = useState("");
   const [rejectReasonInput, setRejectReasonInput] = useState("");
 
-  // Stored notes from DB (support both adminNote/AdminNote and rejectReason/RejectReason)
   const initialAdminNote =
     proposal.adminNote ||
     proposal.adminNotes ||
@@ -86,10 +83,8 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
   const [adminNotes, setAdminNotes] = useState(initialAdminNote);
   const [rejectionReason, setRejectionReason] = useState(initialRejectReason);
 
-  // Status (0: Pending, 1: Approved, 2: Rejected)
   const [status, setStatus] = useState<0 | 1 | 2>(proposal.status);
 
-  // Proposal Read-only Data
   const [placeName, setPlaceName] = useState(
     proposal.placeData?.name || proposal.proposedData?.name || proposal.placeName || ""
   );
@@ -107,11 +102,9 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
   const [phone, setPhone] = useState(proposal.placeData?.phone || proposal.proposedData?.phone || "");
   const [website, setWebsite] = useState(proposal.placeData?.website || "");
 
-  // Coordinates
   const [lat, setLat] = useState(String(proposal.placeData?.latitude || ""));
   const [lng, setLng] = useState(String(proposal.placeData?.longitude || ""));
 
-  // Operating Hours
   const [is24Hours, setIs24Hours] = useState(() => {
     const h = (proposal.placeData?.openingHours || proposal.proposedData?.hours || "").toLowerCase();
     return h.includes("24/7") || h.includes("24h") || h.includes("cả ngày");
@@ -127,7 +120,6 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
     return matches && matches.length > 1 ? matches[1] : "22:00";
   });
 
-  // Price
   const [isFree, setIsFree] = useState(() => {
     if (proposal.placeData?.isFree !== undefined) return proposal.placeData.isFree;
     const p = (proposal.proposedData?.price || "").toLowerCase();
@@ -154,7 +146,6 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
     return "0";
   });
 
-  // Description & Note
   const [description, setDescription] = useState(
     proposal.placeData?.description ||
     proposal.proposedData?.description ||
@@ -162,7 +153,6 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
   );
   const contributorNote = proposal.note;
 
-  // Images
   const [images, setImages] = useState<string[]>(() => {
     let list: string[] = [];
     if (Array.isArray(proposal.placeData?.images) && proposal.placeData.images.length > 0) {
@@ -186,7 +176,6 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
   });
   const [activePreviewImgIndex, setActivePreviewImgIndex] = useState(0);
 
-  // Map Refs
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<mapboxgl.Map | null>(null);
   const markerRef = useRef<mapboxgl.Marker | null>(null);
@@ -195,7 +184,6 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
     (import.meta.env.VITE_MAPBOX_ACCESS_TOKEN as string | undefined)?.trim() ||
     "pk.eyJ1IjoibGFuZ3RoYW5nLXZuIiwiYSI6ImNtODFhYmNkZTAxMzAya3B0eGZjcHB0ZmoifQ.placeholder";
 
-  // Fetch full Proposal Details from GET /api/admin/proposals/{id} (AdminProposalDetailDto)
   useEffect(() => {
     if (!proposal?.id) return;
     let mounted = true;
@@ -232,9 +220,7 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
             proposal.rejectionReason ??
             "";
 
-          // If proposal was rejected, admin note or reject reason can contain the rejection explanation
           const finalRejectReason = rawRejectReason || rawAdminNote;
-          // If proposal was approved, admin note contains the approval note
           const finalAdminNote = rawAdminNote || rawRejectReason;
 
           if (finalAdminNote) {
@@ -316,7 +302,6 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
             const pDesc = pData.description || pData.Description || pData.desc || pData.Desc;
             if (pDesc) setDescription(pDesc);
 
-            // Images
             const cover = pData.coverImg || pData.CoverImg || pData.coverImageUrl || pData.CoverImageUrl || pData.imageUrl || pData.ImageUrl || "";
             let imgs: string[] = [];
             const rawImgs = pData.images || pData.Images;
@@ -345,7 +330,6 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
     };
   }, [proposal?.id]);
 
-  // Load Categories & Provinces
   useEffect(() => {
     const loadMetadata = async () => {
       try {
@@ -373,7 +357,6 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
     loadMetadata();
   }, []);
 
-  // Mapbox initialization (Read-only view)
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
@@ -404,7 +387,6 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
         map.remove();
       };
     } catch {
-      // Mapbox load fallback
     }
   }, []);
 
@@ -421,7 +403,6 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
     }
   };
 
-  // Actions: Approve & Reject Handlers
   const handleApproveSubmit = async () => {
     setErrorMsg("");
     setIsApproving(true);
@@ -463,7 +444,6 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200 text-xs font-sans pb-16">
-      {/* Top Header / Back Navigation Only (NO Action Buttons here as requested) */}
       <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <button
@@ -505,7 +485,6 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
         </div>
       </div>
 
-      {/* Error Alert */}
       {errorMsg && (
         <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium flex items-center gap-2 animate-in fade-in">
           <AlertCircle className="w-4 h-4 shrink-0" />
@@ -513,11 +492,8 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
         </div>
       )}
 
-      {/* Main Grid Layout - 12 Columns */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Column (8 cols): Read-Only Proposal Details */}
         <div className="lg:col-span-8 space-y-6">
-          {/* Section 1: Basic Information (Read-only) */}
           <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-5">
             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
               <FileText className="w-4 h-4 text-emerald-700" />
@@ -595,7 +571,6 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
             </div>
           </div>
 
-          {/* Section 2: Interactive Map & Coordinates (Read-only) */}
           <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
@@ -628,7 +603,6 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
             </div>
           </div>
 
-          {/* Section 3: Operating Hours, Price & Description (Read-only) */}
           <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-5">
             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
               <Clock className="w-4 h-4 text-emerald-700" />
@@ -679,7 +653,6 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
             </div>
           </div>
 
-          {/* Section 4: Image Gallery Only (NO upload / dropzone, NO delete/cover button) */}
           <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
@@ -726,11 +699,9 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
             )}
           </div>
 
-          {/* Moderation Actions (Đơn giản, gọn gàng, chuẩn Admin) */}
           <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-2xs space-y-4">
             {status === 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {/* 1. KHUNG CHẤP NHẬN & DUYỆT */}
                 <div className="space-y-2.5">
                   <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                     <Check size={14} className="text-emerald-600" />
@@ -754,7 +725,6 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
                   </button>
                 </div>
 
-                {/* 2. KHUNG TỪ CHỐI ĐỀ XUẤT */}
                 <div className="space-y-2.5">
                   <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                     <X size={14} className="text-rose-600" />
@@ -818,9 +788,7 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
           </div>
         </div>
 
-        {/* Right Column (4 cols): Live Discovery Preview Card & Contributor Profile */}
         <div className="lg:col-span-4 space-y-6 sticky top-6">
-          {/* Live Preview Card */}
           <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
@@ -832,7 +800,6 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
               </span>
             </div>
 
-            {/* Discovery Card Replica */}
             <div className="group flex flex-col select-none bg-white rounded-2xl border border-slate-200/80 p-3 shadow-2xs space-y-3">
               {images.length > 0 ? (
                 <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-slate-100">
@@ -922,7 +889,6 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
             </div>
           </div>
 
-          {/* Contributor Profile & Moderation Guidelines */}
           <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-4">
             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
               <User className="w-4 h-4 text-emerald-700" />

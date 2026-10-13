@@ -1,6 +1,6 @@
 import React from "react";
 import type { GroupedReport, AdminReportItem } from "@/types/admin.types";
-import { X } from "lucide-react";
+import { X, Image } from "lucide-react";
 import { CustomSelect } from "@/components/common/CustomSelect";
 
 const formatDateTime = (dateStr?: string) => {
@@ -61,7 +61,6 @@ export const ModerationDrawer: React.FC<ModerationDrawerProps> = ({
 
   const currentReport = selectedReportInDrawer || activeReportGroup.reportsList[0];
 
-  // Multi-select actions state
   const selectedActions = React.useMemo(() => {
     if (!drawerActionTaken) return ["hide_target"];
     return drawerActionTaken.split(",").filter(Boolean);
@@ -96,7 +95,7 @@ export const ModerationDrawer: React.FC<ModerationDrawerProps> = ({
                 <span className="text-slate-700 font-semibold">
                   {activeReportGroup.targetType === "place" && "Địa điểm"}
                   {activeReportGroup.targetType === "review" && "Đánh giá"}
-                  {activeReportGroup.targetType === "blog" && "Bài viết"}
+                  {activeReportGroup.targetType === "blog" && "Cẩm nang"}
                   {activeReportGroup.targetType === "photo" && "Hình ảnh"}
                   {activeReportGroup.targetType === "comment" && "Bình luận"}
                 </span>
@@ -118,11 +117,8 @@ export const ModerationDrawer: React.FC<ModerationDrawerProps> = ({
           </div>
         </div>
 
-        {/* Content Layout */}
         <div className="flex-1 overflow-y-auto grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
-          {/* Left Panel: Target Details & Reports Feed */}
           <div className="lg:col-span-7 p-6 space-y-5 overflow-y-auto">
-            {/* Target Content Snapshot */}
             <div className="p-4 rounded-xl bg-slate-50/80 border border-slate-200/80 space-y-2.5">
               <div className="flex items-center justify-between">
                 <span className="font-bold text-slate-800 uppercase text-[10px] tracking-wider">
@@ -134,6 +130,29 @@ export const ModerationDrawer: React.FC<ModerationDrawerProps> = ({
                   </span>
                 )}
               </div>
+
+              {activeReportGroup.targetImage ? (
+                <img
+                  src={activeReportGroup.targetImage}
+                  alt={activeReportGroup.targetTitle}
+                  className="w-full max-h-48 rounded-lg object-cover border border-slate-200"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    const parent = target.parentElement;
+                    if (parent && !parent.querySelector('.no-img-placeholder')) {
+                      const fallback = document.createElement('div');
+                      fallback.className = 'no-img-placeholder w-full h-32 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-center text-slate-300 select-none';
+                      fallback.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-300"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>';
+                      parent.appendChild(fallback);
+                    }
+                  }}
+                />
+              ) : (activeReportGroup.targetType === 'blog' || activeReportGroup.targetType === 'place') ? (
+                <div className="w-full h-32 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-center text-slate-300 select-none">
+                  <Image size={32} className="text-slate-300" />
+                </div>
+              ) : null}
 
               {activeReportGroup.targetContent ? (
                 <blockquote className="p-3 bg-white rounded-lg border border-slate-200 text-slate-800 italic leading-relaxed">
@@ -147,11 +166,10 @@ export const ModerationDrawer: React.FC<ModerationDrawerProps> = ({
               )}
             </div>
 
-            {/* Reports List for this Group */}
             <div className="space-y-2.5">
               <div className="flex items-center justify-between">
                 <h4 className="font-bold text-slate-900 text-xs">
-                  Phản ánh từ cộng đồng
+                  Phản ánh từ cộng đồng ({activeReportGroup.reportsCount})
                 </h4>
               </div>
 
@@ -168,7 +186,24 @@ export const ModerationDrawer: React.FC<ModerationDrawerProps> = ({
                         }`}
                     >
                       <div className="flex items-center justify-between mb-1">
-                        <span className="font-bold textslate-900">{rep.reporterName}</span>
+                        <div className="flex items-center gap-2">
+                          {rep.reporterAvatar && (
+                            <img
+                              src={rep.reporterAvatar}
+                              alt={rep.reporterName}
+                              className="w-5 h-5 rounded-full object-cover border border-slate-200"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'none';
+                              }}
+                            />
+                          )}
+                          <span className="font-bold text-slate-900">{rep.reporterName}</span>
+                          {rep.codeId && (
+                            <span className="font-mono text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200/60 font-semibold text-[10px]">
+                              {rep.codeId}
+                            </span>
+                          )}
+                        </div>
                         <span className="text-[11px] text-slate-400 font-medium">
                           {formatDateTime(rep.submittedAt)}
                         </span>
@@ -186,10 +221,8 @@ export const ModerationDrawer: React.FC<ModerationDrawerProps> = ({
             </div>
           </div>
 
-          {/* Right Panel: Decision & Moderation Controls */}
           <div className="lg:col-span-5 p-6 bg-slate-50/50 flex flex-col justify-between space-y-4">
             <div className="space-y-4">
-              {/* Decision Tabs */}
               <div className="grid grid-cols-2 gap-2 p-1 bg-slate-200/60 rounded-xl">
                 <button
                   type="button"
@@ -296,7 +329,6 @@ export const ModerationDrawer: React.FC<ModerationDrawerProps> = ({
               )}
             </div>
 
-            {/* Confirm button */}
             <div className="pt-4 border-t border-slate-200">
               <button
                 type="button"

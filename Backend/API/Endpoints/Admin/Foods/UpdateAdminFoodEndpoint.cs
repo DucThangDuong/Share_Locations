@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.Extensions;
 using Application.Common;
 using Application.DTOs;
@@ -63,4 +63,3 @@ public class UpdateAdminFoodEndpoint : Endpoint<UpdateAdminFoodRequest, ApiSucce
         await this.SendApiResponseAsync(result, ct);
     }
 }
-

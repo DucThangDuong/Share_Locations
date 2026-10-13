@@ -97,7 +97,6 @@ export const ReviewItemCard: React.FC<ReviewItemCardProps> = ({
     }
   }
 
-
   const handleUpdateReview = async (data: UpdateReviewRequest) => {
     try {
       const res = await placeService.updateReview(data)

@@ -79,7 +79,6 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       const count = await notificationService.getUnreadCount()
       setUnreadCount(count)
     } catch {
-      // Ignore
     }
   }, [isAuthenticated])
 
@@ -161,7 +160,6 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   }, [isLoadingMore, hasMore, isAuthenticated, page, unreadFilter])
 
   const markAsRead = useCallback(async (id: number) => {
-    // Optimistic update
     setNotifications((prev) =>
       prev.map((item) =>
         item.id === id ? { ...item, isRead: true, readAt: new Date().toISOString() } : item
@@ -172,13 +170,11 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     try {
       await notificationService.markAsRead(id)
     } catch {
-      // Re-sync unread count if failed
       fetchUnreadCount()
     }
   }, [fetchUnreadCount])
 
   const markAllAsRead = useCallback(async () => {
-    // Optimistic update
     setNotifications((prev) =>
       prev.map((item) => ({ ...item, isRead: true, readAt: new Date().toISOString() }))
     )
@@ -194,7 +190,6 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const deleteNotification = useCallback(
     async (id: number) => {
       const target = notifications.find((n) => n.id === id)
-      // Optimistic delete
       setNotifications((prev) => prev.filter((n) => n.id !== id))
       if (target && !target.isRead) {
         setUnreadCount((prev) => Math.max(0, prev - 1))
@@ -219,7 +214,6 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     })
   }, [fetchNotifications])
 
-  // SignalR setup & initial sync
   useEffect(() => {
     if (!isAuthenticated) {
       setNotifications([])
@@ -228,28 +222,21 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       return
     }
 
-    // Initial count fetch
     fetchUnreadCount()
 
-    // Start SignalR
     notificationSignalR.start()
 
-    // Listen to ReceiveNotification
     const unsubNotification = notificationSignalR.onNotification((item) => {
-      // Add to top of notification list
       setNotifications((prev) => {
         const filtered = prev.filter((n) => n.id !== item.id)
         return [item, ...filtered]
       })
-      // Increment unread count
       if (!item.isRead) {
         setUnreadCount((prev) => prev + 1)
       }
-      // Show real-time popup toast
       showToast(item)
     })
 
-    // Listen to UnreadCountUpdated
     const unsubUnreadCount = notificationSignalR.onUnreadCount((count) => {
       setUnreadCount(count)
     })

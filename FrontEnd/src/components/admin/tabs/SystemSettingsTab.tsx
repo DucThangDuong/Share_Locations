@@ -36,19 +36,16 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
 
   const [activeSubTab, setActiveSubTab] = useState<"systemSettings" | "reportTypes">("systemSettings");
 
-  // System Settings State
   const [systemSettings, setSystemSettings] = useState<AdminSystemSettingItem[]>([]);
   const [settingValues, setSettingValues] = useState<Record<string, string>>({});
   const [isSettingsLoading, setIsSettingsLoading] = useState(false);
   const [isSavingBatch, setIsSavingBatch] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<string>("ALL");
 
-  // Report Types State
   const [reportTypes, setReportTypes] = useState<AdminReportTypeItem[]>([]);
   const [isReportTypesLoading, setIsReportTypesLoading] = useState(false);
   const [reportScopeFilter, setReportScopeFilter] = useState<string>("ALL");
 
-  // Dedicated Detail View State (Replacing Modal with Page Editor)
   const [detailView, setDetailView] = useState<{
     type: "reportType";
     mode: "create" | "edit";
@@ -64,7 +61,6 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
   });
   const [isSubmittingReportType, setIsSubmittingReportType] = useState(false);
 
-  // Delete & Status Confirmations
   const [deleteConfirm, setDeleteConfirm] = useState<{
     isOpen: boolean;
     id: number;
@@ -83,7 +79,6 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
     else alert(msg);
   };
 
-  // Sync with URL Sub-route if any e.g. /admin/report-types/new or /admin/report-types/3
   useEffect(() => {
     const reportTypeMatch = location.pathname.match(/\/admin\/report-types\/(new|\d+)/i);
     if (reportTypeMatch) {
@@ -121,7 +116,6 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
     }
   }, [location.pathname, reportTypes.length]);
 
-  // 1. Fetch System Settings
   const fetchSystemSettings = async () => {
     setIsSettingsLoading(true);
     try {
@@ -130,7 +124,6 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
       const list = extractList<AdminSystemSettingItem>(res?.data || res);
       setSystemSettings(list);
 
-      // Populate form state map
       const initialMap: Record<string, string> = {};
       list.forEach((item) => {
         initialMap[item.settingKey] = item.settingValue;
@@ -143,7 +136,6 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
     }
   };
 
-  // 2. Fetch Report Types
   const fetchReportTypes = async () => {
     setIsReportTypesLoading(true);
     try {
@@ -166,7 +158,6 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
     fetchReportTypes();
   }, [reportScopeFilter]);
 
-  // Handle Save Single System Setting
   const handleSaveSingleSetting = async (key: string) => {
     const item = systemSettings.find((s) => s.settingKey === key);
     const value = settingValues[key] ?? "";
@@ -184,7 +175,6 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
     }
   };
 
-  // Handle Batch Save All Settings
   const handleSaveAllSettings = async () => {
     setIsSavingBatch(true);
     try {
@@ -200,7 +190,6 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
     }
   };
 
-  // Report Type Detail Navigation Handlers
   const handleOpenReportTypeDetail = (rt?: AdminReportTypeItem) => {
     if (rt) {
       setDetailView({ type: "reportType", mode: "edit", id: rt.id });
@@ -295,16 +284,12 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
     }
   };
 
-  // =========================================================================
-  // RENDER DEDICATED DETAIL VIEW: REPORT TYPE
-  // =========================================================================
   if (detailView?.type === "reportType") {
     const isEdit = detailView.mode === "edit";
     const currentRt = isEdit ? reportTypes.find((r) => r.id === detailView.id) : null;
 
     return (
       <div className="space-y-4 animate-in fade-in duration-150 text-xs">
-        {/* Top Header Navigation */}
         <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
@@ -338,9 +323,7 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
           </div>
         </div>
 
-        {/* Main Form Content */}
         <form id="report-type-detail-form" onSubmit={handleSaveReportType} className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Left Column: Form Details */}
           <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
             <h3 className="font-bold text-slate-900 text-sm border-b border-slate-100 pb-3">
               Thông số cấu hình lý do kiểm duyệt
@@ -406,7 +389,6 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
             </div>
           </div>
 
-          {/* Right Column: Status & Stats Card */}
           <div className="space-y-4">
             <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
               <h4 className="font-bold text-slate-900 text-xs border-b border-slate-100 pb-2 flex items-center gap-1.5">
@@ -483,7 +465,6 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
           </div>
         </form>
 
-        {/* Delete Confirmation Modal */}
         {deleteConfirm.isOpen && (
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl max-w-sm w-full p-5 border border-slate-200 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150">
@@ -525,12 +506,8 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
     );
   }
 
-  // =========================================================================
-  // MAIN SYSTEM SETTINGS & REPORT TYPES TAB LIST VIEW
-  // =========================================================================
   return (
     <div className="space-y-4 animate-in fade-in duration-150 text-xs">
-      {/* Sub-tab Navigation */}
       <div className="flex items-center justify-between bg-white px-4 py-2.5 rounded-2xl border border-slate-200/80 shadow-2xs">
         <div className="flex items-center gap-2">
           <button
@@ -565,10 +542,8 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
         </div>
       </div>
 
-      {/* 1. SUB-TAB: SYSTEM SETTINGS */}
       {activeSubTab === "systemSettings" && (
         <div className="space-y-4">
-          {/* Action Toolbar & Group Filters */}
           <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <span className="font-bold text-slate-700">Nhóm thiết lập:</span>
@@ -615,7 +590,6 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
             </div>
           </div>
 
-          {/* Settings Grid / List */}
           <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs divide-y divide-slate-100 overflow-hidden">
             {systemSettings.map((item) => {
               const val = settingValues[item.settingKey] ?? item.settingValue;
@@ -706,10 +680,8 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
         </div>
       )}
 
-      {/* 2. SUB-TAB: REPORT TYPES (LÝ DO BÁO CÁO VI PHẠM) */}
       {activeSubTab === "reportTypes" && (
         <div className="space-y-4">
-          {/* Action Toolbar & Filters */}
           <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <span className="font-bold text-slate-700">Phạm vi áp dụng:</span>
@@ -744,7 +716,6 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
             </div>
           </div>
 
-          {/* Table */}
           <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
@@ -844,7 +815,6 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
         </div>
       )}
 
-      {/* CONFIRMATION MODAL: SAFE DELETE REPORT TYPE */}
       {deleteConfirm.isOpen && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-sm w-full p-5 border border-slate-200 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150">

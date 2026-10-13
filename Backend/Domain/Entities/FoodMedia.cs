@@ -1,4 +1,4 @@
-using Domain.Enums;
+﻿using Domain.Enums;
 
 namespace Domain.Entities;
 
@@ -11,6 +11,5 @@ public class FoodMedia
     public string? Title { get; private set; }
     public int DisplayOrder { get; private set; }
 
-    // Navigation
     public virtual Food Food { get; private set; } = null!;
 }

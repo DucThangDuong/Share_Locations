@@ -84,7 +84,6 @@ export const TripsUtility: React.FC<TripsUtilityProps> = ({
     }
   }
 
-  // Navigate directly to the trip planner / editor
   const handleSelectTrip = (id: string | number) => {
     onClose?.()
     navigate(`/itinerary/${id}`)
@@ -359,5 +358,4 @@ export const TripsUtility: React.FC<TripsUtilityProps> = ({
 }
 
 export default TripsUtility
-
 

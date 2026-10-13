@@ -1,4 +1,4 @@
-using Application.Common.Events;
+﻿using Application.Common.Events;
 using Application.Common.Interfaces;
 using MassTransit;
 using Microsoft.Extensions.Logging;
@@ -19,13 +19,13 @@ public class SendForgotPasswordEmailConsumer : IConsumer<SendForgotPasswordEmail
     public async Task Consume(ConsumeContext<SendForgotPasswordEmailEvent> context)
     {
         var message = context.Message;
-        _logger.LogInformation("📨 [RabbitMQ Consumer] Nhận message gửi email OTP quên mật khẩu tới {Email} (Created: {CreatedAt})", 
+        _logger.LogInformation("📨 [RabbitMQ Consumer] Nhận message gửi email OTP quên mật khẩu tới {Email} (Created: {CreatedAt})",
             message.Email, message.CreatedAt);
 
         await _emailService.SendForgotPasswordOtpAsync(
-            message.Email, 
-            message.OtpCode, 
-            message.ExpirationMinutes, 
+            message.Email,
+            message.OtpCode,
+            message.ExpirationMinutes,
             context.CancellationToken);
 
         _logger.LogInformation("✅ [RabbitMQ Consumer] Hoàn thành xử lý gửi email cho {Email}", message.Email);

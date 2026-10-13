@@ -1,4 +1,4 @@
-using API.DTOs;
+﻿using API.DTOs;
 using API.Extensions;
 using Application.Common;
 using Application.DTOs;
@@ -25,7 +25,7 @@ public class PublishTripRequestValidator : AbstractValidator<PublishTripRequest>
 {
     private static readonly string[] AllowedExtensions = { ".jpg", ".jpeg", ".png", ".webp" };
     private static readonly string[] AllowedMimeTypes = { "image/jpeg", "image/png", "image/webp" };
-    private const long MaxFileSize = 5 * 1024 * 1024; // 5MB
+    private const long MaxFileSize = 5 * 1024 * 1024;
 
     public PublishTripRequestValidator()
     {
@@ -98,5 +98,3 @@ public class PublishTripEndpoint : Endpoint<PublishTripRequest, ApiSuccessRespon
         await this.SendApiResponseAsync(result, ct);
     }
 }
-
-

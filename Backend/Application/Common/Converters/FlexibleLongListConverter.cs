@@ -3,10 +3,6 @@ using System.Text.Json.Serialization;
 
 namespace Application.Common.Converters;
 
-/// <summary>
-/// Converter linh hoạt cho danh sách số long (ví dụ danh sách FoodIds),
-/// hỗ trợ nhận vào mảng số [1, 2], mảng chuỗi ["1", "2"], hoặc mảng object [{"id": 1}, {"foodId": 2}].
-/// </summary>
 public class FlexibleLongListConverter : JsonConverter<List<long>>
 {
     public override List<long> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)

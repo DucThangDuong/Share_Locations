@@ -29,7 +29,7 @@ export const FavoritesUtility: React.FC<FavoritesUtilityProps> = ({
   const navigate = useNavigate()
   const [favorites, setFavorites] = useState<FavoriteItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [activeFilter, setActiveFilter] = useState<number>(0) // 0: All, 1: Place, 2: Food, 3: Trip, 4: Blog
+  const [activeFilter, setActiveFilter] = useState<number>(0)
   const [searchQuery, setSearchQuery] = useState('')
 
   const fetchFavorites = useCallback(async () => {

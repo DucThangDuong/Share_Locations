@@ -1,4 +1,4 @@
-namespace Domain.Entities;
+﻿namespace Domain.Entities;
 
 public class MessageReaction
 {
@@ -7,7 +7,6 @@ public class MessageReaction
     public string Emoji { get; private set; } = string.Empty;
     public DateTime CreatedAt { get; private set; }
 
-    // Navigation
     public virtual Message Message { get; private set; } = null!;
     public virtual User User { get; private set; } = null!;
 

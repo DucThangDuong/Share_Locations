@@ -233,7 +233,6 @@ export const userService = {
       )
       return response.data
     } catch (err: any) {
-      // Fallback: If multipart formData returned 415 or 400 and files exist, convert files to Base64 and send JSON (Option 1 in spec)
       if (
         (err.response?.status === 415 || err.response?.status === 400) &&
         !(data instanceof FormData) &&

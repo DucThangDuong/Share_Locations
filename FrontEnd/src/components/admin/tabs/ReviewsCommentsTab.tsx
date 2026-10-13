@@ -72,16 +72,13 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
   const [currentPage, setCurrentPage] = useState<number>(1);
   const itemsPerPage = 8;
 
-  // Selected item for Details Modal
   const [selectedReview, setSelectedReview] = useState<PlaceReviewItem | null>(null);
   const [selectedComment, setSelectedComment] = useState<PlaceCommentItem | null>(null);
 
-  // Active dropdown menu state for row action
   const [openActionMenuId, setOpenActionMenuId] = useState<number | null>(null);
 
   const reportedReviewsCount = reviewsList.filter((r) => r.reportCount > 0).length;
 
-  // Filter Reviews
   const filteredReviews = reviewsList.filter((rev) => {
     if (revReportFilter === "reported" && rev.reportCount === 0) return false;
     if (statusFilter !== "all" && rev.status !== statusFilter) return false;
@@ -103,7 +100,6 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
     return true;
   });
 
-  // Filter Comments
   const filteredComments = commentsList.filter((comm) => {
     if (statusFilter !== "all" && comm.status !== statusFilter) return false;
     if (searchText.trim()) {
@@ -116,7 +112,6 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
     return true;
   });
 
-  // Pagination calculation
   const totalItems = revComTab === "reviews" ? filteredReviews.length : filteredComments.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
   const displayedReviews = filteredReviews.slice(
@@ -225,7 +220,6 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
 
   return (
     <div className="space-y-6 animate-in fade-in duration-150 text-xs font-sans">
-      {/* Top Header & Sub-tabs */}
       <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl font-medium">
@@ -349,7 +343,6 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
                       className={`hover:bg-slate-50/60 transition-colors ${rev.reportCount > 0 ? "bg-rose-50/20" : ""
                         }`}
                     >
-                      {/* Review Column (User Avatar + Name + Date + Snippet) */}
                       <td className="p-3.5 pl-5">
                         <div className="flex items-center gap-3">
                           {rev.userAvatar ? (
@@ -385,7 +378,6 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
                         </div>
                       </td>
 
-                      {/* Product / Place Column */}
                       <td className="p-3.5">
                         <div className="flex items-center gap-2.5">
                           {placeImg ? (
@@ -410,7 +402,6 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
                         </div>
                       </td>
 
-                      {/* Rating Column */}
                       <td className="p-3.5">
                         <div className="flex items-center gap-2">
                           <span className="font-extrabold text-sm text-slate-900">
@@ -420,7 +411,6 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
                         </div>
                       </td>
 
-                      {/* Status Column */}
                       <td className="p-3.5">
                         <button
                           type="button"
@@ -435,7 +425,6 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
                         </button>
                       </td>
 
-                      {/* Action Column ("..." Menu with View Details) */}
                       <td className="p-3.5 pr-5 text-right relative">
                         <div className="inline-block text-left">
                           <button
@@ -502,7 +491,6 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
 
                   return (
                     <tr key={comm.id} className="hover:bg-slate-50/60 transition-colors">
-                      {/* Comment User & Content */}
                       <td className="p-3.5 pl-5">
                         <div className="flex items-center gap-3">
                           {comm.authorAvatar || comm.userAvatar ? (
@@ -532,7 +520,6 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
                         </div>
                       </td>
 
-                      {/* Target Blog / Article */}
                       <td className="p-3.5">
                         <div className="flex items-center gap-2.5">
                           <div className="min-w-0">
@@ -543,7 +530,6 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
                         </div>
                       </td>
 
-                      {/* Status Column */}
                       <td className="p-3.5">
                         <button
                           type="button"
@@ -558,7 +544,6 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
                         </button>
                       </td>
 
-                      {/* Action Column */}
                       <td className="p-3.5 pr-5 text-right relative">
                         <div className="inline-block text-left">
                           <button
@@ -630,7 +615,6 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
           )}
         </div>
 
-        {/* Pagination Controls Matching Screenshot */}
         {totalItems > 0 && (
           <div className="flex items-center justify-center gap-1.5 pt-2 select-none">
             <button
@@ -671,7 +655,6 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
         )}
       </div>
 
-      {/* View Details Modal for Review */}
       {selectedReview && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl max-w-xl w-full p-6 space-y-5 shadow-2xl border border-slate-200 animate-in zoom-in-95">
@@ -689,7 +672,6 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
               </button>
             </div>
 
-            {/* User & Place Meta */}
             <div className="flex items-start justify-between gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-200/80">
               <div className="flex items-center gap-3">
                 {selectedReview.userAvatar ? (
@@ -728,7 +710,6 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
               </div>
             </div>
 
-            {/* Review Body */}
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-700 block">Nội dung đánh giá:</label>
               <div className="p-4 rounded-2xl bg-white border border-slate-200 text-slate-800 text-xs sm:text-sm leading-relaxed whitespace-pre-line shadow-2xs">
@@ -736,7 +717,6 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
               </div>
             </div>
 
-            {/* Report alert if any */}
             {selectedReview.reportCount > 0 && (
               <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start gap-2.5">
                 <AlertTriangle size={16} className="text-rose-600 shrink-0 mt-0.5" />
@@ -756,7 +736,6 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
         </div>
       )}
 
-      {/* View Details Modal for Comment */}
       {selectedComment && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl max-w-xl w-full p-6 space-y-5 shadow-2xl border border-slate-200 animate-in zoom-in-95">

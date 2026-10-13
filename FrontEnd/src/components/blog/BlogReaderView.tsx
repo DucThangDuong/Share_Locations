@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  BookOpen,
   Flag,
   Eye,
-  Heart
+  Heart,
+  Image,
 } from 'lucide-react'
 import { ReportModal } from '@/components/report/ReportModal'
 import type { BlogDetailDto, BlogListItemDto } from '@/types/models/blogArticle.model'
@@ -57,7 +57,6 @@ export const BlogReaderView: React.FC<BlogReaderViewProps> = ({
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  // Process HTML and extract Table of Contents
   const { processedHtml, extractedHeadings } = useMemo(() => {
     const raw = article.content || ''
     const convertedHtml = convertRawContentToHtml(raw)
@@ -140,7 +139,6 @@ export const BlogReaderView: React.FC<BlogReaderViewProps> = ({
                     </span>
                   </>
                 )}
-                <span>•</span>
                 <button
                   type="button"
                   onClick={() => setIsReportModalOpen(true)}
@@ -159,11 +157,22 @@ export const BlogReaderView: React.FC<BlogReaderViewProps> = ({
                   src={coverImage}
                   alt={article.title}
                   className="w-full max-h-[480px] object-cover"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    const parent = target.parentElement;
+                    if (parent && !parent.querySelector('.no-img-placeholder')) {
+                      const fallback = document.createElement('div');
+                      fallback.className = 'no-img-placeholder w-full py-16 flex items-center justify-center bg-slate-50 text-slate-300 select-none';
+                      fallback.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-300"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>';
+                      parent.appendChild(fallback);
+                    }
+                  }}
                 />
               </div>
             ) : (
-              <div className="rounded-3xl overflow-hidden border border-slate-200 bg-gradient-to-br from-emerald-900/10 to-teal-900/20 py-16 flex items-center justify-center text-emerald-800">
-                <BookOpen size={48} />
+              <div className="rounded-3xl overflow-hidden border border-slate-200 bg-slate-50 py-16 flex items-center justify-center text-slate-300 select-none">
+                <Image size={48} className="text-slate-300" />
               </div>
             )}
 

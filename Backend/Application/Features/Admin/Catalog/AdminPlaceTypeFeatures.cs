@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
@@ -7,8 +7,6 @@ using Application.DTOs.Admin;
 using MediatR;
 
 namespace Application.Features.Admin.Catalog;
-
-// === QUERIES ===
 
 public record GetAdminPlaceTypesQuery(bool? ActiveOnly = null) : IRequest<Result<IReadOnlyList<AdminPlaceTypeListItemDto>>>;
 
@@ -49,10 +47,8 @@ public class GetAdminPlaceTypeByIdQueryHandler : IRequestHandler<GetAdminPlaceTy
     }
 }
 
-// === COMMANDS ===
-
 public record CreateAdminPlaceTypeCommand(
-    CreateAdminPlaceTypeRequest Input, 
+    CreateAdminPlaceTypeRequest Input,
     FileUploadModel? ImageFile = null) : IRequest<Result<int>>;
 
 public class CreateAdminPlaceTypeCommandHandler : IRequestHandler<CreateAdminPlaceTypeCommand, Result<int>>
@@ -63,7 +59,7 @@ public class CreateAdminPlaceTypeCommandHandler : IRequestHandler<CreateAdminPla
     private readonly ICacheService _cacheService;
 
     public CreateAdminPlaceTypeCommandHandler(
-        IAdminCatalogTaxonomyRepository repo, 
+        IAdminCatalogTaxonomyRepository repo,
         ICurrentUserService currentUserService,
         IBlobService blobService,
         ICacheService cacheService)
@@ -82,10 +78,9 @@ public class CreateAdminPlaceTypeCommandHandler : IRequestHandler<CreateAdminPla
         if (string.IsNullOrWhiteSpace(request.Input.Name))
             return Result<int>.Failure("Tên loại địa điểm không được để trống.", HttpStatusCode.BadRequest);
 
-        // Upload hình ảnh lên Azure Blob Storage nếu có tệp đính kèm
         if (request.ImageFile != null && request.ImageFile.Content != null && request.ImageFile.Content.Length > 0)
         {
-            const long maxFileSize = 10 * 1024 * 1024; // 10MB
+            const long maxFileSize = 10 * 1024 * 1024;
             if (request.ImageFile.Content.Length > maxFileSize)
             {
                 return Result<int>.Failure("Dung lượng ảnh vượt quá giới hạn cho phép (tối đa 10MB).", HttpStatusCode.BadRequest);
@@ -114,7 +109,7 @@ public class CreateAdminPlaceTypeCommandHandler : IRequestHandler<CreateAdminPla
                 return Result<int>.Failure($"Lỗi khi tải ảnh loại địa điểm lên Azure Blob Storage: {ex.Message}", HttpStatusCode.InternalServerError);
             }
         }
-        else if (!string.IsNullOrWhiteSpace(request.Input.ImageUrl) && 
+        else if (!string.IsNullOrWhiteSpace(request.Input.ImageUrl) &&
                  request.Input.ImageUrl.StartsWith("data:image", StringComparison.OrdinalIgnoreCase))
         {
             try
@@ -147,8 +142,8 @@ public class CreateAdminPlaceTypeCommandHandler : IRequestHandler<CreateAdminPla
 }
 
 public record UpdateAdminPlaceTypeCommand(
-    int Id, 
-    UpdateAdminPlaceTypeRequest Input, 
+    int Id,
+    UpdateAdminPlaceTypeRequest Input,
     FileUploadModel? ImageFile = null) : IRequest<Result<bool>>;
 
 public class UpdateAdminPlaceTypeCommandHandler : IRequestHandler<UpdateAdminPlaceTypeCommand, Result<bool>>
@@ -159,7 +154,7 @@ public class UpdateAdminPlaceTypeCommandHandler : IRequestHandler<UpdateAdminPla
     private readonly ICacheService _cacheService;
 
     public UpdateAdminPlaceTypeCommandHandler(
-        IAdminCatalogTaxonomyRepository repo, 
+        IAdminCatalogTaxonomyRepository repo,
         ICurrentUserService currentUserService,
         IBlobService blobService,
         ICacheService cacheService)
@@ -178,10 +173,9 @@ public class UpdateAdminPlaceTypeCommandHandler : IRequestHandler<UpdateAdminPla
         if (string.IsNullOrWhiteSpace(request.Input.Name))
             return Result<bool>.Failure("Tên loại địa điểm không được để trống.", HttpStatusCode.BadRequest);
 
-        // Upload hình ảnh lên Azure Blob Storage nếu có tệp đính kèm
         if (request.ImageFile != null && request.ImageFile.Content != null && request.ImageFile.Content.Length > 0)
         {
-            const long maxFileSize = 10 * 1024 * 1024; // 10MB
+            const long maxFileSize = 10 * 1024 * 1024;
             if (request.ImageFile.Content.Length > maxFileSize)
             {
                 return Result<bool>.Failure("Dung lượng ảnh vượt quá giới hạn cho phép (tối đa 10MB).", HttpStatusCode.BadRequest);
@@ -210,7 +204,7 @@ public class UpdateAdminPlaceTypeCommandHandler : IRequestHandler<UpdateAdminPla
                 return Result<bool>.Failure($"Lỗi khi tải ảnh loại địa điểm lên Azure Blob Storage: {ex.Message}", HttpStatusCode.InternalServerError);
             }
         }
-        else if (!string.IsNullOrWhiteSpace(request.Input.ImageUrl) && 
+        else if (!string.IsNullOrWhiteSpace(request.Input.ImageUrl) &&
                  request.Input.ImageUrl.StartsWith("data:image", StringComparison.OrdinalIgnoreCase))
         {
             try
@@ -254,7 +248,7 @@ public class UpdateAdminPlaceTypeStatusCommandHandler : IRequestHandler<UpdateAd
     private readonly ICacheService _cacheService;
 
     public UpdateAdminPlaceTypeStatusCommandHandler(
-        IAdminCatalogTaxonomyRepository repo, 
+        IAdminCatalogTaxonomyRepository repo,
         ICurrentUserService currentUserService,
         ICacheService cacheService)
     {

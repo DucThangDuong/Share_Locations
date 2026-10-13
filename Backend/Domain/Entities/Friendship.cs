@@ -1,4 +1,4 @@
-using Domain.Enums;
+﻿using Domain.Enums;
 
 namespace Domain.Entities;
 
@@ -11,7 +11,6 @@ public class Friendship
     public DateTime CreatedAt { get; private set; }
     public DateTime UpdatedAt { get; private set; }
 
-    // Navigation
     public virtual User User1 { get; private set; } = null!;
     public virtual User User2 { get; private set; } = null!;
     public virtual User ActionUser { get; private set; } = null!;
@@ -23,7 +22,6 @@ public class Friendship
         if (user1Id == user2Id)
             throw new ArgumentException("Không thể thiết lập quan hệ bạn bè với chính mình.");
 
-        // Chuẩn hóa User1Id < User2Id để tránh đảo thứ tự gây trùng lặp composite key
         if (user1Id < user2Id)
         {
             User1Id = user1Id;

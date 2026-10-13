@@ -21,7 +21,8 @@ import {
   Plus,
   MessageCircle,
   Bell,
-  Shield
+  Shield,
+  Trophy,
 } from 'lucide-react'
 
 export const Header: React.FC = () => {
@@ -88,6 +89,7 @@ export const Header: React.FC = () => {
   const navLinks = [
     { label: 'Trang chủ', href: '/', icon: Home, exact: true },
     { label: 'Khám phá', href: '/explore', icon: Compass },
+    { label: 'Bảng xếp hạng', href: '/rankings', icon: Trophy },
     { label: 'Bản đồ', href: '/map', icon: MapPin },
     { label: 'Chuyến đi', href: '/itinerary', icon: Route },
     { label: 'Cẩm nang', href: '/blog', icon: BookOpen }

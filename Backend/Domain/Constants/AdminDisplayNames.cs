@@ -1,4 +1,4 @@
-using Domain.Enums;
+﻿using Domain.Enums;
 
 namespace Domain.Constants;
 public static class AdminDisplayNames
@@ -55,9 +55,6 @@ public static class AdminDisplayNames
             : group.Trim();
     }
 
-    // =========================================================================
-    // 2. PHẠM VI ÁP DỤNG BÁO CÁO VI PHẠM (REPORT TYPES TARGET SCOPE)
-    // =========================================================================
     private static readonly Dictionary<string, string> TargetScopeNames = new(StringComparer.OrdinalIgnoreCase)
     {
         ["PLACE"] = "Địa điểm",
@@ -75,9 +72,6 @@ public static class AdminDisplayNames
             : scope.Trim();
     }
 
-    // =========================================================================
-    // 3. TRẠNG THÁI BẢN GHI MASTER DATA (STATUS: 1 = ACTIVE, 2 = INACTIVE)
-    // =========================================================================
     public static string GetStatusName(byte? status)
     {
         return status switch
@@ -88,12 +82,8 @@ public static class AdminDisplayNames
         };
     }
 
-    // =========================================================================
-    // 4. LOẠI HÀNH ĐỘNG KIỂM TOÁN (AUDIT LOG ACTION TYPES)
-    // =========================================================================
     private static readonly Dictionary<string, string> ActionTypeNames = new(StringComparer.OrdinalIgnoreCase)
     {
-        // Địa điểm & Nội dung
         ["APPROVE_PLACE"] = "Duyệt công khai địa điểm",
         ["REJECT_PLACE"] = "Từ chối duyệt địa điểm",
         ["UPDATE_PLACE"] = "Cập nhật thông tin địa điểm",
@@ -102,7 +92,6 @@ public static class AdminDisplayNames
         ["UNLOCK_USER"] = "Mở khóa tài khoản người dùng",
         ["CHANGE_USER_ROLE"] = "Phân quyền vai trò quản trị",
 
-        // Địa lý & Hành chính
         ["CREATE_REGION"] = "Thêm mới Vùng/Miền",
         ["UPDATE_REGION"] = "Cập nhật thông tin Vùng/Miền",
         ["DELETE_REGION"] = "Xóa Vùng/Miền",
@@ -112,7 +101,6 @@ public static class AdminDisplayNames
         ["DELETE_PROVINCE"] = "Xóa Tỉnh/Thành phố",
         ["CHANGE_PROVINCE_STATUS"] = "Đổi trạng thái Tỉnh/Thành phố",
 
-        // Phân loại & Trải nghiệm
         ["CREATE_PLACE_TYPE"] = "Thêm mới Loại địa điểm lớn",
         ["UPDATE_PLACE_TYPE"] = "Cập nhật Loại địa điểm lớn",
         ["DELETE_PLACE_TYPE"] = "Xóa Loại địa điểm lớn",
@@ -122,7 +110,6 @@ public static class AdminDisplayNames
         ["DELETE_CATEGORY"] = "Xóa Danh mục chi tiết",
         ["CHANGE_CATEGORY_STATUS"] = "Đổi trạng thái Danh mục chi tiết",
 
-        // Cài đặt & Báo cáo
         ["CREATE_REPORT_TYPE"] = "Thêm mới Lý do báo cáo vi phạm",
         ["UPDATE_REPORT_TYPE"] = "Cập nhật Lý do báo cáo vi phạm",
         ["DELETE_REPORT_TYPE"] = "Xóa Lý do báo cáo vi phạm",
@@ -163,9 +150,6 @@ public static class AdminDisplayNames
             : table.Trim();
     }
 
-    // =========================================================================
-    // 6. MÃ VAI TRÒ NGƯỜI DÙNG / QUẢN TRỊ VIÊN (ACTOR ROLES)
-    // =========================================================================
     private static readonly Dictionary<string, string> RoleNames = new(StringComparer.OrdinalIgnoreCase)
     {
         ["SYSTEM_ADMIN"] = "Quản trị viên tối cao",
@@ -184,9 +168,6 @@ public static class AdminDisplayNames
             : roleCode.Trim();
     }
 
-    // =========================================================================
-    // 7. LOẠI THÔNG BÁO (NOTIFICATION TYPES)
-    // =========================================================================
     private static readonly Dictionary<NotificationType, string> NotificationTypeNames = new()
     {
         [NotificationType.System] = "Hệ thống",

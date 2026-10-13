@@ -1,4 +1,4 @@
-using Application.Common;
+﻿using Application.Common;
 using Application.Common.Interfaces;
 using Application.DTOs;
 using Domain.Entities;
@@ -72,7 +72,6 @@ public class UpdatePlaceReviewCommandHandler : IRequestHandler<UpdatePlaceReview
             var oldMedia = review.Media.ToList();
             review.ClearMedia();
 
-            // Giữ lại các media cũ được client giữ
             if (request.ExistingMediaUrls is { Count: > 0 })
             {
                 foreach (var old in oldMedia)
@@ -92,7 +91,6 @@ public class UpdatePlaceReviewCommandHandler : IRequestHandler<UpdatePlaceReview
                 }
             }
 
-            // Tải lên ảnh mới nếu có
             if (_blobService != null)
             {
                 if (request.Photos is { Count: > 0 })

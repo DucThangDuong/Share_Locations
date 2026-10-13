@@ -1,4 +1,4 @@
-namespace Domain.Entities;
+﻿namespace Domain.Entities;
 
 public class AdminProvinceScope
 {
@@ -7,7 +7,6 @@ public class AdminProvinceScope
     public long? AssignedBy { get; private set; }
     public DateTime AssignedAt { get; private set; }
 
-    // Navigation
     public virtual User User { get; private set; } = null!;
     public virtual Province Province { get; private set; } = null!;
     public virtual User? AssignedByUser { get; private set; }

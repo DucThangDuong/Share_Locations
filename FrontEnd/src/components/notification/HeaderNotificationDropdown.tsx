@@ -158,7 +158,6 @@ export const HeaderNotificationDropdown: React.FC<HeaderNotificationDropdownProp
       ref={dropdownRef}
       className="absolute right-0 top-full mt-2 w-[360px] sm:w-[410px] bg-white rounded-2xl shadow-2xl border border-slate-200/90 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150 flex flex-col font-sans"
     >
-      {/* Top Header */}
       <div className="px-4 pt-3.5 pb-2 flex items-center justify-between border-b border-slate-100">
         <div className="flex items-center gap-2">
           <h2 className="text-lg font-bold text-slate-900 tracking-tight">Thông báo</h2>
@@ -182,7 +181,6 @@ export const HeaderNotificationDropdown: React.FC<HeaderNotificationDropdownProp
         )}
       </div>
 
-      {/* Tabs Filter */}
       <div className="px-4 py-2 flex items-center gap-2 border-b border-slate-100 bg-slate-50/50">
         <button
           type="button"
@@ -213,7 +211,6 @@ export const HeaderNotificationDropdown: React.FC<HeaderNotificationDropdownProp
         </button>
       </div>
 
-      {/* Notification Items List */}
       <div className="flex-1 max-h-[420px] overflow-y-auto divide-y divide-slate-100">
         {isLoading ? (
           <div className="py-12 flex flex-col items-center justify-center gap-2 text-slate-400">
@@ -249,7 +246,6 @@ export const HeaderNotificationDropdown: React.FC<HeaderNotificationDropdownProp
                     !item.isRead ? 'bg-emerald-50/30 font-medium' : 'bg-white'
                   }`}
                 >
-                  {/* Left: Avatar with type mini-badge */}
                   <div className="relative shrink-0 mt-0.5">
                     {item.actorAvatarUrl || item.actorName ? (
                       <img
@@ -270,7 +266,6 @@ export const HeaderNotificationDropdown: React.FC<HeaderNotificationDropdownProp
                       </div>
                     )}
 
-                    {/* Mini Type Icon Badge */}
                     <div
                       className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center ${typeMeta.bg} ${typeMeta.color} border-2 border-white shadow-2xs`}
                       title={typeMeta.label}
@@ -279,7 +274,6 @@ export const HeaderNotificationDropdown: React.FC<HeaderNotificationDropdownProp
                     </div>
                   </div>
 
-                  {/* Middle: Content */}
                   <div className="flex-1 min-w-0 pr-6">
                     <div className="flex items-center gap-1.5 mb-0.5">
                       <span className="text-xs font-bold text-slate-900 line-clamp-1">
@@ -300,7 +294,6 @@ export const HeaderNotificationDropdown: React.FC<HeaderNotificationDropdownProp
                     </div>
                   </div>
 
-                  {/* Right: Unread Dot & Actions */}
                   <div className="absolute right-3 top-4 flex items-center gap-1">
                     {!item.isRead && (
                       <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 ring-4 ring-emerald-100 group-hover:hidden" />

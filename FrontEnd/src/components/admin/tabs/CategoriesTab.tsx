@@ -33,11 +33,9 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
 
   const [activeSubTab, setActiveSubTab] = useState<"categories" | "placeTypes">("categories");
 
-  // Place Types State
   const [placeTypes, setPlaceTypes] = useState<AdminCatalogPlaceTypeItem[]>([]);
   const [isPlaceTypesLoading, setIsPlaceTypesLoading] = useState(false);
 
-  // Categories State
   const [categories, setCategories] = useState<AdminCatalogCategoryItem[]>([]);
   const [isCategoriesLoading, setIsCategoriesLoading] = useState(false);
   const [categoryFilters, setCategoryFilters] = useState<{
@@ -65,7 +63,6 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
     totalPages: 1,
   });
 
-  // Detail View State (Replacing Modals with Dedicated Detail Pages)
   const [detailView, setDetailView] = useState<{
     type: "category" | "placeType";
     mode: "create" | "edit";
@@ -143,7 +140,6 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
     setPlaceTypeForm((prev) => ({ ...prev, imageUrl: "" }));
   };
 
-  // Status Action Confirmation
   const [statusConfirm, setStatusConfirm] = useState<{
     isOpen: boolean;
     type: "category" | "placeType";
@@ -165,7 +161,6 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
     else alert(msg);
   };
 
-  // Sync with URL Sub-route if any e.g. /admin/categories/new or /admin/categories/12
   useEffect(() => {
     const pathMatch = location.pathname.match(/\/admin\/categories\/(new|\d+)/i);
     if (pathMatch) {
@@ -203,7 +198,6 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
             assignedAdminsCount: found.assignedAdminsCount ?? 0,
           });
         }
-        // Fetch fresh detail data from BE
         adminService
           .getCatalogCategory(catId)
           .then((res: any) => {
@@ -229,7 +223,6 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
     }
   }, [location.pathname, categories.length, placeTypes.length]);
 
-  // 1. Fetch Place Types
   const fetchPlaceTypes = async () => {
     setIsPlaceTypesLoading(true);
     try {
@@ -243,7 +236,6 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
     }
   };
 
-  // 2. Fetch Categories with Filters & Pagination
   const fetchCategories = async () => {
     setIsCategoriesLoading(true);
     try {
@@ -307,7 +299,6 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
       .replace(/\s+/g, "-");
   };
 
-  // Open Detail View for Category
   const handleOpenCategoryDetail = async (cat?: AdminCatalogCategoryItem) => {
     setCategoryImageFile(null);
     setCategoryPreviewUrl("");
@@ -347,7 +338,6 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
           });
         }
       } catch {
-        // Keep initial cat stats
       }
     } else {
       setDetailView({ type: "category", mode: "create" });
@@ -363,7 +353,6 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
     }
   };
 
-  // Open Detail View for PlaceType
   const handleOpenPlaceTypeDetail = (pt?: AdminCatalogPlaceTypeItem) => {
     setPlaceTypeImageFile(null);
     setPlaceTypePreviewUrl("");
@@ -395,7 +384,6 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
     navigate("/admin/categories");
   };
 
-  // Save Category using multipart/form-data for direct Azure Blob upload
   const handleSaveCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!categoryForm.name.trim()) {
@@ -434,7 +422,6 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
     }
   };
 
-  // Save PlaceType using multipart/form-data for direct Azure Blob upload
   const handleSavePlaceType = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!placeTypeForm.name.trim()) {
@@ -474,7 +461,6 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
     }
   };
 
-  // Toggle Status
   const handleExecuteStatusToggle = async () => {
     const { type, id, targetStatus, reason } = statusConfirm;
     try {
@@ -547,9 +533,7 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
           </div>
         </div>
 
-        {/* Main Form Content */}
         <form id="category-detail-form" onSubmit={handleSaveCategory} className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Left Column: Form Details */}
           <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
             <h3 className="font-bold text-slate-900 text-sm border-b border-slate-100 pb-3">
               Thông tin danh mục con
@@ -624,7 +608,6 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
             </div>
           </div>
 
-          {/* Right Column: Status & Stats Card */}
           <div className="space-y-4">
             <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
               <h4 className="font-bold text-slate-900 text-xs border-b border-slate-100 pb-2">
@@ -643,7 +626,6 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
                 />
               </div>
 
-              {/* Image Preview Box */}
               <div className="pt-2">
                 <span className="block text-slate-500 text-[11px] font-bold mb-1.5">Xem trước hình ảnh:</span>
                 <div className="h-32 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center">
@@ -856,7 +838,6 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
 
   return (
     <div className="space-y-4 animate-in fade-in duration-150 text-xs">
-      {/* Sub-tab Navigation */}
       <div className="flex items-center justify-between bg-white px-4 py-2.5 rounded-2xl border border-slate-200/80 shadow-2xs">
         <div className="flex items-center gap-2">
           <button
@@ -890,7 +871,6 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
         </div>
       </div>
 
-      {/* 1. CATEGORIES LIST */}
       {activeSubTab === "categories" && (
         <div className="space-y-4">
           <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex flex-col lg:flex-row items-center justify-between gap-3">
@@ -1104,7 +1084,6 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
         </div>
       )}
 
-      {/* 2. PLACE TYPES LIST */}
       {activeSubTab === "placeTypes" && (
         <div className="space-y-4">
           <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
@@ -1224,7 +1203,6 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
         </div>
       )}
 
-      {/* CONFIRMATION: STATUS TOGGLE */}
       {statusConfirm.isOpen && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-sm w-full p-5 border border-slate-200 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150">

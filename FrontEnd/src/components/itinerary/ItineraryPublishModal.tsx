@@ -25,7 +25,7 @@ interface ItineraryPublishModalProps {
   onPublish: (data: PublishTripRequestDto) => Promise<boolean | void> | void
 }
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
+const MAX_FILE_SIZE = 5 * 1024 * 1024
 const ALLOWED_EXTENSIONS = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
 
 export const ItineraryPublishModal: React.FC<ItineraryPublishModalProps> = ({
@@ -164,7 +164,6 @@ export const ItineraryPublishModal: React.FC<ItineraryPublishModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
       <div className="w-full max-w-xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
-        {/* Header */}
         <div className="p-5 sm:p-6 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0 shadow-xs">
@@ -189,9 +188,7 @@ export const ItineraryPublishModal: React.FC<ItineraryPublishModalProps> = ({
           </button>
         </div>
 
-        {/* Modal Body / Form */}
         <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1 text-xs">
-          {/* Warning Banner */}
           <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200/80 text-amber-900 flex items-start gap-3">
             <div className="p-1 bg-amber-100 rounded-lg text-amber-800 shrink-0 mt-0.5">
               <Lock size={15} />
@@ -211,7 +208,6 @@ export const ItineraryPublishModal: React.FC<ItineraryPublishModalProps> = ({
             </div>
           )}
 
-          {/* Title Field */}
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">
               Tiêu đề chuyến đi
@@ -341,7 +337,6 @@ export const ItineraryPublishModal: React.FC<ItineraryPublishModalProps> = ({
             )}
           </div>
 
-          {/* Footer actions */}
           <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2.5">
             <button
               type="button"

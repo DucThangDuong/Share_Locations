@@ -1,6 +1,10 @@
-import React from "react";
-import type { AdminReportItem } from "@/types/admin.types";
+import React, { useEffect, useState } from "react";
+import { Image } from "lucide-react";
+import type { AdminReportItem, AdminUserDetail } from "@/types/admin.types";
 import { CustomSelect } from "@/components/common/CustomSelect";
+import { geographyService, type ProvinceDto } from "@/services/geographyService";
+import { isUserSystemAdmin, decodeJwtPayload } from "@/utils/authUtils";
+import { adminService } from "@/services/adminService";
 
 const formatDateTime = (dateStr?: string) => {
   if (!dateStr) return "";
@@ -23,7 +27,7 @@ const normalizeType = (type: string) => {
   if (t === "place" || t === "1" || t === "địa điểm") return "place";
   if (t === "review" || t === "2" || t === "đánh giá") return "review";
   if (t === "comment" || t === "3" || t === "bình luận") return "comment";
-  if (t === "blog" || t === "4" || t === "bài viết") return "blog";
+  if (t === "blog" || t === "4" || t === "bài viết" || t === "cẩm nang") return "blog";
   if (t === "photo" || t === "5" || t === "hình ảnh") return "photo";
   if (t === "user" || t === "6" || t === "tài khoản") return "user";
   return t;
@@ -39,7 +43,7 @@ const getTargetTypeLabel = (type: string) => {
     case "comment":
       return "Bình luận";
     case "blog":
-      return "Bài viết";
+      return "Cẩm nang";
     case "photo":
       return "Hình ảnh";
     case "user":
@@ -75,7 +79,7 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
   reports,
   reportSubTab,
   reportTargetTypeFilter,
-  setReportTargetTypeFilter,
+  setReportTargetTypeFilter: _setReportTargetTypeFilter,
   reportPriorityFilter,
   reportProvinceFilter,
   setReportProvinceFilter,
@@ -91,18 +95,162 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
   handleBatchDismiss: _handleBatchDismiss,
   handleOpenModerationDrawer,
 }) => {
+  const [provincesList, setProvincesList] = useState<ProvinceDto[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadScopedProvinces = async () => {
+      try {
+        const provRes = await geographyService.getProvinces();
+        const allProvinces: ProvinceDto[] = Array.isArray(provRes?.data)
+          ? provRes.data
+          : Array.isArray(provRes)
+            ? provRes
+            : [];
+
+        if (isUserSystemAdmin()) {
+          if (!cancelled) setProvincesList(allProvinces);
+          return;
+        }
+
+        const assignedProvIds: number[] = [];
+        const assignedRegIds: number[] = [];
+        const assignedProvNames: string[] = [];
+
+        const adminId = currentAdminId || Number(JSON.parse(localStorage.getItem("user_info") || "{}").id || 0);
+        if (adminId) {
+          try {
+            const detailRes = await adminService.getUserDetail(adminId);
+            const detail = ((detailRes?.data || detailRes) as unknown) as AdminUserDetail;
+            if (detail) {
+              if (Array.isArray(detail.provinceScopes)) {
+                detail.provinceScopes.forEach((s) => {
+                  if (s.provinceId) assignedProvIds.push(s.provinceId);
+                  if (s.provinceName) assignedProvNames.push(s.provinceName.toLowerCase().trim());
+                });
+              }
+              if (Array.isArray(detail.regionScopes)) {
+                detail.regionScopes.forEach((r) => {
+                  if (r.regionId) assignedRegIds.push(r.regionId);
+                });
+              }
+            }
+          } catch {
+          }
+        }
+
+        try {
+          const stored = JSON.parse(localStorage.getItem("user_info") || "{}");
+          const scopes = stored.provinceScopes || stored.managedProvinces;
+          if (Array.isArray(scopes)) {
+            scopes.forEach((s: any) => {
+              if (s.provinceId) assignedProvIds.push(s.provinceId);
+              if (s.provinceName) assignedProvNames.push(String(s.provinceName).toLowerCase().trim());
+            });
+          }
+          const regScopes = stored.regionScopes || stored.managedRegions;
+          if (Array.isArray(regScopes)) {
+            regScopes.forEach((r: any) => {
+              if (r.regionId) assignedRegIds.push(r.regionId);
+            });
+          }
+
+          const jwt = decodeJwtPayload();
+          if (jwt) {
+            const jwtProv = jwt.province_scope || jwt.provinceScopes;
+            if (Array.isArray(jwtProv)) {
+              jwtProv.forEach((v: any) => assignedProvIds.push(Number(v)));
+            } else if (jwtProv) {
+              assignedProvIds.push(Number(jwtProv));
+            }
+          }
+        } catch { }
+
+        if (assignedProvIds.length > 0 || assignedRegIds.length > 0 || assignedProvNames.length > 0) {
+          const scoped = allProvinces.filter((p) => {
+            if (assignedProvIds.includes(p.id)) return true;
+            if (assignedRegIds.includes(p.regionId)) return true;
+            if (assignedProvNames.includes(p.name.toLowerCase().trim())) return true;
+            return false;
+          });
+          if (scoped.length > 0) {
+            if (!cancelled) setProvincesList(scoped);
+            return;
+          }
+        }
+
+        const reportProvs = Array.from(
+          new Set(reports.map((r) => r.province).filter(Boolean))
+        ).map((p) => p.toLowerCase().trim());
+
+        const scopedFromReports = allProvinces.filter((p) =>
+          reportProvs.some((rp) => p.name.toLowerCase().trim().includes(rp) || rp.includes(p.name.toLowerCase().trim()))
+        );
+
+        if (scopedFromReports.length > 0) {
+          if (!cancelled) setProvincesList(scopedFromReports);
+          return;
+        }
+
+        if (reportProvs.length > 0) {
+          if (!cancelled) {
+            setProvincesList(
+              reportProvs.map((name, idx) => ({
+                id: idx + 1,
+                name: reports.find((r) => r.province.toLowerCase().trim() === name)?.province || name,
+                regionId: 0,
+                regionName: "",
+                featured: false,
+                displayOrder: 0,
+                placeCount: 0,
+              }))
+            );
+          }
+          return;
+        }
+
+        if (!cancelled) setProvincesList(allProvinces);
+      } catch {
+        const reportProvs = Array.from(new Set(reports.map((r) => r.province).filter(Boolean)));
+        if (!cancelled) {
+          setProvincesList(
+            reportProvs.map((name, idx) => ({
+              id: idx + 1,
+              name,
+              regionId: 0,
+              regionName: "",
+              featured: false,
+              displayOrder: 0,
+              placeCount: 0,
+            }))
+          );
+        }
+      }
+    };
+
+    void loadScopedProvinces();
+    return () => {
+      cancelled = true;
+    };
+  }, [currentAdminId, reports]);
+
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+
   const filteredReports = reports.filter((r) => {
-    if (reportSubTab === "all") {
-      if (r.status !== 0) return false;
-    } else if (reportSubTab === "urgent") {
-      if (r.status !== 0 || (r.priority !== "urgent" && r.slaStatus !== "breached")) return false;
-    } else if (reportSubTab === "assigned_to_me") {
-      if (r.status !== 0 || r.assignedToAdminId !== currentAdminId) return false;
-    } else if (reportSubTab === "resolved") {
-      if (r.status === 0) return false;
+    if (statusFilter !== "all") {
+      if (String(r.status) !== statusFilter) return false;
+    } else {
+      if (reportSubTab === "urgent") {
+        if (r.status !== 0 || (r.priority !== "urgent" && r.slaStatus !== "breached")) return false;
+      } else if (reportSubTab === "assigned_to_me") {
+        if (r.status !== 0 || r.assignedToAdminId !== currentAdminId) return false;
+      } else if (reportSubTab === "resolved") {
+        if (r.status === 0) return false;
+      }
     }
 
-    const itemType = normalizeType(r.targetType);
+    const itemType = normalizeType(r.targetType || (r as any).targetTypeName || (r as any).entityType);
     if (reportTargetTypeFilter !== "all" && itemType !== reportTargetTypeFilter) return false;
 
     if (reportPriorityFilter !== "all") {
@@ -112,15 +260,19 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
       if (reportPriorityFilter === "low" && r.priority !== "low") return false;
     }
 
-    if (reportProvinceFilter !== "all" && !r.province.includes(reportProvinceFilter)) return false;
+    if (reportProvinceFilter !== "all") {
+      const pFilter = reportProvinceFilter.toLowerCase().trim();
+      const rProv = String(r.province || (r as any).provinceName || "").toLowerCase().trim();
+      if (rProv && !rProv.includes(pFilter) && !pFilter.includes(rProv)) return false;
+    }
 
     if (reportSearchText.trim()) {
       const q = reportSearchText.toLowerCase();
       const matchId = (r.codeId || `#${r.id}`).toLowerCase().includes(q);
-      const matchTitle = r.targetTitle.toLowerCase().includes(q);
+      const matchTitle = (r.targetTitle || "").toLowerCase().includes(q);
       const matchContent = ((r.targetContent || (r as any).content || (r as any).reviewContent || (r as any).commentContent) || "").toLowerCase().includes(q);
-      const matchReporter = r.reporterName.toLowerCase().includes(q);
-      const matchReason = (r.reportReasonCategory || r.reportTypeName).toLowerCase().includes(q);
+      const matchReporter = (r.reporterName || "").toLowerCase().includes(q);
+      const matchReason = (r.reportReasonCategory || r.reportTypeName || r.reasonContent || "").toLowerCase().includes(q);
       if (!matchId && !matchTitle && !matchContent && !matchReporter && !matchReason) return false;
     }
 
@@ -134,12 +286,11 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
 
   return (
     <div className="space-y-6 animate-in fade-in duration-150 text-xs">
-      {/* Filters Hub */}
       <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2 flex-1 min-w-[300px]">
           <input
             type="text"
-            placeholder="Tìm theo ID (#REP-xxx), tên quán, người gửi..."
+            placeholder="Tìm theo ID, tên quán, người gửi..."
             value={reportSearchText}
             onChange={(e) => {
               setReportSearchText(e.target.value);
@@ -149,20 +300,19 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
           />
 
           <CustomSelect
-            value={reportTargetTypeFilter}
+            value={statusFilter}
             onChange={(val) => {
-              setReportTargetTypeFilter(val as any);
+              setStatusFilter(val);
               setReportCurrentPage(1);
             }}
             options={[
-              { value: "all", label: "Tất cả đối tượng" },
-              { value: "place", label: "Báo cáo địa điểm" },
-              { value: "review", label: "Báo cáo đánh giá" },
-              { value: "comment", label: "Báo cáo bình luận" },
-              { value: "blog", label: "Báo cáo bài viết" },
+              { value: "all", label: "Tất cả trạng thái" },
+              { value: "0", label: "Chờ thẩm định (Pending)" },
+              { value: "1", label: "Đã giải quyết (Resolved)" },
+              { value: "2", label: "Đã bác bỏ (Dismissed)" },
             ]}
             size="sm"
-            className="min-w-[140px]"
+            className="min-w-[150px]"
           />
 
           <CustomSelect
@@ -173,9 +323,9 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
             }}
             options={[
               { value: "all", label: "Tất cả tỉnh thành" },
-              ...Array.from(new Set(reports.map((r) => r.province).filter(Boolean))).map((p) => ({
-                value: p,
-                label: p,
+              ...provincesList.map((p) => ({
+                value: p.name,
+                label: p.name,
               })),
             ]}
             size="sm"
@@ -183,11 +333,8 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
           />
         </div>
 
-        {/* Batch actions */}
-        {/* Batch Actions Toolbar removed since checkboxes are disabled */}
       </div>
 
-      {/* Reports Table */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -219,22 +366,53 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
                     key={r.id}
                     className="hover:bg-slate-50/60 transition-colors"
                   >
-                    <td className="p-3.5 pl-4 w-[30%]">
-                      <div className="space-y-1">
+                    <td className="p-3.5 pl-4 w-[35%]">
+                      <div className="space-y-1.5">
                         <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
                           <span className="font-bold text-slate-700">{getTargetTypeLabel(r.targetType)}</span>
                         </div>
-                        {isReviewOrComment && contentText ? (
-                          <div className="space-y-1">
-                            <div className="font-semibold text-slate-900 text-xs line-clamp-3 bg-slate-50/90 border border-slate-200/70 rounded-lg px-2.5 py-1.5 text-slate-800 italic">
-                              "{contentText}"
+                        <div className="flex items-start gap-2.5">
+                          {r.targetImage ? (
+                            <img
+                              src={r.targetImage}
+                              alt={r.targetTitle}
+                              className="w-11 h-11 rounded-lg object-cover bg-slate-100 shrink-0 border border-slate-200"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                const parent = target.parentElement;
+                                if (parent && !parent.querySelector('.no-img-placeholder')) {
+                                  const fallback = document.createElement('div');
+                                  fallback.className = 'no-img-placeholder w-11 h-11 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-center text-slate-300 shrink-0';
+                                  fallback.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-300"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>';
+                                  parent.insertBefore(fallback, target);
+                                }
+                              }}
+                            />
+                          ) : !isReviewOrComment ? (
+                            <div className="w-11 h-11 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-center text-slate-300 shrink-0">
+                              <Image size={18} className="text-slate-300" />
                             </div>
+                          ) : null}
+                          <div className="space-y-1 flex-1 min-w-0">
+                            {isReviewOrComment && contentText ? (
+                              <div className="font-semibold text-slate-900 text-xs line-clamp-3 bg-slate-50/90 border border-slate-200/70 rounded-lg px-2.5 py-1.5 text-slate-800 italic">
+                                "{contentText}"
+                              </div>
+                            ) : (
+                              <>
+                                <div className="font-bold text-slate-900 text-xs line-clamp-2">
+                                  {r.targetTitle}
+                                </div>
+                                {contentText && (
+                                  <div className="text-[11px] text-slate-500 line-clamp-2 italic bg-slate-50/70 p-1.5 rounded border border-slate-200/50">
+                                    "{contentText}"
+                                  </div>
+                                )}
+                              </>
+                            )}
                           </div>
-                        ) : (
-                          <div className="font-bold text-slate-900 text-xs line-clamp-2">
-                            {r.targetTitle}
-                          </div>
-                        )}
+                        </div>
                       </div>
                     </td>
                     <td className="p-3.5">
@@ -242,15 +420,27 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
                         <span className="font-bold text-rose-700 text-xs block">
                           {r.reportTypeName}
                         </span>
-                        <span className="text-slate-600 text-[11px] line-clamp-1">
+                        <span className="text-slate-600 text-[11px] line-clamp-2">
                           {r.reasonContent}
                         </span>
                       </div>
                     </td>
                     <td className="p-3.5">
-                      <div className="space-y-0.5">
-                        <span className="font-semibold text-slate-800 block">{r.reporterName}</span>
-                        <span className="text-slate-400 text-[10px]">{formatDateTime(r.submittedAt)}</span>
+                      <div className="flex items-center gap-2">
+                        {r.reporterAvatar ? (
+                          <img
+                            src={r.reporterAvatar}
+                            alt={r.reporterName}
+                            className="w-6 h-6 rounded-full object-cover shrink-0 border border-slate-200"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                          />
+                        ) : null}
+                        <div className="space-y-0.5">
+                          <span className="font-semibold text-slate-800 block text-xs">{r.reporterName}</span>
+                          <span className="text-slate-400 text-[10px]">{formatDateTime(r.submittedAt)}</span>
+                        </div>
                       </div>
                     </td>
                     <td className="p-3.5">
@@ -262,7 +452,7 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
                             : "bg-slate-100 text-slate-600"
                           }`}
                       >
-                        {r.status === 0 ? "Chờ thẩm định" : r.status === 1 ? "Đã giải quyết" : "Đã bác bỏ"}
+                        {(r as any).statusText || (r.status === 0 ? "Chờ thẩm định" : r.status === 1 ? "Đã giải quyết" : "Đã bác bỏ")}
                       </span>
                     </td>
                     <td className="p-3.5 text-right pr-4">
@@ -288,7 +478,6 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
           </table>
         </div>
 
-        {/* Pagination */}
         {totalPages > 1 && (
           <div className="p-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
             <span>

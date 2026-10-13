@@ -30,7 +30,6 @@ export const NotificationToast: React.FC = () => {
         className="relative flex items-start gap-3 p-4 bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200/90 hover:border-emerald-500/50 transition-all cursor-pointer group overflow-hidden"
       >
 
-        {/* Avatar / Icon */}
         <div className="shrink-0 mt-0.5">
           {avatar ? (
             <img
@@ -45,7 +44,6 @@ export const NotificationToast: React.FC = () => {
           )}
         </div>
 
-        {/* Content */}
         <div className="flex-1 min-w-0 pr-6">
           <div className="flex items-center gap-1.5 mb-1">
             <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">
@@ -58,7 +56,6 @@ export const NotificationToast: React.FC = () => {
           </p>
         </div>
 
-        {/* Close button */}
         <button
           type="button"
           onClick={(e) => {

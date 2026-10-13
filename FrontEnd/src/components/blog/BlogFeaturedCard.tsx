@@ -1,6 +1,6 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronRight, BookOpen } from 'lucide-react'
+import { ChevronRight, Image } from 'lucide-react'
 import { extractPlainText } from '@/components/common/RichContentRenderer'
 import { navigateToAuthorProfile } from '@/utils/authorNavigation'
 import type { BlogListItemDto } from '@/types/models/place.model'
@@ -34,10 +34,21 @@ export const BlogFeaturedCard: React.FC<BlogFeaturedCardProps> = ({ post, onRead
             src={coverImage}
             alt={post.title}
             className="w-full h-full object-cover transition-all duration-300"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+              const parent = target.parentElement;
+              if (parent && !parent.querySelector('.no-img-placeholder')) {
+                const fallback = document.createElement('div');
+                fallback.className = 'no-img-placeholder w-full h-full min-h-[220px] flex items-center justify-center bg-slate-50 text-slate-300 select-none';
+                fallback.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-300"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>';
+                parent.appendChild(fallback);
+              }
+            }}
           />
         ) : (
-          <div className="w-full h-full min-h-[220px] flex items-center justify-center bg-slate-100 text-slate-300">
-            <BookOpen className="w-12 h-12" />
+          <div className="w-full h-full min-h-[220px] flex items-center justify-center bg-slate-50 text-slate-300 select-none">
+            <Image size={40} className="text-slate-300" />
           </div>
         )}
         <div className="absolute inset-0 bg-white/0 group-hover:bg-white/15 transition-colors duration-300 pointer-events-none" />

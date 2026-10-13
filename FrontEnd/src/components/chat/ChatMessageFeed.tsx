@@ -58,16 +58,13 @@ export const ChatMessageFeed: React.FC<ChatMessageFeedProps> = ({
   const scrollRef = useRef<HTMLDivElement>(null)
   const previousScrollHeightRef = useRef<number>(0)
 
-
   const [editingMessageId, setEditingMessageId] = useState<number | null>(null)
   const [editingText, setEditingText] = useState('')
   const [isSavingEdit, setIsSavingEdit] = useState(false)
 
-  // Hover Popups state
   const [activeMenuMessageId, setActiveMenuMessageId] = useState<number | null>(null)
   const [copiedMessageId, setCopiedMessageId] = useState<number | null>(null)
 
-  // Close menus on click outside
   useEffect(() => {
     const handleClickOutside = () => {
       setActiveMenuMessageId(null)
@@ -97,7 +94,6 @@ export const ChatMessageFeed: React.FC<ChatMessageFeedProps> = ({
     }
   }, [messages])
 
-  // Handle Save Edit
   const handleSaveEdit = async (messageId: number) => {
     if (!editingText.trim() || isSavingEdit) return
     setIsSavingEdit(true)
@@ -112,7 +108,6 @@ export const ChatMessageFeed: React.FC<ChatMessageFeedProps> = ({
     }
   }
 
-  // Handle Delete Message
   const handleDelete = async (messageId: number) => {
     setActiveMenuMessageId(null)
     if (!window.confirm('Bạn có chắc chắn muốn xóa tin nhắn này không?')) return
@@ -124,7 +119,6 @@ export const ChatMessageFeed: React.FC<ChatMessageFeedProps> = ({
     }
   }
 
-  // Handle Copy text
   const handleCopy = async (messageId: number, text: string) => {
     setActiveMenuMessageId(null)
     try {
@@ -138,7 +132,6 @@ export const ChatMessageFeed: React.FC<ChatMessageFeedProps> = ({
 
   return (
     <div className="flex-1 flex flex-col bg-white relative overflow-hidden font-sans">
-      {/* Header */}
       <header className="h-16 px-4 border-b border-[#E4E6EB] flex items-center justify-between gap-4 z-10 bg-white shrink-0">
         <div className="flex items-center gap-3 min-w-0">
           <div className="relative shrink-0">
@@ -178,13 +171,11 @@ export const ChatMessageFeed: React.FC<ChatMessageFeedProps> = ({
         </div>
       </header>
 
-      {/* Messages Feed */}
       <div
         ref={scrollRef}
         onScroll={handleScroll}
         className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-2.5 scroll-smooth"
       >
-        {/* Nút Xem tin nhắn cũ hơn */}
         {hasMoreMessages && (
           <div className="py-2 flex justify-center sticky top-0 z-10">
             <button
@@ -228,7 +219,6 @@ export const ChatMessageFeed: React.FC<ChatMessageFeedProps> = ({
             const isEditingThis = editingMessageId === msg.id
             const isMenuOpen = activeMenuMessageId === msg.id
 
-            // Action Toolbar (3-dots, reply)
             const actionToolbar = (
               <div
                 className={`relative flex items-center gap-1 mb-1 shrink-0 transition-all ${
@@ -236,7 +226,6 @@ export const ChatMessageFeed: React.FC<ChatMessageFeedProps> = ({
                 }`}
                 onClick={(e) => e.stopPropagation()}
               >
-                {/* 1. Nút 3 chấm (More Options) */}
                 <div className="relative">
                   <button
                     type="button"
@@ -254,14 +243,12 @@ export const ChatMessageFeed: React.FC<ChatMessageFeedProps> = ({
                     <MoreHorizontal size={15} />
                   </button>
 
-                  {/* Dropdown Menu */}
                   {isMenuOpen && (
                     <div
                       className={`absolute bottom-full mb-1.5 w-40 bg-white rounded-2xl shadow-xl border border-slate-100 py-1.5 z-50 animate-in zoom-in-95 duration-150 ${
                         isMe ? 'right-0' : 'left-0'
                       }`}
                     >
-                      {/* Trả lời */}
                       <button
                         type="button"
                         onClick={() => {
@@ -278,7 +265,6 @@ export const ChatMessageFeed: React.FC<ChatMessageFeedProps> = ({
                         <span>Phản hồi</span>
                       </button>
 
-                      {/* Sao chép văn bản */}
                       {msg.content && (
                         <button
                           type="button"
@@ -299,7 +285,6 @@ export const ChatMessageFeed: React.FC<ChatMessageFeedProps> = ({
                         </button>
                       )}
 
-                      {/* Sửa & Xóa (Chỉ cho tin nhắn của chính mình) */}
                       {isMe && (
                         <>
                           <div className="my-1 border-t border-slate-100" />
@@ -330,7 +315,6 @@ export const ChatMessageFeed: React.FC<ChatMessageFeedProps> = ({
                   )}
                 </div>
 
-                {/* 2. Nút Phản hồi (Reply) */}
                 <button
                   type="button"
                   onClick={(e) => {
@@ -356,7 +340,6 @@ export const ChatMessageFeed: React.FC<ChatMessageFeedProps> = ({
                   isMe ? 'justify-end' : 'justify-start'
                 } ${isNextSameSender ? 'mb-0.5' : 'mb-2'}`}
               >
-                {/* Avatar người khác */}
                 {!isMe && (
                   <div className="w-7 h-7 shrink-0">
                     {!isNextSameSender && (
@@ -371,23 +354,19 @@ export const ChatMessageFeed: React.FC<ChatMessageFeedProps> = ({
                   </div>
                 )}
 
-                {/* Toolbar bên trái khi là tin nhắn của tôi */}
                 {isMe && !isEditingThis && actionToolbar}
 
-                {/* Nội dung Bubble Tin nhắn */}
                 <div
                   className={`flex flex-col max-w-[85%] sm:max-w-[70%] md:max-w-[60%] ${
                     isMe ? 'items-end' : 'items-start'
                   }`}
                 >
-                  {/* Tên người gửi trong nhóm chat */}
                   {isGroup && !isMe && !isPrevSameSender && (
                     <span className="text-[11.5px] font-semibold text-[#65676B] mb-0.5 ml-1 select-none">
                       {msg.senderName}
                     </span>
                   )}
 
-                  {/* Reply Quote Banner */}
                   {msg.replyToMessageSnippet && (
                     <div className="mb-1 flex flex-col items-start text-xs max-w-full">
                       <div className="flex items-center gap-1 text-[#65676B] text-[12px] mb-0.5 pl-1">
@@ -400,7 +379,6 @@ export const ChatMessageFeed: React.FC<ChatMessageFeedProps> = ({
                     </div>
                   )}
 
-                  {/* Inline Editing Form */}
                   {isEditingThis ? (
                     <div className="flex flex-col gap-2 p-2 bg-white rounded-2xl border-2 border-[#0084FF] shadow-lg min-w-[260px] animate-in zoom-in-95 duration-150">
                       <span className="text-[11px] font-bold text-slate-500 px-1">
@@ -471,7 +449,6 @@ export const ChatMessageFeed: React.FC<ChatMessageFeedProps> = ({
                     )
                   )}
 
-                  {/* Attachments */}
                   {msg.attachments?.map((att) => {
                     if (att.attachmentType === MessageAttachmentType.Image && att.mediaUrl) {
                       return (
@@ -534,7 +511,6 @@ export const ChatMessageFeed: React.FC<ChatMessageFeedProps> = ({
                     return null
                   })}
 
-                  {/* Reactions Display */}
                   {msg.reactions && msg.reactions.length > 0 && (
                     <div className="flex items-center gap-1 -mt-2 bg-white px-2 py-0.5 rounded-full border border-slate-200 shadow-xs text-xs">
                       {msg.reactions.map((r, ri) => (
@@ -546,7 +522,6 @@ export const ChatMessageFeed: React.FC<ChatMessageFeedProps> = ({
                   )}
                 </div>
 
-                {/* Toolbar bên phải khi là tin nhắn của người khác */}
                 {!isMe && !isEditingThis && actionToolbar}
               </div>
             )

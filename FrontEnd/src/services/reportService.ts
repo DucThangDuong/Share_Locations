@@ -22,14 +22,16 @@ export interface ReportItemResponse {
   targetId: number;
   reason: string;
   description: string;
-  status: number; // 0: Pending, 1: Resolved, 2: Dismissed
+  status: number;
   createdAt: string;
 }
 
 class ReportService {
-  async getReasons() {
+  async getReasons(targetType?: string) {
     try {
-      const response = await apiClient.get("/api/reports/reasons");
+      const response = await apiClient.get("/api/reports/reasons", {
+        params: targetType ? { targetType } : undefined,
+      });
       return response.data;
     } catch {
       return { data: [] };
@@ -37,46 +39,41 @@ class ReportService {
   }
   async submitReport(data: CreateReportDto) {
     const rawTargetType = String(data.targetType || "place").toLowerCase();
-    const typeFormatted = rawTargetType.charAt(0).toUpperCase() + rawTargetType.slice(1);
-    const rawTargetId = data.targetId || data.placeId || data.reviewId || data.commentId || data.blogId || 0;
+    const rawTargetId = data.targetId || data.blogId || data.placeId || data.reviewId || data.commentId || 0;
     const targetNumId = Number(rawTargetId);
-
-    const targetTypeMap: Record<string, number> = {
-      place: 1,
-      review: 2,
-      comment: 3,
-      blog: 4,
-      photo: 5,
-      user: 6,
-    };
-    const targetTypeId = targetTypeMap[rawTargetType] || 1;
+    const reasonNumId = Number(data.reasonId) || (rawTargetType === "blog" ? 5 : 1);
+    const descText = data.description?.trim() || "";
 
     const payload = {
-      targetType: typeFormatted === "Photo" ? "Place" : typeFormatted,
-      targetTypeId,
+      targetType: rawTargetType,
       targetId: targetNumId,
-      placeId: data.placeId || (rawTargetType === "place" ? targetNumId : undefined),
-      reviewId: data.reviewId || (rawTargetType === "review" ? targetNumId : undefined),
-      commentId: data.commentId || (rawTargetType === "comment" ? targetNumId : undefined),
-      blogId: data.blogId || (rawTargetType === "blog" ? targetNumId : undefined),
-      reason: data.reason,
-      reasonCode: data.reasonCode || data.reason,
-      description: data.description || "",
-      notes: data.description || "",
-      content: data.description || "",
-      evidenceUrl: data.evidenceUrl || undefined,
-      contactEmail: data.contactEmail || undefined,
+      reasonId: reasonNumId,
+      description: descText,
     };
 
     try {
       const response = await apiClient.post("/api/reports", payload);
       return response.data;
     } catch (err: any) {
+      if (rawTargetType === "blog" && targetNumId > 0) {
+        try {
+          const fallbackRes = await apiClient.post(`/api/blogs/${targetNumId}/reports`, {
+            reasonId: reasonNumId,
+            reason: data.reason,
+            reasonCode: data.reasonCode || data.reason,
+            description: descText,
+            contactEmail: data.contactEmail,
+          });
+          return fallbackRes.data;
+        } catch {
+        }
+      }
       if (rawTargetType === "place" && targetNumId > 0) {
         try {
           const fallbackRes = await apiClient.post(`/api/places/${targetNumId}/reports`, {
+            reasonId: reasonNumId,
             reason: data.reason,
-            description: data.description,
+            description: descText,
             contactEmail: data.contactEmail,
           });
           return fallbackRes.data;

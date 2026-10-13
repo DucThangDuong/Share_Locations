@@ -52,7 +52,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
   const location = useLocation()
   const viewerIsSystemAdmin = isUserSystemAdmin()
 
-  // Dynamic Data States from API
   const [categoriesList, setCategoriesList] = useState<AdminCategoryDto[]>([])
   const [provincesList, setProvincesList] = useState<ProvinceDto[]>([])
   const [userDetail, setUserDetail] = useState<AdminUserDetail | null>(null)
@@ -63,7 +62,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
   const [isChangeRoleOpen, setIsChangeRoleOpen] = useState(false)
 
-  // Roles determination
   const rolesUpper = (userDetail?.roles || user.roles || []).map((r) => String(r).toUpperCase())
   const isCategoryAdmin = rolesUpper.includes('CATEGORY_ADMIN') || rolesUpper.includes('ADMIN_LEVEL_1')
   const isSystemAdmin = rolesUpper.includes('SYSTEM_ADMIN') || rolesUpper.includes('ADMIN') || rolesUpper.includes('SUPERADMIN')
@@ -75,7 +73,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
       ? 'Admin Cấp 1'
       : 'Người dùng'
 
-  // Selected scopes & initial baseline states for dirty checking
   const [initialCategoryIds, setInitialCategoryIds] = useState<number[]>(
     user.categoryScopes?.map((c) => c.categoryId) || []
   )
@@ -90,15 +87,12 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
     user.provinceScopes?.map((p) => p.provinceId) || []
   )
 
-  // In-dropdown search states
   const [categorySearchQuery, setCategorySearchQuery] = useState('')
   const [provinceSearchQuery, setProvinceSearchQuery] = useState('')
 
-  // Dropdown open states
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false)
   const [isProvinceDropdownOpen, setIsProvinceDropdownOpen] = useState(false)
 
-  // Dirty check: whether selected scopes differ from baseline
   const hasScopeChanges = useMemo(() => {
     if (selectedCategoryIds.length !== initialCategoryIds.length) return true
     if (selectedProvinceIds.length !== initialProvinceIds.length) return true
@@ -109,7 +103,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
     return false
   }, [selectedCategoryIds, selectedProvinceIds, initialCategoryIds, initialProvinceIds])
 
-  // Unified Tab State with URL query sync
   const getInitialTab = (): DetailTab => {
     const params = new URLSearchParams(location.search)
     const tabParam = params.get('tab') as DetailTab | null
@@ -122,7 +115,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
   const [activeTab, setActiveTabState] = useState<DetailTab>(getInitialTab)
   const [searchQuery, setSearchQuery] = useState('')
 
-  // Keep state synced when user clicks back/forward in browser history
   useEffect(() => {
     const params = new URLSearchParams(location.search)
     const tabParam = params.get('tab') as DetailTab | null
@@ -139,7 +131,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
     navigate(`${currentPath}?tab=${tab}`, { replace: true })
   }
 
-  // Format date helper
   const formatDate = (isoString?: string) => {
     if (!isoString) return '--'
     try {
@@ -154,7 +145,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
     }
   }
 
-  // Category Name Helper
   const getCategoryName = (id: number) => {
     const found = categoriesList.find((c) => c.id === id)
     if (found) return found.name
@@ -164,11 +154,9 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
     return inUserScopes || `ID #${id}`
   }
 
-  // Load All Data from API
   const loadData = async () => {
     setIsLoading(true)
     try {
-      // 1. Fetch master lists for categories (/api/admin/categories) & provinces
       const [catRes, provRes] = await Promise.allSettled([
         adminService.getCategories(),
         geographyService.getProvinces()
@@ -182,7 +170,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
         setProvincesList(provRes.value.data)
       }
 
-      // 2. Fetch User Detail from BE: GET /api/admin/users/{userId}
       try {
         const detailRes = await adminService.getUserDetail(user.userId)
         const detailData = (detailRes as any)?.data || detailRes
@@ -200,7 +187,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
           setInitialProvinceIds(provIds)
         }
       } catch {
-        // Fallback to initial prop if API call fails
         const catIds = user.categoryScopes?.map((c) => c.categoryId) || []
         const provIds = user.provinceScopes?.map((p) => p.provinceId) || []
         setUserDetail({
@@ -222,7 +208,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
         setInitialProvinceIds(provIds)
       }
 
-      // 3. Fetch User Activities: GET /api/admin/users/{userId}/activities
       try {
         const actRes = await adminService.getUserActivities(user.userId)
         const actData = (actRes as any)?.data || actRes
@@ -230,11 +215,9 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
           setUserActivities(actData)
         }
       } catch {
-        // Empty activities on error
         setUserActivities({ reviews: [], blogs: [], trips: [], proposals: [] })
       }
 
-      // 4. Fetch Admin Access History (if Admin): GET /api/admin/users/{userId}/access-history
       if (isTargetAdmin) {
         try {
           const histRes = await adminService.getUserAccessHistory(user.userId)
@@ -262,7 +245,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
     }
   }
 
-  // Toggle Category Checkbox
   const toggleCategory = (catId: number) => {
     if (!viewerIsSystemAdmin) {
       showToast?.('Chỉ System Admin mới có quyền điều chỉnh phân quyền danh mục.')
@@ -273,7 +255,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
     )
   }
 
-  // Toggle Province Checkbox
   const toggleProvince = (provId: number) => {
     if (!viewerIsSystemAdmin) {
       showToast?.('Chỉ System Admin mới có quyền điều chỉnh phân quyền tỉnh thành.')
@@ -284,7 +265,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
     )
   }
 
-  // Handle Save Scopes via API: PUT /api/admin/users/{userId}/scopes
   const handleSaveScopes = async () => {
     if (!viewerIsSystemAdmin) {
       showToast?.('Chỉ System Admin mới có quyền cập nhật phân quyền.')
@@ -310,14 +290,12 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
     }
   }
 
-  // Handle Cancel Scopes changes
   const handleCancelScopes = () => {
     setSelectedCategoryIds([...initialCategoryIds])
     setSelectedProvinceIds([...initialProvinceIds])
     showToast?.('Đã khôi phục phân quyền ban đầu.')
   }
 
-  // Handle Update Status via API: PATCH /api/admin/users/{userId}/status
   const handleToggleStatus = async () => {
     const currentStatus = String(userDetail?.status ?? user.status)
     const newStatus = currentStatus === '1' || currentStatus.toUpperCase() === 'ACTIVE' ? '0' : '1'
@@ -335,7 +313,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
     }
   }
 
-  // Toggle Review Status
   const handleToggleReviewStatus = async (e: React.MouseEvent, reviewId: number, currentStatus?: string | number) => {
     e.stopPropagation()
     const isAct = String(currentStatus) === '1' || String(currentStatus).toLowerCase() === 'active' || String(currentStatus).toLowerCase() === 'công khai'
@@ -357,7 +334,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
     }
   }
 
-  // Toggle Blog Status
   const handleToggleBlogStatus = async (e: React.MouseEvent, blogId: number, currentStatus?: string | number) => {
     e.stopPropagation()
     const isPub = String(currentStatus) === '1' || String(currentStatus).toLowerCase() === 'published' || String(currentStatus).toLowerCase() === 'active' || String(currentStatus) === 'Đã xuất bản'
@@ -379,7 +355,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
     }
   }
 
-  // Toggle Trip Status
   const handleToggleTripStatus = async (e: React.MouseEvent, tripId: number, currentStatus?: string | number) => {
     e.stopPropagation()
     const isPub = String(currentStatus) === '1' || String(currentStatus).toLowerCase() === 'public' || String(currentStatus).toLowerCase() === 'active' || String(currentStatus) === 'Công khai'
@@ -395,8 +370,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
     })
     showToast?.(nextStatus === '1' ? 'Đã công khai chuyến đi' : 'Đã ẩn chuyến đi')
   }
-
-
 
   const reviewsList = userActivities?.reviews || []
   const blogsList = userActivities?.blogs || []
@@ -450,7 +423,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
             <span>XEM TRANG CÁ NHÂN</span>
           </a>
 
-          {/* Role Assignment Button for SystemAdmin */}
           {viewerIsSystemAdmin && (
             <button
               type="button"
@@ -463,7 +435,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
             </button>
           )}
 
-          {/* Quick Lock / Unlock Status button */}
           <button
             type="button"
             disabled={isUpdatingStatus}
@@ -536,7 +507,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
           </div>
         </div>
 
-        {/* Role & Privileges Mini Card on right */}
         <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-200/80 min-w-[280px] shrink-0 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
@@ -647,7 +617,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
           </div>
         </div>
 
-        {/* Toolbar & Search Bar */}
         {activeTab !== 'scopes' && (
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
             <div className="relative w-full sm:w-80">
@@ -690,7 +659,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
                   </span>
                 </div>
 
-                {/* Dropdown Container */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-xs text-slate-600">
                     <span className="font-semibold">Lựa chọn danh mục:</span>
@@ -711,7 +679,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
                     )}
                   </div>
 
-                  {/* Dropdown Selector Button */}
                   <button
                     type="button"
                     onClick={() => setIsCategoryDropdownOpen((prev) => !prev)}
@@ -738,7 +705,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
                     />
                   </button>
 
-                  {/* Dropdown List with Checkboxes */}
                   {isCategoryDropdownOpen && (
                     <div className="p-2.5 bg-white border border-slate-200 rounded-xl shadow-lg space-y-2 animate-in fade-in slide-in-from-top-2 duration-150">
                       <div className="relative">
@@ -805,7 +771,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
                   </span>
                 </div>
 
-                {/* Dropdown Container */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-xs text-slate-600">
                     <span className="font-semibold">Lựa chọn tỉnh thành:</span>
@@ -826,7 +791,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
                     )}
                   </div>
 
-                  {/* Dropdown Selector Button */}
                   <button
                     type="button"
                     onClick={() => setIsProvinceDropdownOpen((prev) => !prev)}
@@ -860,7 +824,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
                     />
                   </button>
 
-                  {/* Dropdown List with Checkboxes */}
                   {isProvinceDropdownOpen && (
                     <div className="p-2.5 bg-white border border-slate-200 rounded-xl shadow-lg space-y-2 animate-in fade-in slide-in-from-top-2 duration-150">
                       <div className="relative">
@@ -930,7 +893,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
               </div>
 
               <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
-                {/* NÚT HỦY */}
                 <button
                   type="button"
                   disabled={!hasScopeChanges || isSavingScopes}
@@ -944,7 +906,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
                   Hủy
                 </button>
 
-                {/* NÚT LƯU */}
                 <button
                   type="button"
                   disabled={!hasScopeChanges || isSavingScopes || !viewerIsSystemAdmin}
@@ -968,7 +929,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
             </div>
           </div>
         )}
-
 
         {!isLoading && activeTab === 'logs' && (
           <div className="overflow-x-auto max-h-[500px] overflow-y-auto rounded-xl border border-slate-100 shadow-2xs">
@@ -1048,7 +1008,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
                       key={rev.id}
                       className="p-3.5 rounded-xl border border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50/30 transition-all space-y-2.5 shadow-2xs"
                     >
-                      {/* Top row: Title + Actions */}
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
@@ -1068,7 +1027,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
                             </div>
                           </div>
 
-                          {/* Subline: Clearly labeled metadata placed beneath the title */}
                           <div className="text-[11px] text-slate-500 flex items-center gap-2 flex-wrap mt-1">
                             <span>Danh mục: <strong className="text-slate-700 font-medium">{rev.category || 'Chưa phân loại'}</strong></span>
                             <span className="text-slate-300">•</span>
@@ -1080,7 +1038,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
                           </div>
                         </div>
 
-                        {/* Right side compact status & action buttons */}
                         <div className="flex items-center gap-1.5 shrink-0 self-start sm:self-center">
                           <span
                             className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold border ${isRevActive
@@ -1118,7 +1075,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
                         </div>
                       </div>
 
-                      {/* Review Comment Content */}
                       <div className="text-xs text-slate-700 leading-relaxed bg-slate-50/60 p-2.5 rounded-lg border border-slate-100/90 font-normal">
                         {rev.content}
                       </div>
@@ -1159,7 +1115,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
                           {blog.title}
                         </h4>
 
-                        {/* Subline: Clearly labeled metadata placed beneath the title */}
                         <div className="text-[11px] text-slate-500 flex items-center gap-2 flex-wrap mt-1">
                           <span>Danh mục: <strong className="text-slate-700 font-medium">{blog.category || 'Cẩm nang du lịch'}</strong></span>
 
@@ -1172,7 +1127,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
                         </div>
                       </div>
 
-                      {/* Right Action buttons */}
                       <div className="flex items-center gap-1.5 shrink-0 self-start sm:self-center">
                         <span
                           className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold border ${isBlogPub
@@ -1239,7 +1193,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
                           {trip.title}
                         </h4>
 
-                        {/* Subline: Clearly labeled metadata placed beneath the title */}
                         <div className="text-[11px] text-slate-500 flex items-center gap-2 flex-wrap mt-1">
                           <span>Loại lịch trình: <strong className="text-slate-700 font-medium">{trip.duration || 'Chưa đặt lịch'}</strong></span>
                           <span className="text-slate-300">•</span>
@@ -1251,7 +1204,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
                         </div>
                       </div>
 
-                      {/* Right Action buttons */}
                       <div className="flex items-center gap-1.5 shrink-0 self-start sm:self-center">
                         <span
                           className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold border ${isTripPub
@@ -1370,7 +1322,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
         )}
       </div>
 
-      {/* Change User Role Modal */}
       {isChangeRoleOpen && (
         <ChangeRoleModal
           isOpen={isChangeRoleOpen}

@@ -38,7 +38,6 @@ export function CustomSelect<T extends string | number = string | number>({
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Normalize options array into CustomSelectOption objects
   const normalizedOptions: CustomSelectOption<T>[] = options.map((opt) => {
     if (typeof opt === "object" && opt !== null && "value" in opt && "label" in opt) {
       return opt as CustomSelectOption<T>;
@@ -51,7 +50,6 @@ export function CustomSelect<T extends string | number = string | number>({
 
   const selectedOption = normalizedOptions.find((opt) => opt.value === value);
 
-  // Handle click outside to close dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
@@ -125,7 +123,6 @@ export function CustomSelect<T extends string | number = string | number>({
         />
       </button>
 
-      {/* Floating Dropdown Menu */}
       {isOpen && (
         <div
           role="listbox"

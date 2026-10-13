@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
@@ -42,7 +42,6 @@ public class AdminProposalRepository : IAdminProposalRepository
         var scopeWhereClauses = new List<string>();
         var parameters = new DynamicParameters();
 
-        // 1. Giới hạn phân quyền theo Scope của Admin cấp 1
         if (!_currentUserService.IsSystemAdmin)
         {
             var catScopes = _currentUserService.CategoryScopes;
@@ -80,19 +79,17 @@ public class AdminProposalRepository : IAdminProposalRepository
             }
         }
 
-        // Lọc theo ProvinceId nếu có
         if (provinceId.HasValue && provinceId.Value > 0)
         {
             scopeWhereClauses.Add("COALESCE(p.ProvinceId, targetP.ProvinceId, TRY_CAST(JSON_VALUE(p.ProposedDataJSON, '$.provinceId') AS INT)) = @ProvinceId");
             parameters.Add("ProvinceId", provinceId.Value);
         }
 
-        // Lọc theo Keyword / Search nếu có
         if (!string.IsNullOrWhiteSpace(keyword))
         {
             scopeWhereClauses.Add(@"(
-                COALESCE(prof.FullName, u.Email) LIKE @Keyword 
-                OR targetP.Name LIKE @Keyword 
+                COALESCE(prof.FullName, u.Email) LIKE @Keyword
+                OR targetP.Name LIKE @Keyword
                 OR JSON_VALUE(p.ProposedDataJSON, '$.name') LIKE @Keyword
                 OR JSON_VALUE(p.ProposedDataJSON, '$.Name') LIKE @Keyword
                 OR targetP.Address LIKE @Keyword
@@ -103,9 +100,8 @@ public class AdminProposalRepository : IAdminProposalRepository
 
         var scopeWhereSql = scopeWhereClauses.Count > 0 ? " WHERE " + string.Join(" AND ", scopeWhereClauses) : "";
 
-        // Đếm số lượng theo từng trạng thái (Pending, Approved, Rejected) trong phạm vi quản lý
         var countsSql = $@"
-            SELECT 
+            SELECT
                 COUNT(CASE WHEN p.Status = 0 THEN 1 END) AS PendingCount,
                 COUNT(CASE WHEN p.Status = 1 THEN 1 END) AS ApprovedCount,
                 COUNT(CASE WHEN p.Status = 2 THEN 1 END) AS RejectedCount
@@ -118,7 +114,6 @@ public class AdminProposalRepository : IAdminProposalRepository
 
         var counts = await connection.QueryFirstOrDefaultAsync<(int PendingCount, int ApprovedCount, int RejectedCount)>(countsSql, parameters);
 
-        // Áp dụng filter status cho dữ liệu phân trang hiện tại
         var whereClauses = new List<string>(scopeWhereClauses);
         if (status.HasValue)
         {
@@ -144,7 +139,7 @@ public class AdminProposalRepository : IAdminProposalRepository
         parameters.Add("PageSize", pageSize);
 
         var querySql = $@"
-            SELECT 
+            SELECT
                 p.Id,
                 COALESCE(targetP.Name, JSON_VALUE(p.ProposedDataJSON, '$.name'), JSON_VALUE(p.ProposedDataJSON, '$.Name'), N'Đề xuất địa điểm mới') AS PlaceName,
                 COALESCE(
@@ -192,7 +187,7 @@ public class AdminProposalRepository : IAdminProposalRepository
         var connection = _dbContext.Database.GetDbConnection();
 
         const string sql = @"
-            SELECT 
+            SELECT
                 p.Id,
                 CASE WHEN p.TargetPlaceId IS NULL THEN 'new_place' ELSE 'update_info' END AS Type,
                 CAST(p.Status AS INT) AS Status,
@@ -373,7 +368,6 @@ public class AdminProposalRepository : IAdminProposalRepository
                     if (!string.IsNullOrWhiteSpace(val)) placeData.CoverImg = val;
                 }
 
-                // Parse images
                 var imgPropNames = new[] { "images", "Images", "photos", "Photos", "mediaUrls", "MediaUrls" };
                 foreach (var propName in imgPropNames)
                 {
@@ -391,7 +385,6 @@ public class AdminProposalRepository : IAdminProposalRepository
                     }
                 }
 
-                // Tự động chuyển đổi và di chuyển dữ liệu Base64 cũ (nếu có) sang Azure Blob Storage
                 bool needsDbUpdate = false;
                 if (!string.IsNullOrWhiteSpace(placeData.CoverImg) && placeData.CoverImg.StartsWith("data:image/", StringComparison.OrdinalIgnoreCase))
                 {
@@ -403,7 +396,6 @@ public class AdminProposalRepository : IAdminProposalRepository
                     }
                     catch
                     {
-                        // Giữ fallback nếu upload blob lỗi
                     }
                 }
 
@@ -420,7 +412,6 @@ public class AdminProposalRepository : IAdminProposalRepository
                         }
                         catch
                         {
-                            // Giữ fallback nếu upload blob lỗi
                         }
                     }
                 }
@@ -429,7 +420,6 @@ public class AdminProposalRepository : IAdminProposalRepository
                 {
                     try
                     {
-                        // Cập nhật lại ProposedDataJSON trong DB thành URL sạch của Azure
                         var updatedDict = JsonSerializer.Deserialize<Dictionary<string, object>>(rawJson) ?? new();
                         if (!string.IsNullOrWhiteSpace(placeData.CoverImg))
                         {
@@ -447,17 +437,14 @@ public class AdminProposalRepository : IAdminProposalRepository
                     }
                     catch
                     {
-                        // Bỏ qua lỗi cập nhật nền
                     }
                 }
             }
             catch
             {
-                // Fallback on json parse
             }
         }
 
-        // Bổ sung tên Category hoặc Province từ DB nếu còn thiếu
         if (string.IsNullOrWhiteSpace(placeData.CategoryName) && placeData.CategoryId.HasValue)
         {
             placeData.CategoryName = await connection.QueryFirstOrDefaultAsync<string>(
@@ -470,7 +457,6 @@ public class AdminProposalRepository : IAdminProposalRepository
                 "SELECT Name FROM dbo.Provinces WHERE Id = @ProvId", new { ProvId = placeData.ProvinceId.Value });
         }
 
-        // Nếu là update_info và placeData.Images vẫn trống, lấy từ bảng PlaceMedia của TargetPlaceId
         if (placeData.Images.Count == 0 && row.TargetPlaceId != null)
         {
             long tPlaceId = (long)row.TargetPlaceId;
@@ -495,7 +481,6 @@ public class AdminProposalRepository : IAdminProposalRepository
         var proposal = await _dbContext.Proposals.FirstOrDefaultAsync(p => p.Id == id, ct);
         if (proposal == null) return false;
 
-        // Trích xuất dữ liệu từ ProposedDataJSON
         string rawJson = proposal.ProposedDataJSON ?? "{}";
         string name = string.Empty;
         string address = string.Empty;
@@ -585,11 +570,9 @@ public class AdminProposalRepository : IAdminProposalRepository
             }
             catch
             {
-                // Bỏ qua lỗi parse JSON để fallback an toàn
             }
         }
 
-        // Đảm bảo dữ liệu tối thiểu hợp lệ
         if (provinceId <= 0) provinceId = proposal.ProvinceId ?? 1;
         if (categoryId <= 0) categoryId = proposal.CategoryId ?? 1;
         if (string.IsNullOrWhiteSpace(name)) name = "Địa điểm đề xuất";
@@ -603,7 +586,6 @@ public class AdminProposalRepository : IAdminProposalRepository
             return false;
         }
 
-        // Trường hợp 1: Cập nhật địa điểm đã có
         if (effectiveTargetPlaceId.HasValue && effectiveTargetPlaceId.Value > 0)
         {
             var existingPlace = await _dbContext.Places
@@ -641,7 +623,6 @@ public class AdminProposalRepository : IAdminProposalRepository
                 }
             }
         }
-        // Trường hợp 2: Tạo mới địa điểm thật trong hệ thống
         else
         {
             var slug = BlogRepository.GenerateSlug(name);
@@ -684,7 +665,6 @@ public class AdminProposalRepository : IAdminProposalRepository
 
         var oldProposalStatus = proposal.Status;
 
-        // Cập nhật trạng thái và liên kết Proposal với Place
         proposal.Approve(adminId, adminNote, effectiveTargetPlaceId);
         await _dbContext.SaveChangesAsync(ct);
 

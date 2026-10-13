@@ -1,4 +1,4 @@
-namespace Application.DTOs;
+﻿namespace Application.DTOs;
 
 public class PlaceTypeDto
 {
@@ -17,7 +17,6 @@ public class PlaceCardDto
     public int ReviewCount { get; set; }
     public IReadOnlyList<string> MediaUrls { get; set; } = [];
 }
-
 
 public class CollectionDto
 {

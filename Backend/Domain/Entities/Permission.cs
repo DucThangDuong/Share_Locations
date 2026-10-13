@@ -1,4 +1,4 @@
-namespace Domain.Entities;
+﻿namespace Domain.Entities;
 
 public class Permission
 {
@@ -7,7 +7,6 @@ public class Permission
     public string Name { get; private set; } = string.Empty;
     public string? Description { get; private set; }
 
-    // Navigation
     private readonly List<RolePermission> _rolePermissions = new();
     public virtual IReadOnlyCollection<RolePermission> RolePermissions => _rolePermissions.AsReadOnly();
 

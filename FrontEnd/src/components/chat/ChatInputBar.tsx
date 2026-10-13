@@ -22,7 +22,6 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
 }) => {
   return (
     <>
-      {/* Replying banner */}
       {replyingTo && (
         <div className="px-4 py-2 bg-slate-100 border-t border-slate-200 flex items-center justify-between text-xs text-slate-700">
           <div className="flex items-center gap-1.5 truncate">
@@ -41,7 +40,6 @@ export const ChatInputBar: React.FC<ChatInputBarProps> = ({
         </div>
       )}
 
-      {/* Input Bar */}
       <footer className="p-3 bg-white border-t border-[#E4E6EB] flex items-center gap-2 z-10">
         <button
           type="button"

@@ -13,8 +13,8 @@ export interface MapboxFeature {
   properties: Record<string, any>
   text: string
   place_name: string
-  address?: string // House number in Mapbox
-  center: [number, number] // [lng, lat]
+  address?: string
+  center: [number, number]
   geometry: {
     type: string
     coordinates: [number, number]
@@ -31,9 +31,9 @@ export interface MapboxGeocodeResponse {
 
 export interface AddressSuggestion {
   id: string
-  title: string // Số nhà & Tên đường hoặc Tên địa danh
-  fullAddress: string // Địa chỉ đầy đủ (số nhà, đường, phường/xã, quận/huyện, tỉnh/thành)
-  center: [number, number] // [lng, lat]
+  title: string
+  fullAddress: string
+  center: [number, number]
   source?: 'mapbox' | 'nominatim'
 }
 
@@ -119,7 +119,7 @@ export const mapboxService = {
     options?: {
       country?: string
       limit?: number
-      proximity?: [number, number] // [lng, lat]
+      proximity?: [number, number]
       signal?: AbortSignal
     }
   ): Promise<AddressSuggestion[]> {
