@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { BookOpen, Loader2 } from 'lucide-react'
+import { Newspaper, Loader2 } from 'lucide-react'
 import { userService } from '@/services/userService'
 import { UserProfileBlogCard } from '../UserProfileBlogCard'
 import type { UserBlogItem } from '@/types/models/userProfile.model'
@@ -47,7 +47,7 @@ export const UserProfileBlogsTab: React.FC<UserProfileBlogsTabProps> = ({ userId
   if (blogs.length === 0) {
     return (
       <div className="bg-white rounded-2xl p-8 text-center border border-slate-200">
-        <BookOpen className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+        <Newspaper className="w-10 h-10 text-slate-300 mx-auto mb-2" />
         <div className="text-sm font-bold text-slate-800">Chưa có cẩm nang nào</div>
         <p className="text-xs text-slate-500 mt-1">Người dùng chưa đăng cẩm nang chia sẻ nào.</p>
       </div>

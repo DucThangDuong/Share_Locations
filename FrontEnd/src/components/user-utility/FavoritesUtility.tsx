@@ -7,10 +7,7 @@ import {
   Search,
   X,
   Loader2,
-  Compass,
-  MapPin,
-  UtensilsCrossed,
-  BookOpen
+  MapPin
 } from 'lucide-react'
 import { userService } from '@/services/userService'
 import type { FavoriteItem, PagedResultDto } from '@/types/models/userProfile.model'
@@ -29,7 +26,6 @@ export const FavoritesUtility: React.FC<FavoritesUtilityProps> = ({
   const navigate = useNavigate()
   const [favorites, setFavorites] = useState<FavoriteItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [activeFilter, setActiveFilter] = useState<number>(0)
   const [searchQuery, setSearchQuery] = useState('')
 
   const fetchFavorites = useCallback(async () => {
@@ -78,96 +74,60 @@ export const FavoritesUtility: React.FC<FavoritesUtilityProps> = ({
 
   const handleSelect = (item: FavoriteItem) => {
     onClose?.()
-    if (item.targetType === 1) {
-      navigate(`/places/${item.targetId}`)
-    } else if (item.targetType === 2) {
-      navigate(`/explore?category=food&id=${item.targetId}`)
-    } else if (item.targetType === 3) {
-      navigate(`/itinerary?tripId=${item.targetId}`)
-    } else if (item.targetType === 4) {
-      navigate(`/blog/${item.targetId}`)
-    }
+    navigate(`/places/${item.targetId}`)
   }
 
   const filteredItems = useMemo(() => {
-    return favorites.filter((item) => {
-      if (activeFilter !== 0 && item.targetType !== activeFilter) return false
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase().trim()
-        const matchesTitle = item.title?.toLowerCase().includes(q)
-        const matchesTag = item.categoryTag?.toLowerCase().includes(q)
-        const matchesSub = item.subtitle?.toLowerCase().includes(q)
-        return matchesTitle || matchesTag || matchesSub
-      }
-      return true
-    })
-  }, [favorites, activeFilter, searchQuery])
-
-  const filterTabs = [
-    { id: 0, label: 'Tất cả', count: favorites.length, icon: Bookmark },
-    { id: 1, label: 'Địa điểm', count: favorites.filter((f) => f.targetType === 1).length, icon: MapPin },
-    { id: 2, label: 'Ẩm thực', count: favorites.filter((f) => f.targetType === 2).length, icon: UtensilsCrossed },
-    { id: 3, label: 'Hành trình', count: favorites.filter((f) => f.targetType === 3).length, icon: Compass },
-    { id: 4, label: 'Bài viết', count: favorites.filter((f) => f.targetType === 4).length, icon: BookOpen }
-  ]
+    return favorites
+      .filter((item) => item.targetType === 1 || !item.targetType)
+      .filter((item) => {
+        if (searchQuery.trim()) {
+          const q = searchQuery.toLowerCase().trim()
+          const matchesTitle = item.title?.toLowerCase().includes(q)
+          const matchesTag = item.categoryTag?.toLowerCase().includes(q)
+          const matchesSub = item.subtitle?.toLowerCase().includes(q)
+          return matchesTitle || matchesTag || matchesSub
+        }
+        return true
+      })
+  }, [favorites, searchQuery])
 
   return (
     <div className={`flex flex-col ${isDrawer ? 'flex-1 overflow-hidden' : 'space-y-5'}`}>
       <div className={`flex flex-col gap-2.5 ${isDrawer ? 'px-4 py-3 border-b border-slate-200 bg-white' : 'pb-3 border-b border-slate-200'}`}>
-        <div className="flex flex-wrap items-center gap-1.5">
-          {filterTabs.map((tab) => (
+        <div className="relative w-full">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Tìm kiếm địa điểm đã lưu..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-8 pr-7 py-2 bg-slate-50 focus:bg-white border border-slate-200 focus:border-emerald-600 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 outline-none transition-all"
+          />
+          {searchQuery && (
             <button
-              key={tab.id}
               type="button"
-              onClick={() => setActiveFilter(tab.id)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${activeFilter === tab.id
-                ? 'bg-emerald-800 text-white shadow-xs'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
             >
-              <span>{tab.label}</span>
-              <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${activeFilter === tab.id ? 'bg-emerald-900 text-emerald-100' : 'bg-slate-200 text-slate-600'}`}>
-                {tab.count}
-              </span>
+              <X size={13} />
             </button>
-          ))}
+          )}
         </div>
-
-        {!isDrawer && (
-          <div className="relative w-full sm:w-64">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Tìm trong mục đã lưu..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-7 py-1.5 bg-slate-50 focus:bg-white border border-slate-200 focus:border-emerald-600 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 outline-none transition-all"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-              >
-                <X size={13} />
-              </button>
-            )}
-          </div>
-        )}
       </div>
 
       <div className={isDrawer ? 'p-4 flex-1 overflow-y-auto space-y-2.5' : ''}>
         {isLoading ? (
           <div className="py-20 flex flex-col items-center justify-center text-slate-400 gap-2">
             <Loader2 size={26} className="animate-spin text-emerald-800" />
-            <span className="text-xs">Đang tải danh sách yêu thích...</span>
+            <span className="text-xs">Đang tải danh sách địa điểm yêu thích...</span>
           </div>
         ) : filteredItems.length === 0 ? (
           <div className="py-16 text-center text-slate-400 bg-white rounded-2xl border border-slate-200/80 p-6 flex flex-col items-center gap-2">
             <Bookmark size={36} className="text-slate-300" />
-            <p className="text-sm font-bold text-slate-700">Chưa có mục nào trong danh sách</p>
+            <p className="text-sm font-bold text-slate-700">Chưa có địa điểm nào trong danh sách</p>
             <p className="text-xs text-slate-500 max-w-sm">
-              Bạn có thể lưu các địa điểm, ẩm thực, hành trình và bài viết thú vị khi khám phá hệ thống.
+              Bạn có thể lưu các địa điểm thú vị khi khám phá hệ thống.
             </p>
             <Link
               to="/explore"
@@ -178,7 +138,6 @@ export const FavoritesUtility: React.FC<FavoritesUtilityProps> = ({
             </Link>
           </div>
         ) : isDrawer ? (
-          /* Drawer Compact Layout */
           <div className="space-y-2.5">
             {filteredItems.map((item) => {
               const coverImg =
@@ -197,7 +156,7 @@ export const FavoritesUtility: React.FC<FavoritesUtilityProps> = ({
                   />
                   <div className="flex-1 min-w-0 pr-6">
                     <span className="inline-block px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-600 mb-1">
-                      {item.categoryTag || (item.targetType === 1 ? 'Địa điểm' : item.targetType === 2 ? 'Ẩm thực' : item.targetType === 3 ? 'Hành trình' : 'Bài viết')}
+                      {item.categoryTag || 'Địa điểm'}
                     </span>
                     <h4 className="text-xs font-bold text-slate-900 truncate group-hover:text-emerald-800 transition-colors">
                       {item.title}
@@ -227,7 +186,6 @@ export const FavoritesUtility: React.FC<FavoritesUtilityProps> = ({
             })}
           </div>
         ) : (
-          /* Full Page Grid Layout */
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {filteredItems.map((item) => {
               const coverImg =
@@ -248,7 +206,7 @@ export const FavoritesUtility: React.FC<FavoritesUtilityProps> = ({
                     />
                     <div className="absolute top-2.5 left-2.5">
                       <span className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-900/70 text-white backdrop-blur-xs">
-                        {item.categoryTag || (item.targetType === 1 ? 'Địa điểm' : item.targetType === 2 ? 'Ẩm thực' : item.targetType === 3 ? 'Hành trình' : 'Bài viết')}
+                        {item.categoryTag || 'Địa điểm'}
                       </span>
                     </div>
 

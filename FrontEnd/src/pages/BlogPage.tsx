@@ -43,8 +43,19 @@ export const BlogPage: React.FC = () => {
     let isMounted = true
     placeService.getFilterOptions()
       .then((res) => {
-        if (isMounted && res.success && res.data?.categories) {
-          setCategories(res.data.categories)
+        if (isMounted && res.success && res.data?.categories && res.data.categories.length > 0) {
+          const cats = res.data.categories
+          setCategories(cats)
+          setEditingArticleData((prev) => {
+            if (prev && !prev.id && (!prev.category || !prev.categoryId)) {
+              return {
+                ...prev,
+                category: prev.category || cats[0]?.name || '',
+                categoryId: prev.categoryId || cats[0]?.id
+              }
+            }
+            return prev
+          })
         }
       })
       .catch(() => { })
@@ -97,8 +108,8 @@ export const BlogPage: React.FC = () => {
       setEditingArticleData({
         title: '',
         summary: '',
-        category: categories[0]?.name || 'Di tích lịch sử - Văn hóa',
-        categoryId: categories[0]?.id || 1,
+        category: categories[0]?.name || '',
+        categoryId: categories[0]?.id,
         coverImg: '',
         content: ''
       })
@@ -112,13 +123,15 @@ export const BlogPage: React.FC = () => {
       const idNum = Number(editId)
       const passedBlog = (location.state as any)?.editBlog
       if (passedBlog && (passedBlog.id === idNum || !idNum)) {
-        const catName = passedBlog.categoryName || passedBlog.category || 'Di tích lịch sử - Văn hóa'
+        const matched = categories.find((c) => c.name === passedBlog.categoryName || c.name === passedBlog.category || c.id === passedBlog.categoryId)
+        const catName = matched?.name || passedBlog.categoryName || passedBlog.category || categories[0]?.name || ''
+        const catId = matched?.id || passedBlog.categoryId || categories[0]?.id
         setEditingArticleData({
           id: passedBlog.id,
           title: passedBlog.title || '',
           summary: passedBlog.excerpt || '',
           category: catName,
-          categoryId: passedBlog.categoryId || 1,
+          categoryId: catId,
           coverImg: passedBlog.coverImageUrl || '',
           content: passedBlog.contentJSON || passedBlog.content || passedBlog.excerpt || '',
           status: passedBlog.status
@@ -136,8 +149,8 @@ export const BlogPage: React.FC = () => {
           id: found.id,
           title: found.title || '',
           summary: found.excerpt || '',
-          category: matched?.name || found.category,
-          categoryId: matched?.id || 1,
+          category: matched?.name || found.category || categories[0]?.name || '',
+          categoryId: matched?.id || categories[0]?.id,
           coverImg: found.coverUrl || '',
           content: found.content || found.excerpt || '',
           status: 1
@@ -157,8 +170,8 @@ export const BlogPage: React.FC = () => {
               id: d.id,
               title: d.title || '',
               summary: d.excerpt || '',
-              category: matched?.name || d.categoryName || 'Di tích lịch sử - Văn hóa',
-              categoryId: matched?.id || d.categoryId || 1,
+              category: matched?.name || d.categoryName || categories[0]?.name || '',
+              categoryId: matched?.id || d.categoryId || categories[0]?.id,
               coverImg: d.coverImageUrl || '',
               content: d.contentJSON || d.excerpt || '',
               status: d.status
@@ -177,8 +190,8 @@ export const BlogPage: React.FC = () => {
                 id: d.id,
                 title: d.title || '',
                 summary: d.excerpt || '',
-                category: matched?.name || d.category || 'Di tích lịch sử - Văn hóa',
-                categoryId: matched?.id || 1,
+                category: matched?.name || d.category || categories[0]?.name || '',
+                categoryId: matched?.id || categories[0]?.id,
                 coverImg: d.coverUrl || '',
                 content: d.content || d.excerpt || '',
                 status: 1
@@ -383,12 +396,12 @@ export const BlogPage: React.FC = () => {
           articleId={editingArticleData?.id}
           initialTitle={editingArticleData?.title || ''}
           initialSummary={editingArticleData?.summary || ''}
-          initialCategory={editingArticleData?.category || 'Di tích lịch sử - Văn hóa'}
-          initialCategoryId={editingArticleData?.categoryId}
+          initialCategory={editingArticleData?.category || categories[0]?.name || ''}
+          initialCategoryId={editingArticleData?.categoryId || categories[0]?.id}
           initialCoverImg={editingArticleData?.coverImg || ''}
           initialContent={editingArticleData?.content || ''}
           initialStatus={editingArticleData?.status}
-          availableCategories={categories.map((c) => ({ id: c.id, name: c.name }))}
+          availableCategories={categories}
           onSave={handleSaveArticle}
           onSaveDraft={handleSaveArticle}
           onPublish={handleSaveArticle}

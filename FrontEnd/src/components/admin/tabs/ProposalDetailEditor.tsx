@@ -575,7 +575,7 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-emerald-700" />
-                <span>2. Vị trí trên bản đồ &amp; Tọa độ GPS</span>
+                <span>2. Thông tin vị trí</span>
               </h3>
               <span className="text-[11px] text-slate-400 font-mono">
                 Lat: {lat} | Lng: {lng}

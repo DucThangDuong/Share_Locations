@@ -39,7 +39,7 @@ export const PlaceDetailSidebar = ({ place }: PlaceDetailSidebarProps) => {
     <div className="space-y-6">
       <div className="bg-white p-6 rounded-lg border border-gray-200/80 shadow-2xs space-y-5 sticky top-20">
         <h3 className="font-bold text-gray-900 text-base pb-3 border-b border-gray-100">
-          Thông tin liên hệ & Vị trí
+          Thông tin khác
         </h3>
 
         <div className="space-y-4 text-xs sm:text-sm">

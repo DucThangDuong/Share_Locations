@@ -198,11 +198,6 @@ export const ModerationDrawer: React.FC<ModerationDrawerProps> = ({
                             />
                           )}
                           <span className="font-bold text-slate-900">{rep.reporterName}</span>
-                          {rep.codeId && (
-                            <span className="font-mono text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200/60 font-semibold text-[10px]">
-                              {rep.codeId}
-                            </span>
-                          )}
                         </div>
                         <span className="text-[11px] text-slate-400 font-medium">
                           {formatDateTime(rep.submittedAt)}

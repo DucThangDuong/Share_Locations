@@ -16,6 +16,7 @@ import { friendService } from '@/services/friendService'
 import type { FriendItemDto } from '@/types/models/friend.model'
 import type { TripMemberDetailDto } from '@/types/models/trip.model'
 import type { TripMember } from '@/types/models/itinerary.model'
+import { CustomSelect, type CustomSelectOption } from '@/components/common/CustomSelect'
 
 interface ItineraryMemberModalProps {
   isOpen: boolean
@@ -93,6 +94,22 @@ export const ItineraryMemberModal: React.FC<ItineraryMemberModalProps> = ({
   const selectedFriendIds = useMemo(() => {
     return new Set(selectedFriends.map((f) => Number(f.id)))
   }, [selectedFriends])
+
+  const roleOptions: CustomSelectOption<'Member' | 'Editor'>[] = useMemo(
+    () => [
+      {
+        value: 'Member',
+        label: 'Thành viên (Chỉ xem và theo dõi lịch trình)',
+        icon: <Eye size={15} className="text-slate-500" />
+      },
+      {
+        value: 'Editor',
+        label: 'Cùng lên lịch (Có quyền thêm, sửa, xóa điểm dừng)',
+        icon: <Edit3 size={15} className="text-blue-600" />
+      }
+    ],
+    []
+  )
 
   const suggestedFriends = useMemo(() => {
     const q = inviteEmail.toLowerCase().trim()
@@ -322,15 +339,15 @@ export const ItineraryMemberModal: React.FC<ItineraryMemberModalProps> = ({
                 <label className="block text-xs font-bold text-slate-700">
                   Vai trò trong chuyến đi <span className="text-rose-500">*</span>
                 </label>
-                <select
+                <CustomSelect<'Member' | 'Editor'>
                   value={inviteRole}
                   disabled={isInviting}
-                  onChange={(e) => setInviteRole(e.target.value as 'Member' | 'Editor')}
-                  className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 outline-none focus:border-emerald-700 focus:ring-2 focus:ring-emerald-700/10 transition-all cursor-pointer disabled:opacity-50 shadow-2xs"
-                >
-                  <option value="Member">Thành viên (Chỉ xem và theo dõi lịch trình)</option>
-                  <option value="Editor">Cùng lên lịch (Có quyền thêm, sửa, xóa điểm dừng)</option>
-                </select>
+                  onChange={(val) => setInviteRole(val)}
+                  options={roleOptions}
+                  size="md"
+                  buttonClassName="w-full bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 shadow-2xs hover:border-slate-300 !py-2.5"
+                  menuClassName="border-slate-200 shadow-xl"
+                />
               </div>
 
               <div className="pt-2 flex items-center justify-end gap-3 border-t border-slate-200/80">

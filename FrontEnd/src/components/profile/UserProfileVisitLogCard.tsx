@@ -34,11 +34,6 @@ export const UserProfileVisitLogCard: React.FC<UserProfileVisitLogCardProps> = (
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
-            {log.category && (
-              <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/50">
-                {log.category}
-              </span>
-            )}
             <span className="text-xs text-slate-500 font-medium flex items-center gap-1">
               <Calendar size={12} className="text-slate-400" />
               Đã ghé thăm: {new Date(log.visitedDate).toLocaleDateString('vi-VN')}

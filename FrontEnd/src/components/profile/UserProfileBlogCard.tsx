@@ -57,11 +57,6 @@ export const UserProfileBlogCard: React.FC<UserProfileBlogCardProps> = ({ blog }
       <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2.5 text-xs text-slate-500 font-medium mb-2">
-            {blog.categoryName && (
-              <span className="text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
-                {blog.categoryName}
-              </span>
-            )}
             <span className="flex items-center gap-1">
               <Calendar size={12} />
               {new Date(blog.createdAt).toLocaleDateString('vi-VN')}

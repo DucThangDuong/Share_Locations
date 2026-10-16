@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { LayoutGrid, List, MapPin, ChevronDown } from 'lucide-react'
+import { MapPin, ChevronDown } from 'lucide-react'
 import type { PlaceSummaryDto, LookupItemDto } from '@/types/models/place.model'
 import { ExplorePlaceCard } from '@/components/explore/ExplorePlaceCard'
 
@@ -29,7 +29,6 @@ export const ProvincePlaceSection: React.FC<ProvincePlaceSectionProps> = ({
   onSelectCategory,
   loading = false
 }) => {
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [batchSize, setBatchSize] = useState<number>(getResponsiveBatchSize)
   const [visibleCount, setVisibleCount] = useState<number>(getResponsiveBatchSize)
 
@@ -60,33 +59,6 @@ export const ProvincePlaceSection: React.FC<ProvincePlaceSectionProps> = ({
           <h2 className="text-2xl sm:text-3xl font-black text-stone-900 tracking-tight mt-1">
             Địa Điểm Nổi Bật Tại {provinceName}
           </h2>
-        </div>
-
-        <div className="flex items-center gap-2.5 self-start md:self-auto">
-          <div className="flex items-center bg-stone-100 p-1 rounded-xl border border-stone-200">
-            <button
-              type="button"
-              onClick={() => setViewMode('grid')}
-              className={`p-1.5 rounded-lg transition-all cursor-pointer ${viewMode === 'grid'
-                ? 'bg-white text-stone-900 shadow-xs'
-                : 'text-stone-500 hover:text-stone-900'
-                }`}
-              title="Xem dạng lưới"
-            >
-              <LayoutGrid className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode('list')}
-              className={`p-1.5 rounded-lg transition-all cursor-pointer ${viewMode === 'list'
-                ? 'bg-white text-stone-900 shadow-xs'
-                : 'text-stone-500 hover:text-stone-900'
-                }`}
-              title="Xem dạng danh sách"
-            >
-              <List className="w-4 h-4" />
-            </button>
-          </div>
         </div>
       </div>
 
@@ -146,32 +118,11 @@ export const ProvincePlaceSection: React.FC<ProvincePlaceSectionProps> = ({
             Đặt lại bộ lọc
           </button>
         </div>
-      ) : viewMode === 'grid' ? (
+      ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
             {displayedPlaces.map((place) => (
               <ExplorePlaceCard key={place.id} place={place} viewMode="grid" />
-            ))}
-          </div>
-
-          {hasMore && (
-            <div className="pt-6 flex flex-col items-center justify-center">
-              <button
-                type="button"
-                onClick={handleLoadMore}
-                className="inline-flex items-center justify-center gap-2 px-7 py-3 rounded-2xl border border-stone-200 bg-white hover:bg-stone-50 text-stone-800 font-bold text-xs sm:text-sm shadow-xs hover:border-stone-300 hover:shadow-sm transition-all cursor-pointer group"
-              >
-                <ChevronDown className="w-4 h-4 text-stone-400 group-hover:text-emerald-700 transition-colors" />
-                <span>Xem thêm địa điểm ({displayedPlaces.length}/{places.length})</span>
-              </button>
-            </div>
-          )}
-        </>
-      ) : (
-        <>
-          <div className="flex flex-col gap-4">
-            {displayedPlaces.map((place) => (
-              <ExplorePlaceCard key={place.id} place={place} viewMode="list" />
             ))}
           </div>
 

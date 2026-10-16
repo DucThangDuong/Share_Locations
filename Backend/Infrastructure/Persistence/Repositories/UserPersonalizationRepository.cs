@@ -632,8 +632,8 @@ public class UserPersonalizationRepository : IUserPersonalizationRepository
                 COALESCE(p.CoverImageUrl, JSON_VALUE(pr.ProposedDataJSON, '$.coverImg')) AS CoverImg,
                 CASE WHEN cat.Status = 1 THEN ISNULL(cat.Name, N'Địa điểm đề xuất') ELSE N'Không khả dụng' END AS Category,
                 ISNULL(prov.Name, N'Việt Nam') AS Province,
-                CAST(COALESCE(p.Longitude, pr.Longitude, TRY_CAST(JSON_VALUE(pr.ProposedDataJSON, '$.longitude') AS FLOAT)) AS FLOAT) AS Lng,
-                CAST(COALESCE(p.Latitude, pr.Latitude, TRY_CAST(JSON_VALUE(pr.ProposedDataJSON, '$.latitude') AS FLOAT)) AS FLOAT) AS Lat,
+                CAST(COALESCE(p.Longitude, TRY_CAST(JSON_VALUE(pr.ProposedDataJSON, '$.longitude') AS FLOAT), TRY_CAST(JSON_VALUE(pr.ProposedDataJSON, '$.Longitude') AS FLOAT)) AS FLOAT) AS Lng,
+                CAST(COALESCE(p.Latitude, TRY_CAST(JSON_VALUE(pr.ProposedDataJSON, '$.latitude') AS FLOAT), TRY_CAST(JSON_VALUE(pr.ProposedDataJSON, '$.Latitude') AS FLOAT)) AS FLOAT) AS Lat,
                 'proposal' AS InteractionType,
                 N'Địa điểm đề xuất thành công' AS InteractionLabel,
                 NULL AS Rating,
@@ -644,7 +644,7 @@ public class UserPersonalizationRepository : IUserPersonalizationRepository
             LEFT JOIN dbo.Provinces prov ON pr.ProvinceId = prov.Id
             WHERE pr.UserId = @TargetUserId
               AND (@IsCurrentUser = 1 OR pr.Status = 1)
-              AND (COALESCE(p.Latitude, pr.Latitude, TRY_CAST(JSON_VALUE(pr.ProposedDataJSON, '$.latitude') AS FLOAT)) IS NOT NULL)
+              AND (COALESCE(p.Latitude, TRY_CAST(JSON_VALUE(pr.ProposedDataJSON, '$.latitude') AS FLOAT), TRY_CAST(JSON_VALUE(pr.ProposedDataJSON, '$.Latitude') AS FLOAT)) IS NOT NULL)
 
             ORDER BY [Date] DESC;";
 

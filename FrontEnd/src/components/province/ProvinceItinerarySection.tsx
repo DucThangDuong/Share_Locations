@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import {
-  ArrowRight,
   CheckCircle2,
 } from 'lucide-react'
 import type { ProvinceItinerary } from '@/types/models/province.model'
@@ -83,14 +82,14 @@ export const ProvinceItinerarySection: React.FC<ProvinceItinerarySectionProps> =
       backlogStops: [],
       members: dto.author?.name
         ? [
-            {
-              id: 1,
-              name: dto.author.name,
-              avatar: dto.author.avatar || '',
-              email: '',
-              role: 'Owner'
-            }
-          ]
+          {
+            id: 1,
+            name: dto.author.name,
+            avatar: dto.author.avatar || '',
+            email: '',
+            role: 'Owner'
+          }
+        ]
         : [],
       createdAt: new Date().toISOString().split('T')[0]
     }
@@ -235,14 +234,6 @@ export const ProvinceItinerarySection: React.FC<ProvinceItinerarySectionProps> =
             Lịch Trình Khám Phá {provinceName}
           </h2>
         </div>
-
-        <Link
-          to="/itinerary"
-          className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-emerald-800 hover:text-emerald-950 transition-colors"
-        >
-          <span>Xem tất cả lịch trình</span>
-          <ArrowRight className="w-4 h-4" />
-        </Link>
       </div>
 
       {loading ? (

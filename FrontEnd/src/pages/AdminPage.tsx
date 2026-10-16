@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { adminService, extractList, type AdminMetrics } from "@/services/adminService";
 import { isUserAdmin, isUserSystemAdmin } from "@/utils/authUtils";
@@ -353,7 +353,7 @@ export const AdminPage: React.FC = () => {
     phone: "0905 123 456",
     website: "https://langthang.vn",
     desc: "",
-    img: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&h=400&fit=crop",
+    img: "",
   });
 
   const currentPlace = placesList.find((p) => p.id === selectedPlaceId) || null;
@@ -484,13 +484,13 @@ export const AdminPage: React.FC = () => {
                         item.thumbnailUrl ||
                         item.img ||
                         item.image ||
-                        "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&h=400&fit=crop",
+                        "",
                       coverImg:
                         item.coverImg ||
                         item.thumbnailUrl ||
                         item.img ||
                         item.image ||
-                        "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&h=400&fit=crop",
+                        "",
                       rating: Number(item.avgRating ?? item.rating ?? 0),
                       avgRating: Number(item.avgRating ?? item.rating ?? 0),
                       reviewCount: Number(item.reviewCount ?? item.reviewsCount ?? 0),
@@ -776,7 +776,7 @@ export const AdminPage: React.FC = () => {
                       item.img ||
                       item.image ||
                       item.imageUrl ||
-                      "https://images.unsplash.com/photo-1541544741938-0af808871cc0?w=600&h=400&fit=crop",
+                      "",
                     minPrice: item.minPrice ? Number(item.minPrice) : 0,
                     maxPrice: item.maxPrice ? Number(item.maxPrice) : 0,
                     priceRange:
@@ -864,7 +864,7 @@ export const AdminPage: React.FC = () => {
                       item.img ||
                       item.image ||
                       item.thumbnailUrl ||
-                      "https://images.unsplash.com/photo-1505474975305-453b4ac9b972?w=600&h=400&fit=crop",
+                      "",
                     status: String(item.status || "draft").toLowerCase(),
                   } as AdminBlogItem))
                 );

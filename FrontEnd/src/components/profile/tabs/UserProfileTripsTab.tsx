@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Compass, Loader2 } from 'lucide-react'
+import { Luggage, Loader2 } from 'lucide-react'
 import { userService } from '@/services/userService'
 import { UserProfileTripCard } from '../UserProfileTripCard'
 import type { UserTripSummaryDto } from '@/types/models/trip.model'
@@ -47,7 +47,7 @@ export const UserProfileTripsTab: React.FC<UserProfileTripsTabProps> = ({ userId
   if (trips.length === 0) {
     return (
       <div className="bg-white rounded-2xl p-8 text-center border border-slate-200">
-        <Compass className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+        <Luggage className="w-10 h-10 text-slate-300 mx-auto mb-2" />
         <div className="text-sm font-bold text-slate-800">Chưa có chuyến đi công khai</div>
         <p className="text-xs text-slate-500 mt-1">Người dùng chưa tạo hành trình công khai nào.</p>
       </div>

@@ -730,7 +730,7 @@ export const ProposePlacePage: React.FC = () => {
               <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-5">
                 <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
                   <FileText className="w-4 h-4 text-emerald-700" />
-                  <span>1. Thông tin cơ bản & Thể loại</span>
+                  <span>1. Thông tin cơ bản</span>
                 </h3>
 
                 <div className="space-y-4">
@@ -897,7 +897,7 @@ export const ProposePlacePage: React.FC = () => {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
                   <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-emerald-700" />
-                    <span>2. Vị trí trên bản đồ</span>
+                    <span>2. Thông tin vị trí</span>
                   </h3>
 
                   {!isViewMode && (
@@ -968,7 +968,7 @@ export const ProposePlacePage: React.FC = () => {
               <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-5">
                 <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
                   <Clock className="w-4 h-4 text-emerald-700" />
-                  <span>3. Thời gian hoạt động & Chi phí tham quan</span>
+                  <span>3. Thông tin khác</span>
                 </h3>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">

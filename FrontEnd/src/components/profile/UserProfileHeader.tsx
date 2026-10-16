@@ -142,17 +142,6 @@ export const UserProfileHeader: React.FC<UserProfileHeaderProps> = ({
         <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar border-t border-slate-100 pt-1">
           <button
             type="button"
-            onClick={() => onTabChange('reviews')}
-            className={`px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all cursor-pointer ${activeTab === 'reviews'
-              ? 'border-emerald-600 text-emerald-700 bg-emerald-50/50 rounded-t-lg'
-              : 'border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300'
-              }`}
-          >
-            Đánh giá
-          </button>
-
-          <button
-            type="button"
             onClick={() => onTabChange('activity')}
             className={`px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all cursor-pointer ${activeTab === 'activity'
               ? 'border-emerald-600 text-emerald-700 bg-emerald-50/50 rounded-t-lg'
@@ -160,6 +149,17 @@ export const UserProfileHeader: React.FC<UserProfileHeaderProps> = ({
               }`}
           >
             Dòng hoạt động
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onTabChange('reviews')}
+            className={`px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-all cursor-pointer ${activeTab === 'reviews'
+              ? 'border-emerald-600 text-emerald-700 bg-emerald-50/50 rounded-t-lg'
+              : 'border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300'
+              }`}
+          >
+            Đánh giá
           </button>
 
           <button

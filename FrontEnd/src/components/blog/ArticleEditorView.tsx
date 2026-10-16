@@ -317,9 +317,10 @@ export const ArticleEditorView = forwardRef<ArticleEditorRef, ArticleEditorViewP
   const navigate = useNavigate()
   const isPendingApproval = initialStatus === 2
   const [categoriesList, setCategoriesList] = useState<LookupItemDto[]>(categories || availableCategories || [])
+  const [isLoadingCategories, setIsLoadingCategories] = useState(false)
   const [title, setTitle] = useState(initialTitle)
   const [summary, setSummary] = useState(initialSummary)
-  const [category, setCategory] = useState<string>(initialCategory || 'Di tích lịch sử - Văn hóa')
+  const [category, setCategory] = useState<string>(initialCategory || '')
   const [categoryId, setCategoryId] = useState<number | undefined>(initialCategoryId)
   const [coverImg, setCoverImg] = useState(initialCoverImg)
   const [showCoverModal, setShowCoverModal] = useState(false)
@@ -442,22 +443,73 @@ export const ArticleEditorView = forwardRef<ArticleEditorRef, ArticleEditorViewP
   }, [editor, updateToc, updateActiveHeading])
 
   useEffect(() => {
-    if (categories && categories.length > 0) {
-      setCategoriesList(categories)
+    const propList = (categories && categories.length > 0)
+      ? categories
+      : (availableCategories && availableCategories.length > 0)
+        ? availableCategories
+        : null
+
+    if (propList && propList.length > 0) {
+      setCategoriesList(propList)
+      if (!articleId) {
+        if (!category || !propList.some((c) => c.name === category)) {
+          setCategory(propList[0].name)
+          setCategoryId(propList[0].id)
+        }
+      } else {
+        if (!category && !categoryId) {
+          setCategory(propList[0].name)
+          setCategoryId(propList[0].id)
+        }
+      }
       return
     }
+
     let isMounted = true
+    setIsLoadingCategories(true)
     placeService.getFilterOptions()
       .then((res) => {
-        if (isMounted && res.success && res.data?.categories) {
-          setCategoriesList(res.data.categories)
+        if (isMounted && res.success && res.data?.categories && res.data.categories.length > 0) {
+          const apiCats = res.data.categories
+          setCategoriesList(apiCats)
+          if (!articleId) {
+            if (!category || !apiCats.some((c) => c.name === category)) {
+              setCategory(apiCats[0].name)
+              setCategoryId(apiCats[0].id)
+            }
+          } else {
+            if (!category && !categoryId) {
+              setCategory(apiCats[0].name)
+              setCategoryId(apiCats[0].id)
+            }
+          }
         }
       })
-      .catch(() => { })
+      .catch((err) => {
+        console.error('Failed to load categories from API:', err)
+      })
+      .finally(() => {
+        if (isMounted) setIsLoadingCategories(false)
+      })
+
     return () => {
       isMounted = false
     }
-  }, [categories])
+  }, [categories, availableCategories, articleId])
+
+  useEffect(() => {
+    if (categoriesList.length > 0) {
+      if (!articleId) {
+        if (!category || !categoriesList.some((c) => c.name === category)) {
+          setCategory(categoriesList[0].name)
+          setCategoryId(categoriesList[0].id)
+        }
+      } else if (!category && !categoryId) {
+        setCategory(categoriesList[0].name)
+        setCategoryId(categoriesList[0].id)
+      }
+    }
+  }, [categoriesList, category, categoryId, articleId])
 
   useEffect(() => {
     if (initialTitle !== undefined) setTitle(initialTitle)
@@ -518,8 +570,8 @@ export const ArticleEditorView = forwardRef<ArticleEditorRef, ArticleEditorViewP
     setIsPublishing(true)
     try {
       const matchedCat = categoriesList.find((c) => c.name === category || c.id === categoryId)
-      const resolvedCatId = matchedCat?.id || categoryId || 1
-      const resolvedCatName = matchedCat?.name || category || 'Di tích lịch sử - Văn hóa'
+      const resolvedCatId = matchedCat?.id || categoryId || categoriesList[0]?.id || 1
+      const resolvedCatName = matchedCat?.name || category || categoriesList[0]?.name || ''
 
       const wordCount = editor?.getText().trim().split(/\s+/).filter(Boolean).length || 0
       const contentJsonStr = JSON.stringify(editor?.getJSON() || {})
@@ -652,8 +704,8 @@ export const ArticleEditorView = forwardRef<ArticleEditorRef, ArticleEditorViewP
     setIsSaving(true)
     try {
       const matchedCat = categoriesList.find((c) => c.name === category || c.id === categoryId)
-      const resolvedCatId = matchedCat?.id || categoryId || 1
-      const resolvedCatName = matchedCat?.name || category || 'Di tích lịch sử - Văn hóa'
+      const resolvedCatId = matchedCat?.id || categoryId || categoriesList[0]?.id || 1
+      const resolvedCatName = matchedCat?.name || category || categoriesList[0]?.name || ''
       const newDraftId = `draft-${Date.now()}`
       setDraftId(newDraftId)
       const wordCount = editor?.getText().trim().split(/\s+/).filter(Boolean).length || 0
@@ -789,8 +841,11 @@ export const ArticleEditorView = forwardRef<ArticleEditorRef, ArticleEditorViewP
               <div className="flex items-center gap-1.5 shrink-0">
                 <Tag size={14} className="text-emerald-800 shrink-0" />
                 <select
-                  value={category}
-                  disabled={isPendingApproval}
+                  value={(() => {
+                    const matched = categoriesList.find((c) => c.name === category || c.id === categoryId)
+                    return matched ? matched.name : (category || (categoriesList[0]?.name ?? ''))
+                  })()}
+                  disabled={isPendingApproval || isLoadingCategories || categoriesList.length === 0}
                   onChange={(e) => {
                     const selectedName = e.target.value
                     const matched = categoriesList.find((c) => c.name === selectedName)
@@ -799,6 +854,16 @@ export const ArticleEditorView = forwardRef<ArticleEditorRef, ArticleEditorViewP
                   }}
                   className="font-bold px-2.5 py-1.5 bg-slate-50 text-emerald-950 border border-slate-200 rounded-xl text-xs outline-none cursor-pointer shadow-2xs hover:border-emerald-300 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
+                  {isLoadingCategories && categoriesList.length === 0 && (
+                    <option value="" disabled>
+                      Đang tải danh mục...
+                    </option>
+                  )}
+                  {articleId && category && !categoriesList.some((c) => c.name === category) && (
+                    <option value={category}>
+                      {category}
+                    </option>
+                  )}
                   {categoriesList.map((cat) => (
                     <option key={cat.id} value={cat.name}>
                       {cat.name}

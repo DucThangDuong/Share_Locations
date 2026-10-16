@@ -5,7 +5,6 @@ import {
   SettingsSidebar,
   ProfileSettingsTab,
   SecuritySettingsTab,
-  PreferencesSettingsTab,
   type SettingsTab
 } from '@/components/settings'
 
@@ -15,7 +14,7 @@ export const SettingsPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams()
 
   const tabParam = searchParams.get('tab') as SettingsTab | null
-  const activeTab: SettingsTab = tabParam === 'security' || tabParam === 'preferences' ? tabParam : 'profile'
+  const activeTab: SettingsTab = tabParam === 'security' ? 'security' : 'profile'
 
   const handleTabChange = (tab: SettingsTab) => {
     const nextParams = new URLSearchParams()
@@ -51,7 +50,6 @@ export const SettingsPage: React.FC = () => {
             <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200/80 shadow-2xs">
               {activeTab === 'profile' && <ProfileSettingsTab />}
               {activeTab === 'security' && <SecuritySettingsTab />}
-              {activeTab === 'preferences' && <PreferencesSettingsTab />}
             </div>
           </div>
         </div>
@@ -61,3 +59,4 @@ export const SettingsPage: React.FC = () => {
 }
 
 export default SettingsPage
+

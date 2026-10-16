@@ -50,25 +50,97 @@ export const UserProfileTravelMap: React.FC<UserProfileTravelMapProps> = ({
   const token = (import.meta.env.VITE_MAPBOX_ACCESS_TOKEN as string | undefined)?.trim()
 
   const allMapPlaces = useMemo<UserMapPlaceItem[]>(() => {
-    if (mapPlaces && mapPlaces.length > 0) {
-      return mapPlaces.map((p) => ({
-        id: p.id,
-        placeId: p.placeId,
-        title: p.title,
-        coverImg: p.coverImg,
-        category: p.category || 'Địa điểm',
-        province: p.province || 'Việt Nam',
-        coordinates: p.coordinates,
-        interactionType: p.interactionType,
-        interactionLabel: p.interactionLabel,
-        rating: p.rating || undefined,
-        date: p.date || undefined
-      }))
+    const list: UserMapPlaceItem[] = []
+    const seenKeys = new Set<string>()
+
+    const sanitizeCoordinates = (lng?: number | null, lat?: number | null): [number, number] => {
+      let normLng = lng ?? 108.2022
+      let normLat = lat ?? 16.0544
+      if (normLat > 50 && normLng < 50) {
+        normLng = lat!
+        normLat = lng!
+      }
+      if (normLng < 100 || normLng > 115 || normLat < 8 || normLat > 25) {
+        normLng = 108.2022
+        normLat = 16.0544
+      }
+      return [normLng, normLat]
     }
 
-    const list: UserMapPlaceItem[] = []
+    if (mapPlaces && mapPlaces.length > 0) {
+      mapPlaces.forEach((p) => {
+        const key = `${p.interactionType}-${p.placeId || p.id}`
+        seenKeys.add(key)
+        const coords = sanitizeCoordinates(p.coordinates?.[0], p.coordinates?.[1])
+        list.push({
+          id: p.id,
+          placeId: p.placeId,
+          title: p.title,
+          coverImg: p.coverImg,
+          category: p.category || 'Địa điểm',
+          province: p.province || 'Việt Nam',
+          coordinates: coords,
+          interactionType: p.interactionType,
+          interactionLabel: p.interactionLabel,
+          rating: p.rating || undefined,
+          date: p.date || undefined
+        })
+      })
+    }
+
+    visitLogs.forEach((v, idx) => {
+      const key = `visit_log-${v.placeId || v.id}`
+      if (seenKeys.has(key)) return
+      seenKeys.add(key)
+
+      const coords = sanitizeCoordinates(
+        v.lng ?? (108.2022 + ((idx * 0.05) % 0.2)),
+        v.lat ?? (16.0544 + ((idx * 0.04) % 0.2))
+      )
+
+      list.push({
+        id: 1000 + (v.id || idx),
+        placeId: v.placeId || idx,
+        title: v.placeName || 'Địa điểm đã ghé',
+        coverImg: v.coverImg,
+        category: v.category || 'Nhật ký điểm đến',
+        province: v.province || 'Việt Nam',
+        coordinates: coords,
+        interactionType: 'visit_log',
+        interactionLabel: `Đã ghé thăm ${new Date(v.visitedDate).toLocaleDateString('vi-VN')}`,
+        date: v.visitedDate
+      })
+    })
+
+    proposals.forEach((p, idx) => {
+      const key = `proposal-${p.id}`
+      if (seenKeys.has(key)) return
+      seenKeys.add(key)
+
+      const coords = sanitizeCoordinates(
+        p.longitude ?? (105.85 + ((idx * 0.05) % 0.2)),
+        p.latitude ?? (21.02 + ((idx * 0.04) % 0.2))
+      )
+
+      list.push({
+        id: 3000 + (p.id || idx),
+        placeId: p.targetPlaceId || p.id,
+        title: p.name || 'Địa điểm đề xuất',
+        coverImg: p.coverImg,
+        category: p.categoryName || p.category || 'Đề xuất địa điểm',
+        province: p.provinceName || p.province || 'Việt Nam',
+        coordinates: coords,
+        interactionType: 'proposal',
+        interactionLabel: 'Địa điểm đề xuất thành công',
+        date: p.createdAt
+      })
+    })
 
     reviews.forEach((r, idx) => {
+      const key = `review-${r.placeId || r.id}`
+      if (seenKeys.has(key)) return
+      seenKeys.add(key)
+
       const defaultLngs = [108.22, 106.66, 105.85, 108.45, 107.59, 109.19, 103.96]
       const defaultLats = [16.05, 10.76, 21.02, 11.94, 16.46, 12.23, 10.28]
       const coordLng = defaultLngs[idx % defaultLngs.length] + (idx * 0.02)
@@ -89,44 +161,21 @@ export const UserProfileTravelMap: React.FC<UserProfileTravelMapProps> = ({
       })
     })
 
-    visitLogs.forEach((v, idx) => {
-      const lng = v.lng || 106.70 + (idx * 0.03)
-      const lat = v.lat || 10.78 + (idx * 0.02)
-
-      list.push({
-        id: 1000 + (v.id || idx),
-        placeId: v.placeId || idx,
-        title: v.placeName || 'Địa điểm đã ghé',
-        coverImg: v.coverImg,
-        category: v.category || 'Nhật ký điểm đến',
-        province: v.province || 'Việt Nam',
-        coordinates: [lng, lat],
-        interactionType: 'visit_log',
-        interactionLabel: `Đã ghé thăm ${new Date(v.visitedDate).toLocaleDateString('vi-VN')}`,
-        date: v.visitedDate
-      })
-    })
-
-    proposals.forEach((p, idx) => {
-      const lng = p.longitude || 105.83 + (idx * 0.04)
-      const lat = p.latitude || 21.03 + (idx * 0.03)
-
-      list.push({
-        id: 3000 + (p.id || idx),
-        placeId: p.targetPlaceId || p.id,
-        title: p.name,
-        coverImg: p.coverImg,
-        category: p.categoryName || p.category || 'Đề xuất địa điểm',
-        province: p.provinceName || p.province || 'Việt Nam',
-        coordinates: [lng, lat],
-        interactionType: 'proposal',
-        interactionLabel: 'Địa điểm đề xuất thành công',
-        date: p.createdAt
-      })
-    })
-
     return list
   }, [mapPlaces, reviews, visitLogs, proposals])
+
+  const reviewCount = useMemo(
+    () => allMapPlaces.filter((p) => p.interactionType === 'review').length,
+    [allMapPlaces]
+  )
+  const visitLogCount = useMemo(
+    () => allMapPlaces.filter((p) => p.interactionType === 'visit_log').length,
+    [allMapPlaces]
+  )
+  const proposalCount = useMemo(
+    () => allMapPlaces.filter((p) => p.interactionType === 'proposal').length,
+    [allMapPlaces]
+  )
 
   const filteredPlaces = useMemo(() => {
     if (activeFilter === 'all') return allMapPlaces
@@ -179,7 +228,8 @@ export const UserProfileTravelMap: React.FC<UserProfileTravelMapProps> = ({
       bounds.extend(item.coordinates)
 
       const el = document.createElement('div')
-      el.className = 'group/marker relative cursor-pointer select-none transition-transform hover:scale-125 hover:z-30'
+      el.className = 'group/marker relative cursor-pointer select-none'
+      el.title = `${item.title} (${item.interactionLabel})`
 
       let bgColor = 'bg-emerald-600'
       let ringColor = 'ring-emerald-300'
@@ -196,10 +246,17 @@ export const UserProfileTravelMap: React.FC<UserProfileTravelMapProps> = ({
       }
 
       el.innerHTML = `
-        <div class="w-8 h-8 rounded-full ${bgColor} text-white shadow-xl flex items-center justify-center border-2 border-white ring-2 ${ringColor}">
+        <div class="w-8 h-8 rounded-full ${bgColor} text-white shadow-xl flex items-center justify-center border-2 border-white ring-2 ${ringColor} transition-transform duration-200 ease-out group-hover/marker:scale-125 group-hover/marker:shadow-2xl origin-center">
           ${iconSvg}
         </div>
       `
+
+      el.addEventListener('mouseenter', () => {
+        el.style.zIndex = '50'
+      })
+      el.addEventListener('mouseleave', () => {
+        el.style.zIndex = ''
+      })
 
       el.addEventListener('click', () => {
         setActivePlace(item)
@@ -244,37 +301,40 @@ export const UserProfileTravelMap: React.FC<UserProfileTravelMapProps> = ({
           <button
             type="button"
             onClick={() => setActiveFilter('review')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 ${activeFilter === 'review'
-              ? 'bg-emerald-600 text-white shadow-xs'
-              : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
-              }`}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 ${
+              activeFilter === 'review'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+            }`}
           >
             <span className="w-2 h-2 rounded-full bg-emerald-500" />
-            Đánh giá ({reviews.length})
+            Đánh giá ({reviewCount})
           </button>
 
           <button
             type="button"
             onClick={() => setActiveFilter('visit_log')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 ${activeFilter === 'visit_log'
-              ? 'bg-amber-500 text-white shadow-xs'
-              : 'bg-amber-50 text-amber-800 hover:bg-amber-100'
-              }`}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 ${
+              activeFilter === 'visit_log'
+                ? 'bg-amber-500 text-white shadow-xs'
+                : 'bg-amber-50 text-amber-800 hover:bg-amber-100'
+            }`}
           >
             <span className="w-2 h-2 rounded-full bg-amber-500" />
-            Nhật ký ({visitLogs.length})
+            Nhật ký ({visitLogCount})
           </button>
 
           <button
             type="button"
             onClick={() => setActiveFilter('proposal')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 ${activeFilter === 'proposal'
-              ? 'bg-blue-600 text-white shadow-xs'
-              : 'bg-blue-50 text-blue-800 hover:bg-blue-100'
-              }`}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 ${
+              activeFilter === 'proposal'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'bg-blue-50 text-blue-800 hover:bg-blue-100'
+            }`}
           >
             <span className="w-2 h-2 rounded-full bg-blue-500" />
-            Đề xuất ({proposals.length})
+            Đề xuất ({proposalCount})
           </button>
         </div>
       </div>

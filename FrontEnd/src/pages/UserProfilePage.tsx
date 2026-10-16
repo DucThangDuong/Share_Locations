@@ -27,7 +27,14 @@ export const UserProfilePage: React.FC = () => {
   const { openFloatingChat } = useChat()
   const { defaultUserAvatar } = useSystemSettings()
 
-  const [activeTab, setActiveTab] = useState<ProfileTabType>('reviews')
+  const tabFromQuery = searchParams.get('tab') as ProfileTabType | null
+  const [activeTab, setActiveTab] = useState<ProfileTabType>(tabFromQuery || 'activity')
+
+  useEffect(() => {
+    if (tabFromQuery) {
+      setActiveTab(tabFromQuery)
+    }
+  }, [tabFromQuery])
   const [loading, setLoading] = useState(true)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const [lightboxImage, setLightboxImage] = useState<string | null>(null)
@@ -278,6 +285,13 @@ export const UserProfilePage: React.FC = () => {
           </div>
 
           <div className="lg:col-span-8 space-y-5">
+            {activeTab === 'activity' && (
+              <UserProfileActivityTab
+                userId={profile.id}
+                userName={profile.fullName}
+              />
+            )}
+
             {activeTab === 'reviews' && (
               <UserProfileReviewsTab
                 userId={profile.id}
@@ -285,13 +299,6 @@ export const UserProfilePage: React.FC = () => {
                 authorAvatar={profile.avatarUrl}
                 onImageClick={(img) => setLightboxImage(img)}
                 showToast={showToast}
-              />
-            )}
-
-            {activeTab === 'activity' && (
-              <UserProfileActivityTab
-                userId={profile.id}
-                userName={profile.fullName}
               />
             )}
 

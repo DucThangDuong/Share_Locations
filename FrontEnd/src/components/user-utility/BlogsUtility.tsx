@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import {
-  BookOpen,
+  Newspaper,
   Search,
   X,
   Plus,
@@ -118,56 +118,56 @@ export const BlogsUtility: React.FC<BlogsUtilityProps> = ({
   return (
     <div className={`flex flex-col ${isDrawer ? 'flex-1 overflow-hidden' : 'space-y-5'}`}>
       <div className={`flex flex-col gap-2.5 ${isDrawer ? 'px-4 py-3 border-b border-slate-200 bg-white' : 'pb-3 border-b border-slate-200'}`}>
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-1.5">
-            {filterTabs.map((tab) => (
+        <div className="flex items-center gap-2.5">
+          <div className="relative flex-1">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Tìm kiếm theo tiêu đề, tóm tắt, danh mục..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-8 pr-7 py-1.5 bg-slate-50 focus:bg-white border border-slate-200 focus:border-emerald-600 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 outline-none transition-all"
+            />
+            {searchQuery && (
               <button
-                key={String(tab.id)}
                 type="button"
-                onClick={() => setStatusFilter(tab.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${statusFilter === tab.id
-                  ? 'bg-emerald-800 text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
               >
-                <span>{tab.label}</span>
-                {statusFilter === tab.id && (
-                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-900 text-emerald-100">
-                    {blogs.length}
-                  </span>
-                )}
+                <X size={13} />
               </button>
-            ))}
+            )}
           </div>
 
           <Link
             to="/blog?mode=create"
             onClick={onClose}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-bold transition-all shadow-xs shrink-0"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-bold transition-all shadow-xs shrink-0 cursor-pointer"
           >
             <Plus size={14} />
             <span>Viết bài mới</span>
           </Link>
         </div>
 
-        <div className="relative w-full sm:w-72">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Tìm kiếm theo tiêu đề, tóm tắt, danh mục..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-8 pr-7 py-1.5 bg-slate-50 focus:bg-white border border-slate-200 focus:border-emerald-600 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 outline-none transition-all"
-          />
-          {searchQuery && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          {filterTabs.map((tab) => (
             <button
+              key={String(tab.id)}
               type="button"
-              onClick={() => setSearchQuery('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+              onClick={() => setStatusFilter(tab.id)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${statusFilter === tab.id
+                ? 'bg-emerald-800 text-white shadow-xs'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
             >
-              <X size={13} />
+              <span>{tab.label}</span>
+              {statusFilter === tab.id && (
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-900 text-emerald-100">
+                  {blogs.length}
+                </span>
+              )}
             </button>
-          )}
+          ))}
         </div>
       </div>
 
@@ -179,7 +179,7 @@ export const BlogsUtility: React.FC<BlogsUtilityProps> = ({
           </div>
         ) : filteredBlogs.length === 0 ? (
           <div className="py-16 text-center text-slate-400 bg-white rounded-2xl border border-slate-200/80 p-6 flex flex-col items-center gap-2">
-            <BookOpen size={36} className="text-slate-300" />
+            <Newspaper size={36} className="text-slate-300" />
             <p className="text-sm font-bold text-slate-700">Chưa có bài viết nào</p>
             <p className="text-xs text-slate-500 max-w-sm">
               Chia sẻ những cẩm nang bỏ túi, kinh nghiệm phượt và bài viết truyền cảm hứng cho cộng đồng.
@@ -210,7 +210,7 @@ export const BlogsUtility: React.FC<BlogsUtilityProps> = ({
                   />
                 ) : (
                   <div className="w-16 h-16 rounded-xl bg-emerald-50 text-emerald-800 flex items-center justify-center shrink-0">
-                    <BookOpen size={20} />
+                    <Newspaper size={20} />
                   </div>
                 )}
                 <div className="flex-1 min-w-0 pr-14">
@@ -285,7 +285,7 @@ export const BlogsUtility: React.FC<BlogsUtilityProps> = ({
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-emerald-50 text-emerald-300">
-                      <BookOpen className="w-12 h-12" />
+                      <Newspaper className="w-12 h-12" />
                     </div>
                   )}
                   <div className="absolute inset-0 bg-white/0 group-hover:bg-white/15 transition-colors duration-300 pointer-events-none" />

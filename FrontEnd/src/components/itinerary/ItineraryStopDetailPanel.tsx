@@ -14,6 +14,7 @@ import type {
   TripRole
 } from '@/types/models/itinerary.model'
 import { getDayTheme, normalizeTimeToHHmm } from '@/utils/itineraryStyles'
+import { CustomSelect } from '@/components/common/CustomSelect'
 
 interface ItineraryStopDetailPanelProps {
   stop: ItineraryStop | null
@@ -114,14 +115,9 @@ export const ItineraryStopDetailPanel: React.FC<ItineraryStopDetailPanelProps> =
           <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
             Tên điểm đến
           </label>
-          <input
-            type="text"
-            disabled={!canEdit}
-            value={stop.name}
-            onChange={(e) => handleChangeField('name', e.target.value)}
-            placeholder="Tên địa điểm..."
-            className="w-full text-base sm:text-lg font-bold text-slate-900 bg-slate-50 focus:bg-white px-3 py-2 rounded-xl border border-slate-200 focus:border-emerald-600 outline-none transition-all"
-          />
+          <p className="w-full text-base sm:text-lg font-bold text-slate-900 bg-slate-50 px-3 py-2.5 rounded-xl border border-slate-200 leading-snug">
+            {stop.name || 'Chưa có tên địa điểm'}
+          </p>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
@@ -192,20 +188,15 @@ export const ItineraryStopDetailPanel: React.FC<ItineraryStopDetailPanelProps> =
                 <Car size={12} className="text-emerald-700" />
                 <span>Phương tiện</span>
               </label>
-              <select
+              <CustomSelect<TransportType>
                 disabled={!canEdit}
                 value={stop.transportMode || 'Xe máy'}
-                onChange={(e) =>
-                  handleChangeField('transportMode', e.target.value as TransportType)
-                }
-                className="w-full px-2.5 py-2 bg-slate-50 focus:bg-white border border-slate-200 focus:border-emerald-600 rounded-xl text-slate-800 font-semibold outline-none cursor-pointer text-xs"
-              >
-                {TRANSPORT_OPTIONS.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => handleChangeField('transportMode', val)}
+                options={TRANSPORT_OPTIONS.map((t) => ({ value: t, label: t }))}
+                size="sm"
+                buttonClassName="w-full bg-slate-50 border-slate-200 text-xs font-semibold text-slate-800 rounded-xl py-2 px-3"
+                menuClassName="border-slate-200 shadow-xl"
+              />
             </div>
           </div>
         </div>
@@ -215,14 +206,9 @@ export const ItineraryStopDetailPanel: React.FC<ItineraryStopDetailPanelProps> =
             <MapPin size={12} className="text-red-500" />
             <span>Địa chỉ cụ thể</span>
           </label>
-          <input
-            type="text"
-            disabled={!canEdit}
-            value={stop.address || ''}
-            onChange={(e) => handleChangeField('address', e.target.value)}
-            placeholder="Nhập địa chỉ..."
-            className="w-full px-3 py-2 bg-slate-50 focus:bg-white border border-slate-200 focus:border-emerald-600 rounded-xl text-slate-800 outline-none"
-          />
+          <p className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-xs font-medium leading-relaxed">
+            {stop.address || 'Chưa có thông tin địa chỉ cụ thể'}
+          </p>
         </div>
 
         <div>

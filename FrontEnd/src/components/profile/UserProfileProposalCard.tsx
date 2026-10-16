@@ -33,11 +33,6 @@ export const UserProfileProposalCard: React.FC<UserProfileProposalCardProps> = (
       <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between">
         <div>
           <div className="flex items-center gap-2 text-xs text-slate-500 font-medium mb-1.5 flex-wrap">
-            {(proposal.categoryName || proposal.category) && (
-              <span className="text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md font-semibold border border-emerald-200/50">
-                {proposal.categoryName || proposal.category}
-              </span>
-            )}
             {(proposal.provinceName || proposal.province) && (
               <span className="flex items-center gap-1 text-slate-600">
                 <MapPin size={12} className="text-amber-500" />

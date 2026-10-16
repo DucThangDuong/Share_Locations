@@ -12,8 +12,8 @@ import {
   Search,
   Compass,
   MapPin,
-  Route,
-  BookOpen,
+  Luggage,
+  Newspaper,
   Home,
   Menu,
   X,
@@ -91,8 +91,8 @@ export const Header: React.FC = () => {
     { label: 'Khám phá', href: '/explore', icon: Compass },
     { label: 'Bảng xếp hạng', href: '/rankings', icon: Trophy },
     { label: 'Bản đồ', href: '/map', icon: MapPin },
-    { label: 'Chuyến đi', href: '/itinerary', icon: Route },
-    { label: 'Cẩm nang', href: '/blog', icon: BookOpen }
+    { label: 'Chuyến đi', href: '/itinerary', icon: Luggage },
+    { label: 'Cẩm nang', href: '/blog', icon: Newspaper }
   ]
 
   const isFullWidthRoute = location.pathname.startsWith('/admin')
