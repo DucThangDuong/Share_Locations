@@ -16,8 +16,6 @@ public static class DependencyInjection
 
         services.AddValidatorsFromAssembly(assembly);
 
-        services.AddSingleton<IKnnRecommendationService, KnnRecommendationService>();
-
         return services;
     }
 }

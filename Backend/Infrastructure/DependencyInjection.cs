@@ -1,4 +1,4 @@
-﻿using Application.Common.Interfaces;
+using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Domain.Interfaces;
 using Infrastructure.Persistence;
@@ -57,7 +57,11 @@ public static class DependencyInjection
         services.AddScoped<IAdminSystemConfigRepository, AdminSystemConfigRepository>();
         services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddScoped<IRecommendationRepository, RecommendationRepository>();
+        services.AddScoped<IRecommendationService, RecommendationService>();
         services.AddScoped<IRankingRepository, RankingRepository>();
+        services.Configure<Application.DTOs.RecommendationOptions>(configuration.GetSection("RecommendationOptions"));
+        services.AddMemoryCache();
+        services.AddHostedService<Infrastructure.Workers.PlaceVectorSyncWorker>();
 
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUserService, CurrentUserService>();

@@ -5,6 +5,8 @@ using Domain.Enums;
 using Domain.Interfaces;
 using MediatR;
 
+using Application.Common.Interfaces;
+
 namespace Application.Features.Places.Commands;
 
 public record ToggleSavePlaceCommand(
@@ -15,10 +17,12 @@ public record ToggleSavePlaceCommand(
 public class ToggleSavePlaceCommandHandler : IRequestHandler<ToggleSavePlaceCommand, Result<ToggleSavePlaceDto>>
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IRecommendationService _recommendationService;
 
-    public ToggleSavePlaceCommandHandler(IUnitOfWork unitOfWork)
+    public ToggleSavePlaceCommandHandler(IUnitOfWork unitOfWork, IRecommendationService recommendationService)
     {
         _unitOfWork = unitOfWork;
+        _recommendationService = recommendationService;
     }
 
     public async Task<Result<ToggleSavePlaceDto>> Handle(ToggleSavePlaceCommand request, CancellationToken ct)
@@ -48,6 +52,8 @@ public class ToggleSavePlaceCommandHandler : IRequestHandler<ToggleSavePlaceComm
                 await _unitOfWork.SaveChangesAsync(ct);
             }
         }
+
+        await _recommendationService.InvalidateUserVectorCacheAsync(request.UserId, ct);
 
         var response = new ToggleSavePlaceDto
         {

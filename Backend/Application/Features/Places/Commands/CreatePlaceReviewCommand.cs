@@ -22,10 +22,15 @@ public class CreatePlaceReviewCommandHandler : IRequestHandler<CreatePlaceReview
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IBlobService? _blobService;
+    private readonly IRecommendationService _recommendationService;
 
-    public CreatePlaceReviewCommandHandler(IUnitOfWork unitOfWork, IBlobService? blobService = null)
+    public CreatePlaceReviewCommandHandler(
+        IUnitOfWork unitOfWork,
+        IRecommendationService recommendationService,
+        IBlobService? blobService = null)
     {
         _unitOfWork = unitOfWork;
+        _recommendationService = recommendationService;
         _blobService = blobService;
     }
 
@@ -109,6 +114,8 @@ public class CreatePlaceReviewCommandHandler : IRequestHandler<CreatePlaceReview
             _unitOfWork.Places.Update(place);
             await _unitOfWork.SaveChangesAsync(ct);
         }, ct);
+
+        await _recommendationService.InvalidateUserVectorCacheAsync(request.UserId, ct);
 
         var dto = new ReviewItemDto
         {

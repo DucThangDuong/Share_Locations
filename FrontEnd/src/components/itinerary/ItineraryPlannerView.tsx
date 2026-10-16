@@ -362,6 +362,7 @@ export const ItineraryPlannerView: React.FC<ItineraryPlannerViewProps> = ({
         {canEdit && (
           <div className="w-full pt-2">
             <ItineraryPlacePickerDrawer
+              tripId={itinerary.id}
               targetDayIndex={explorerTargetDayIdx}
               days={itinerary.days.map((d) => ({
                 dayNumber: d.dayNumber,

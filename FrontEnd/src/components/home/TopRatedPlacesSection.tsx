@@ -37,11 +37,8 @@ export const TopRatedPlacesSection: React.FC = () => {
     <section className="py-6">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
         <div>
-          <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-secondary-container mb-1.5">
-            <span>Được yêu thích nhất</span>
-          </div>
           <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-            Điểm đến đánh giá cao nhất
+            Các địa điểm được yêu thích
           </h2>
         </div>
 
