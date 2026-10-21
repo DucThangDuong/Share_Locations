@@ -21,6 +21,8 @@ public class GetAdminProposalsRequest
     public int? ProvinceId { get; set; }
     public int Page { get; set; } = 1;
     public int PageSize { get; set; } = 20;
+    public string? SortBy { get; set; }
+    public string? SortOrder { get; set; }
 }
 
 public class GetAdminProposalsEndpoint : Endpoint<GetAdminProposalsRequest, ApiSuccessResponse<IReadOnlyList<AdminProposalSummaryDto>>>
@@ -47,7 +49,9 @@ public class GetAdminProposalsEndpoint : Endpoint<GetAdminProposalsRequest, ApiS
                 req.Keyword ?? req.Search,
                 req.ProvinceId,
                 req.Page,
-                req.PageSize),
+                req.PageSize,
+                req.SortBy,
+                req.SortOrder),
             ct);
 
         await this.SendPagedApiResponseAsync(result, ct);

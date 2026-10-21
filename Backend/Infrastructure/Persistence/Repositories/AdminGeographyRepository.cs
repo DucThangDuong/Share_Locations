@@ -1,4 +1,4 @@
-﻿using Application.Common;
+using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs.Admin;
@@ -302,7 +302,7 @@ public class AdminGeographyRepository : IAdminGeographyRepository
                 p.Featured,
                 p.DisplayOrder,
                 p.Status,
-                (SELECT COUNT(1) FROM dbo.Places pl WHERE pl.ProvinceId = p.Id AND pl.Status = 1) AS PlaceCount,
+                (SELECT COUNT(1) FROM dbo.Places pl WHERE pl.ProvinceId = p.Id AND pl.Status = 1 AND pl.IsDeleted = 0) AS PlaceCount,
                 (SELECT COUNT(1) FROM dbo.FoodProvinces fp WHERE fp.ProvinceId = p.Id) AS FoodCount
             FROM dbo.Provinces p
             LEFT JOIN dbo.Regions r ON p.RegionId = r.Id
@@ -332,7 +332,7 @@ public class AdminGeographyRepository : IAdminGeographyRepository
                 p.Featured,
                 p.DisplayOrder,
                 p.Status,
-                (SELECT COUNT(1) FROM dbo.Places pl WHERE pl.ProvinceId = p.Id AND pl.Status = 1) AS PlaceCount,
+                (SELECT COUNT(1) FROM dbo.Places pl WHERE pl.ProvinceId = p.Id AND pl.Status = 1 AND pl.IsDeleted = 0) AS PlaceCount,
                 (SELECT COUNT(1) FROM dbo.FoodProvinces fp WHERE fp.ProvinceId = p.Id) AS FoodCount,
                 (SELECT COUNT(1) FROM dbo.Proposals prop WHERE prop.ProvinceId = p.Id) AS ProposalCount,
                 (SELECT COUNT(1) FROM dbo.AdminProvinceScopes aps WHERE aps.ProvinceId = p.Id) AS AssignedAdminsCount
@@ -520,7 +520,7 @@ public class AdminGeographyRepository : IAdminGeographyRepository
         var old = await connection.QueryFirstOrDefaultAsync(selectSql, new { Id = id });
         if (old == null) return (false, "Không tìm thấy tỉnh/thành phố cần xóa.");
 
-        const string checkPlacesSql = "SELECT COUNT(1) FROM dbo.Places WHERE ProvinceId = @Id;";
+        const string checkPlacesSql = "SELECT COUNT(1) FROM dbo.Places WHERE ProvinceId = @Id AND IsDeleted = 0;";
         var placeCount = await connection.ExecuteScalarAsync<int>(checkPlacesSql, new { Id = id });
 
         const string checkFoodsSql = "SELECT COUNT(1) FROM dbo.FoodProvinces WHERE ProvinceId = @Id;";

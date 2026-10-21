@@ -1,4 +1,4 @@
-﻿namespace Application.DTOs.Admin;
+namespace Application.DTOs.Admin;
 
 public class AdminBlogListItemDto
 {
@@ -10,18 +10,19 @@ public class AdminBlogListItemDto
     public int? CategoryId { get; set; }
     public DateTime PublishedAt { get; set; }
     public int Views { get; set; }
+    public int Likes { get; set; }
     public string Status { get; set; } = "published";
     public string? CoverImg { get; set; }
     public string ReadTime { get; set; } = "5 phút đọc";
     public string? Summary { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
 }
 
 public class AdminBlogDetailDto : AdminBlogListItemDto
 {
     public string Content { get; set; } = string.Empty;
     public long AuthorId { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
 }
 
 public class CreateAdminBlogInput

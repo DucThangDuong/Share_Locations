@@ -1,4 +1,4 @@
-﻿using Application.Common;
+using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs.Admin;
@@ -30,13 +30,15 @@ public class AdminPlaceRepository : IAdminPlaceRepository
         int? categoryId,
         int? status,
         string? keyword,
+        string? sortBy,
+        string? sortOrder,
         int page,
         int pageSize,
         CancellationToken ct = default)
     {
         var connection = _dbContext.Database.GetDbConnection();
 
-        var whereClauses = new List<string>();
+        var whereClauses = new List<string> { "p.IsDeleted = 0" };
         var parameters = new DynamicParameters();
 
         AdminScopeFilterHelper.ApplyPlaceScope(_currentUserService, whereClauses, parameters, "p", "prov");
@@ -78,6 +80,19 @@ public class AdminPlaceRepository : IAdminPlaceRepository
         parameters.Add("Offset", offset);
         parameters.Add("PageSize", pageSize);
 
+        var orderSql = (sortBy?.Trim().ToLowerInvariant(), sortOrder?.Trim().ToLowerInvariant()) switch
+        {
+            ("name", "desc")      => "ORDER BY p.Name DESC",
+            ("name", "asc")       => "ORDER BY p.Name ASC",
+            ("rating", "asc")     => "ORDER BY p.AvgRating ASC, p.Id DESC",
+            ("rating", "desc")    => "ORDER BY p.AvgRating DESC, p.Id DESC",
+            ("updatedat", "asc")  => "ORDER BY COALESCE(p.UpdatedAt, p.CreatedAt) ASC",
+            ("updatedat", "desc") => "ORDER BY COALESCE(p.UpdatedAt, p.CreatedAt) DESC",
+            ("createdat", "asc")  => "ORDER BY p.CreatedAt ASC",
+            ("createdat", "desc") => "ORDER BY p.CreatedAt DESC",
+            _                     => "ORDER BY COALESCE(p.UpdatedAt, p.CreatedAt) DESC"
+        };
+
         var dataSql = $@"
             SELECT
                 p.Id,
@@ -97,12 +112,30 @@ public class AdminPlaceRepository : IAdminPlaceRepository
                 CAST(p.Status AS INT) AS StatusNum,
                 p.AvgRating AS Rating,
                 p.ReviewCount AS ReviewsCount,
-                p.CoverImageUrl AS Img
+                p.CoverImageUrl AS Img,
+                p.CreatedAt,
+                p.UpdatedAt,
+                COALESCE(up_cr.FullName, u_cr.Email, N'Hệ thống') AS CreatedBy,
+                COALESCE(
+                    (SELECT TOP 1 COALESCE(up_mod.FullName, u_mod.Email)
+                     FROM dbo.AdminActionLogs al
+                     JOIN dbo.Users u_mod ON al.AdminId = u_mod.Id
+                     LEFT JOIN dbo.UserProfiles up_mod ON u_mod.Id = up_mod.UserId
+                     WHERE al.TargetTable = 'Places' AND al.TargetId = p.Id
+                     ORDER BY al.CreatedAt DESC),
+                    COALESCE(up_rev.FullName, u_rev.Email),
+                    COALESCE(up_cr.FullName, u_cr.Email),
+                    N'Hệ thống'
+                ) AS UpdatedBy
             FROM dbo.Places p
             LEFT JOIN dbo.Categories cat ON p.CategoryId = cat.Id
             LEFT JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id
+            LEFT JOIN dbo.Users u_cr ON p.CreatedBy = u_cr.Id
+            LEFT JOIN dbo.UserProfiles up_cr ON u_cr.Id = up_cr.UserId
+            LEFT JOIN dbo.Users u_rev ON p.ReviewedBy = u_rev.Id
+            LEFT JOIN dbo.UserProfiles up_rev ON u_rev.Id = up_rev.UserId
             {whereSql}
-            ORDER BY p.UpdatedAt DESC
+            {orderSql}
             OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 
         var items = (await connection.QueryAsync<AdminPlaceListItemDto>(dataSql, parameters)).ToList();
@@ -135,11 +168,27 @@ public class AdminPlaceRepository : IAdminPlaceRepository
                 p.CoverImageUrl AS Img,
                 p.Description,
                 p.CreatedAt,
-                p.UpdatedAt
+                p.UpdatedAt,
+                COALESCE(up_cr.FullName, u_cr.Email, N'Hệ thống') AS CreatedBy,
+                COALESCE(
+                    (SELECT TOP 1 COALESCE(up_mod.FullName, u_mod.Email)
+                     FROM dbo.AdminActionLogs al
+                     JOIN dbo.Users u_mod ON al.AdminId = u_mod.Id
+                     LEFT JOIN dbo.UserProfiles up_mod ON u_mod.Id = up_mod.UserId
+                     WHERE al.TargetTable = 'Places' AND al.TargetId = p.Id
+                     ORDER BY al.CreatedAt DESC),
+                    COALESCE(up_rev.FullName, u_rev.Email),
+                    COALESCE(up_cr.FullName, u_cr.Email),
+                    N'Hệ thống'
+                ) AS UpdatedBy
             FROM dbo.Places p
             LEFT JOIN dbo.Categories cat ON p.CategoryId = cat.Id
             LEFT JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id
-            WHERE p.Id = @Id;";
+            LEFT JOIN dbo.Users u_cr ON p.CreatedBy = u_cr.Id
+            LEFT JOIN dbo.UserProfiles up_cr ON u_cr.Id = up_cr.UserId
+            LEFT JOIN dbo.Users u_rev ON p.ReviewedBy = u_rev.Id
+            LEFT JOIN dbo.UserProfiles up_rev ON u_rev.Id = up_rev.UserId
+            WHERE p.Id = @Id AND p.IsDeleted = 0;";
 
         var detail = await connection.QueryFirstOrDefaultAsync<AdminPlaceDetailDto>(sql, new { Id = id });
         if (detail == null) return null;
@@ -409,16 +458,16 @@ public class AdminPlaceRepository : IAdminPlaceRepository
         if (place == null) return false;
 
         var oldStatus = place.Status;
-        place.UpdateStatus(PlaceStatus.Hidden);
+        place.SoftDelete();
         await _dbContext.SaveChangesAsync(ct);
 
         await _auditLogService.LogAsync(
             actionType: "DELETE_PLACE",
             targetTable: "Places",
             targetId: id,
-            reason: $"Xóa (ẩn) địa điểm #{id} ({place.Name})",
-            oldData: new { Status = (int)oldStatus },
-            newData: new { Status = (int)PlaceStatus.Hidden },
+            reason: $"Xóa mềm địa điểm #{id} ({place.Name})",
+            oldData: new { IsDeleted = false, Status = (int)oldStatus },
+            newData: new { IsDeleted = true, Status = (int)place.Status },
             ct: ct);
 
         return true;

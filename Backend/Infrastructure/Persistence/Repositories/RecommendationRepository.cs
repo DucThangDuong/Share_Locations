@@ -54,14 +54,16 @@ public class RecommendationRepository : IRecommendationRepository
         const string sql = @"
             WITH LatestUserReviews AS (
                 SELECT 
-                    PlaceId,
-                    Rating,
-                    CreatedAt,
-                    ROW_NUMBER() OVER (PARTITION BY PlaceId ORDER BY CreatedAt DESC) AS rn
-                FROM dbo.Reviews WITH (NOLOCK)
-                WHERE UserId = @UserId 
-                  AND Status = 1 
-                  AND Rating >= 4
+                    r.PlaceId,
+                    r.Rating,
+                    r.CreatedAt,
+                    ROW_NUMBER() OVER (PARTITION BY r.PlaceId ORDER BY r.CreatedAt DESC) AS rn
+                FROM dbo.Reviews r WITH (NOLOCK)
+                INNER JOIN dbo.Places p WITH (NOLOCK) ON r.PlaceId = p.Id
+                WHERE r.UserId = @UserId 
+                  AND r.Status = 1 
+                  AND r.Rating >= 4
+                  AND p.IsDeleted = 0
             )
             SELECT 
                 PlaceId,
@@ -81,11 +83,12 @@ public class RecommendationRepository : IRecommendationRepository
         const string sql = @"
             WITH RawSignals AS (
                 SELECT 
-                    PlaceId,
-                    CASE WHEN Rating = 5 THEN 5.0 ELSE 3.5 END AS Weight,
-                    CreatedAt AS InteractedAtUtc
-                FROM dbo.Reviews WITH (NOLOCK)
-                WHERE UserId = @UserId AND Status = 1 AND Rating >= 4
+                    r.PlaceId,
+                    CASE WHEN r.Rating = 5 THEN 5.0 ELSE 3.5 END AS Weight,
+                    r.CreatedAt AS InteractedAtUtc
+                FROM dbo.Reviews r WITH (NOLOCK)
+                INNER JOIN dbo.Places p WITH (NOLOCK) ON r.PlaceId = p.Id
+                WHERE r.UserId = @UserId AND r.Status = 1 AND r.Rating >= 4 AND p.IsDeleted = 0
 
                 UNION ALL
 
@@ -94,10 +97,11 @@ public class RecommendationRepository : IRecommendationRepository
                     4.0 AS Weight,
                     t.UpdatedAt AS InteractedAtUtc
                 FROM dbo.TripPlaces tp WITH (NOLOCK)
+                INNER JOIN dbo.Places p WITH (NOLOCK) ON tp.PlaceId = p.Id
                 INNER JOIN dbo.TripDays td WITH (NOLOCK) ON tp.TripDayId = td.Id
                 INNER JOIN dbo.Trips t WITH (NOLOCK) ON td.TripId = t.Id
                 LEFT JOIN dbo.TripMembers tm WITH (NOLOCK) ON t.Id = tm.TripId AND tm.UserId = @UserId
-                WHERE t.UserId = @UserId OR tm.UserId IS NOT NULL
+                WHERE (t.UserId = @UserId OR tm.UserId IS NOT NULL) AND p.IsDeleted = 0
 
                 UNION ALL
 
@@ -171,7 +175,7 @@ public class RecommendationRepository : IRecommendationRepository
             FROM dbo.TripPlaces tp WITH (NOLOCK)
             INNER JOIN dbo.TripDays td WITH (NOLOCK) ON tp.TripDayId = td.Id
             INNER JOIN dbo.Places p WITH (NOLOCK) ON tp.PlaceId = p.Id
-            WHERE td.TripId = @TripId;";
+            WHERE td.TripId = @TripId AND p.IsDeleted = 0;";
 
         var connection = _dbContext.Database.GetDbConnection();
         using var multi = await connection.QueryMultipleAsync(new CommandDefinition(sql, new { TripId = tripId }, cancellationToken: ct));
@@ -214,7 +218,8 @@ public class RecommendationRepository : IRecommendationRepository
             INNER JOIN dbo.Foods f WITH (NOLOCK) ON fp.FoodId = f.Id
             INNER JOIN dbo.Places p WITH (NOLOCK) ON fp.PlaceId = p.Id
             WHERE fp.PlaceId IN @PlaceIds
-              AND f.Status = 1;";
+              AND f.Status = 1
+              AND p.IsDeleted = 0;";
 
         var directFoods = (await connection.QueryAsync<RecommendedFoodDto>(
             new CommandDefinition(directSql, new { PlaceIds = placeIds }, cancellationToken: ct))).AsList();
@@ -245,7 +250,8 @@ public class RecommendationRepository : IRecommendationRepository
                 INNER JOIN dbo.FoodProvinces fpr WITH (NOLOCK) ON p.ProvinceId = fpr.ProvinceId
                 INNER JOIN dbo.Foods f WITH (NOLOCK) ON fpr.FoodId = f.Id
                 WHERE p.Id IN @PlaceIds
-                  AND f.Status = 1;";
+                  AND f.Status = 1
+                  AND p.IsDeleted = 0;";
 
             var provinceFoods = (await connection.QueryAsync<RecommendedFoodDto>(
                 new CommandDefinition(provinceSql, new { PlaceIds = placeIds }, cancellationToken: ct))).AsList();
@@ -361,11 +367,12 @@ public class RecommendationRepository : IRecommendationRepository
         var connection = _dbContext.Database.GetDbConnection();
         const string sql = @"
             SELECT
-                UserId,
-                PlaceId,
-                CAST(Rating AS FLOAT) AS Rating
-            FROM dbo.Reviews WITH (NOLOCK)
-            WHERE Status = 1;";
+                r.UserId,
+                r.PlaceId,
+                CAST(r.Rating AS FLOAT) AS Rating
+            FROM dbo.Reviews r WITH (NOLOCK)
+            INNER JOIN dbo.Places p WITH (NOLOCK) ON r.PlaceId = p.Id
+            WHERE r.Status = 1 AND p.IsDeleted = 0;";
 
         var command = new CommandDefinition(sql, cancellationToken: ct);
         var reviews = await connection.QueryAsync<UserReviewFeatureDto>(command);

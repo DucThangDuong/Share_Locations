@@ -38,6 +38,12 @@ public class ReviewRepository : IReviewRepository
             .AnyAsync(r => r.Id == id && r.Status == ReviewStatus.Active, ct);
     }
 
+    public async Task<bool> HasUserReviewedPlaceAsync(long placeId, long userId, CancellationToken ct = default)
+    {
+        return await _dbContext.Reviews
+            .AnyAsync(r => r.PlaceId == placeId && r.UserId == userId && r.Status != ReviewStatus.Hidden, ct);
+    }
+
     public void Update(Review review)
     {
         _dbContext.Reviews.Update(review);

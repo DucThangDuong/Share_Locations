@@ -42,15 +42,21 @@ public class CreatePlaceReviewCommandHandler : IRequestHandler<CreatePlaceReview
         }
 
         var place = await _unitOfWork.Places.GetByIdAsync(request.PlaceId, ct);
-        if (place == null)
+        if (place == null || place.IsDeleted)
         {
-            return Result<ReviewItemDto>.NotFound("Địa điểm không tồn tại.");
+            return Result<ReviewItemDto>.NotFound("Địa điểm không tồn tại hoặc đã bị xóa.");
         }
 
         var user = await _unitOfWork.Users.GetByIdWithProfileAsync(request.UserId, ct);
         if (user == null)
         {
             return Result<ReviewItemDto>.NotFound("Người dùng không tồn tại.");
+        }
+
+        var alreadyReviewed = await _unitOfWork.Reviews.HasUserReviewedPlaceAsync(request.PlaceId, request.UserId, ct);
+        if (alreadyReviewed)
+        {
+            return Result<ReviewItemDto>.Conflict("Bạn đã đánh giá địa điểm này rồi. Mỗi người dùng chỉ được đánh giá một địa điểm một lần.");
         }
 
         var review = new Review(request.PlaceId, request.UserId, request.Rating, request.Content, request.VisitDate);

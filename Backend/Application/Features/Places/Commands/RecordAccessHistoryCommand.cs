@@ -18,6 +18,12 @@ public class RecordAccessHistoryCommandHandler : IRequestHandler<RecordAccessHis
 
     public async Task<Result> Handle(RecordAccessHistoryCommand request, CancellationToken ct)
     {
+        var place = await _unitOfWork.Places.GetByIdAsync(request.PlaceId, ct);
+        if (place == null || place.IsDeleted)
+        {
+            return Result.Failure("Địa điểm không tồn tại hoặc đã bị xóa.");
+        }
+
         var existing = await _unitOfWork.AccessHistories.GetByUserAndPlaceAsync(request.UserId, request.PlaceId, ct);
         if (existing != null)
         {

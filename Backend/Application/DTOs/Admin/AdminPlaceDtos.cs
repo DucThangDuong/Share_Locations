@@ -1,4 +1,4 @@
-﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 using Application.Common.Converters;
 
 namespace Application.DTOs.Admin;
@@ -31,6 +31,10 @@ public class AdminPlaceListItemDto
     public decimal Rating { get; set; }
     public int ReviewsCount { get; set; }
     public string? Img { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public string? CreatedBy { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+    public string? UpdatedBy { get; set; }
 
     public string Address
     {
@@ -54,6 +58,10 @@ public class AdminPlaceListItemDto
     }
 }
 
+public class AdminPlaceItemDto : AdminPlaceListItemDto
+{
+}
+
 public class AdminPlaceDetailDto : AdminPlaceListItemDto
 {
     public string? Description { get; set; }
@@ -63,8 +71,6 @@ public class AdminPlaceDetailDto : AdminPlaceListItemDto
         get => Photos;
         set => Photos = value;
     }
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
 
     public List<AdminPlaceFoodDto> Foods { get; set; } = new();
     public List<long> FoodIds => Foods.Select(f => f.Id).ToList();

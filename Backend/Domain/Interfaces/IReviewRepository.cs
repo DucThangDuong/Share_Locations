@@ -8,6 +8,7 @@ public interface IReviewRepository
     Task<Review?> GetByIdAsync(long id, CancellationToken ct = default);
     Task<Review?> GetByIdWithMediaAsync(long id, CancellationToken ct = default);
     Task<bool> ExistsAsync(long id, CancellationToken ct = default);
+    Task<bool> HasUserReviewedPlaceAsync(long placeId, long userId, CancellationToken ct = default);
     Task<(decimal AvgRating, int ReviewCount)> GetPlaceStatsAsync(long placeId, CancellationToken ct = default);
     Task<ReviewLike?> GetLikeAsync(long reviewId, long userId, CancellationToken ct = default);
     Task AddLikeAsync(ReviewLike like, CancellationToken ct = default);

@@ -1,4 +1,4 @@
-﻿using Application.Common;
+using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs.Admin;
@@ -203,6 +203,8 @@ public class AdminReportRepository : IAdminReportRepository
         string? keyword,
         int page,
         int pageSize,
+        string? sortBy = null,
+        string? sortOrder = null,
         CancellationToken ct = default)
     {
         var connection = _dbContext.Database.GetDbConnection();
@@ -449,7 +451,10 @@ public class AdminReportRepository : IAdminReportRepository
         parameters.Add("Offset", offset);
         parameters.Add("PageSize", pageSize);
 
-        var dataSql = $"{baseSql} SELECT * FROM AllReports {whereSql} ORDER BY SubmittedAt DESC OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+        var sortDirection = string.Equals(sortOrder, "asc", StringComparison.OrdinalIgnoreCase) ? "ASC" : "DESC";
+        var orderSql = $"ORDER BY SubmittedAt {sortDirection}, Id {sortDirection}";
+
+        var dataSql = $"{baseSql} SELECT * FROM AllReports {whereSql} {orderSql} OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
         var items = (await connection.QueryAsync<ReportQueueItemDto>(dataSql, parameters)).ToList();
 
         return new PagedResult<ReportQueueItemDto>(items, totalCount, page, pageSize);
@@ -457,7 +462,7 @@ public class AdminReportRepository : IAdminReportRepository
 
     public async Task<IReadOnlyList<GroupedReportDto>> GetGroupedReportsAsync(CancellationToken ct = default)
     {
-        var queue = await GetReportsQueueAsync(null, null, 0, null, 1, 100, ct);
+        var queue = await GetReportsQueueAsync(null, null, 0, null, 1, 100, ct: ct);
 
         var groups = queue.Items
             .GroupBy(r => $"{r.TargetType}_{r.TargetId}")

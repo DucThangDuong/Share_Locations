@@ -98,6 +98,8 @@ export interface AdminProposalItem {
   proposerAvatar?: string;
   userAvatar?: string;
   submittedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
   status: 0 | 1 | 2;
   adminNotes?: string | null;
   adminNote?: string | null;
@@ -220,6 +222,11 @@ export interface AdminFoodItem {
   specialtyType?: string;
   minPrice?: number;
   maxPrice?: number;
+  price?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  updatedBy?: string;
+  createdBy?: string;
   status?: "active" | "hidden";
   statusNum?: number;
   placesCount?: number;
@@ -233,7 +240,13 @@ export interface AdminBlogItem {
   category: string;
   publishedAt: string;
   views: number;
+  viewCount?: number;
   likes: number;
+  likeCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  updatedBy?: string;
+  createdBy?: string;
   status: "published" | "draft" | "hidden" | "archived";
   coverImg: string;
   summary?: string;

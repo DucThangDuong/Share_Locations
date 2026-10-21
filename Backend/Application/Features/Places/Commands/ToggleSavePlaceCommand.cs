@@ -28,9 +28,9 @@ public class ToggleSavePlaceCommandHandler : IRequestHandler<ToggleSavePlaceComm
     public async Task<Result<ToggleSavePlaceDto>> Handle(ToggleSavePlaceCommand request, CancellationToken ct)
     {
         var place = await _unitOfWork.Places.GetByIdAsync(request.PlaceId, ct);
-        if (place == null)
+        if (place == null || place.IsDeleted)
         {
-            return Result<ToggleSavePlaceDto>.NotFound("Địa điểm không tồn tại.");
+            return Result<ToggleSavePlaceDto>.NotFound("Địa điểm không tồn tại hoặc đã bị xóa.");
         }
 
         var existing = await _unitOfWork.Favorites.GetAsync(request.UserId, request.PlaceId, FavoriteTargetType.Place, ct);

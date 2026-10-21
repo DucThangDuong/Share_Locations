@@ -14,7 +14,10 @@ import {
   ChevronLeft,
   ChevronRight,
   RotateCcw,
-  AlertCircle
+  AlertCircle,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react'
 
 interface UsersTabProps {
@@ -37,6 +40,8 @@ interface UsersTabProps {
     categoryId?: number
     provinceId?: number
     regionId?: number
+    sortBy?: string
+    sortOrder?: 'asc' | 'desc'
     pageSize?: number
     page?: number
   }) => void
@@ -47,6 +52,8 @@ interface UsersTabProps {
     categoryId?: number
     provinceId?: number
     regionId?: number
+    sortBy?: string
+    sortOrder?: 'asc' | 'desc'
     pageSize?: number
     page?: number
   }
@@ -112,6 +119,42 @@ export const UsersTab: React.FC<UsersTabProps> = ({
     }
   }
 
+  const [sortField, setSortField] = useState<'fullName' | 'createdAt' | null>(null);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  const handleSort = (field: 'fullName' | 'createdAt') => {
+    let nextOrder: 'asc' | 'desc' = 'desc';
+    let nextField: 'fullName' | 'createdAt' | null = field;
+    if (sortField === field) {
+      if (sortOrder === 'desc') {
+        nextOrder = 'asc';
+      } else {
+        nextField = null;
+      }
+    } else {
+      nextOrder = field === 'fullName' ? 'asc' : 'desc';
+    }
+    setSortField(nextField);
+    setSortOrder(nextOrder);
+    onFilterChange?.({
+      ...currentFilters,
+      sortBy: nextField || undefined,
+      sortOrder: nextField ? nextOrder : undefined,
+      page: 1,
+    });
+  };
+
+  const renderSortIcon = (field: 'fullName' | 'createdAt') => {
+    if (sortField !== field) {
+      return <ArrowUpDown size={12} className="text-slate-300 group-hover:text-slate-500 transition-colors" />;
+    }
+    return sortOrder === 'asc' ? (
+      <ArrowUp size={12} className="text-emerald-700" />
+    ) : (
+      <ArrowDown size={12} className="text-emerald-700" />
+    );
+  };
+
   const filteredUsers = useMemo(() => {
     return usersList.filter((u) => {
       const rolesUpper = (u.roles || []).map((r) => String(r).toUpperCase())
@@ -122,6 +165,25 @@ export const UsersTab: React.FC<UsersTabProps> = ({
       return true
     })
   }, [usersList, isSystemAdmin])
+
+  const sortedUsers = useMemo(() => {
+    if (!sortField) return filteredUsers;
+    return [...filteredUsers].sort((a, b) => {
+      if (sortField === 'fullName') {
+        const nameA = String(a.fullName || a.email || '').trim().toLowerCase();
+        const nameB = String(b.fullName || b.email || '').trim().toLowerCase();
+        return sortOrder === 'asc'
+          ? nameA.localeCompare(nameB, 'vi')
+          : nameB.localeCompare(nameA, 'vi');
+      }
+      if (sortField === 'createdAt') {
+        const timeA = new Date(a.createdAt || 0).getTime();
+        const timeB = new Date(b.createdAt || 0).getTime();
+        return sortOrder === 'asc' ? timeA - timeB : timeB - timeA;
+      }
+      return 0;
+    });
+  }, [filteredUsers, sortField, sortOrder]);
 
   const firstUser = (usersList[0] || {}) as any
   const totalUsersCount = pagination.totalCount || usersList.length
@@ -434,10 +496,30 @@ export const UsersTab: React.FC<UsersTabProps> = ({
           <table className="w-full text-left border-collapse text-xs">
             <thead className="sticky top-0 bg-white z-10 shadow-2xs border-b border-slate-200">
               <tr className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                <th className="py-3 px-4 bg-slate-50/90 backdrop-blur-xs">Tài khoản &amp; Liên hệ</th>
+                <th className="py-3 px-4 bg-slate-50/90 backdrop-blur-xs">
+                  <button
+                    type="button"
+                    onClick={() => handleSort('fullName')}
+                    className="group inline-flex items-center gap-1.5 hover:text-slate-900 transition-colors cursor-pointer select-none"
+                    title="Sắp xếp theo họ tên"
+                  >
+                    <span>Tài khoản &amp; Liên hệ</span>
+                    {renderSortIcon('fullName')}
+                  </button>
+                </th>
                 <th className="py-3 px-4 bg-slate-50/90 backdrop-blur-xs">Vai trò</th>
                 <th className="py-3 px-4 bg-slate-50/90 backdrop-blur-xs">Trạng thái</th>
-                <th className="py-3 px-4 bg-slate-50/90 backdrop-blur-xs">Ngày tạo</th>
+                <th className="py-3 px-4 bg-slate-50/90 backdrop-blur-xs">
+                  <button
+                    type="button"
+                    onClick={() => handleSort('createdAt')}
+                    className="group inline-flex items-center gap-1.5 hover:text-slate-900 transition-colors cursor-pointer select-none"
+                    title="Sắp xếp theo ngày tạo"
+                  >
+                    <span>Cập nhật</span>
+                    {renderSortIcon('createdAt')}
+                  </button>
+                </th>
                 <th className="py-3 px-4 text-center bg-slate-50/90 backdrop-blur-xs">Xem chi tiết</th>
               </tr>
             </thead>
@@ -457,7 +539,7 @@ export const UsersTab: React.FC<UsersTabProps> = ({
                   </td>
                 </tr>
               ) : (
-                filteredUsers.map((u) => (
+                sortedUsers.map((u) => (
                   <tr
                     key={u.userId || (u as any).id}
                     onClick={() => handleSelectUser(u)}
@@ -501,8 +583,10 @@ export const UsersTab: React.FC<UsersTabProps> = ({
                       {renderStatusBadge(u.status)}
                     </td>
 
-                    <td className="py-3.5 px-4 text-slate-500 whitespace-nowrap">
-                      {formatDate(u.createdAt)}
+                    <td className="py-3.5 px-4 whitespace-nowrap">
+                      <div className="flex items-center gap-1.5 text-[11px]">
+                        <span className="font-semibold text-slate-800">{formatDate(u.createdAt)}</span>
+                      </div>
                     </td>
 
                     <td className="py-3.5 px-4 text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>

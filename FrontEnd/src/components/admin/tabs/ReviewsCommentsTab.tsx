@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Star,
   Search,
@@ -15,6 +15,9 @@ import {
   AlertTriangle,
   User,
   MapPin,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import type { PlaceReviewItem, PlaceCommentItem } from "@/types/admin.types";
 import { adminService } from "@/services/adminService";
@@ -52,6 +55,7 @@ interface ReviewsCommentsTabProps {
     type: "approve" | "reject" | "resolve" | "hide"
   ) => void;
   showToast: (msg: string) => void;
+  onSortChange?: (field?: string, order?: "asc" | "desc") => void;
 }
 
 export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
@@ -65,6 +69,7 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
   setRevReportFilter,
   addAuditLog,
   showToast,
+  onSortChange,
 }) => {
   const [searchText, setSearchText] = useState("");
   const [ratingFilter, setRatingFilter] = useState<string>("all");
@@ -112,13 +117,89 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
     return true;
   });
 
-  const totalItems = revComTab === "reviews" ? filteredReviews.length : filteredComments.length;
+  type SortField = "rating" | "createdAt" | "placeName" | null;
+  type SortOrder = "asc" | "desc";
+  const [sortField, setSortField] = useState<SortField>(null);
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+
+  const handleSort = (field: "rating" | "createdAt" | "placeName") => {
+    let nextOrder: SortOrder = "desc";
+    let nextField: SortField = field;
+    if (sortField === field) {
+      if (sortOrder === "desc") {
+        nextOrder = "asc";
+      } else {
+        nextField = null;
+      }
+    } else {
+      nextOrder = field === "placeName" ? "asc" : "desc";
+    }
+    setSortField(nextField);
+    setSortOrder(nextOrder);
+    onSortChange?.(nextField || undefined, nextField ? nextOrder : undefined);
+  };
+
+  const renderSortIcon = (field: "rating" | "createdAt" | "placeName") => {
+    if (sortField !== field) {
+      return <ArrowUpDown size={12} className="text-slate-300 group-hover:text-slate-500 transition-colors" />;
+    }
+    return sortOrder === "asc" ? (
+      <ArrowUp size={12} className="text-emerald-700" />
+    ) : (
+      <ArrowDown size={12} className="text-emerald-700" />
+    );
+  };
+
+  const sortedReviews = useMemo(() => {
+    if (!sortField) return filteredReviews;
+    return [...filteredReviews].sort((a, b) => {
+      if (sortField === "rating") {
+        const rA = Number(a.rating || 0);
+        const rB = Number(b.rating || 0);
+        return sortOrder === "asc" ? rA - rB : rB - rA;
+      }
+      if (sortField === "createdAt") {
+        const timeA = new Date(a.createdAt || 0).getTime();
+        const timeB = new Date(b.createdAt || 0).getTime();
+        return sortOrder === "asc" ? timeA - timeB : timeB - timeA;
+      }
+      if (sortField === "placeName") {
+        const nameA = String(a.placeName || "").trim().toLowerCase();
+        const nameB = String(b.placeName || "").trim().toLowerCase();
+        return sortOrder === "asc"
+          ? nameA.localeCompare(nameB, "vi")
+          : nameB.localeCompare(nameA, "vi");
+      }
+      return 0;
+    });
+  }, [filteredReviews, sortField, sortOrder]);
+
+  const sortedComments = useMemo(() => {
+    if (!sortField) return filteredComments;
+    return [...filteredComments].sort((a, b) => {
+      if (sortField === "createdAt") {
+        const timeA = new Date(a.createdAt || 0).getTime();
+        const timeB = new Date(b.createdAt || 0).getTime();
+        return sortOrder === "asc" ? timeA - timeB : timeB - timeA;
+      }
+      if (sortField === "placeName") {
+        const nameA = String(a.placeName || (a as any).blogTitle || "").trim().toLowerCase();
+        const nameB = String(b.placeName || (b as any).blogTitle || "").trim().toLowerCase();
+        return sortOrder === "asc"
+          ? nameA.localeCompare(nameB, "vi")
+          : nameB.localeCompare(nameA, "vi");
+      }
+      return 0;
+    });
+  }, [filteredComments, sortField, sortOrder]);
+
+  const totalItems = revComTab === "reviews" ? sortedReviews.length : sortedComments.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
-  const displayedReviews = filteredReviews.slice(
+  const displayedReviews = sortedReviews.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
-  const displayedComments = filteredComments.slice(
+  const displayedComments = sortedComments.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
@@ -317,12 +398,41 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
                   {revComTab === "reviews" ? "Review" : "Bình luận"}
                 </th>
                 <th className="p-3.5 min-w-[180px]">
-                  {revComTab === "reviews" ? "Địa điểm" : "Bài viết"}
+                  <button
+                    type="button"
+                    onClick={() => handleSort("placeName")}
+                    className="group inline-flex items-center gap-1.5 hover:text-slate-900 transition-colors cursor-pointer select-none"
+                    title="Sắp xếp theo địa điểm / bài viết"
+                  >
+                    <span>{revComTab === "reviews" ? "Địa điểm" : "Bài viết"}</span>
+                    {renderSortIcon("placeName")}
+                  </button>
                 </th>
                 {revComTab === "reviews" && (
-                  <th className="p-3.5 min-w-[120px]">Rating</th>
+                  <th className="p-3.5 min-w-[120px]">
+                    <button
+                      type="button"
+                      onClick={() => handleSort("rating")}
+                      className="group inline-flex items-center gap-1.5 hover:text-slate-900 transition-colors cursor-pointer select-none"
+                      title="Sắp xếp theo số sao đánh giá"
+                    >
+                      <span>Rating</span>
+                      {renderSortIcon("rating")}
+                    </button>
+                  </th>
                 )}
                 <th className="p-3.5 min-w-[120px]">Trạng thái</th>
+                <th className="p-3.5 min-w-[150px]">
+                  <button
+                    type="button"
+                    onClick={() => handleSort("createdAt")}
+                    className="group inline-flex items-center gap-1.5 hover:text-slate-900 transition-colors cursor-pointer select-none"
+                    title="Sắp xếp theo thời gian"
+                  >
+                    <span>Cập nhật</span>
+                    {renderSortIcon("createdAt")}
+                  </button>
+                </th>
                 <th className="p-3.5 text-right pr-5 min-w-[100px]">Tác vụ</th>
               </tr>
             </thead>
@@ -423,6 +533,12 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
                         >
                           {isHidden ? "Tạm ẩn" : "Công khai"}
                         </button>
+                      </td>
+
+                      <td className="p-3.5 whitespace-nowrap text-[11px]">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-semibold text-slate-800">{formatDateTime(rev.createdAt) || "20/10/2026"}</span>
+                        </div>
                       </td>
 
                       <td className="p-3.5 pr-5 text-right relative">
@@ -542,6 +658,12 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
                         >
                           {isHidden ? "Tạm ẩn" : "Công khai"}
                         </button>
+                      </td>
+
+                      <td className="p-3.5 whitespace-nowrap text-[11px]">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-semibold text-slate-800">{formatDateTime(comm.createdAt) || "20/10/2026"}</span>
+                        </div>
                       </td>
 
                       <td className="p-3.5 pr-5 text-right relative">

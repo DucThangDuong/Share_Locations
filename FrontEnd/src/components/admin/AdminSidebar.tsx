@@ -28,17 +28,8 @@ interface AdminSidebarProps {
   mainTab: AdminMainTab;
   setMainTab: (tab: AdminMainTab) => void;
   setSelectedPlaceId: (id: number | null) => void;
-  pendingPlacesCount: number;
-  pendingProposalsCount: number;
-  reportedReviewsCount: number;
-  pendingReportsCount: number;
-  placeReportsCount?: number;
-  reviewReportsCount?: number;
-  commentReportsCount?: number;
-  blogReportsCount?: number;
   reportTargetTypeFilter?: "all" | "place" | "review" | "comment" | "blog" | "photo";
   setReportTargetTypeFilter?: (v: "all" | "place" | "review" | "comment" | "blog" | "photo") => void;
-  auditLogsCount: number;
   onBackToUserView: () => void;
 }
 
@@ -48,17 +39,8 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   mainTab,
   setMainTab,
   setSelectedPlaceId,
-  pendingPlacesCount,
-  pendingProposalsCount,
-  reportedReviewsCount,
-  pendingReportsCount: _pendingReportsCount,
-  placeReportsCount = 0,
-  reviewReportsCount = 0,
-  commentReportsCount = 0,
-  blogReportsCount = 0,
   reportTargetTypeFilter = "all",
   setReportTargetTypeFilter,
-  auditLogsCount: _auditLogsCount,
   onBackToUserView,
 }) => {
   const isSystemAdmin = isUserSystemAdmin();
@@ -107,24 +89,25 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           </div>
 
           <div className="px-3 py-3 space-y-4 flex-1 overflow-y-auto text-xs">
+            {/* NHÓM 1: VẬN HÀNH & KIỂM DUYỆT */}
             <div className="space-y-1">
               {isSidebarOpen && (
                 <div className="px-3 pt-1 pb-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                  Điều hành &amp; Kiểm duyệt
+                  Vận hành &amp; Kiểm duyệt
                 </div>
               )}
 
               {[
                 { id: "dashboard", label: "Tổng quan", icon: LayoutDashboard },
-                { id: "admin_profile", label: "Phạm vi điều hành", icon: Compass },
-                ...(isSystemAdmin ? [{ id: "users", label: "Quản lý Tài khoản", icon: Users }] : []),
-                { id: "places", label: "Địa điểm", icon: MapPin, count: pendingPlacesCount, isAlert: pendingPlacesCount > 0 },
-                { id: "proposals", label: "Đề xuất đóng góp", icon: ClipboardCheck, count: pendingProposalsCount, isAlert: pendingProposalsCount > 0 },
-                { id: "reviews_comments", label: "Đánh giá & Bình luận", icon: MessageSquare, count: reportedReviewsCount, isAlert: reportedReviewsCount > 0 },
-                { id: "audit_logs", label: "Nhật ký kiểm toán", icon: History },
+                { id: "places", label: "Địa điểm", icon: MapPin },
+                {
+                  id: "proposals",
+                  label: "Đề xuất đóng góp",
+                  icon: ClipboardCheck,
+                },
               ].map((item) => {
                 const IconComp = item.icon;
-                const isActive = mainTab === item.id || (item.id === "admin_profile" && (mainTab === "profile" as any || mainTab === "admin_profile"));
+                const isActive = mainTab === item.id;
                 return (
                   <button
                     key={item.id}
@@ -150,11 +133,11 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                       />
                       {isSidebarOpen && <span className="truncate text-xs">{item.label}</span>}
                     </span>
-
                   </button>
                 );
               })}
 
+              {/* Báo cáo vi phạm với Menu con */}
               <div>
                 <button
                   onClick={() => {
@@ -185,13 +168,11 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                   </span>
 
                   {isSidebarOpen && (
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <ChevronDown
-                        size={14}
-                        className={`transition-transform duration-200 ${isReportsDropdownOpen ? "rotate-180" : ""
-                          } ${mainTab === "reports" ? "text-white" : "text-slate-400"}`}
-                      />
-                    </div>
+                    <ChevronDown
+                      size={14}
+                      className={`transition-transform duration-200 shrink-0 ${isReportsDropdownOpen ? "rotate-180" : ""
+                        } ${mainTab === "reports" ? "text-white" : "text-slate-400"}`}
+                    />
                   )}
                 </button>
 
@@ -201,22 +182,18 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                       {
                         id: "place" as const,
                         label: "Báo cáo địa điểm",
-                        count: placeReportsCount,
                       },
                       {
                         id: "review" as const,
                         label: "Báo cáo đánh giá",
-                        count: reviewReportsCount,
                       },
                       {
                         id: "comment" as const,
                         label: "Báo cáo bình luận",
-                        count: commentReportsCount,
                       },
                       {
                         id: "blog" as const,
                         label: "Báo cáo cẩm nang",
-                        count: blogReportsCount,
                       },
                     ].map((sub) => {
                       const isSubActive =
@@ -245,26 +222,111 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                   </div>
                 )}
               </div>
+
+              {/* Đánh giá & Bình luận và Quản lý tài khoản */}
+              {[
+                {
+                  id: "reviews_comments",
+                  label: "Đánh giá & Bình luận",
+                  icon: MessageSquare,
+                },
+                ...(isSystemAdmin ? [{ id: "users", label: "Quản lý Tài khoản", icon: Users }] : []),
+              ].map((item) => {
+                const IconComp = item.icon;
+                const isActive = mainTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setMainTab(item.id as AdminMainTab);
+                      setSelectedPlaceId(null);
+                    }}
+                    className={`w-full group flex items-center ${isSidebarOpen ? "justify-between px-3" : "justify-center px-0"
+                      } py-2 rounded-xl font-semibold transition-all duration-150 cursor-pointer ${isActive
+                        ? "bg-emerald-600 text-white font-bold shadow-sm shadow-emerald-600/20"
+                        : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/70"
+                      }`}
+                    title={!isSidebarOpen ? item.label : undefined}
+                  >
+                    <span className="flex items-center gap-2.5">
+                      <IconComp
+                        size={17}
+                        className={
+                          isActive
+                            ? "text-white"
+                            : "text-slate-400 group-hover:text-slate-600 transition-colors"
+                        }
+                      />
+                      {isSidebarOpen && <span className="truncate text-xs">{item.label}</span>}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
 
-            <div className="space-y-1 pt-1 border-t border-slate-100">
+            {/* NHÓM 2: NỘI DUNG & DANH MỤC */}
+            <div className="space-y-1 pt-2 border-t border-slate-100">
               {isSidebarOpen && (
-                <div className="px-3 pt-2 pb-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                <div className="px-3 pt-1 pb-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                   Nội dung &amp; Danh mục
                 </div>
               )}
 
               {[
-                { id: "foods", label: "Ẩm thực", icon: Utensils },
+                ...(isSystemAdmin ? [{ id: "categories", label: "Danh mục", icon: Layers }] : []),
+                { id: "foods", label: "Món ăn & Thực đơn", icon: Utensils },
                 { id: "collections", label: "Bộ sưu tập", icon: FolderHeart },
                 { id: "blogs", label: "Cẩm nang", icon: BookOpen },
                 { id: "rankings", label: "Bảng xếp hạng", icon: Trophy },
                 ...(isSystemAdmin ? [{ id: "provinces", label: "Tỉnh thành", icon: Compass }] : []),
-                ...(isSystemAdmin ? [{ id: "categories", label: "Danh mục", icon: Layers }] : []),
+              ].map((item) => {
+                const IconComp = item.icon;
+                const isActive = mainTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setMainTab(item.id as AdminMainTab);
+                      setSelectedPlaceId(null);
+                    }}
+                    className={`w-full group flex items-center ${isSidebarOpen ? "justify-between px-3" : "justify-center px-0"
+                      } py-2 rounded-xl font-semibold transition-all duration-150 cursor-pointer ${isActive
+                        ? "bg-emerald-600 text-white font-bold shadow-sm shadow-emerald-600/20"
+                        : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/70"
+                      }`}
+                    title={!isSidebarOpen ? item.label : undefined}
+                  >
+                    <span className="flex items-center gap-2.5">
+                      <IconComp
+                        size={17}
+                        className={
+                          isActive
+                            ? "text-white"
+                            : "text-slate-400 group-hover:text-slate-600 transition-colors"
+                        }
+                      />
+                      {isSidebarOpen && <span className="truncate text-xs">{item.label}</span>}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* NHÓM 3: HỆ THỐNG & PHÂN QUYỀN */}
+            <div className="space-y-1 pt-2 border-t border-slate-100">
+              {isSidebarOpen && (
+                <div className="px-3 pt-1 pb-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  Hệ thống &amp; Phân quyền
+                </div>
+              )}
+
+              {[
+                { id: "admin_profile", label: "Phạm vi điều hành", icon: Compass },
+                { id: "audit_logs", label: "Nhật ký hệ thống", icon: History },
                 ...(isSystemAdmin ? [{ id: "settings", label: "Cài đặt", icon: Settings }] : []),
               ].map((item) => {
                 const IconComp = item.icon;
-                const isActive = mainTab === item.id || (item.id === "settings" && mainTab === "notifications_profile");
+                const isActive = mainTab === item.id || (item.id === "admin_profile" && (mainTab === "profile" as any || mainTab === "admin_profile")) || (item.id === "settings" && mainTab === "notifications_profile");
                 return (
                   <button
                     key={item.id}

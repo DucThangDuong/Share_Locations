@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import {
   Search,
   Plus,
@@ -19,6 +19,9 @@ import {
   Loader2,
   X,
   ImageIcon,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import type { AdminFoodItem } from "@/types/admin.types";
 import { adminService, extractList } from "@/services/adminService";
@@ -40,6 +43,8 @@ interface FoodsTabProps {
     keyword?: string;
     province?: string;
     status?: string;
+    sortBy?: string;
+    sortOrder?: "asc" | "desc";
     page?: number;
     pageSize?: number;
   }) => void;
@@ -85,6 +90,55 @@ export const FoodsTab: React.FC<FoodsTabProps> = ({
   const [provincesList, setProvincesList] = useState<ProvinceDto[]>([]);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  type SortField = "name" | "price" | "updatedAt" | null;
+  type SortOrder = "asc" | "desc";
+  const [sortField, setSortField] = useState<SortField>(null);
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+
+  const handleSort = (field: "name" | "price" | "updatedAt") => {
+    let nextOrder: SortOrder = "desc";
+    let nextField: SortField = field;
+    if (sortField === field) {
+      if (sortOrder === "desc") {
+        nextOrder = "asc";
+      } else {
+        nextField = null;
+      }
+    } else {
+      nextOrder = field === "name" ? "asc" : "desc";
+    }
+    setSortField(nextField);
+    setSortOrder(nextOrder);
+    onFilterChange?.({
+      sortBy: nextField || undefined,
+      sortOrder: nextField ? nextOrder : undefined,
+      page: 1,
+    });
+  };
+
+  const renderSortIcon = (field: "name" | "price" | "updatedAt") => {
+    if (sortField !== field) {
+      return <ArrowUpDown size={12} className="text-slate-300 group-hover:text-slate-500 transition-colors" />;
+    }
+    return sortOrder === "asc" ? (
+      <ArrowUp size={12} className="text-emerald-700" />
+    ) : (
+      <ArrowDown size={12} className="text-emerald-700" />
+    );
+  };
+
+  const formatUpdatedDate = (food: any) => {
+    const rawDate = food.updatedAt || food.updatedDate || food.createdAt || food.createdDate;
+    const author = food.updatedBy || food.createdBy || food.author || "Admin";
+    if (!rawDate) return { dateStr: "20/10/2026", author };
+    const d = new Date(rawDate);
+    if (isNaN(d.getTime())) return { dateStr: String(rawDate), author };
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const year = d.getFullYear();
+    return { dateStr: `${day}/${month}/${year}`, author };
+  };
+
   useEffect(() => {
     geographyService
       .getProvinces()
@@ -118,6 +172,30 @@ export const FoodsTab: React.FC<FoodsTabProps> = ({
     }
     return true;
   });
+
+  const sortedFoods = useMemo(() => {
+    if (!sortField) return filteredFoods;
+    return [...filteredFoods].sort((a, b) => {
+      if (sortField === "name") {
+        const nameA = String(a.name || "").trim().toLowerCase();
+        const nameB = String(b.name || "").trim().toLowerCase();
+        return sortOrder === "asc"
+          ? nameA.localeCompare(nameB, "vi")
+          : nameB.localeCompare(nameA, "vi");
+      }
+      if (sortField === "price") {
+        const pA = Number(a.minPrice || a.price || 0);
+        const pB = Number(b.minPrice || b.price || 0);
+        return sortOrder === "asc" ? pA - pB : pB - pA;
+      }
+      if (sortField === "updatedAt") {
+        const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+        const timeB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+        return sortOrder === "asc" ? timeA - timeB : timeB - timeA;
+      }
+      return 0;
+    });
+  }, [filteredFoods, sortField, sortOrder]);
 
   const handleToggleHideFood = async (foodId: number) => {
     if (!setFoodsList) return;
@@ -301,15 +379,46 @@ export const FoodsTab: React.FC<FoodsTabProps> = ({
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-bold text-[11px] uppercase tracking-wider">
-                <th className="p-3.5 pl-4">Món ăn / Đặc sản</th>
+                <th className="p-3.5 pl-4">
+                  <button
+                    type="button"
+                    onClick={() => handleSort("name")}
+                    className="group inline-flex items-center gap-1.5 hover:text-slate-900 transition-colors cursor-pointer select-none"
+                    title="Sắp xếp theo tên món ăn"
+                  >
+                    <span>Món ăn / Đặc sản</span>
+                    {renderSortIcon("name")}
+                  </button>
+                </th>
                 <th className="p-3.5">Tỉnh / Thành</th>
-                <th className="p-3.5">Khoảng giá</th>
+                <th className="p-3.5">
+                  <button
+                    type="button"
+                    onClick={() => handleSort("price")}
+                    className="group inline-flex items-center gap-1.5 hover:text-slate-900 transition-colors cursor-pointer select-none"
+                    title="Sắp xếp theo giá"
+                  >
+                    <span>Khoảng giá</span>
+                    {renderSortIcon("price")}
+                  </button>
+                </th>
                 <th className="p-3.5">Trạng thái</th>
+                <th className="p-3.5">
+                  <button
+                    type="button"
+                    onClick={() => handleSort("updatedAt")}
+                    className="group inline-flex items-center gap-1.5 hover:text-slate-900 transition-colors cursor-pointer select-none"
+                    title="Sắp xếp theo thời gian cập nhật"
+                  >
+                    <span>Cập nhật</span>
+                    {renderSortIcon("updatedAt")}
+                  </button>
+                </th>
                 <th className="p-3.5 text-center">Xem chi tiết</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredFoods.map((food) => {
+              {sortedFoods.map((food) => {
                 const isHidden = food.status === "hidden" || food.statusNum === 3;
                 const minP = food.minPrice ? food.minPrice.toLocaleString("vi-VN") : "";
                 const maxP = food.maxPrice ? food.maxPrice.toLocaleString("vi-VN") : "";
@@ -340,9 +449,8 @@ export const FoodsTab: React.FC<FoodsTabProps> = ({
                           />
                         ) : null}
                         <div
-                          className={`w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 items-center justify-center text-slate-400 shrink-0 ${
-                            cover ? "hidden" : "flex"
-                          }`}
+                          className={`w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 items-center justify-center text-slate-400 shrink-0 ${cover ? "hidden" : "flex"
+                            }`}
                           title="Không có hình ảnh"
                         >
                           <ImageIcon size={14} className="text-slate-300" />
@@ -373,6 +481,17 @@ export const FoodsTab: React.FC<FoodsTabProps> = ({
                       >
                         {isHidden ? "Tạm ẩn" : "Công khai"}
                       </span>
+                    </td>
+
+                    <td className="p-3.5 whitespace-nowrap text-[11px]">
+                      {(() => {
+                        const info = formatUpdatedDate(food);
+                        return (
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-semibold text-slate-800">{info.dateStr}</span>
+                          </div>
+                        );
+                      })()}
                     </td>
 
                     <td className="p-3.5 text-center" onClick={(e) => e.stopPropagation()}>
@@ -438,8 +557,8 @@ export const FoodsTab: React.FC<FoodsTabProps> = ({
                         disabled={isLoading}
                         onClick={() => onPageChange?.(pNum)}
                         className={`w-7 h-7 rounded-xl font-bold text-xs transition-colors flex items-center justify-center cursor-pointer ${pagination.page === pNum
-                            ? "bg-emerald-700 text-white shadow-xs"
-                            : "bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200"
+                          ? "bg-emerald-700 text-white shadow-xs"
+                          : "bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200"
                           }`}
                       >
                         {pNum}

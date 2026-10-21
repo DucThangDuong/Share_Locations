@@ -10,7 +10,9 @@ public record GetAdminFoodsQuery(
     string? Status = null,
     string? Keyword = null,
     int Page = 1,
-    int PageSize = 10) : IRequest<Result<PagedResult<AdminFoodItemDto>>>;
+    int PageSize = 10,
+    string? SortBy = null,
+    string? SortOrder = null) : IRequest<Result<PagedResult<AdminFoodItemDto>>>;
 
 public class GetAdminFoodsQueryHandler : IRequestHandler<GetAdminFoodsQuery, Result<PagedResult<AdminFoodItemDto>>>
 {
@@ -32,6 +34,8 @@ public class GetAdminFoodsQueryHandler : IRequestHandler<GetAdminFoodsQuery, Res
             request.Keyword,
             page,
             pageSize,
+            request.SortBy,
+            request.SortOrder,
             ct);
 
         return Result<PagedResult<AdminFoodItemDto>>.Success(result);

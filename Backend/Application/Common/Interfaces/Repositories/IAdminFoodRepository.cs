@@ -11,6 +11,8 @@ public interface IAdminFoodRepository
         string? keyword,
         int page,
         int pageSize,
+        string? sortBy = null,
+        string? sortOrder = null,
         CancellationToken ct = default);
 
     Task<long> CreateAdminFoodAsync(CreateAdminFoodInput input, CancellationToken ct = default);

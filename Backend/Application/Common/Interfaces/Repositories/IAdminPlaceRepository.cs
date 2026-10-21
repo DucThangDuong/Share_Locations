@@ -11,6 +11,8 @@ public interface IAdminPlaceRepository
         int? categoryId,
         int? status,
         string? keyword,
+        string? sortBy,
+        string? sortOrder,
         int page,
         int pageSize,
         CancellationToken ct = default);

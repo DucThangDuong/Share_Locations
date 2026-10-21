@@ -10,7 +10,9 @@ public record GetAdminProposalsQuery(
     string? Keyword = null,
     int? ProvinceId = null,
     int Page = 1,
-    int PageSize = 10) : IRequest<Result<PagedResult<AdminProposalSummaryDto>>>;
+    int PageSize = 10,
+    string? SortBy = null,
+    string? SortOrder = null) : IRequest<Result<PagedResult<AdminProposalSummaryDto>>>;
 
 public class GetAdminProposalsQueryHandler : IRequestHandler<GetAdminProposalsQuery, Result<PagedResult<AdminProposalSummaryDto>>>
 {
@@ -32,6 +34,8 @@ public class GetAdminProposalsQueryHandler : IRequestHandler<GetAdminProposalsQu
             request.ProvinceId,
             page,
             pageSize,
+            request.SortBy,
+            request.SortOrder,
             ct);
 
         return Result<PagedResult<AdminProposalSummaryDto>>.Success(result);

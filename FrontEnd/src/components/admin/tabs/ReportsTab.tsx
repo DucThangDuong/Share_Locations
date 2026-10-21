@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { Image } from "lucide-react";
+import React, { useEffect, useState, useMemo } from "react";
+import { Image, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import type { AdminReportItem, AdminUserDetail } from "@/types/admin.types";
 import { CustomSelect } from "@/components/common/CustomSelect";
 import { geographyService, type ProvinceDto } from "@/services/geographyService";
@@ -73,6 +73,7 @@ interface ReportsTabProps {
   handleBatchDismiss: () => void;
   handleOpenModerationDrawer: (groupKey: string, specificReportId?: number) => void;
   showToast?: (msg: string) => void;
+  onSortChange?: (sortBy?: string, sortOrder?: "asc" | "desc") => void;
 }
 
 export const ReportsTab: React.FC<ReportsTabProps> = ({
@@ -94,6 +95,7 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
   handleBatchAssign: _handleBatchAssign,
   handleBatchDismiss: _handleBatchDismiss,
   handleOpenModerationDrawer,
+  onSortChange,
 }) => {
   const [provincesList, setProvincesList] = useState<ProvinceDto[]>([]);
 
@@ -279,10 +281,62 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
     return true;
   });
 
+  type SortField = "targetTitle" | "submittedAt" | null;
+  type SortOrder = "asc" | "desc";
+  const [sortField, setSortField] = useState<SortField>(null);
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+
+  const handleSort = (field: "targetTitle" | "submittedAt") => {
+    let nextOrder: SortOrder = "desc";
+    let nextField: SortField = field;
+    if (sortField === field) {
+      if (sortOrder === "desc") {
+        nextOrder = "asc";
+      } else {
+        nextField = null;
+      }
+    } else {
+      nextOrder = field === "targetTitle" ? "asc" : "desc";
+    }
+    setSortField(nextField);
+    setSortOrder(nextOrder);
+    onSortChange?.(nextField || undefined, nextField ? nextOrder : undefined);
+  };
+
+  const renderSortIcon = (field: "targetTitle" | "submittedAt") => {
+    if (sortField !== field) {
+      return <ArrowUpDown size={12} className="text-slate-300 group-hover:text-slate-500 transition-colors" />;
+    }
+    return sortOrder === "asc" ? (
+      <ArrowUp size={12} className="text-emerald-700" />
+    ) : (
+      <ArrowDown size={12} className="text-emerald-700" />
+    );
+  };
+
+  const sortedReports = useMemo(() => {
+    if (!sortField) return filteredReports;
+    return [...filteredReports].sort((a, b) => {
+      if (sortField === "targetTitle") {
+        const nameA = String(a.targetTitle || "").trim().toLowerCase();
+        const nameB = String(b.targetTitle || "").trim().toLowerCase();
+        return sortOrder === "asc"
+          ? nameA.localeCompare(nameB, "vi")
+          : nameB.localeCompare(nameA, "vi");
+      }
+      if (sortField === "submittedAt") {
+        const timeA = new Date(a.submittedAt || 0).getTime();
+        const timeB = new Date(b.submittedAt || 0).getTime();
+        return sortOrder === "asc" ? timeA - timeB : timeB - timeA;
+      }
+      return 0;
+    });
+  }, [filteredReports, sortField, sortOrder]);
+
   const PAGE_SIZE = 7;
-  const totalPages = Math.max(1, Math.ceil(filteredReports.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(sortedReports.length / PAGE_SIZE));
   const safePage = Math.min(reportCurrentPage, totalPages);
-  const paginatedReports = filteredReports.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const paginatedReports = sortedReports.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-150 text-xs">
@@ -340,10 +394,31 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-bold text-[11px] uppercase tracking-wider">
-                <th className="p-3.5 pl-4 w-[30%]">Đối tượng bị phản ánh</th>
+                <th className="p-3.5 pl-4 w-[28%]">
+                  <button
+                    type="button"
+                    onClick={() => handleSort("targetTitle")}
+                    className="group inline-flex items-center gap-1.5 hover:text-slate-900 transition-colors cursor-pointer select-none"
+                    title="Sắp xếp theo tên đối tượng"
+                  >
+                    <span>Đối tượng bị phản ánh</span>
+                    {renderSortIcon("targetTitle")}
+                  </button>
+                </th>
                 <th className="p-3.5">Loại vi phạm</th>
                 <th className="p-3.5">Người phản ánh</th>
                 <th className="p-3.5">Trạng thái</th>
+                <th className="p-3.5">
+                  <button
+                    type="button"
+                    onClick={() => handleSort("submittedAt")}
+                    className="group inline-flex items-center gap-1.5 hover:text-slate-900 transition-colors cursor-pointer select-none"
+                    title="Sắp xếp theo thời gian gửi"
+                  >
+                    <span>Cập nhật</span>
+                    {renderSortIcon("submittedAt")}
+                  </button>
+                </th>
                 <th className="p-3.5 text-right pr-4">Hành động</th>
               </tr>
             </thead>
@@ -455,6 +530,11 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
                         {(r as any).statusText || (r.status === 0 ? "Chờ thẩm định" : r.status === 1 ? "Đã giải quyết" : "Đã bác bỏ")}
                       </span>
                     </td>
+                    <td className="p-3.5 whitespace-nowrap text-[11px]">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-semibold text-slate-800">{formatDateTime(r.submittedAt) || "20/10/2026"}</span>
+                      </div>
+                    </td>
                     <td className="p-3.5 text-right pr-4">
                       <button
                         onClick={() => handleOpenModerationDrawer(groupKey, r.id)}
@@ -469,7 +549,7 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
 
               {paginatedReports.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="p-8 text-center text-slate-400 text-xs">
+                  <td colSpan={6} className="p-8 text-center text-slate-400 text-xs">
                     Không có báo cáo vi phạm nào phù hợp với điều kiện lọc hiện tại.
                   </td>
                 </tr>

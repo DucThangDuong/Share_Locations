@@ -14,7 +14,9 @@ public record GetAdminUsersQuery(
     int? Status,
     string? Keyword,
     int Page,
-    int PageSize) : IRequest<Result<PagedResult<AdminUserListItemDto>>>;
+    int PageSize,
+    string? SortBy = null,
+    string? SortOrder = null) : IRequest<Result<PagedResult<AdminUserListItemDto>>>;
 
 public class GetAdminUsersQueryHandler : IRequestHandler<GetAdminUsersQuery, Result<PagedResult<AdminUserListItemDto>>>
 {
@@ -37,6 +39,8 @@ public class GetAdminUsersQueryHandler : IRequestHandler<GetAdminUsersQuery, Res
             request.Keyword,
             request.Page,
             request.PageSize,
+            request.SortBy,
+            request.SortOrder,
             ct);
 
         return Result<PagedResult<AdminUserListItemDto>>.Success(result);

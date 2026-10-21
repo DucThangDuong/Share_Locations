@@ -1,4 +1,4 @@
-﻿using Application.Common;
+using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs.Admin;
@@ -33,6 +33,8 @@ public class AdminUserRepository : IAdminUserRepository
         string? keyword,
         int page,
         int pageSize,
+        string? sortBy = null,
+        string? sortOrder = null,
         CancellationToken ct = default)
     {
         var connection = _dbContext.Database.GetDbConnection();
@@ -126,6 +128,7 @@ public class AdminUserRepository : IAdminUserRepository
             whereClauses.Add(@"EXISTS (
                 SELECT 1 FROM dbo.Places pl
                 WHERE pl.Id = @PlaceId
+                  AND pl.IsDeleted = 0
                   AND EXISTS (
                       SELECT 1 FROM dbo.AdminCategoryScopes acs
                       WHERE acs.UserId = u.Id AND acs.CategoryId = pl.CategoryId
@@ -172,7 +175,17 @@ public class AdminUserRepository : IAdminUserRepository
         parameters.Add("Offset", offset);
         parameters.Add("PageSize", pageSize);
 
-        var dataSql = $@"
+            var sortColumn = (sortBy?.ToLower()) switch
+            {
+                "fullname" => "COALESCE(prof.FullName, u.Email)",
+                "email" => "u.Email",
+                "createdat" => "u.CreatedAt",
+                _ => "u.CreatedAt"
+            };
+            var sortDirection = string.Equals(sortOrder, "asc", StringComparison.OrdinalIgnoreCase) ? "ASC" : "DESC";
+            var orderSql = $"ORDER BY {sortColumn} {sortDirection}, u.Id {sortDirection}";
+
+            var dataSql = $@"
             SELECT
                 u.Id,
                 u.Email,
@@ -185,7 +198,7 @@ public class AdminUserRepository : IAdminUserRepository
             FROM dbo.Users u
             LEFT JOIN dbo.UserProfiles prof ON u.Id = prof.UserId
             {whereSql}
-            ORDER BY u.CreatedAt DESC
+            {orderSql}
             OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 
         var items = (await connection.QueryAsync<AdminUserListItemDto>(dataSql, parameters)).ToList();
@@ -588,7 +601,7 @@ public class AdminUserRepository : IAdminUserRepository
                 ISNULL(r.LikesCount, 0) AS Likes,
                 'active' AS Status
             FROM dbo.Reviews r
-            LEFT JOIN dbo.Places p ON r.PlaceId = p.Id
+            LEFT JOIN dbo.Places p ON r.PlaceId = p.Id AND p.IsDeleted = 0
             LEFT JOIN dbo.Categories c ON p.CategoryId = c.Id
             LEFT JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id
             WHERE r.UserId = @UserId
@@ -627,6 +640,7 @@ public class AdminUserRepository : IAdminUserRepository
                     SELECT COUNT(1)
                     FROM dbo.TripDays td
                     JOIN dbo.TripPlaces tp ON tp.TripDayId = td.Id
+                    JOIN dbo.Places pl ON tp.PlaceId = pl.Id AND pl.IsDeleted = 0
                     WHERE td.TripId = t.Id
                 ) AS PlacesCount,
                 t.CreatedAt,
@@ -654,7 +668,7 @@ public class AdminUserRepository : IAdminUserRepository
                 pr.CreatedAt AS SubmittedAt,
                 pr.Status
             FROM dbo.Proposals pr
-            LEFT JOIN dbo.Places p ON pr.TargetPlaceId = p.Id
+            LEFT JOIN dbo.Places p ON pr.TargetPlaceId = p.Id AND p.IsDeleted = 0
             LEFT JOIN dbo.Categories c ON pr.CategoryId = c.Id
             LEFT JOIN dbo.Provinces prov ON pr.ProvinceId = prov.Id
             WHERE pr.UserId = @UserId

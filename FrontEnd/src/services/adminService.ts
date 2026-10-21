@@ -33,6 +33,73 @@ export interface AdminMetrics {
   trends?: unknown[];
 }
 
+export interface AdminTrendPoint {
+  label?: string;
+  timestamp?: string;
+  reviewsCount?: number;
+  reviews?: number;
+  reportsCount?: number;
+  reports?: number;
+}
+
+export interface AdminDashboardTrendsResponse {
+  timeRange?: string;
+  points?: AdminTrendPoint[];
+}
+
+export interface AdminSlaPerformanceDto {
+  proposalsApprovalRate?: {
+    approved: number;
+    total: number;
+    percentage: number;
+    pendingInspection: number;
+  };
+  reportsResolutionSla?: {
+    resolvedWithinSla: number;
+    totalReports: number;
+    percentage: number;
+    openUnder24h: number;
+  };
+  placesDataQualityRate?: {
+    qualifiedPlaces: number;
+    totalPlaces: number;
+    percentage: number;
+    missingInfoSummary?: string;
+  };
+}
+
+export interface AdminPriorityQueueItemDto {
+  id: string | number;
+  targetName?: string;
+  type: "proposals" | "reports" | "reviews" | string;
+  category?: string;
+  isUrgent?: boolean;
+  title: string;
+  desc?: string;
+  description?: string;
+  location?: string;
+  locationName?: string;
+  timeAgo?: string;
+  createdAt?: string;
+  badge?: string;
+  badgeLabel?: string;
+  badgeColor?: string;
+  actionText?: string;
+  targetId?: string | number;
+}
+
+export interface AdminContributorsSummaryDto {
+  newContributorsCount?: number;
+  growthComparisonText?: string;
+  topActiveProvinces?: Array<{
+    provinceName?: string;
+    name?: string;
+    activityPercentage?: number;
+    percentage?: number;
+    count?: number;
+  }>;
+}
+
 const get = async <T>(url: string, params?: Record<string, unknown>) => {
   const response = await apiClient.get<ApiSuccessResponse<T>>(url, { params });
   return response.data;
@@ -112,6 +179,8 @@ export interface GetAdminCommentsRequest {
   hasReportsOnly?: boolean;
   status?: string;
   keyword?: string;
+  sortBy?: string;
+  sortOrder?: string;
   page?: number;
   pageSize?: number;
   reviewId?: number;
@@ -122,6 +191,8 @@ export interface GetAdminReportsRequest {
   targetType?: string;
   status?: number;
   keyword?: string;
+  sortBy?: string;
+  sortOrder?: string;
   page?: number;
   pageSize?: number;
 }
@@ -150,6 +221,14 @@ export interface CreateCollectionRequest {
 
 export const adminService = {
   getMetrics: () => get<AdminMetrics>("/api/admin/dashboard/metrics"),
+  getDashboardTrends: (params?: { timeRange?: string; region?: string }) =>
+    get<AdminDashboardTrendsResponse | AdminTrendPoint[]>("/api/admin/dashboard/trends", params as Record<string, unknown>),
+  getDashboardSlaPerformance: () =>
+    get<AdminSlaPerformanceDto>("/api/admin/dashboard/sla-performance"),
+  getDashboardPriorityQueue: (params?: { filter?: string; limit?: number }) =>
+    get<AdminPriorityQueueItemDto[] | { items: AdminPriorityQueueItemDto[] }>("/api/admin/dashboard/priority-queue", params as Record<string, unknown>),
+  getDashboardContributorsSummary: () =>
+    get<AdminContributorsSummaryDto>("/api/admin/dashboard/contributors-summary"),
   getPlaces: (params: Record<string, unknown>) => get<AdminPage<Record<string, unknown>>>("/api/admin/places", params),
   getPlace: (id: number) => get<Record<string, unknown>>(`/api/admin/places/${id}`),
   createPlace: (data: unknown) => write<number>("post", "/api/admin/places", data),
@@ -288,6 +367,12 @@ export const adminService = {
       }
       if ((params as any).keyword) {
         cleanParams.keyword = (params as any).keyword;
+      }
+      if ((params as any).sortBy) {
+        cleanParams.sortBy = (params as any).sortBy;
+      }
+      if ((params as any).sortOrder) {
+        cleanParams.sortOrder = (params as any).sortOrder;
       }
       cleanParams.page = (params as any).page || 1;
       cleanParams.pageSize = (params as any).pageSize || 20;

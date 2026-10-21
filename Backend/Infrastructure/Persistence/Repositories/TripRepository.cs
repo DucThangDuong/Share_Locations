@@ -1,4 +1,4 @@
-﻿using Application.Common;
+using Application.Common;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
 using Dapper;
@@ -121,7 +121,7 @@ public class TripRepository : ITripRepository
                     p.Description AS PlaceDescription
                 FROM dbo.TripPlaces tp
                 INNER JOIN dbo.Places p ON tp.PlaceId = p.Id
-                WHERE tp.TripDayId IN @DayIds
+                WHERE tp.TripDayId IN @DayIds AND p.IsDeleted = 0
                 ORDER BY tp.TripDayId, tp.VisitOrder;";
 
             stops = (await connection.QueryAsync<RawTripStop>(stopsSql, new { DayIds = dayIds })).ToList();
@@ -397,7 +397,7 @@ public class TripRepository : ITripRepository
         foreach (var day in days)
         {
             var stopDtos = new List<TripPlaceDetailDto>();
-            foreach (var sp in day.Places.OrderBy(p => p.VisitOrder).ThenBy(p => p.StartTime))
+            foreach (var sp in day.Places.Where(p => p.Place != null).OrderBy(p => p.VisitOrder).ThenBy(p => p.StartTime))
             {
                 if (sp.EstimatedCost.HasValue)
                 {

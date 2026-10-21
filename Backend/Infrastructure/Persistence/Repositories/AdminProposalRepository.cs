@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
@@ -35,6 +35,8 @@ public class AdminProposalRepository : IAdminProposalRepository
         int? provinceId,
         int page,
         int pageSize,
+        string? sortBy = null,
+        string? sortOrder = null,
         CancellationToken ct = default)
     {
         var connection = _dbContext.Database.GetDbConnection();
@@ -108,7 +110,7 @@ public class AdminProposalRepository : IAdminProposalRepository
             FROM dbo.Proposals p
             LEFT JOIN dbo.Users u ON p.UserId = u.Id
             LEFT JOIN dbo.UserProfiles prof ON u.Id = prof.UserId
-            LEFT JOIN dbo.Places targetP ON p.TargetPlaceId = targetP.Id
+            LEFT JOIN dbo.Places targetP ON p.TargetPlaceId = targetP.Id AND targetP.IsDeleted = 0
             LEFT JOIN dbo.Provinces prov ON COALESCE(p.ProvinceId, targetP.ProvinceId, TRY_CAST(JSON_VALUE(p.ProposedDataJSON, '$.provinceId') AS INT)) = prov.Id
             {scopeWhereSql};";
 
@@ -128,7 +130,7 @@ public class AdminProposalRepository : IAdminProposalRepository
             FROM dbo.Proposals p
             LEFT JOIN dbo.Users u ON p.UserId = u.Id
             LEFT JOIN dbo.UserProfiles prof ON u.Id = prof.UserId
-            LEFT JOIN dbo.Places targetP ON p.TargetPlaceId = targetP.Id
+            LEFT JOIN dbo.Places targetP ON p.TargetPlaceId = targetP.Id AND targetP.IsDeleted = 0
             LEFT JOIN dbo.Provinces prov ON COALESCE(p.ProvinceId, targetP.ProvinceId, TRY_CAST(JSON_VALUE(p.ProposedDataJSON, '$.provinceId') AS INT)) = prov.Id
             {whereSql};";
 
@@ -137,6 +139,15 @@ public class AdminProposalRepository : IAdminProposalRepository
         var offset = Math.Max(0, (page - 1) * pageSize);
         parameters.Add("Offset", offset);
         parameters.Add("PageSize", pageSize);
+
+        var sortColumn = (sortBy?.ToLower()) switch
+        {
+            "placename" => "COALESCE(targetP.Name, JSON_VALUE(p.ProposedDataJSON, '$.name'), JSON_VALUE(p.ProposedDataJSON, '$.Name'), N'')",
+            "submittedat" => "p.CreatedAt",
+            _ => "p.CreatedAt"
+        };
+        var sortDirection = string.Equals(sortOrder, "asc", StringComparison.OrdinalIgnoreCase) ? "ASC" : "DESC";
+        var orderSql = $"ORDER BY {sortColumn} {sortDirection}, p.Id {sortDirection}";
 
         var querySql = $@"
             SELECT
@@ -161,11 +172,11 @@ public class AdminProposalRepository : IAdminProposalRepository
             FROM dbo.Proposals p
             LEFT JOIN dbo.Users u ON p.UserId = u.Id
             LEFT JOIN dbo.UserProfiles prof ON u.Id = prof.UserId
-            LEFT JOIN dbo.Places targetP ON p.TargetPlaceId = targetP.Id
+            LEFT JOIN dbo.Places targetP ON p.TargetPlaceId = targetP.Id AND targetP.IsDeleted = 0
             LEFT JOIN dbo.Categories cat ON COALESCE(p.CategoryId, targetP.CategoryId, TRY_CAST(JSON_VALUE(p.ProposedDataJSON, '$.categoryId') AS INT)) = cat.Id
             LEFT JOIN dbo.Provinces prov ON COALESCE(p.ProvinceId, targetP.ProvinceId, TRY_CAST(JSON_VALUE(p.ProposedDataJSON, '$.provinceId') AS INT)) = prov.Id
             {whereSql}
-            ORDER BY p.CreatedAt DESC
+            {orderSql}
             OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 
         var items = (await connection.QueryAsync<AdminProposalSummaryDto>(querySql, parameters)).ToList();
@@ -220,7 +231,7 @@ public class AdminProposalRepository : IAdminProposalRepository
             FROM dbo.Proposals p
             LEFT JOIN dbo.Users u ON p.UserId = u.Id
             LEFT JOIN dbo.UserProfiles prof ON u.Id = prof.UserId
-            LEFT JOIN dbo.Places targetP ON p.TargetPlaceId = targetP.Id
+            LEFT JOIN dbo.Places targetP ON p.TargetPlaceId = targetP.Id AND targetP.IsDeleted = 0
             LEFT JOIN dbo.Categories cat ON COALESCE(p.CategoryId, targetP.CategoryId) = cat.Id
             LEFT JOIN dbo.Provinces prov ON COALESCE(p.ProvinceId, targetP.ProvinceId) = prov.Id
             WHERE p.Id = @Id;";

@@ -1,4 +1,4 @@
-﻿using Application.Common;
+using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs.Admin;
@@ -34,6 +34,8 @@ public class AdminFoodRepository : IAdminFoodRepository
         string? keyword,
         int page,
         int pageSize,
+        string? sortBy = null,
+        string? sortOrder = null,
         CancellationToken ct = default)
     {
         var connection = _dbContext.Database.GetDbConnection();
@@ -70,6 +72,16 @@ public class AdminFoodRepository : IAdminFoodRepository
         parameters.Add("Offset", offset);
         parameters.Add("PageSize", pageSize);
 
+        var sortColumn = (sortBy?.ToLower()) switch
+        {
+            "name" => "f.Name",
+            "price" => "COALESCE(f.MinPrice, f.MaxPrice, 0)",
+            "updatedat" => "COALESCE((SELECT TOP 1 al.CreatedAt FROM dbo.AdminActionLogs al WHERE al.TargetTable = 'Foods' AND al.TargetId = f.Id ORDER BY al.CreatedAt DESC), f.CreatedAt)",
+            _ => "f.CreatedAt"
+        };
+        var sortDirection = string.Equals(sortOrder, "asc", StringComparison.OrdinalIgnoreCase) ? "ASC" : "DESC";
+        var orderSql = $"ORDER BY {sortColumn} {sortDirection}, f.Id {sortDirection}";
+
         var dataSql = $@"
             SELECT
                 f.Id,
@@ -82,10 +94,26 @@ public class AdminFoodRepository : IAdminFoodRepository
                 f.Description AS [Desc],
                 CASE WHEN f.Status = 1 THEN 'active' ELSE 'hidden' END AS Status,
                 (SELECT COUNT(1) FROM dbo.FoodPlaces fpl WHERE fpl.FoodId = f.Id) AS PlacesCount,
-                f.CreatedAt
+                f.CreatedAt,
+                (SELECT TOP 1 al.CreatedAt FROM dbo.AdminActionLogs al WHERE al.TargetTable = 'Foods' AND al.TargetId = f.Id ORDER BY al.CreatedAt DESC) AS UpdatedAt,
+                COALESCE(
+                    (SELECT TOP 1 COALESCE(up.FullName, u.Email)
+                     FROM dbo.AdminActionLogs al
+                     JOIN dbo.Users u ON al.AdminId = u.Id
+                     LEFT JOIN dbo.UserProfiles up ON u.Id = up.UserId
+                     WHERE al.TargetTable = 'Foods' AND al.TargetId = f.Id
+                     ORDER BY al.CreatedAt DESC),
+                    N'Admin'
+                ) AS UpdatedBy,
+                (SELECT TOP 1 COALESCE(up.FullName, u.Email)
+                 FROM dbo.AdminActionLogs al
+                 JOIN dbo.Users u ON al.AdminId = u.Id
+                 LEFT JOIN dbo.UserProfiles up ON u.Id = up.UserId
+                 WHERE al.TargetTable = 'Foods' AND al.TargetId = f.Id AND al.ActionType = 'CREATE_FOOD'
+                 ORDER BY al.CreatedAt ASC) AS CreatedBy
             FROM dbo.Foods f
             {whereSql}
-            ORDER BY f.CreatedAt DESC
+            {orderSql}
             OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 
         var items = (await connection.QueryAsync<AdminFoodItemDto>(dataSql, parameters)).ToList();

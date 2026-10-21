@@ -1,6 +1,7 @@
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Domain.Interfaces;
+using Infrastructure.Caching.DependencyInjection;
 using Infrastructure.Persistence;
 using Infrastructure.Persistence.Repositories;
 using Infrastructure.Services;
@@ -71,32 +72,12 @@ public static class DependencyInjection
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<IGoogleAuthService, GoogleAuthService>();
         services.AddScoped<ITokenCacheService, TokenCacheService>();
-        services.AddScoped<ICacheService, CacheService>();
         services.AddScoped<IBlobService, AzureBlobService>();
         services.AddScoped<IEmailService, EmailService>();
 
-        var redisConn = configuration.GetConnectionString("Redis");
-        if (!string.IsNullOrWhiteSpace(redisConn))
-        {
-            try
-            {
-                var multiplexer = StackExchange.Redis.ConnectionMultiplexer.Connect(redisConn);
-                services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(multiplexer);
-            }
-            catch
-            {
-            }
-
-            services.AddStackExchangeRedisCache(options =>
-            {
-                options.Configuration = redisConn;
-                options.InstanceName = "TravelReview_";
-            });
-        }
-        else
-        {
-            services.AddDistributedMemoryCache();
-        }
+        // Tích hợp Enterprise Redis (Resilient Multiplexer, Striped Lock, Brotli, RateLimit, Distributed Lock, ACL)
+        services.AddEnterpriseRedis(configuration);
+        services.AddDistributedMemoryCache();
 
         services.AddMassTransit(x =>
         {

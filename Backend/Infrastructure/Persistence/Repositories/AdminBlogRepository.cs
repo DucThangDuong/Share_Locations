@@ -1,4 +1,4 @@
-﻿using Application.Common;
+using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs.Admin;
@@ -26,12 +26,14 @@ public class AdminBlogRepository : IAdminBlogRepository
     }
 
     public async Task<PagedResult<AdminBlogListItemDto>> GetAdminBlogsAsync(
-    int? categoryId,
-    string? status,
-    string? keyword,
-    int page,
-    int pageSize,
-    CancellationToken ct = default)
+        int? categoryId,
+        string? status,
+        string? keyword,
+        int page,
+        int pageSize,
+        string? sortBy = null,
+        string? sortOrder = null,
+        CancellationToken ct = default)
     {
         var whereClauses = new List<string>();
         var parameters = new DynamicParameters();
@@ -65,6 +67,17 @@ public class AdminBlogRepository : IAdminBlogRepository
         parameters.Add("Offset", offset);
         parameters.Add("PageSize", pageSize);
 
+        var sortColumn = (sortBy?.ToLower()) switch
+        {
+            "views" => "b.ViewCount",
+            "likes" => "(SELECT COUNT(1) FROM dbo.Favorites fav WHERE fav.TargetId = b.Id AND fav.TargetType = 4)",
+            "publishedat" => "b.CreatedAt",
+            "updatedat" => "b.UpdatedAt",
+            _ => "b.CreatedAt"
+        };
+        var sortDirection = string.Equals(sortOrder, "asc", StringComparison.OrdinalIgnoreCase) ? "ASC" : "DESC";
+        var orderSql = $"ORDER BY {sortColumn} {sortDirection}, b.Id {sortDirection}";
+
         var combinedSql = $@"
         -- Query 1: Lấy tổng số dòng
         SELECT COUNT(1)
@@ -82,7 +95,10 @@ public class AdminBlogRepository : IAdminBlogRepository
             cat.Name AS Category,
             b.CategoryId,
             b.CreatedAt AS PublishedAt,
+            b.CreatedAt,
+            b.UpdatedAt,
             b.ViewCount AS Views,
+            (SELECT COUNT(1) FROM dbo.Favorites fav WHERE fav.TargetId = b.Id AND fav.TargetType = 4) AS Likes,
             CASE
                 WHEN b.Status = 1 THEN 'published'
                 WHEN b.Status = 0 THEN 'draft'
@@ -96,7 +112,7 @@ public class AdminBlogRepository : IAdminBlogRepository
         LEFT JOIN dbo.Users u ON b.AuthorId = u.Id
         LEFT JOIN dbo.UserProfiles prof ON u.Id = prof.UserId
         {whereSql}
-        ORDER BY b.CreatedAt DESC
+        {orderSql}
         OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 
         var strategy = _dbContext.Database.CreateExecutionStrategy();

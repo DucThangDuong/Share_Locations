@@ -39,6 +39,7 @@ interface PlaceDetailEditorProps {
   onBack: () => void;
   onSave: (updatedPlace: any) => void;
   onToggleStatus?: (id: number) => void;
+  onDelete?: (id: number) => Promise<void> | void;
 }
 
 interface PlaceFormSnapshot {
@@ -173,6 +174,7 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
   onBack,
   onSave,
   onToggleStatus,
+  onDelete,
 }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccessMsg, setSaveSuccessMsg] = useState("");
@@ -273,6 +275,8 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [isUploadingImages, setIsUploadingImages] = useState(false);
   const [isTogglingStatus, setIsTogglingStatus] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const [statusNum, setStatusNum] = useState<number>(() => {
     const isVis =
@@ -806,6 +810,19 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
     }
   };
 
+  const handleConfirmDelete = async () => {
+    if (!onDelete || !place?.id) return;
+    setIsDeleting(true);
+    try {
+      await onDelete(Number(place.id));
+      setIsDeleteModalOpen(false);
+    } catch (err: any) {
+      setErrorMsg(err?.response?.data?.message || err?.message || "Không thể xóa địa điểm. Vui lòng thử lại.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
@@ -958,6 +975,19 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
             >
               {statusNum === 1 ? <EyeOff size={14} /> : <Eye size={14} />}
               <span>{statusNum === 1 ? "Tạm ẩn địa điểm" : "Công khai địa điểm"}</span>
+            </button>
+          )}
+
+          {onDelete && (
+            <button
+              type="button"
+              disabled={isDeleting || isSaving}
+              onClick={() => setIsDeleteModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl cursor-pointer transition-colors bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/80 shadow-2xs disabled:opacity-50"
+              title="Xóa địa điểm (xóa mềm)"
+            >
+              <Trash2 size={14} />
+              <span>Xóa địa điểm</span>
             </button>
           )}
 
@@ -1569,6 +1599,55 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
           placeName={name || place.name}
           onReviewsCountChange={setReviewsCount}
         />
+      )}
+
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-100 space-y-4 animate-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                <Trash2 size={20} />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Xóa địa điểm</h3>
+                <p className="text-xs text-slate-500 mt-0.5">Xóa mềm — Đánh dấu IsDeleted = true</p>
+              </div>
+            </div>
+
+            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              Bạn có chắc chắn muốn xóa địa điểm <strong className="text-slate-900">"{name || place.name}"</strong> (Mã ID: #{place.id})? Địa điểm này sẽ được đánh dấu đã xóa (IsDeleted = true) và ngừng hiển thị công khai trên hệ thống.
+            </p>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => setIsDeleteModalOpen(false)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={handleConfirmDelete}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+              >
+                {isDeleting ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Đang xóa...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 size={14} />
+                    <span>Xác nhận xóa</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

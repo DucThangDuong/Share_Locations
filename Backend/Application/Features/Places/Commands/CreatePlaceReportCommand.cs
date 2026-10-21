@@ -24,9 +24,9 @@ public class CreatePlaceReportCommandHandler : IRequestHandler<CreatePlaceReport
     public async Task<Result<bool>> Handle(CreatePlaceReportCommand request, CancellationToken ct)
     {
         var place = await _unitOfWork.Places.GetByIdAsync(request.PlaceId, ct);
-        if (place == null)
+        if (place == null || place.IsDeleted)
         {
-            return Result<bool>.NotFound("Địa điểm không tồn tại.");
+            return Result<bool>.NotFound("Địa điểm không tồn tại hoặc đã bị xóa.");
         }
 
         var reportType = await _unitOfWork.ReportTypes.GetDefaultAsync(ct);

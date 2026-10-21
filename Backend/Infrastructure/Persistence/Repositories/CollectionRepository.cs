@@ -1,4 +1,4 @@
-﻿using Application.Common;
+using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
@@ -32,7 +32,7 @@ public class CollectionRepository : ICollectionRepository
 
         const string sql = @"
             SELECT TOP (@Count) c.Id, c.ProvinceId, prov.Name AS ProvinceName, c.Title, c.IsFeatured, c.DisplayOrder,
-                   (SELECT COUNT(1) FROM dbo.CollectionPlaces cp WHERE cp.CollectionId = c.Id) AS PlaceCount
+                   (SELECT COUNT(1) FROM dbo.CollectionPlaces cp INNER JOIN dbo.Places p ON cp.PlaceId = p.Id WHERE cp.CollectionId = c.Id AND p.Status = 1 AND p.IsDeleted = 0) AS PlaceCount
             FROM dbo.Collections c
             LEFT JOIN dbo.Provinces prov ON c.ProvinceId = prov.Id
             WHERE c.Status = 1 AND c.IsFeatured = 1
@@ -42,14 +42,15 @@ public class CollectionRepository : ICollectionRepository
             FROM dbo.CollectionPlaces cp
             INNER JOIN dbo.Places p ON cp.PlaceId = p.Id
             INNER JOIN dbo.Collections c ON cp.CollectionId = c.Id
-            WHERE c.Status = 1 AND c.IsFeatured = 1
+            WHERE c.Status = 1 AND c.IsFeatured = 1 AND p.Status = 1 AND p.IsDeleted = 0
             ORDER BY cp.CollectionId, cp.DisplayOrder;
 
             SELECT pm.PlaceId, pm.Url, pm.DisplayOrder
             FROM dbo.PlaceMedia pm
             INNER JOIN dbo.CollectionPlaces cp ON pm.PlaceId = cp.PlaceId
+            INNER JOIN dbo.Places p ON cp.PlaceId = p.Id
             INNER JOIN dbo.Collections c ON cp.CollectionId = c.Id
-            WHERE c.Status = 1 AND c.IsFeatured = 1
+            WHERE c.Status = 1 AND c.IsFeatured = 1 AND p.Status = 1 AND p.IsDeleted = 0
             ORDER BY pm.PlaceId, pm.DisplayOrder;";
 
         using var multi = await connection.QueryMultipleAsync(sql, new { Count = count });
@@ -313,7 +314,7 @@ public class CollectionRepository : ICollectionRepository
                 c.IsFeatured,
                 c.DisplayOrder,
                 CAST(c.Status AS INT) AS Status,
-                (SELECT COUNT(1) FROM dbo.CollectionPlaces cp WHERE cp.CollectionId = c.Id) AS PlaceCount
+                (SELECT COUNT(1) FROM dbo.CollectionPlaces cp INNER JOIN dbo.Places p ON cp.PlaceId = p.Id WHERE cp.CollectionId = c.Id AND p.Status = 1 AND p.IsDeleted = 0) AS PlaceCount
             FROM dbo.Collections c
             LEFT JOIN dbo.Provinces prov ON c.ProvinceId = prov.Id
             {whereSql}
@@ -343,7 +344,7 @@ public class CollectionRepository : ICollectionRepository
                 c.IsFeatured,
                 c.DisplayOrder,
                 CAST(c.Status AS INT) AS Status,
-                (SELECT COUNT(1) FROM dbo.CollectionPlaces cp WHERE cp.CollectionId = c.Id) AS PlaceCount
+                (SELECT COUNT(1) FROM dbo.CollectionPlaces cp INNER JOIN dbo.Places p ON cp.PlaceId = p.Id WHERE cp.CollectionId = c.Id AND p.Status = 1 AND p.IsDeleted = 0) AS PlaceCount
             FROM dbo.Collections c
             LEFT JOIN dbo.Provinces prov ON c.ProvinceId = prov.Id
             WHERE c.Id = @CollectionId;
@@ -363,7 +364,7 @@ public class CollectionRepository : ICollectionRepository
             INNER JOIN dbo.Places p ON cp.PlaceId = p.Id
             LEFT JOIN dbo.Categories cat ON p.CategoryId = cat.Id
             LEFT JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id
-            WHERE cp.CollectionId = @CollectionId AND p.Status = 1
+            WHERE cp.CollectionId = @CollectionId AND p.Status = 1 AND p.IsDeleted = 0
             ORDER BY cp.DisplayOrder, p.Id;";
 
         using var multi = await connection.QueryMultipleAsync(sql, new { CollectionId = collectionId });

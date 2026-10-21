@@ -14,6 +14,8 @@ public interface IAdminReviewRepository
         string? keyword,
         int page,
         int pageSize,
+        string? sortBy = null,
+        string? sortOrder = null,
         CancellationToken ct = default);
 
     Task<bool> UpdateReviewStatusAsync(long id, ReviewStatus status, CancellationToken ct = default);
@@ -27,6 +29,8 @@ public interface IAdminReviewRepository
         string? keyword,
         int page,
         int pageSize,
+        string? sortBy = null,
+        string? sortOrder = null,
         CancellationToken ct = default);
 
     Task<bool> UpdateCommentStatusAsync(long id, CommentStatus status, CancellationToken ct = default);

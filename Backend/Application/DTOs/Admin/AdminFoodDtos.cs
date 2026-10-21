@@ -1,4 +1,4 @@
-﻿namespace Application.DTOs.Admin;
+namespace Application.DTOs.Admin;
 
 public class AdminFoodItemDto
 {
@@ -14,6 +14,9 @@ public class AdminFoodItemDto
     public int StatusNum => Status == "active" ? 1 : 0;
     public int PlacesCount { get; set; }
     public DateTime CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+    public string? UpdatedBy { get; set; }
+    public string? CreatedBy { get; set; }
 }
 
 public class CreateAdminFoodInput

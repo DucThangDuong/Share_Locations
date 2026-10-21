@@ -22,11 +22,11 @@ public class DeleteAdminPlaceEndpoint : Endpoint<DeleteAdminPlaceRequest, ApiSuc
     {
         Delete("/api/admin/places/{id}");
         AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
-        Roles(AppRoles.SuperAdminOnly);
+        Roles(AppRoles.AnyAdmin);
         Summary(s =>
         {
-            s.Summary = "Xóa địa điểm (Đặc quyền SystemAdmin)";
-            s.Description = "Xóa vĩnh viễn địa điểm khỏi hệ thống. Chỉ dành riêng cho Quản trị viên tối cao (SystemAdmin).";
+            s.Summary = "Xóa mềm địa điểm (Admin)";
+            s.Description = "Đánh dấu IsDeleted = true cho địa điểm. Hỗ trợ SystemAdmin và CategoryAdmin theo phạm vi quản lý.";
         });
     }
 

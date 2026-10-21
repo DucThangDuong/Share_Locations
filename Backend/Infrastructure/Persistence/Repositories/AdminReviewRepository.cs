@@ -1,4 +1,4 @@
-﻿using Application.Common;
+using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs.Admin;
@@ -32,11 +32,13 @@ public class AdminReviewRepository : IAdminReviewRepository
         string? keyword,
         int page,
         int pageSize,
+        string? sortBy = null,
+        string? sortOrder = null,
         CancellationToken ct = default)
     {
         var connection = _dbContext.Database.GetDbConnection();
 
-        var whereClauses = new List<string>();
+        var whereClauses = new List<string> { "p.IsDeleted = 0" };
         var parameters = new DynamicParameters();
 
         AdminScopeFilterHelper.ApplyPlaceScope(_currentUserService, whereClauses, parameters, "p", "prov");
@@ -98,6 +100,16 @@ public class AdminReviewRepository : IAdminReviewRepository
         parameters.Add("Offset", offset);
         parameters.Add("PageSize", pageSize);
 
+        var sortColumn = (sortBy?.ToLower()) switch
+        {
+            "rating" => "r.Rating",
+            "reportcount" => "(SELECT COUNT(1) FROM dbo.ReviewReports rr WHERE rr.ReviewId = r.Id)",
+            "createdat" => "r.CreatedAt",
+            _ => "r.CreatedAt"
+        };
+        var sortDirection = string.Equals(sortOrder, "asc", StringComparison.OrdinalIgnoreCase) ? "ASC" : "DESC";
+        var orderSql = $"ORDER BY {sortColumn} {sortDirection}, r.Id {sortDirection}";
+
         var dataSql = $@"
             SELECT
                 r.Id,
@@ -128,7 +140,7 @@ public class AdminReviewRepository : IAdminReviewRepository
             LEFT JOIN dbo.Users u ON r.UserId = u.Id
             LEFT JOIN dbo.UserProfiles prof ON u.Id = prof.UserId
             {whereSql}
-            ORDER BY r.CreatedAt DESC
+            {orderSql}
             OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 
         var items = (await connection.QueryAsync<AdminReviewItemDto>(dataSql, parameters)).ToList();
@@ -217,11 +229,13 @@ public class AdminReviewRepository : IAdminReviewRepository
         string? keyword,
         int page,
         int pageSize,
+        string? sortBy = null,
+        string? sortOrder = null,
         CancellationToken ct = default)
     {
         var connection = _dbContext.Database.GetDbConnection();
 
-        var whereClauses = new List<string>();
+        var whereClauses = new List<string> { "p.IsDeleted = 0" };
         var parameters = new DynamicParameters();
 
         AdminScopeFilterHelper.ApplyPlaceScope(_currentUserService, whereClauses, parameters, "p", "prov");
@@ -280,6 +294,15 @@ public class AdminReviewRepository : IAdminReviewRepository
         parameters.Add("Offset", offset);
         parameters.Add("PageSize", pageSize);
 
+        var sortColumn = (sortBy?.ToLower()) switch
+        {
+            "reportcount" => "(SELECT COUNT(1) FROM dbo.CommentReports cr WHERE cr.CommentId = c.Id)",
+            "createdat" => "c.CreatedAt",
+            _ => "c.CreatedAt"
+        };
+        var sortDirection = string.Equals(sortOrder, "asc", StringComparison.OrdinalIgnoreCase) ? "ASC" : "DESC";
+        var orderSql = $"ORDER BY {sortColumn} {sortDirection}, c.Id {sortDirection}";
+
         var dataSql = $@"
             SELECT
                 c.Id,
@@ -302,7 +325,7 @@ public class AdminReviewRepository : IAdminReviewRepository
             LEFT JOIN dbo.Users u ON c.UserId = u.Id
             LEFT JOIN dbo.UserProfiles prof ON u.Id = prof.UserId
             {whereSql}
-            ORDER BY c.CreatedAt DESC
+            {orderSql}
             OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 
         var items = (await connection.QueryAsync<AdminCommentItemDto>(dataSql, parameters)).ToList();

@@ -1,110 +1,56 @@
-﻿using System.Text.Json;
-using Application.Common.Interfaces;
-using Microsoft.Extensions.Caching.Distributed;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Application.Common.Interfaces;
 using Microsoft.Extensions.Logging;
-using StackExchange.Redis;
 
 namespace Infrastructure.Services;
 
 public class CacheService : ICacheService
 {
-    private readonly IDistributedCache _cache;
+    private readonly IEnterpriseCacheService _enterpriseCache;
     private readonly ILogger<CacheService> _logger;
-    private readonly IConnectionMultiplexer? _redis;
-
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true
-    };
 
     public CacheService(
-        IDistributedCache cache,
-        ILogger<CacheService> logger,
-        IServiceProvider serviceProvider)
+        IEnterpriseCacheService enterpriseCache,
+        ILogger<CacheService> logger)
     {
-        _cache = cache;
+        _enterpriseCache = enterpriseCache;
         _logger = logger;
-        _redis = serviceProvider.GetService<IConnectionMultiplexer>();
     }
 
-    public async Task<T?> GetAsync<T>(string key, CancellationToken ct = default)
+    public Task<T?> GetAsync<T>(string key, CancellationToken ct = default)
     {
-        try
-        {
-            var cachedData = await _cache.GetStringAsync(key, ct);
-            if (string.IsNullOrEmpty(cachedData))
-            {
-                return default;
-            }
+        return _enterpriseCache.GetAsync<T>(key, ct);
+    }
 
-            return JsonSerializer.Deserialize<T>(cachedData, JsonOptions);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Lỗi đọc dữ liệu từ cache với key: {Key}", key);
-            return default;
-        }
+    public Task<T?> GetOrCreateAsync<T>(
+        string key,
+        Func<CancellationToken, Task<T?>> factory,
+        TimeSpan? expiration = null,
+        CancellationToken ct = default)
+    {
+        return _enterpriseCache.GetOrCreateAsync<T>(
+            rawKey: key,
+            factory: factory,
+            baseTtl: expiration ?? TimeSpan.FromMinutes(30),
+            ct: ct);
     }
 
     public async Task SetAsync<T>(string key, T value, TimeSpan? expiration = null, CancellationToken ct = default)
     {
-        try
-        {
-            if (value == null) return;
-
-            var options = new DistributedCacheEntryOptions
-            {
-                AbsoluteExpirationRelativeToNow = expiration ?? TimeSpan.FromMinutes(30)
-            };
-
-            var jsonData = JsonSerializer.Serialize(value, JsonOptions);
-            await _cache.SetStringAsync(key, jsonData, options, ct);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Lỗi ghi dữ liệu vào cache với key: {Key}", key);
-        }
+        await _enterpriseCache.SetAsync(
+            rawKey: key,
+            value: value,
+            ttl: expiration ?? TimeSpan.FromMinutes(30),
+            ct: ct).ConfigureAwait(false);
     }
 
     public async Task RemoveAsync(string key, CancellationToken ct = default)
     {
-        try
-        {
-            await _cache.RemoveAsync(key, ct);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Lỗi xóa cache với key: {Key}", key);
-        }
+        await _enterpriseCache.UnlinkKeyAsync(key, ct).ConfigureAwait(false);
     }
 
     public async Task RemoveByPatternAsync(string pattern, CancellationToken ct = default)
     {
-        try
-        {
-            if (_redis != null && _redis.IsConnected)
-            {
-                var fullPattern = pattern.StartsWith("TravelReview_") ? pattern : $"TravelReview_{pattern}";
-                var db = _redis.GetDatabase();
-
-                foreach (var endpoint in _redis.GetEndPoints())
-                {
-                    var server = _redis.GetServer(endpoint);
-                    if (server.IsConnected)
-                    {
-                        var keys = server.Keys(pattern: fullPattern).ToArray();
-                        if (keys.Length > 0)
-                        {
-                            await db.KeyDeleteAsync(keys);
-                        }
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Lỗi xóa cache theo pattern: {Pattern}", pattern);
-        }
+        long deleted = await _enterpriseCache.RemoveByPatternAsync(pattern, ct).ConfigureAwait(false);
     }
 }
+

@@ -1,4 +1,4 @@
-﻿using Application.Common;
+using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs.Admin;
@@ -246,7 +246,7 @@ public class AdminCatalogTaxonomyRepository : IAdminCatalogTaxonomyRepository
                 c.Slug,
                 c.ImageUrl,
                 c.Status,
-                (SELECT COUNT(1) FROM dbo.Places pl WHERE pl.CategoryId = c.Id AND pl.Status = 1) AS PlaceCount,
+                (SELECT COUNT(1) FROM dbo.Places pl WHERE pl.CategoryId = c.Id AND pl.Status = 1 AND pl.IsDeleted = 0) AS PlaceCount,
                 (SELECT COUNT(1) FROM dbo.Blogs b WHERE b.CategoryId = c.Id AND b.Status = 1) AS BlogCount,
                 (SELECT COUNT(1) FROM dbo.Proposals prop WHERE prop.CategoryId = c.Id) AS ProposalCount,
                 (SELECT COUNT(1) FROM dbo.AdminCategoryScopes acs WHERE acs.CategoryId = c.Id) AS AssignedAdminsCount
@@ -274,7 +274,7 @@ public class AdminCatalogTaxonomyRepository : IAdminCatalogTaxonomyRepository
                 c.Slug,
                 c.ImageUrl,
                 c.Status,
-                (SELECT COUNT(1) FROM dbo.Places pl WHERE pl.CategoryId = c.Id AND pl.Status = 1) AS PlaceCount,
+                (SELECT COUNT(1) FROM dbo.Places pl WHERE pl.CategoryId = c.Id AND pl.Status = 1 AND pl.IsDeleted = 0) AS PlaceCount,
                 (SELECT COUNT(1) FROM dbo.Blogs b WHERE b.CategoryId = c.Id AND b.Status = 1) AS BlogCount,
                 (SELECT COUNT(1) FROM dbo.Proposals prop WHERE prop.CategoryId = c.Id) AS ProposalCount,
                 (SELECT COUNT(1) FROM dbo.AdminCategoryScopes acs WHERE acs.CategoryId = c.Id) AS AssignedAdminsCount

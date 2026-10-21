@@ -1,4 +1,4 @@
-﻿using System.Data;
+using System.Data;
 using Application.Common.Interfaces;
 using Dapper;
 
@@ -124,7 +124,7 @@ public static class AdminScopeFilterHelper
             SELECT p.CategoryId, p.ProvinceId, prov.RegionId
             FROM dbo.Places p
             LEFT JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id
-            WHERE p.Id = @Id;";
+            WHERE p.Id = @Id AND p.IsDeleted = 0;";
 
         var place = await connection.QueryFirstOrDefaultAsync<(int CategoryId, int ProvinceId, int? RegionId)?>(sql, new { Id = placeId });
         if (place == null) return false;

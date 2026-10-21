@@ -1,4 +1,4 @@
-﻿namespace Application.DTOs.Admin;
+namespace Application.DTOs.Admin;
 
 public class ReportReasonDto
 {
@@ -28,6 +28,7 @@ public class ReportQueueItemDto
     public string ReasonContent { get; set; } = string.Empty;
     public string? Description { get; set; }
     public DateTime SubmittedAt { get; set; }
+    public DateTime CreatedAt { get => SubmittedAt; set => SubmittedAt = value; }
     public string Priority { get; set; } = "normal";
     public int Status { get; set; }
     public string StatusText => Status switch

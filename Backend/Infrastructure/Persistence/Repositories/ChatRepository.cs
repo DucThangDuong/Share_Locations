@@ -1,4 +1,4 @@
-﻿using Application.Common.Interfaces.Repositories;
+using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
 using Dapper;
 using Domain.Entities;
@@ -187,7 +187,7 @@ public class ChatRepository : IChatRepository
                 t.Title AS TripTitle,
                 t.CoverImageUrl AS TripCoverUrl
             FROM dbo.MessageAttachments ma
-            LEFT JOIN dbo.Places p ON ma.PlaceId = p.Id
+            LEFT JOIN dbo.Places p ON ma.PlaceId = p.Id AND p.IsDeleted = 0
             LEFT JOIN dbo.Foods f ON ma.FoodId = f.Id
             LEFT JOIN dbo.Trips t ON ma.TripId = t.Id
             WHERE ma.MessageId IN @MessageIds
@@ -294,7 +294,7 @@ public class ChatRepository : IChatRepository
                 t.Title AS TripTitle,
                 t.CoverImageUrl AS TripCoverUrl
             FROM dbo.MessageAttachments ma
-            LEFT JOIN dbo.Places p ON ma.PlaceId = p.Id
+            LEFT JOIN dbo.Places p ON ma.PlaceId = p.Id AND p.IsDeleted = 0
             LEFT JOIN dbo.Foods f ON ma.FoodId = f.Id
             LEFT JOIN dbo.Trips t ON ma.TripId = t.Id
             WHERE ma.MessageId = @MessageId

@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
 using Dapper;
@@ -119,7 +119,7 @@ public class FoodRepository : IFoodRepository
                 p.MaxPrice
             FROM dbo.FoodPlaces fp
             INNER JOIN dbo.Places p ON fp.PlaceId = p.Id
-            WHERE fp.FoodId IN @FoodIds AND p.Status = 1;";
+            WHERE fp.FoodId IN @FoodIds AND p.Status = 1 AND p.IsDeleted = 0;";
 
         var suggestedPlaces = (await connection.QueryAsync<RawSuggestedPlace>(placesSql, new { FoodIds = foodIds })).ToList();
         var placesByFood = suggestedPlaces.ToLookup(p => p.FoodId);

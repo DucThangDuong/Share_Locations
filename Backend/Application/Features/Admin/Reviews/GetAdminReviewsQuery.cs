@@ -12,7 +12,9 @@ public record GetAdminReviewsQuery(
     string? Status = null,
     string? Keyword = null,
     int Page = 1,
-    int PageSize = 10) : IRequest<Result<PagedResult<AdminReviewItemDto>>>;
+    int PageSize = 10,
+    string? SortBy = null,
+    string? SortOrder = null) : IRequest<Result<PagedResult<AdminReviewItemDto>>>;
 
 public class GetAdminReviewsQueryHandler : IRequestHandler<GetAdminReviewsQuery, Result<PagedResult<AdminReviewItemDto>>>
 {
@@ -36,6 +38,8 @@ public class GetAdminReviewsQueryHandler : IRequestHandler<GetAdminReviewsQuery,
             request.Keyword,
             page,
             pageSize,
+            request.SortBy,
+            request.SortOrder,
             ct);
 
         return Result<PagedResult<AdminReviewItemDto>>.Success(result);

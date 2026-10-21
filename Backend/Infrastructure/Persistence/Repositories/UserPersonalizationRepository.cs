@@ -1,4 +1,4 @@
-﻿using System.Data;
+using System.Data;
 using System.Text.Json;
 using Application.Common;
 using Application.Common.Interfaces.Repositories;
@@ -63,7 +63,7 @@ public class UserPersonalizationRepository : IUserPersonalizationRepository
                 INNER JOIN dbo.Places p ON f.TargetId = p.Id AND f.TargetType = 1
                 LEFT JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id
                 LEFT JOIN dbo.Categories cat ON p.CategoryId = cat.Id
-                WHERE f.UserId = @UserId
+                WHERE f.UserId = @UserId AND p.Status = 1 AND p.IsDeleted = 0
 
                 UNION ALL
 
@@ -76,7 +76,7 @@ public class UserPersonalizationRepository : IUserPersonalizationRepository
                     fd.CoverImageUrl AS CoverImg,
                     N'ẨM THỰC' AS CategoryTag,
                     5.0 AS Rating,
-                    (SELECT COUNT(1) FROM dbo.FoodPlaces fp2 WHERE fp2.FoodId = fd.Id) AS ReviewCount,
+                    (SELECT COUNT(1) FROM dbo.FoodPlaces fp2 INNER JOIN dbo.Places p2 ON fp2.PlaceId = p2.Id WHERE fp2.FoodId = fd.Id AND p2.Status = 1 AND p2.IsDeleted = 0) AS ReviewCount,
                     CASE
                         WHEN fd.MinPrice IS NOT NULL AND fd.MaxPrice IS NOT NULL THEN CONCAT(FORMAT(fd.MinPrice, 'N0'), N'đ - ', FORMAT(fd.MaxPrice, 'N0'), N'đ')
                         WHEN fd.MinPrice IS NOT NULL THEN CONCAT(N'Từ ', FORMAT(fd.MinPrice, 'N0'), N'đ')
@@ -208,7 +208,7 @@ public class UserPersonalizationRepository : IUserPersonalizationRepository
             INNER JOIN dbo.Places p ON v.PlaceId = p.Id
             LEFT JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id
             LEFT JOIN dbo.Categories cat ON p.CategoryId = cat.Id
-            WHERE v.UserId = @UserId
+            WHERE v.UserId = @UserId AND p.IsDeleted = 0
               AND (@Privacy IS NULL OR v.Privacy = @Privacy)
             ORDER BY v.VisitedDate DESC, v.CreatedAt DESC
             OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
@@ -288,7 +288,7 @@ public class UserPersonalizationRepository : IUserPersonalizationRepository
                 p.Address AS PlaceAddress,
                 COUNT(1) OVER() AS TotalCount
             FROM dbo.Proposals pr
-            LEFT JOIN dbo.Places p ON pr.TargetPlaceId = p.Id
+            LEFT JOIN dbo.Places p ON pr.TargetPlaceId = p.Id AND p.IsDeleted = 0
             LEFT JOIN dbo.Categories cat ON (pr.CategoryId IS NOT NULL AND pr.CategoryId = cat.Id)
                 OR (pr.CategoryId IS NULL AND JSON_VALUE(pr.ProposedDataJSON, '$.categoryId') = CAST(cat.Id AS NVARCHAR(10)))
             LEFT JOIN dbo.Categories pCat ON p.CategoryId = pCat.Id
@@ -436,7 +436,7 @@ public class UserPersonalizationRepository : IUserPersonalizationRepository
             FROM dbo.AccessHistories a
             INNER JOIN dbo.Places p ON a.PlaceId = p.Id
             LEFT JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id
-            WHERE a.UserId = @UserId
+            WHERE a.UserId = @UserId AND p.Status = 1 AND p.IsDeleted = 0
             ORDER BY a.ViewedAt DESC;";
 
         var rows = (await connection.QueryAsync(sql, new { UserId = userId, Limit = limit })).ToList();
@@ -596,6 +596,8 @@ public class UserPersonalizationRepository : IUserPersonalizationRepository
             LEFT JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id
             WHERE r.UserId = @TargetUserId
               AND r.Status = 1
+              AND p.Status = 1
+              AND p.IsDeleted = 0
               AND p.Latitude IS NOT NULL
               AND p.Longitude IS NOT NULL
 
@@ -620,6 +622,8 @@ public class UserPersonalizationRepository : IUserPersonalizationRepository
             LEFT JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id
             WHERE v.UserId = @TargetUserId
               AND (@IsCurrentUser = 1 OR v.Privacy = 0)
+              AND p.Status = 1
+              AND p.IsDeleted = 0
               AND p.Latitude IS NOT NULL
               AND p.Longitude IS NOT NULL
 
@@ -639,7 +643,7 @@ public class UserPersonalizationRepository : IUserPersonalizationRepository
                 NULL AS Rating,
                 CONVERT(NVARCHAR(10), pr.CreatedAt, 23) AS [Date]
             FROM dbo.Proposals pr
-            LEFT JOIN dbo.Places p ON pr.TargetPlaceId = p.Id
+            LEFT JOIN dbo.Places p ON pr.TargetPlaceId = p.Id AND p.IsDeleted = 0
             LEFT JOIN dbo.Categories cat ON pr.CategoryId = cat.Id
             LEFT JOIN dbo.Provinces prov ON pr.ProvinceId = prov.Id
             WHERE pr.UserId = @TargetUserId
@@ -725,7 +729,7 @@ public class UserPersonalizationRepository : IUserPersonalizationRepository
             INNER JOIN dbo.Places p ON r.PlaceId = p.Id
             LEFT JOIN dbo.Categories cat ON p.CategoryId = cat.Id
             LEFT JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id
-            WHERE r.UserId = @UserId AND r.Status = 1
+            WHERE r.UserId = @UserId AND r.Status = 1 AND p.Status = 1 AND p.IsDeleted = 0
             {orderByClause}
             OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 
@@ -814,7 +818,7 @@ public class UserPersonalizationRepository : IUserPersonalizationRepository
             LEFT JOIN dbo.Comments parent ON c.ParentId = parent.Id
             LEFT JOIN dbo.Users pu ON parent.UserId = pu.Id
             LEFT JOIN dbo.UserProfiles pup ON pu.Id = pup.UserId
-            WHERE c.UserId = @UserId AND c.Status = 1
+            WHERE c.UserId = @UserId AND c.Status = 1 AND r.Status = 1 AND p.Status = 1 AND p.IsDeleted = 0
             ORDER BY c.CreatedAt DESC
             OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 

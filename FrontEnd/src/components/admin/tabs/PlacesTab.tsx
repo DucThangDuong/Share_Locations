@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Search, Plus, Star, ChevronLeft, ChevronRight, Loader2, X, ImageIcon } from "lucide-react";
+import { Search, Plus, Star, ChevronLeft, ChevronRight, Loader2, X, ImageIcon, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { PlaceDetailEditor } from "./PlaceDetailEditor";
 import { geographyService } from "@/services/geographyService";
 import { catalogService } from "@/services/catalogService";
@@ -24,6 +24,8 @@ interface PlacesTabProps {
     province?: string;
     category?: string;
     status?: string;
+    sortBy?: string;
+    sortOrder?: "asc" | "desc";
     page?: number;
     pageSize?: number;
   }) => void;
@@ -40,6 +42,7 @@ interface PlacesTabProps {
   setIsAddPlaceModalOpen: (v: boolean) => void;
   handleTogglePlaceStatus?: (id: number) => void;
   handleUpdatePlace?: (updatedPlace: any) => void;
+  handleDeletePlace?: (id: number) => Promise<void> | void;
 }
 
 export const PlacesTab: React.FC<PlacesTabProps> = ({
@@ -66,6 +69,7 @@ export const PlacesTab: React.FC<PlacesTabProps> = ({
   setIsAddPlaceModalOpen,
   handleTogglePlaceStatus,
   handleUpdatePlace,
+  handleDeletePlace,
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -76,6 +80,85 @@ export const PlacesTab: React.FC<PlacesTabProps> = ({
 
   const [provinces, setProvinces] = useState<ProvinceDto[]>([]);
   const [categories, setCategories] = useState<PlaceTypeDto[]>([]);
+
+  type SortField = "name" | "rating" | "updatedAt" | null;
+  type SortOrder = "asc" | "desc";
+
+  const [sortField, setSortField] = useState<SortField>(null);
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+
+  const handleSort = (field: "name" | "rating" | "updatedAt") => {
+    let nextOrder: SortOrder = "desc";
+    let nextField: SortField = field;
+    if (sortField === field) {
+      if (sortOrder === "desc") {
+        nextOrder = "asc";
+      } else {
+        nextField = null;
+      }
+    } else {
+      nextOrder = field === "name" ? "asc" : "desc";
+    }
+
+    setSortField(nextField);
+    setSortOrder(nextOrder);
+    onFilterChange?.({
+      sortBy: nextField || undefined,
+      sortOrder: nextField ? nextOrder : undefined,
+      page: 1,
+    });
+  };
+
+  const sortedPlaces = useMemo(() => {
+    if (!sortField) return placesList;
+    return [...placesList].sort((a, b) => {
+      if (sortField === "name") {
+        const nameA = String(a.name || "").trim().toLowerCase();
+        const nameB = String(b.name || "").trim().toLowerCase();
+        return sortOrder === "asc"
+          ? nameA.localeCompare(nameB, "vi")
+          : nameB.localeCompare(nameA, "vi");
+      }
+      if (sortField === "rating") {
+        const rA = Number(a.rating ?? a.avgRating ?? 0);
+        const rB = Number(b.rating ?? b.avgRating ?? 0);
+        return sortOrder === "asc" ? rA - rB : rB - rA;
+      }
+      if (sortField === "updatedAt") {
+        const timeA = new Date(a.updatedAt || a.updatedDate || a.createdAt || a.createdDate || 0).getTime();
+        const timeB = new Date(b.updatedAt || b.updatedDate || b.createdAt || b.createdDate || 0).getTime();
+        return sortOrder === "asc" ? timeA - timeB : timeB - timeA;
+      }
+      return 0;
+    });
+  }, [placesList, sortField, sortOrder]);
+
+  const renderSortIcon = (field: "name" | "rating" | "updatedAt") => {
+    if (sortField !== field) {
+      return <ArrowUpDown size={12} className="text-slate-300 group-hover:text-slate-500 transition-colors" />;
+    }
+    return sortOrder === "asc" ? (
+      <ArrowUp size={12} className="text-emerald-700" />
+    ) : (
+      <ArrowDown size={12} className="text-emerald-700" />
+    );
+  };
+
+  const formatUpdatedDate = (p: any) => {
+    const rawDate = p.updatedAt || p.updatedDate || p.createdAt || p.createdDate;
+    const author = p.updatedBy || p.createdBy || p.creatorName || p.author || "Admin";
+    if (!rawDate) {
+      return { dateStr: "20/10/2026", author };
+    }
+    const d = new Date(rawDate);
+    if (isNaN(d.getTime())) {
+      return { dateStr: String(rawDate), author };
+    }
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const year = d.getFullYear();
+    return { dateStr: `${day}/${month}/${year}`, author };
+  };
 
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -177,6 +260,13 @@ export const PlacesTab: React.FC<PlacesTabProps> = ({
           }
         }}
         onToggleStatus={handleTogglePlaceStatus}
+        onDelete={async (deletedId) => {
+          if (handleDeletePlace) {
+            await handleDeletePlace(deletedId);
+          }
+          setSelectedPlaceId(null);
+          navigate('/admin/places');
+        }}
       />
     );
   }
@@ -261,18 +351,49 @@ export const PlacesTab: React.FC<PlacesTabProps> = ({
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-bold text-[11px] uppercase tracking-wider">
-                <th className="p-3.5 pl-4">Địa điểm</th>
+                <th className="p-3.5 pl-4">
+                  <button
+                    type="button"
+                    onClick={() => handleSort("name")}
+                    className="group inline-flex items-center gap-1.5 hover:text-slate-900 transition-colors cursor-pointer select-none"
+                    title="Sắp xếp theo tên địa điểm"
+                  >
+                    <span>Địa điểm</span>
+                    {renderSortIcon("name")}
+                  </button>
+                </th>
                 <th className="p-3.5">Danh mục</th>
                 <th className="p-3.5">Tỉnh / Thành</th>
                 <th className="p-3.5">Trạng thái</th>
-                <th className="p-3.5">Đánh giá</th>
+                <th className="p-3.5">
+                  <button
+                    type="button"
+                    onClick={() => handleSort("rating")}
+                    className="group inline-flex items-center gap-1.5 hover:text-slate-900 transition-colors cursor-pointer select-none"
+                    title="Sắp xếp theo đánh giá"
+                  >
+                    <span>Đánh giá</span>
+                    {renderSortIcon("rating")}
+                  </button>
+                </th>
+                <th className="p-3.5">
+                  <button
+                    type="button"
+                    onClick={() => handleSort("updatedAt")}
+                    className="group inline-flex items-center gap-1.5 hover:text-slate-900 transition-colors cursor-pointer select-none"
+                    title="Sắp xếp theo thời gian cập nhật"
+                  >
+                    <span>Cập nhật</span>
+                    {renderSortIcon("updatedAt")}
+                  </button>
+                </th>
                 <th className="p-3.5 text-center">Xem chi tiết</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-slate-400">
+                  <td colSpan={7} className="py-12 text-center text-slate-400">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Loader2 size={24} className="animate-spin text-emerald-600" />
                       <span>Đang tải danh sách địa điểm từ máy chủ...</span>
@@ -281,12 +402,12 @@ export const PlacesTab: React.FC<PlacesTabProps> = ({
                 </tr>
               ) : placesList.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-slate-400 font-medium">
+                  <td colSpan={7} className="py-12 text-center text-slate-400 font-medium">
                     Không tìm thấy địa điểm nào phù hợp với bộ lọc.
                   </td>
                 </tr>
               ) : (
-                placesList.map((p) => {
+                sortedPlaces.map((p) => {
                   const isPlaceActive =
                     Number(p.statusNum ?? p.status) === 1 ||
                     String(p.status || "").toLowerCase() === "active" ||
@@ -314,9 +435,8 @@ export const PlacesTab: React.FC<PlacesTabProps> = ({
                             />
                           ) : null}
                           <div
-                            className={`w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 items-center justify-center text-slate-400 shrink-0 ${
-                              cover ? "hidden" : "flex"
-                            }`}
+                            className={`w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 items-center justify-center text-slate-400 shrink-0 ${cover ? "hidden" : "flex"
+                              }`}
                             title="Không có hình ảnh"
                           >
                             <ImageIcon size={14} className="text-slate-300" />
@@ -348,6 +468,16 @@ export const PlacesTab: React.FC<PlacesTabProps> = ({
                           <Star size={13} className="fill-amber-400 text-amber-400" />
                           <span>{p.rating !== undefined && p.rating !== null ? p.rating : "--"}</span>
                         </div>
+                      </td>
+                      <td className="p-3.5 whitespace-nowrap text-[11px]">
+                        {(() => {
+                          const info = formatUpdatedDate(p);
+                          return (
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-semibold text-slate-800">{info.dateStr}</span>
+                            </div>
+                          );
+                        })()}
                       </td>
                       <td className="p-3.5 text-center" onClick={(e) => e.stopPropagation()}>
                         <button
@@ -403,11 +533,10 @@ export const PlacesTab: React.FC<PlacesTabProps> = ({
                         type="button"
                         disabled={isLoading}
                         onClick={() => onPageChange?.(pNum)}
-                        className={`w-7 h-7 rounded-xl font-bold text-xs transition-colors flex items-center justify-center cursor-pointer ${
-                          pagination.page === pNum
-                            ? "bg-emerald-700 text-white shadow-xs"
-                            : "bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200"
-                        }`}
+                        className={`w-7 h-7 rounded-xl font-bold text-xs transition-colors flex items-center justify-center cursor-pointer ${pagination.page === pNum
+                          ? "bg-emerald-700 text-white shadow-xs"
+                          : "bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200"
+                          }`}
                       >
                         {pNum}
                       </button>

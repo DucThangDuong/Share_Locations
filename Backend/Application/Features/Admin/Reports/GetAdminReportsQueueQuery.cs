@@ -11,7 +11,9 @@ public record GetAdminReportsQueueQuery(
     int? Status = null,
     string? Keyword = null,
     int Page = 1,
-    int PageSize = 10) : IRequest<Result<PagedResult<ReportQueueItemDto>>>;
+    int PageSize = 10,
+    string? SortBy = null,
+    string? SortOrder = null) : IRequest<Result<PagedResult<ReportQueueItemDto>>>;
 
 public class GetAdminReportsQueueQueryHandler : IRequestHandler<GetAdminReportsQueueQuery, Result<PagedResult<ReportQueueItemDto>>>
 {
@@ -34,6 +36,8 @@ public class GetAdminReportsQueueQueryHandler : IRequestHandler<GetAdminReportsQ
             request.Keyword,
             page,
             pageSize,
+            request.SortBy,
+            request.SortOrder,
             ct);
 
         return Result<PagedResult<ReportQueueItemDto>>.Success(result);

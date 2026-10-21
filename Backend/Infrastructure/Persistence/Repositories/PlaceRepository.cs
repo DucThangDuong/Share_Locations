@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
 using Dapper;
@@ -70,7 +70,7 @@ public class PlaceRepository : IPlaceRepository
         var offset = (safePageIndex - 1) * safePageSize;
 
         var parameters = new DynamicParameters();
-        var whereClauses = new List<string> { "p.Status = 1" };
+        var whereClauses = new List<string> { "p.Status = 1", "p.IsDeleted = 0" };
 
         if (!string.IsNullOrWhiteSpace(p.Keyword))
         {
@@ -196,7 +196,7 @@ public class PlaceRepository : IPlaceRepository
             INNER JOIN dbo.Regions r ON prov.RegionId = r.Id
             INNER JOIN dbo.Categories cat ON p.CategoryId = cat.Id
             INNER JOIN dbo.PlaceTypes pt ON cat.PlaceTypeId = pt.Id
-            WHERE p.Id = @Id AND p.Status = 1;
+            WHERE p.Id = @Id AND p.Status = 1 AND p.IsDeleted = 0;
 
             SELECT pm.Url
             FROM dbo.PlaceMedia pm
@@ -375,6 +375,7 @@ public class PlaceRepository : IPlaceRepository
             INNER JOIN dbo.Regions r ON prov.RegionId = r.Id
             INNER JOIN dbo.Categories cat ON p.CategoryId = cat.Id
             WHERE p.Status = 1
+              AND p.IsDeleted = 0
               AND p.Latitude IS NOT NULL
               AND p.Longitude IS NOT NULL
               AND (@Keyword IS NULL OR (p.Name LIKE @Keyword OR p.Address LIKE @Keyword OR prov.Name LIKE @Keyword OR (cat.Status = 1 AND cat.Name LIKE @Keyword)))
@@ -437,7 +438,7 @@ public class PlaceRepository : IPlaceRepository
                 COALESCE(p.AvgRating, 0.0) AS AvgRating,
                 COALESCE(p.ReviewCount, 0) AS TotalReviews
             FROM dbo.Places p
-            WHERE p.Id = @PlaceId;
+            WHERE p.Id = @PlaceId AND p.IsDeleted = 0;
 
             SELECT Rating, COUNT(1) AS TotalCount
             FROM dbo.Reviews
@@ -551,7 +552,7 @@ public class PlaceRepository : IPlaceRepository
             FROM dbo.Places p
             INNER JOIN dbo.Categories cat ON p.CategoryId = cat.Id
             INNER JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id
-            WHERE p.Id = @PlaceId AND p.Status = 1;";
+            WHERE p.Id = @PlaceId AND p.Status = 1 AND p.IsDeleted = 0;";
 
         var current = await connection.QueryFirstOrDefaultAsync<CurrentPlaceContext>(currentSql, new { PlaceId = placeId });
         if (current == null)
@@ -574,7 +575,7 @@ public class PlaceRepository : IPlaceRepository
             INNER JOIN dbo.Regions r ON prov.RegionId = r.Id
             INNER JOIN dbo.Categories cat ON p.CategoryId = cat.Id
             INNER JOIN dbo.PlaceTypes pt ON cat.PlaceTypeId = pt.Id
-            WHERE p.Id <> @PlaceId AND p.Status = 1 AND cat.Status = 1 AND pt.Status = 1
+            WHERE p.Id <> @PlaceId AND p.Status = 1 AND p.IsDeleted = 0 AND cat.Status = 1 AND pt.Status = 1
             ORDER BY
                 (
                     -- A. Mức độ khớp Danh mục & Loại hình

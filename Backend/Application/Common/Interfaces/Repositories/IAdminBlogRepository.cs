@@ -11,6 +11,8 @@ public interface IAdminBlogRepository
         string? keyword,
         int page,
         int pageSize,
+        string? sortBy = null,
+        string? sortOrder = null,
         CancellationToken ct = default);
 
     Task<AdminBlogDetailDto?> GetAdminBlogDetailAsync(long id, CancellationToken ct = default);

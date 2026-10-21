@@ -21,6 +21,9 @@ import {
   X,
   User,
   Image,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import type { AdminBlogItem } from "@/types/admin.types";
 import { CustomSelect } from "@/components/common/CustomSelect";
@@ -47,6 +50,8 @@ interface BlogsTabProps {
     keyword?: string;
     category?: string;
     status?: string;
+    sortBy?: string;
+    sortOrder?: "asc" | "desc";
     page?: number;
     pageSize?: number;
   }) => void;
@@ -91,6 +96,55 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
   const [blogFilterStatus, setBlogFilterStatus] = useState("all");
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  type SortField = "title" | "views" | "updatedAt" | null;
+  type SortOrder = "asc" | "desc";
+  const [sortField, setSortField] = useState<SortField>(null);
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+
+  const handleSort = (field: "title" | "views" | "updatedAt") => {
+    let nextOrder: SortOrder = "desc";
+    let nextField: SortField = field;
+    if (sortField === field) {
+      if (sortOrder === "desc") {
+        nextOrder = "asc";
+      } else {
+        nextField = null;
+      }
+    } else {
+      nextOrder = field === "title" ? "asc" : "desc";
+    }
+    setSortField(nextField);
+    setSortOrder(nextOrder);
+    onFilterChange?.({
+      sortBy: nextField || undefined,
+      sortOrder: nextField ? nextOrder : undefined,
+      page: 1,
+    });
+  };
+
+  const renderSortIcon = (field: "title" | "views" | "updatedAt") => {
+    if (sortField !== field) {
+      return <ArrowUpDown size={12} className="text-slate-300 group-hover:text-slate-500 transition-colors" />;
+    }
+    return sortOrder === "asc" ? (
+      <ArrowUp size={12} className="text-emerald-700" />
+    ) : (
+      <ArrowDown size={12} className="text-emerald-700" />
+    );
+  };
+
+  const formatUpdatedDate = (blog: any) => {
+    const rawDate = blog.updatedAt || blog.updatedDate || blog.publishedAt || blog.createdAt;
+    const author = blog.authorName || blog.author || "Ban Biên Tập LangThang";
+    if (!rawDate) return { dateStr: "20/10/2026", author };
+    const d = new Date(rawDate);
+    if (isNaN(d.getTime())) return { dateStr: String(rawDate), author };
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const year = d.getFullYear();
+    return { dateStr: `${day}/${month}/${year}`, author };
+  };
+
   const currentBlog = selectedBlogId
     ? blogsList.find((b) => b.id === selectedBlogId)
     : null;
@@ -122,6 +176,30 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
     }
     return true;
   });
+
+  const sortedBlogs = useMemo(() => {
+    if (!sortField) return filteredBlogs;
+    return [...filteredBlogs].sort((a, b) => {
+      if (sortField === "title") {
+        const nameA = String(a.title || "").trim().toLowerCase();
+        const nameB = String(b.title || "").trim().toLowerCase();
+        return sortOrder === "asc"
+          ? nameA.localeCompare(nameB, "vi")
+          : nameB.localeCompare(nameA, "vi");
+      }
+      if (sortField === "views") {
+        const vA = Number(a.views ?? a.viewCount ?? 0);
+        const vB = Number(b.views ?? b.viewCount ?? 0);
+        return sortOrder === "asc" ? vA - vB : vB - vA;
+      }
+      if (sortField === "updatedAt") {
+        const timeA = new Date(a.updatedAt || a.publishedAt || a.createdAt || 0).getTime();
+        const timeB = new Date(b.updatedAt || b.publishedAt || b.createdAt || 0).getTime();
+        return sortOrder === "asc" ? timeA - timeB : timeB - timeA;
+      }
+      return 0;
+    });
+  }, [filteredBlogs, sortField, sortOrder]);
 
   const handleToggleHideBlog = async (blogId: number) => {
     if (!setBlogsList) return;
@@ -291,15 +369,46 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-bold text-[11px] uppercase tracking-wider">
-                <th className="p-3.5 pl-4">Bài viết / Cẩm nang</th>
+                <th className="p-3.5 pl-4">
+                  <button
+                    type="button"
+                    onClick={() => handleSort("title")}
+                    className="group inline-flex items-center gap-1.5 hover:text-slate-900 transition-colors cursor-pointer select-none"
+                    title="Sắp xếp theo tiêu đề bài viết"
+                  >
+                    <span>Bài viết / Cẩm nang</span>
+                    {renderSortIcon("title")}
+                  </button>
+                </th>
                 <th className="p-3.5">Tác giả</th>
-                <th className="p-3.5">Lượt xem & Thích</th>
+                <th className="p-3.5">
+                  <button
+                    type="button"
+                    onClick={() => handleSort("views")}
+                    className="group inline-flex items-center gap-1.5 hover:text-slate-900 transition-colors cursor-pointer select-none"
+                    title="Sắp xếp theo lượt xem"
+                  >
+                    <span>Lượt xem &amp; Thích</span>
+                    {renderSortIcon("views")}
+                  </button>
+                </th>
                 <th className="p-3.5">Trạng thái</th>
+                <th className="p-3.5">
+                  <button
+                    type="button"
+                    onClick={() => handleSort("updatedAt")}
+                    className="group inline-flex items-center gap-1.5 hover:text-slate-900 transition-colors cursor-pointer select-none"
+                    title="Sắp xếp theo thời gian cập nhật"
+                  >
+                    <span>Cập nhật</span>
+                    {renderSortIcon("updatedAt")}
+                  </button>
+                </th>
                 <th className="p-3.5 text-center">Xem chi tiết</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredBlogs.map((blog) => {
+              {sortedBlogs.map((blog) => {
                 const isHidden = blog.status === "hidden";
                 const isDraft = blog.status === "draft";
 
@@ -325,9 +434,8 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
                           />
                         ) : null}
                         <div
-                          className={`w-12 h-10 rounded-lg bg-slate-50 border border-slate-200 items-center justify-center text-slate-300 shrink-0 ${
-                            blog.coverImg ? "hidden" : "flex"
-                          }`}
+                          className={`w-12 h-10 rounded-lg bg-slate-50 border border-slate-200 items-center justify-center text-slate-300 shrink-0 ${blog.coverImg ? "hidden" : "flex"
+                            }`}
                           title="Không có hình ảnh"
                         >
                           <Image size={16} className="text-slate-300" />
@@ -363,9 +471,8 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
                           />
                         ) : null}
                         <div
-                          className={`w-6 h-6 rounded-full bg-slate-100 border border-slate-200 items-center justify-center text-slate-400 shrink-0 ${
-                            blog.authorAvatar ? "hidden" : "flex"
-                          }`}
+                          className={`w-6 h-6 rounded-full bg-slate-100 border border-slate-200 items-center justify-center text-slate-400 shrink-0 ${blog.authorAvatar ? "hidden" : "flex"
+                            }`}
                         >
                           <User size={10} className="text-slate-400" />
                         </div>
@@ -413,6 +520,17 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
                       >
                         {isHidden || isDraft ? "Tạm ẩn" : "Công khai"}
                       </span>
+                    </td>
+
+                    <td className="p-3.5 whitespace-nowrap text-[11px]">
+                      {(() => {
+                        const info = formatUpdatedDate(blog);
+                        return (
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-semibold text-slate-800">{info.dateStr}</span>
+                          </div>
+                        );
+                      })()}
                     </td>
 
                     <td

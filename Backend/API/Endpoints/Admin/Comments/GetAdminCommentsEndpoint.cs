@@ -18,6 +18,8 @@ public class GetAdminCommentsRequest
     public string? Keyword { get; set; }
     public int Page { get; set; } = 1;
     public int PageSize { get; set; } = 10;
+    public string? SortBy { get; set; }
+    public string? SortOrder { get; set; }
 }
 
 public class GetAdminCommentsEndpoint : Endpoint<GetAdminCommentsRequest, ApiSuccessResponse<IReadOnlyList<AdminCommentItemDto>>>
@@ -46,7 +48,9 @@ public class GetAdminCommentsEndpoint : Endpoint<GetAdminCommentsRequest, ApiSuc
                 req.Status,
                 req.Keyword,
                 req.Page,
-                req.PageSize),
+                req.PageSize,
+                req.SortBy,
+                req.SortOrder),
             ct);
 
         await this.SendPagedApiResponseAsync(result, ct);

@@ -12,7 +12,9 @@ public record GetAdminCommentsQuery(
     string? Status = null,
     string? Keyword = null,
     int Page = 1,
-    int PageSize = 10) : IRequest<Result<PagedResult<AdminCommentItemDto>>>;
+    int PageSize = 10,
+    string? SortBy = null,
+    string? SortOrder = null) : IRequest<Result<PagedResult<AdminCommentItemDto>>>;
 
 public class GetAdminCommentsQueryHandler : IRequestHandler<GetAdminCommentsQuery, Result<PagedResult<AdminCommentItemDto>>>
 {
@@ -36,6 +38,8 @@ public class GetAdminCommentsQueryHandler : IRequestHandler<GetAdminCommentsQuer
             request.Keyword,
             page,
             pageSize,
+            request.SortBy,
+            request.SortOrder,
             ct);
 
         return Result<PagedResult<AdminCommentItemDto>>.Success(result);

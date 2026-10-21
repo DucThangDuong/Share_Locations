@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
@@ -34,7 +34,7 @@ public class ProvinceRepository : IProvinceRepository
                 p.ImageUrl,
                 p.Featured,
                 p.DisplayOrder,
-                (SELECT COUNT(1) FROM dbo.Places pl WHERE pl.ProvinceId = p.Id AND pl.Status = 1) AS PlaceCount
+                (SELECT COUNT(1) FROM dbo.Places pl WHERE pl.ProvinceId = p.Id AND pl.Status = 1 AND pl.IsDeleted = 0) AS PlaceCount
             FROM dbo.Provinces p
             LEFT JOIN dbo.Regions r ON p.RegionId = r.Id
             WHERE p.Status = 1
@@ -59,7 +59,7 @@ public class ProvinceRepository : IProvinceRepository
                 p.ImageUrl,
                 p.Featured,
                 p.DisplayOrder,
-                (SELECT COUNT(1) FROM dbo.Places pl WHERE pl.ProvinceId = p.Id AND pl.Status = 1) AS PlaceCount
+                (SELECT COUNT(1) FROM dbo.Places pl WHERE pl.ProvinceId = p.Id AND pl.Status = 1 AND pl.IsDeleted = 0) AS PlaceCount
             FROM dbo.Provinces p
             LEFT JOIN dbo.Regions r ON p.RegionId = r.Id
             WHERE p.Status = 1
@@ -115,7 +115,7 @@ public class ProvinceRepository : IProvinceRepository
             FROM dbo.Places pl
             LEFT JOIN dbo.PlaceMedia pm ON pm.PlaceId = pl.Id
             LEFT JOIN dbo.Categories cat ON pl.CategoryId = cat.Id
-            WHERE pl.ProvinceId = @ProvId AND pl.Status = 1 AND (pl.CoverImageUrl IS NOT NULL OR pm.Url IS NOT NULL)
+            WHERE pl.ProvinceId = @ProvId AND pl.Status = 1 AND pl.IsDeleted = 0 AND (pl.CoverImageUrl IS NOT NULL OR pm.Url IS NOT NULL)
             ORDER BY pl.AvgRating DESC, pl.ReviewCount DESC;";
 
         var heroRows = (await connection.QueryAsync(heroImgSql, new { ProvId = provId, ProvName = provName })).ToList();
@@ -154,7 +154,7 @@ public class ProvinceRepository : IProvinceRepository
                 c.ProvinceId,
                 c.Title,
                 c.Description AS Subtitle,
-                (SELECT COUNT(1) FROM dbo.CollectionPlaces cp INNER JOIN dbo.Places pl ON cp.PlaceId = pl.Id WHERE cp.CollectionId = c.Id AND (c.ProvinceId = @ProvId OR pl.ProvinceId = @ProvId) AND pl.Status = 1) AS PlaceCount
+                (SELECT COUNT(1) FROM dbo.CollectionPlaces cp INNER JOIN dbo.Places pl ON cp.PlaceId = pl.Id WHERE cp.CollectionId = c.Id AND (c.ProvinceId = @ProvId OR pl.ProvinceId = @ProvId) AND pl.Status = 1 AND pl.IsDeleted = 0) AS PlaceCount
             FROM dbo.Collections c
             WHERE c.Status = 1
               AND (
@@ -184,7 +184,7 @@ public class ProvinceRepository : IProvinceRepository
                 INNER JOIN dbo.Places p ON cp.PlaceId = p.Id
                 INNER JOIN dbo.Collections c ON cp.CollectionId = c.Id
                 LEFT JOIN dbo.Categories cat ON p.CategoryId = cat.Id
-                WHERE cp.CollectionId IN @ColIds AND (c.ProvinceId = @ProvId OR p.ProvinceId = @ProvId) AND p.Status = 1
+                WHERE cp.CollectionId IN @ColIds AND (c.ProvinceId = @ProvId OR p.ProvinceId = @ProvId) AND p.Status = 1 AND p.IsDeleted = 0
                 ORDER BY cp.CollectionId, cp.DisplayOrder;";
 
             var colPlaceRows = (await connection.QueryAsync<PlaceInCollectionRaw>(colPlacesSql, new { ColIds = colIds, ProvId = provId })).ToList();
@@ -195,7 +195,7 @@ public class ProvinceRepository : IProvinceRepository
                 INNER JOIN dbo.CollectionPlaces cp ON pm.PlaceId = cp.PlaceId
                 INNER JOIN dbo.Collections c ON cp.CollectionId = c.Id
                 INNER JOIN dbo.Places pl ON pm.PlaceId = pl.Id
-                WHERE cp.CollectionId IN @ColIds AND (c.ProvinceId = @ProvId OR pl.ProvinceId = @ProvId) AND pl.Status = 1
+                WHERE cp.CollectionId IN @ColIds AND (c.ProvinceId = @ProvId OR pl.ProvinceId = @ProvId) AND pl.Status = 1 AND pl.IsDeleted = 0
                 ORDER BY pm.PlaceId, pm.DisplayOrder;";
 
             var colMediaRows = (await connection.QueryAsync<PlaceMediaRaw>(colPlaceMediaSql, new { ColIds = colIds, ProvId = provId })).ToList();
@@ -263,7 +263,7 @@ public class ProvinceRepository : IProvinceRepository
             FROM dbo.Places p
             INNER JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id
             LEFT JOIN dbo.Categories cat ON p.CategoryId = cat.Id
-            WHERE p.ProvinceId = @ProvId AND p.Status = 1
+            WHERE p.ProvinceId = @ProvId AND p.Status = 1 AND p.IsDeleted = 0
             ORDER BY p.AvgRating DESC, p.ReviewCount DESC;";
 
         var landmarkRows = (await connection.QueryAsync(landmarksSql, new { ProvId = provId })).ToList();
@@ -331,7 +331,7 @@ public class ProvinceRepository : IProvinceRepository
                 f.CoverImageUrl AS ImageUrl,
                 f.MinPrice,
                 f.MaxPrice,
-                (SELECT COUNT(1) FROM dbo.FoodPlaces fp2 INNER JOIN dbo.Places pl ON fp2.PlaceId = pl.Id WHERE fp2.FoodId = f.Id AND pl.ProvinceId = @ProvId AND pl.Status = 1) AS SuggestedPlacesCount
+                (SELECT COUNT(1) FROM dbo.FoodPlaces fp2 INNER JOIN dbo.Places pl ON fp2.PlaceId = pl.Id WHERE fp2.FoodId = f.Id AND pl.ProvinceId = @ProvId AND pl.Status = 1 AND pl.IsDeleted = 0) AS SuggestedPlacesCount
             FROM dbo.Foods f
             WHERE f.Status = 1
               AND (
@@ -342,7 +342,7 @@ public class ProvinceRepository : IProvinceRepository
                 OR EXISTS (
                     SELECT 1 FROM dbo.FoodPlaces fpl
                     INNER JOIN dbo.Places pl ON fpl.PlaceId = pl.Id
-                    WHERE fpl.FoodId = f.Id AND pl.ProvinceId = @ProvId AND pl.Status = 1
+                    WHERE fpl.FoodId = f.Id AND pl.ProvinceId = @ProvId AND pl.Status = 1 AND pl.IsDeleted = 0
                 )
               )
             ORDER BY f.Id DESC;";
@@ -365,7 +365,7 @@ public class ProvinceRepository : IProvinceRepository
                     CAST(pl.Longitude AS FLOAT) AS Longitude
                 FROM dbo.FoodPlaces fpl
                 INNER JOIN dbo.Places pl ON fpl.PlaceId = pl.Id
-                WHERE fpl.FoodId IN @FoodIds AND pl.ProvinceId = @ProvId AND pl.Status = 1;";
+                WHERE fpl.FoodId IN @FoodIds AND pl.ProvinceId = @ProvId AND pl.Status = 1 AND pl.IsDeleted = 0;";
 
             var spRows = (await connection.QueryAsync(suggestedPlacesSql, new { FoodIds = foodIds, ProvId = provId })).ToList();
             var spLookup = spRows.ToLookup(r => (long)r.FoodId);
@@ -519,7 +519,7 @@ public class ProvinceRepository : IProvinceRepository
                     SELECT 1 FROM dbo.TripDays td
                     INNER JOIN dbo.TripPlaces tp ON td.Id = tp.TripDayId
                     INNER JOIN dbo.Places pl ON tp.PlaceId = pl.Id
-                    WHERE td.TripId = t.Id AND pl.ProvinceId = @ProvId AND pl.Status = 1
+                    WHERE td.TripId = t.Id AND pl.ProvinceId = @ProvId AND pl.Status = 1 AND pl.IsDeleted = 0
                 )
             )
             ORDER BY t.CreatedAt DESC;";
@@ -569,7 +569,7 @@ public class ProvinceRepository : IProvinceRepository
             INNER JOIN dbo.Places p ON rev.PlaceId = p.Id
             INNER JOIN dbo.Users u ON rev.UserId = u.Id
             LEFT JOIN dbo.UserProfiles up ON u.Id = up.UserId
-            WHERE p.ProvinceId = @ProvId AND rev.Status = 1 AND p.Status = 1
+            WHERE p.ProvinceId = @ProvId AND rev.Status = 1 AND p.Status = 1 AND p.IsDeleted = 0
             ORDER BY rev.CreatedAt DESC;";
 
         var reviewRows = (await connection.QueryAsync(reviewsSql, new { ProvId = provId })).ToList();

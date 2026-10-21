@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Search, User, Image as ImageIcon } from "lucide-react";
+import { Search, User, Image as ImageIcon, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import type { AdminProposalItem } from "@/types/admin.types";
 import { adminService, extractList } from "@/services/adminService";
 import { geographyService, type ProvinceDto } from "@/services/geographyService";
@@ -21,6 +21,7 @@ interface ProposalsTabProps {
   showToast: (msg: string) => void;
   onApprove?: (id: number, adminNotes?: string) => Promise<void>;
   onReject?: (id: number, reason: string) => Promise<void>;
+  onFilterChange?: (filters: { sortBy?: string; sortOrder?: "asc" | "desc" }) => void;
 }
 
 export const ProposalsTab: React.FC<ProposalsTabProps> = ({
@@ -32,6 +33,7 @@ export const ProposalsTab: React.FC<ProposalsTabProps> = ({
   showToast,
   onApprove,
   onReject,
+  onFilterChange,
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -41,11 +43,47 @@ export const ProposalsTab: React.FC<ProposalsTabProps> = ({
   const [proposalFilterProvince, setProposalFilterProvince] = useState("all");
   const [provinces, setProvinces] = useState<ProvinceDto[]>([]);
 
+  type SortField = "placeName" | "submittedAt" | null;
+  type SortOrder = "asc" | "desc";
+  const [sortField, setSortField] = useState<SortField>(null);
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+
+  const handleSort = (field: "placeName" | "submittedAt") => {
+    let nextOrder: SortOrder = "desc";
+    let nextField: SortField = field;
+    if (sortField === field) {
+      if (sortOrder === "desc") {
+        nextOrder = "asc";
+      } else {
+        nextField = null;
+      }
+    } else {
+      nextOrder = field === "placeName" ? "asc" : "desc";
+    }
+    setSortField(nextField);
+    setSortOrder(nextOrder);
+    onFilterChange?.({
+      sortBy: nextField || undefined,
+      sortOrder: nextField ? nextOrder : undefined,
+    });
+  };
+
+  const renderSortIcon = (field: "placeName" | "submittedAt") => {
+    if (sortField !== field) {
+      return <ArrowUpDown size={12} className="text-slate-300 group-hover:text-slate-500 transition-colors" />;
+    }
+    return sortOrder === "asc" ? (
+      <ArrowUp size={12} className="text-emerald-700" />
+    ) : (
+      <ArrowDown size={12} className="text-emerald-700" />
+    );
+  };
+
   useEffect(() => {
     geographyService.getProvinces().then((res: any) => {
       const items = extractList(res?.data || res);
       if (items.length > 0) setProvinces(items);
-    }).catch(() => {});
+    }).catch(() => { });
   }, []);
 
   const proposalPathMatch = location.pathname.match(/\/admin\/proposals\/(\d+)/i);
@@ -69,6 +107,25 @@ export const ProposalsTab: React.FC<ProposalsTabProps> = ({
     }
     return true;
   });
+
+  const sortedProposals = useMemo(() => {
+    if (!sortField) return filteredProposals;
+    return [...filteredProposals].sort((a, b) => {
+      if (sortField === "placeName") {
+        const nameA = String(a.placeName || a.proposedData?.name || "").trim().toLowerCase();
+        const nameB = String(b.placeName || b.proposedData?.name || "").trim().toLowerCase();
+        return sortOrder === "asc"
+          ? nameA.localeCompare(nameB, "vi")
+          : nameB.localeCompare(nameA, "vi");
+      }
+      if (sortField === "submittedAt") {
+        const timeA = new Date(a.submittedAt || a.createdAt || 0).getTime();
+        const timeB = new Date(b.submittedAt || b.createdAt || 0).getTime();
+        return sortOrder === "asc" ? timeA - timeB : timeB - timeA;
+      }
+      return 0;
+    });
+  }, [filteredProposals, sortField, sortOrder]);
 
   const handleApprove = async (proposal: AdminProposalItem, adminNotes?: string) => {
     if (onApprove) await onApprove(proposal.id, adminNotes);
@@ -174,16 +231,37 @@ export const ProposalsTab: React.FC<ProposalsTabProps> = ({
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-bold text-[11px] uppercase tracking-wider">
-                <th className="p-3.5 pl-4">Địa điểm đề xuất</th>
+                <th className="p-3.5 pl-4">
+                  <button
+                    type="button"
+                    onClick={() => handleSort("placeName")}
+                    className="group inline-flex items-center gap-1.5 hover:text-slate-900 transition-colors cursor-pointer select-none"
+                    title="Sắp xếp theo tên địa điểm"
+                  >
+                    <span>Địa điểm đề xuất</span>
+                    {renderSortIcon("placeName")}
+                  </button>
+                </th>
                 <th className="p-3.5">Danh mục</th>
                 <th className="p-3.5">Tỉnh / Thành</th>
                 <th className="p-3.5">Người gửi</th>
                 <th className="p-3.5">Trạng thái</th>
+                <th className="p-3.5">
+                  <button
+                    type="button"
+                    onClick={() => handleSort("submittedAt")}
+                    className="group inline-flex items-center gap-1.5 hover:text-slate-900 transition-colors cursor-pointer select-none"
+                    title="Sắp xếp theo thời gian gửi"
+                  >
+                    <span>Cập nhật</span>
+                    {renderSortIcon("submittedAt")}
+                  </button>
+                </th>
                 <th className="p-3.5 text-center">Xem chi tiết</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredProposals.map((prop) => {
+              {sortedProposals.map((prop) => {
                 const thumb =
                   prop.coverImg ||
                   prop.placeData?.coverImg ||
@@ -201,10 +279,10 @@ export const ProposalsTab: React.FC<ProposalsTabProps> = ({
                 const proposerAvatar = prop.proposerAvatar || prop.userAvatar || prop.proposer?.avatarUrl;
                 const formattedDate = prop.submittedAt
                   ? new Date(prop.submittedAt).toLocaleDateString("vi-VN", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                    })
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                  })
                   : "";
 
                 return (
@@ -268,20 +346,24 @@ export const ProposalsTab: React.FC<ProposalsTabProps> = ({
                     </td>
                     <td className="p-3.5">
                       <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                          prop.status === 0
-                            ? "bg-amber-100 text-amber-800"
-                            : prop.status === 1
+                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${prop.status === 0
+                          ? "bg-amber-100 text-amber-800"
+                          : prop.status === 1
                             ? "bg-emerald-100 text-emerald-800"
                             : "bg-rose-100 text-rose-800"
-                        }`}
+                          }`}
                       >
                         {prop.status === 0
                           ? "Chờ duyệt"
                           : prop.status === 1
-                          ? "Đã chấp nhận"
-                          : "Đã từ chối"}
+                            ? "Đã chấp nhận"
+                            : "Đã từ chối"}
                       </span>
+                    </td>
+                    <td className="p-3.5 whitespace-nowrap text-[11px]">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-semibold text-slate-800">{formattedDate || "20/10/2026"}</span>
+                      </div>
                     </td>
                     <td className="p-3.5 text-center" onClick={(e) => e.stopPropagation()}>
                       <button

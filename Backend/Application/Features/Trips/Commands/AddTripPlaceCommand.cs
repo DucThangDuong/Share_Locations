@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using Application.Common;
 using Application.DTOs;
 using Domain.Entities;
@@ -38,9 +38,9 @@ public class AddTripPlaceCommandHandler : IRequestHandler<AddTripPlaceCommand, R
         }
 
         var place = await _unitOfWork.Places.GetByIdAsync(request.Dto.PlaceId, ct);
-        if (place == null)
+        if (place == null || place.IsDeleted)
         {
-            return Result<TripPlaceDetailDto>.NotFound("Địa điểm không tồn tại.");
+            return Result<TripPlaceDetailDto>.NotFound("Địa điểm không tồn tại hoặc đã bị xóa.");
         }
 
         var day = await _unitOfWork.Trips.GetDayByTripAndNumberAsync(request.TripId, request.DayNumber, ct);

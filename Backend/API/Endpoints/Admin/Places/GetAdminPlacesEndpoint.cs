@@ -20,6 +20,8 @@ public class GetAdminPlacesRequest
         get => Keyword;
         set => Keyword = value ?? Keyword;
     }
+    public string? SortBy { get; set; }
+    public string? SortOrder { get; set; }
     public int Page { get; set; } = 1;
     public int PageSize { get; set; } = 10;
 }
@@ -36,7 +38,7 @@ public class GetAdminPlacesEndpoint : Endpoint<GetAdminPlacesRequest, ApiSuccess
         Summary(s =>
         {
             s.Summary = "Lấy danh sách địa điểm quản trị (Admin)";
-            s.Description = "Danh sách địa điểm phục vụ màn hình quản trị với đầy đủ trạng thái và tìm kiếm.";
+            s.Description = "Danh sách địa điểm phục vụ màn hình quản trị với đầy đủ trạng thái, tìm kiếm và sắp xếp toàn diện.";
         });
     }
 
@@ -48,6 +50,8 @@ public class GetAdminPlacesEndpoint : Endpoint<GetAdminPlacesRequest, ApiSuccess
                 req.CategoryId,
                 req.Status,
                 req.Keyword ?? req.Search,
+                req.SortBy,
+                req.SortOrder,
                 req.Page,
                 req.PageSize),
             ct);

@@ -10,6 +10,8 @@ public record GetAdminPlacesQuery(
     int? CategoryId = null,
     int? Status = null,
     string? Keyword = null,
+    string? SortBy = null,
+    string? SortOrder = null,
     int Page = 1,
     int PageSize = 10) : IRequest<Result<PagedResult<AdminPlaceListItemDto>>>;
 
@@ -32,6 +34,8 @@ public class GetAdminPlacesQueryHandler : IRequestHandler<GetAdminPlacesQuery, R
             request.CategoryId,
             request.Status,
             request.Keyword,
+            request.SortBy,
+            request.SortOrder,
             page,
             pageSize,
             ct);

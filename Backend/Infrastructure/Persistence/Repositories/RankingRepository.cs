@@ -1,4 +1,4 @@
-﻿using System.Data;
+using System.Data;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
 using Dapper;
@@ -605,7 +605,7 @@ public class RankingRepository : IRankingRepository
             LEFT JOIN dbo.Places p ON p.ProvinceId = prov.Id AND p.Status = 1 AND p.IsDeleted = 0
             WHERE prov.Status = 1
               AND (@RegionId IS NULL OR prov.RegionId = @RegionId)
-              AND (@CategoryId IS NULL OR EXISTS (SELECT 1 FROM dbo.Places pl WHERE pl.ProvinceId = prov.Id AND pl.CategoryId = @CategoryId AND pl.Status = 1))
+              AND (@CategoryId IS NULL OR EXISTS (SELECT 1 FROM dbo.Places pl WHERE pl.ProvinceId = prov.Id AND pl.CategoryId = @CategoryId AND pl.Status = 1 AND pl.IsDeleted = 0))
             GROUP BY prov.Id, prov.Name, prov.Slug, prov.Tagline, prov.Description, prov.ImageUrl, prov.RegionId, r.Name
             HAVING COUNT(p.Id) > 0
             ORDER BY Score DESC, TotalReviews DESC;";

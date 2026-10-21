@@ -10,7 +10,9 @@ public record GetAdminBlogsQuery(
     string? Status = null,
     string? Keyword = null,
     int Page = 1,
-    int PageSize = 10) : IRequest<Result<PagedResult<AdminBlogListItemDto>>>;
+    int PageSize = 10,
+    string? SortBy = null,
+    string? SortOrder = null) : IRequest<Result<PagedResult<AdminBlogListItemDto>>>;
 
 public class GetAdminBlogsQueryHandler : IRequestHandler<GetAdminBlogsQuery, Result<PagedResult<AdminBlogListItemDto>>>
 {
@@ -32,6 +34,8 @@ public class GetAdminBlogsQueryHandler : IRequestHandler<GetAdminBlogsQuery, Res
             request.Keyword,
             page,
             pageSize,
+            request.SortBy,
+            request.SortOrder,
             ct);
 
         return Result<PagedResult<AdminBlogListItemDto>>.Success(result);
