@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { Image, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Image, ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight } from "lucide-react";
 import type { AdminReportItem, AdminUserDetail } from "@/types/admin.types";
 import { CustomSelect } from "@/components/common/CustomSelect";
 import { geographyService, type ProvinceDto } from "@/services/geographyService";
@@ -9,7 +9,9 @@ import { adminService } from "@/services/adminService";
 const formatDateTime = (dateStr?: string) => {
   if (!dateStr) return "";
   try {
-    const d = new Date(dateStr);
+    const raw = String(dateStr).trim();
+    const utcStr = raw.endsWith("Z") || raw.includes("+") || (raw.includes("-") && raw.indexOf("-", 10) !== -1) ? raw : `${raw}Z`;
+    const d = new Date(utcStr);
     if (isNaN(d.getTime())) return dateStr;
     const hours = String(d.getHours()).padStart(2, "0");
     const minutes = String(d.getMinutes()).padStart(2, "0");
@@ -447,10 +449,10 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
                           <span className="font-bold text-slate-700">{getTargetTypeLabel(r.targetType)}</span>
                         </div>
                         <div className="flex items-start gap-2.5">
-                          {r.targetImage ? (
+                          {(r.targetImage || r.placeImage) ? (
                             <img
-                              src={r.targetImage}
-                              alt={r.targetTitle}
+                              src={r.targetImage || r.placeImage}
+                              alt={r.targetTitle || r.placeName || 'Ảnh địa điểm'}
                               className="w-11 h-11 rounded-lg object-cover bg-slate-100 shrink-0 border border-slate-200"
                               onError={(e) => {
                                 const target = e.target as HTMLImageElement;
@@ -464,21 +466,31 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
                                 }
                               }}
                             />
-                          ) : !isReviewOrComment ? (
+                          ) : (
                             <div className="w-11 h-11 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-center text-slate-300 shrink-0">
                               <Image size={18} className="text-slate-300" />
                             </div>
-                          ) : null}
+                          )}
                           <div className="space-y-1 flex-1 min-w-0">
+                            {(r.placeName || r.targetSubtitle) && (
+                              <div className="flex items-center gap-1 text-[11px] font-bold text-slate-900 truncate">
+                                <span className="truncate">{r.placeName || r.targetSubtitle}</span>
+                                {r.province && (
+                                  <span className="text-slate-400 font-normal shrink-0">({r.province})</span>
+                                )}
+                              </div>
+                            )}
                             {isReviewOrComment && contentText ? (
                               <div className="font-semibold text-slate-900 text-xs line-clamp-3 bg-slate-50/90 border border-slate-200/70 rounded-lg px-2.5 py-1.5 text-slate-800 italic">
                                 "{contentText}"
                               </div>
                             ) : (
                               <>
-                                <div className="font-bold text-slate-900 text-xs line-clamp-2">
-                                  {r.targetTitle}
-                                </div>
+                                {!r.placeName && (
+                                  <div className="font-bold text-slate-900 text-xs line-clamp-2">
+                                    {r.targetTitle}
+                                  </div>
+                                )}
                                 {contentText && (
                                   <div className="text-[11px] text-slate-500 line-clamp-2 italic bg-slate-50/70 p-1.5 rounded border border-slate-200/50">
                                     "{contentText}"
@@ -527,7 +539,7 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
                             : "bg-slate-100 text-slate-600"
                           }`}
                       >
-                        {(r as any).statusText || (r.status === 0 ? "Chờ thẩm định" : r.status === 1 ? "Đã giải quyết" : "Đã bác bỏ")}
+                        {r.status === 0 ? "Chờ xử lý" : r.status === 1 ? "Đã giải quyết" : "Đã bác bỏ"}
                       </span>
                     </td>
                     <td className="p-3.5 whitespace-nowrap text-[11px]">
@@ -538,9 +550,13 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
                     <td className="p-3.5 text-right pr-4">
                       <button
                         onClick={() => handleOpenModerationDrawer(groupKey, r.id)}
-                        className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs cursor-pointer transition-colors shadow-2xs"
+                        className={`px-3 py-1.5 rounded-xl font-bold text-xs cursor-pointer transition-colors shadow-2xs whitespace-nowrap ${
+                          r.status === 0
+                            ? "bg-slate-900 hover:bg-slate-800 text-white"
+                            : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200"
+                        }`}
                       >
-                        Thẩm định →
+                        {r.status === 0 ? "Thẩm định →" : "Xem chi tiết"}
                       </button>
                     </td>
                   </tr>
@@ -558,27 +574,61 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
           </table>
         </div>
 
-        {totalPages > 1 && (
-          <div className="p-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-            <span>
-              Trang {safePage} / {totalPages} ({filteredReports.length} báo cáo)
-            </span>
-            <div className="flex items-center gap-1.5">
-              <button
-                disabled={safePage <= 1}
-                onClick={() => setReportCurrentPage((p) => Math.max(1, p - 1))}
-                className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
-              >
-                Trước
-              </button>
-              <button
-                disabled={safePage >= totalPages}
-                onClick={() => setReportCurrentPage((p) => Math.min(totalPages, p + 1))}
-                className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
-              >
-                Sau
-              </button>
+        {sortedReports.length > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 border-t border-slate-100 text-xs text-slate-500 font-medium">
+            <div>
+              Hiển thị <strong>{paginatedReports.length}</strong> / <strong>{sortedReports.length}</strong> báo cáo (Trang <strong>{safePage}</strong> / {totalPages})
             </div>
+
+            {totalPages > 1 && (
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  disabled={safePage <= 1}
+                  onClick={() => setReportCurrentPage((p) => Math.max(1, p - 1))}
+                  className="px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-bold text-slate-700 transition-colors flex items-center gap-1 cursor-pointer"
+                >
+                  <ChevronLeft size={14} />
+                  <span>Trước</span>
+                </button>
+
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pNum = safePage - 2 + i;
+                    if (safePage <= 3) {
+                      pNum = i + 1;
+                    } else if (safePage >= totalPages - 2) {
+                      pNum = totalPages - 4 + i;
+                    }
+                    if (pNum < 1 || pNum > totalPages) return null;
+
+                    return (
+                      <button
+                        key={pNum}
+                        type="button"
+                        onClick={() => setReportCurrentPage(pNum)}
+                        className={`w-7 h-7 rounded-xl font-bold text-xs transition-colors flex items-center justify-center cursor-pointer ${safePage === pNum
+                          ? "bg-emerald-700 text-white shadow-xs"
+                          : "bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200"
+                          }`}
+                      >
+                        {pNum}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button
+                  type="button"
+                  disabled={safePage >= totalPages}
+                  onClick={() => setReportCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  className="px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-bold text-slate-700 transition-colors flex items-center gap-1 cursor-pointer"
+                >
+                  <span>Sau</span>
+                  <ChevronRight size={14} />
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

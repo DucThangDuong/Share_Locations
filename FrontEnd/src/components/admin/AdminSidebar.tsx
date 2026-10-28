@@ -89,7 +89,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           </div>
 
           <div className="px-3 py-3 space-y-4 flex-1 overflow-y-auto text-xs">
-            {/* NHÓM 1: VẬN HÀNH & KIỂM DUYỆT */}
             <div className="space-y-1">
               {isSidebarOpen && (
                 <div className="px-3 pt-1 pb-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
@@ -137,7 +136,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                 );
               })}
 
-              {/* Báo cáo vi phạm với Menu con */}
               <div>
                 <button
                   onClick={() => {
@@ -223,7 +221,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                 )}
               </div>
 
-              {/* Đánh giá & Bình luận và Quản lý tài khoản */}
               {[
                 {
                   id: "reviews_comments",
@@ -264,7 +261,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               })}
             </div>
 
-            {/* NHÓM 2: NỘI DUNG & DANH MỤC */}
             <div className="space-y-1 pt-2 border-t border-slate-100">
               {isSidebarOpen && (
                 <div className="px-3 pt-1 pb-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
@@ -274,7 +270,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
               {[
                 ...(isSystemAdmin ? [{ id: "categories", label: "Danh mục", icon: Layers }] : []),
-                { id: "foods", label: "Món ăn & Thực đơn", icon: Utensils },
+                { id: "foods", label: "Món ăn", icon: Utensils },
                 { id: "collections", label: "Bộ sưu tập", icon: FolderHeart },
                 { id: "blogs", label: "Cẩm nang", icon: BookOpen },
                 { id: "rankings", label: "Bảng xếp hạng", icon: Trophy },
@@ -312,7 +308,6 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               })}
             </div>
 
-            {/* NHÓM 3: HỆ THỐNG & PHÂN QUYỀN */}
             <div className="space-y-1 pt-2 border-t border-slate-100">
               {isSidebarOpen && (
                 <div className="px-3 pt-1 pb-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">

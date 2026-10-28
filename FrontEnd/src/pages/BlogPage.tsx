@@ -5,6 +5,7 @@ import type { BlogListItemDto, BlogDetailDto } from '@/types/models/blogArticle.
 import { BlogFeedView, BlogReaderView, ArticleEditorView, type EditorOutputData } from '@/components/blog'
 import { blogService } from '@/services/blogService'
 import { placeService } from '@/services/placeService'
+import { useAuth } from '@/context/AuthContext'
 import type { LookupItemDto } from '@/types/models/place.model'
 
 interface EditingArticleState {
@@ -23,6 +24,7 @@ export const BlogPage: React.FC = () => {
   const location = useLocation()
   const params = useParams<{ id?: string }>()
   const [searchParams, setSearchParams] = useSearchParams()
+  const { user: currentUser, isAuthenticated, isLoading: authLoading } = useAuth()
 
   const [articles, setArticles] = useState<BlogListItemDto[]>([])
   const [categories, setCategories] = useState<LookupItemDto[]>([])
@@ -32,6 +34,7 @@ export const BlogPage: React.FC = () => {
   const [editingArticleData, setEditingArticleData] = useState<EditingArticleState | null>(null)
   const [likedArticles, setLikedArticles] = useState<Set<number>>(new Set())
   const [savedArticles, setSavedArticles] = useState<Set<number>>(new Set())
+  const [totalPages, setTotalPages] = useState<number>(1)
   const [toastMsg, setToastMsg] = useState('')
 
   const showToast = (msg: string) => {
@@ -66,34 +69,44 @@ export const BlogPage: React.FC = () => {
 
   const appliedFilters = useMemo(() => {
     const q = searchParams.get('q') || searchParams.get('keyword') || ''
-    const catIdStr = searchParams.get('catId') || searchParams.get('catIds') || searchParams.get('categoryIds') || searchParams.get('categoryId') || ''
-    const catIds = catIdStr ? catIdStr.split(',').map(Number).filter(Boolean) : []
+    const categoryIdStr = searchParams.get('category') || searchParams.get('categoryId')
+    const categoryId = categoryIdStr ? parseInt(categoryIdStr, 10) : undefined
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1)
+    const size = Math.max(1, parseInt(searchParams.get('size') || searchParams.get('pageSize') || '9', 10) || 9)
 
     return {
       search: q,
-      categoryIds: catIds
+      categoryId,
+      page,
+      size
     }
   }, [searchParams])
 
   const fetchArticles = useCallback(async () => {
     try {
-      const isAllCategoriesSelected = categories.length > 0 && appliedFilters.categoryIds.length === categories.length
-
       const res = await blogService.getBlogs({
         keyword: appliedFilters.search.trim() || undefined,
-        categoryIds: !isAllCategoriesSelected && appliedFilters.categoryIds.length > 0 ? appliedFilters.categoryIds : undefined,
-        page: 1,
-        pageSize: 50
+        categoryId: appliedFilters.categoryId,
+        page: appliedFilters.page,
+        size: appliedFilters.size,
+        pageSize: appliedFilters.size
       })
       if (res.success && Array.isArray(res.data)) {
         setArticles(res.data)
+        if (res.meta) {
+          setTotalPages(res.meta.totalPages || Math.max(1, Math.ceil(res.meta.totalElements / appliedFilters.size)))
+        } else {
+          setTotalPages(Math.max(1, Math.ceil(res.data.length / appliedFilters.size)))
+        }
       } else {
         setArticles([])
+        setTotalPages(1)
       }
     } catch {
       setArticles([])
+      setTotalPages(1)
     }
-  }, [appliedFilters, categories])
+  }, [appliedFilters])
 
   useEffect(() => {
     fetchArticles()
@@ -105,6 +118,12 @@ export const BlogPage: React.FC = () => {
     const viewId = params.id || searchParams.get('id')
 
     if (mode === 'create') {
+      if (authLoading) return
+      if (!isAuthenticated || !currentUser) {
+        showToast('Vui lòng đăng nhập để viết cẩm nang du lịch.')
+        navigate('/login', { state: { from: '/blog?mode=create' } })
+        return
+      }
       setEditingArticleData({
         title: '',
         summary: '',
@@ -120,6 +139,12 @@ export const BlogPage: React.FC = () => {
     }
 
     if (editId) {
+      if (authLoading) return
+      if (!isAuthenticated || !currentUser) {
+        showToast('Vui lòng đăng nhập để chỉnh sửa cẩm nang.')
+        navigate('/login', { state: { from: `/blog?edit=${editId}` } })
+        return
+      }
       const idNum = Number(editId)
       const passedBlog = (location.state as any)?.editBlog
       if (passedBlog && (passedBlog.id === idNum || !idNum)) {
@@ -213,12 +238,19 @@ export const BlogPage: React.FC = () => {
       blogService.getBlogDetail(viewId)
         .then((res) => {
           if (res.success && res.data) {
-            setDetailedArticle(res.data)
+            const idNum = Number(viewId)
+            const fallbackItem = articles.find((a) => a.id === idNum || (a.slug && a.slug === viewId) || a.title === res.data.title)
+            const views = res.data.viewCount || res.data.views || fallbackItem?.viewCount || fallbackItem?.views || 0
+            setDetailedArticle({
+              ...res.data,
+              viewCount: views,
+              views: views
+            })
           }
         })
         .catch(() => {
           const idNum = Number(viewId)
-          const fallback = articles.find((a) => a.id === idNum)
+          const fallback = articles.find((a) => a.id === idNum || (a.slug && a.slug === viewId))
           if (fallback) setDetailedArticle(fallback)
         })
         .finally(() => {
@@ -231,7 +263,7 @@ export const BlogPage: React.FC = () => {
       setViewMode('feed')
       setDetailedArticle(null)
     }
-  }, [searchParams, params.id, location.state, articles, categories])
+  }, [searchParams, params.id, location.state, articles, categories, isAuthenticated, currentUser, authLoading])
 
   const handleSearchChange = (q: string) => {
     const p = new URLSearchParams(searchParams)
@@ -251,30 +283,30 @@ export const BlogPage: React.FC = () => {
     setSearchParams(p)
   }
 
-  const handleCategoryToggle = (cat: LookupItemDto) => {
-    const isSelected = appliedFilters.categoryIds.includes(cat.id)
-    const nextCatIds = isSelected
-      ? appliedFilters.categoryIds.filter((id) => id !== cat.id)
-      : [...appliedFilters.categoryIds, cat.id]
-
+  const handlePageChange = (newPage: number) => {
     const p = new URLSearchParams(searchParams)
-    if (nextCatIds.length > 0) {
-      p.set('catId', nextCatIds.join(','))
-    } else {
-      p.delete('catId')
-      p.delete('catIds')
-      p.delete('categoryIds')
-      p.delete('categoryId')
-    }
+    p.set('page', String(newPage))
     setSearchParams(p)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const handleClearCategories = () => {
+  const handlePageSizeChange = (newSize: number) => {
     const p = new URLSearchParams(searchParams)
-    p.delete('catId')
-    p.delete('catIds')
-    p.delete('categoryIds')
-    p.delete('categoryId')
+    p.set('size', String(newSize))
+    p.set('page', '1')
+    setSearchParams(p)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const handleSelectCategory = (catId?: number | null) => {
+    const p = new URLSearchParams(searchParams)
+    if (catId) {
+      p.set('category', String(catId))
+    } else {
+      p.delete('category')
+      p.delete('categoryId')
+    }
+    p.set('page', '1')
     setSearchParams(p)
   }
 
@@ -287,6 +319,11 @@ export const BlogPage: React.FC = () => {
   }
 
   const handleCreateArticle = () => {
+    if (!isAuthenticated || !currentUser) {
+      showToast('Vui lòng đăng nhập để viết cẩm nang du lịch.')
+      navigate('/login', { state: { from: '/blog?mode=create' } })
+      return
+    }
     navigate('/blog?mode=create')
   }
 
@@ -350,6 +387,11 @@ export const BlogPage: React.FC = () => {
 
   const handleToggleLike = async (id: number, e?: React.MouseEvent) => {
     if (e) e.stopPropagation()
+    if (!isAuthenticated || !currentUser) {
+      showToast('Vui lòng đăng nhập để thích bài viết.')
+      navigate('/login', { state: { from: location.pathname } })
+      return
+    }
     try {
       const res = await blogService.toggleLike(id)
       if (res.success) {
@@ -368,6 +410,11 @@ export const BlogPage: React.FC = () => {
 
   const handleToggleSave = (id: number, e?: React.MouseEvent) => {
     if (e) e.stopPropagation()
+    if (!isAuthenticated || !currentUser) {
+      showToast('Vui lòng đăng nhập để lưu bài viết.')
+      navigate('/login', { state: { from: location.pathname } })
+      return
+    }
     setSavedArticles((prev) => {
       const next = new Set(prev)
       if (next.has(id)) {
@@ -453,13 +500,17 @@ export const BlogPage: React.FC = () => {
         <BlogFeedView
           articles={articles}
           categories={categories}
+          selectedCategoryId={appliedFilters.categoryId}
           searchQuery={appliedFilters.search}
-          selectedCategoryIds={appliedFilters.categoryIds}
+          currentPage={appliedFilters.page}
+          pageSize={appliedFilters.size}
+          totalPages={totalPages}
           onSearchChange={handleSearchChange}
           onClearSearch={handleClearSearch}
-          onCategoryToggle={handleCategoryToggle}
-          onClearCategories={handleClearCategories}
+          onSelectCategory={handleSelectCategory}
           onResetFilters={handleResetFilters}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
           onOpenArticle={handleOpenArticle}
           onCreateArticle={handleCreateArticle}
         />

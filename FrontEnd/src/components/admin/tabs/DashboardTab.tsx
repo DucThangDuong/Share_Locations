@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import type {
   AdminProposalItem,
   AdminReportItem,
@@ -51,7 +52,7 @@ interface DashboardTabProps {
   setRevComTab: (v: "reviews" | "comments") => void;
   setRevReportFilter: (v: string) => void;
   setReportSubTab: (v: any) => void;
-  setIsAddPlaceModalOpen: (v: boolean) => void;
+  setIsAddPlaceModalOpen?: (v: boolean) => void;
   showToast?: (msg: string) => void;
   onRefresh?: () => Promise<void> | void;
 }
@@ -77,10 +78,11 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
   setRevComTab,
   setRevReportFilter,
   setReportSubTab,
-  setIsAddPlaceModalOpen,
+  setIsAddPlaceModalOpen: _setIsAddPlaceModalOpen,
   showToast,
   onRefresh,
 }) => {
+  const navigate = useNavigate();
   const [queueFilter, setQueueFilter] = useState<"all" | "urgent" | "proposals" | "reports">("all");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdatedTime, setLastUpdatedTime] = useState<Date>(new Date());
@@ -131,7 +133,6 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
     fetchTrends(dashTimeRange, dashRegion);
   }, [fetchTrends, dashTimeRange, dashRegion]);
 
-  // 2. Fetch Priority Queue (filter)
   const fetchQueue = useCallback(async (filter: string) => {
     setIsLoadingQueue(true);
     try {
@@ -150,7 +151,6 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
     fetchQueue(queueFilter);
   }, [fetchQueue, queueFilter]);
 
-  // 3. Fetch SLA Performance & Contributors Summary
   const fetchSlaAndContributors = useCallback(async () => {
     try {
       const [slaRes, contribRes] = await Promise.allSettled([
@@ -164,7 +164,6 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
         setContributorsData((contribRes.value as any)?.data ?? contribRes.value);
       }
     } catch {
-      // safe fallback
     }
   }, []);
 
@@ -191,7 +190,6 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
     }
   };
 
-  // 1. KPI Counts with real/fallback values
   const totalPlacesCount =
     metrics?.summary?.totalPlaces && metrics.summary.totalPlaces > 0
       ? metrics.summary.totalPlaces
@@ -218,7 +216,6 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
       ? metrics.summary.totalReviews
       : 5256;
 
-  // 2. Queue navigation handler
   const handleItemAction = (item: AdminPriorityQueueItemDto) => {
     const t = String(item.type || "").toLowerCase();
     if (t === "reports" || t === "report") {
@@ -347,9 +344,9 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
             </div>
           </div>
 
-          {/* Nút thêm địa điểm */}
           <button
-            onClick={() => setIsAddPlaceModalOpen(true)}
+            type="button"
+            onClick={() => navigate('/admin/places/create')}
             className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition-all shadow-sm shadow-emerald-600/20 cursor-pointer"
           >
             <Plus size={14} />
@@ -358,9 +355,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
         </div>
       </div>
 
-      {/* HÀNG 4 KPI CARDS CHUẨN MENTOR */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* KPI 1: Tổng số địa điểm */}
         <div
           onClick={() => setMainTab("places")}
           className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs hover:border-slate-300 transition-all cursor-pointer group"
@@ -387,7 +382,6 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
           </p>
         </div>
 
-        {/* KPI 2: Đề xuất chờ duyệt */}
         <div
           onClick={() => setMainTab("proposals")}
           className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs hover:border-slate-300 transition-all cursor-pointer group"
@@ -413,7 +407,6 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
           </p>
         </div>
 
-        {/* KPI 3: Báo cáo vi phạm */}
         <div
           onClick={() => setMainTab("reports")}
           className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs hover:border-slate-300 transition-all cursor-pointer group"
@@ -439,7 +432,6 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
           </p>
         </div>
 
-        {/* KPI 4: Đánh giá & Bình luận */}
         <div
           onClick={() => setMainTab("reviews_comments")}
           className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs hover:border-slate-300 transition-all cursor-pointer group"
@@ -466,9 +458,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
         </div>
       </div>
 
-      {/* BỐ CỤC CHÍNH: KHỐI TRÁI 60% VÀ KHỐI PHẢI 40% */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* KHỐI TRÁI (60%): HÀNG ĐỢI KIỂM DUYỆT ƯU TIÊN VỚI SỰ VỤ THỰC TẾ */}
         <div className="lg:col-span-7 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
             <div>
@@ -481,7 +471,6 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
               </p>
             </div>
 
-            {/* Filter tabs với Badge đếm số lượng sự vụ */}
             <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-[11px] font-semibold">
               {[
                 { id: "all" as const, label: "Tất cả", count: queueItems.length },
@@ -507,7 +496,6 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
             </div>
           </div>
 
-          {/* Danh sách các sự vụ thực tế từ API */}
           {isLoadingQueue ? (
             <div className="py-12 flex flex-col items-center justify-center text-slate-400 gap-2">
               <RefreshCw className="animate-spin text-slate-400" size={20} />
@@ -584,9 +572,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
           )}
         </div>
 
-        {/* KHỐI PHẢI (40%): HIỆU SUẤT VẬN HÀNH & BIỂU ĐỒ XU HƯỚNG */}
         <div className="lg:col-span-5 space-y-6">
-          {/* Card 1: Biểu đồ xu hướng Time-Series (Đánh giá mới & Báo cáo vi phạm) */}
           <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
               <div>
@@ -599,7 +585,6 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
                 </p>
               </div>
 
-              {/* Chú thích Legend */}
               <div className="flex items-center gap-3 text-[10px] font-semibold">
                 <span className="flex items-center gap-1 text-emerald-700">
                   <span className="w-2.5 h-2.5 rounded-xs bg-emerald-600 inline-block" />
@@ -612,7 +597,6 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
               </div>
             </div>
 
-            {/* Time-Series Chart */}
             <div className="pt-2">
               {isLoadingTrends ? (
                 <div className="h-40 flex flex-col items-center justify-center text-slate-400 gap-2 border-b border-slate-200">
@@ -630,12 +614,10 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
                     const repHeight = d.reports > 0 ? Math.max(4, Math.round((d.reports / maxVal) * 110)) : 0;
                     const isHovered = activeHoverBarIndex === idx;
 
-                    // Adaptive tick step for dense data (24h or 30d) so labels never cram or overlap
                     const tickStep = trendsData.length > 20 ? 4 : trendsData.length > 12 ? 3 : 1;
                     const shouldShowLabel = idx % tickStep === 0 || idx === trendsData.length - 1;
                     const isDense = trendsData.length > 12;
 
-                    // Tooltip edge boundary protection
                     let tooltipAlign = "left-1/2 -translate-x-1/2";
                     if (idx <= 2) {
                       tooltipAlign = "left-0";
@@ -650,7 +632,6 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
                         onMouseEnter={() => setActiveHoverBarIndex(idx)}
                         onMouseLeave={() => setActiveHoverBarIndex(null)}
                       >
-                        {/* Tooltip khi hover */}
                         {isHovered && (
                           <div className={`absolute -top-14 z-30 bg-slate-900 text-white text-[10px] py-1.5 px-2.5 rounded-lg shadow-xl whitespace-nowrap animate-in fade-in zoom-in-95 duration-150 ${tooltipAlign}`}>
                             <div className="font-bold text-slate-300 border-b border-slate-700 pb-0.5 mb-1">
@@ -667,7 +648,6 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
                           </div>
                         )}
 
-                        {/* Hai cột: Đánh giá & Báo cáo */}
                         <div className="w-full flex items-end justify-center gap-0.5 h-28">
                           {d.reviews === 0 && d.reports === 0 ? (
                             <div className="w-1 sm:w-1.5 h-1 bg-slate-200 group-hover:bg-slate-400 rounded-full transition-colors mb-0.5" />
@@ -685,7 +665,6 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
                           )}
                         </div>
 
-                        {/* Nhãn trục X: hiển thị tick chẵn nhịp nhàng tránh chồng lấn */}
                         <span
                           className={`text-[10px] transition-colors truncate max-w-full text-center ${shouldShowLabel
                             ? "font-semibold text-slate-500 group-hover:text-slate-900"
@@ -709,7 +688,6 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
             </div>
           </div>
 
-          {/* Card 2: 3 Thanh Progress Bar Chỉ số hoàn thành vận hành thực tế */}
           <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
             <div className="border-b border-slate-100 pb-3">
               <h3 className="font-bold text-sm text-slate-900 tracking-tight flex items-center gap-2">
@@ -731,7 +709,6 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
                     </span>
                   </div>
 
-                  {/* Thanh Progress Bar chuẩn xác */}
                   <div className="w-full h-2 rounded-full bg-slate-200 overflow-hidden flex">
                     <div
                       className={`h-full ${st.color} transition-all duration-300 rounded-full`}
@@ -747,7 +724,6 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
             </div>
           </div>
 
-          {/* Card 3: Thống kê Người dùng mới & Top địa bàn hoạt động */}
           <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
             <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
               <div className="flex items-center gap-2">

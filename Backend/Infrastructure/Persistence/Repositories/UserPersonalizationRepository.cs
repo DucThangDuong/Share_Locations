@@ -529,7 +529,7 @@ public class UserPersonalizationRepository : IUserPersonalizationRepository
                 (SELECT COUNT(1) FROM dbo.VisitLogs WHERE UserId = @TargetUserId AND (@IsCurrentUser = 1 OR Privacy = 0)) AS VisitLogCount,
                 (SELECT COUNT(1) FROM dbo.Trips t WHERE (t.UserId = @TargetUserId OR EXISTS (SELECT 1 FROM dbo.TripMembers tm WHERE tm.TripId = t.Id AND tm.UserId = @TargetUserId)) AND (@IsCurrentUser = 1 OR t.Privacy = 0)) AS TripCount,
                 (SELECT COUNT(1) FROM dbo.Blogs WHERE AuthorId = @TargetUserId AND (@IsCurrentUser = 1 OR Status = 1)) AS BlogCount,
-                (SELECT COUNT(1) FROM dbo.Proposals WHERE UserId = @TargetUserId AND (@IsCurrentUser = 1 OR Status = 1)) AS ProposalCount;";
+                (SELECT COUNT(1) FROM dbo.Proposals WHERE UserId = @TargetUserId AND Status = 1) AS ProposalCount;";
 
         var counts = await connection.QuerySingleAsync(countsSql, new
         {
@@ -647,7 +647,7 @@ public class UserPersonalizationRepository : IUserPersonalizationRepository
             LEFT JOIN dbo.Categories cat ON pr.CategoryId = cat.Id
             LEFT JOIN dbo.Provinces prov ON pr.ProvinceId = prov.Id
             WHERE pr.UserId = @TargetUserId
-              AND (@IsCurrentUser = 1 OR pr.Status = 1)
+              AND pr.Status = 1
               AND (COALESCE(p.Latitude, TRY_CAST(JSON_VALUE(pr.ProposedDataJSON, '$.latitude') AS FLOAT), TRY_CAST(JSON_VALUE(pr.ProposedDataJSON, '$.Latitude') AS FLOAT)) IS NOT NULL)
 
             ORDER BY [Date] DESC;";

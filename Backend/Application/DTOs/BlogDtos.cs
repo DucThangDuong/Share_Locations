@@ -1,4 +1,4 @@
-﻿namespace Application.DTOs;
+namespace Application.DTOs;
 
 public class BlogAuthorDto
 {
@@ -10,17 +10,22 @@ public class BlogAuthorDto
 public class BlogListItemDto
 {
     public long Id { get; set; }
-    public string Slug { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
+    public string? Summary { get; set; }
     public string? Excerpt { get; set; }
-    public string Content { get; set; } = string.Empty;
-    public string Category { get; set; } = string.Empty;
-    public string ReadTime { get; set; } = "5 phút đọc";
+    public string? CoverImageUrl { get; set; }
     public string? CoverUrl { get; set; }
-    public BlogAuthorDto Author { get; set; } = new();
-    public string PublishedAt { get; set; } = string.Empty;
-    public IReadOnlyList<string> Tags { get; set; } = [];
+    public string AuthorName { get; set; } = string.Empty;
+    public string? AuthorAvatar { get; set; }
+    public DateTime PublishedAt { get; set; }
+    public int ViewCount { get; set; }
     public bool Featured { get; set; }
+    public int? CategoryId { get; set; }
+    public string Category { get; set; } = string.Empty;
+    public string Slug { get; set; } = string.Empty;
+    public string Content { get; set; } = string.Empty;
+    public BlogAuthorDto Author { get; set; } = new();
+    public IReadOnlyList<string> Tags { get; set; } = [];
 }
 
 public class BlogDetailDto : BlogListItemDto

@@ -920,23 +920,9 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
                 size="sm"
                 className="min-w-[140px] shrink-0"
               />
-
-              <button
-                type="submit"
-                className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl transition-colors cursor-pointer shrink-0"
-              >
-                Lọc
-              </button>
             </form>
 
             <div className="flex items-center gap-2 w-full lg:w-auto justify-end">
-              <button
-                onClick={() => fetchCategories()}
-                className="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
-                title="Làm mới"
-              >
-                <RefreshCw size={16} className={isCategoriesLoading ? "animate-spin text-emerald-600" : ""} />
-              </button>
 
               <button
                 onClick={() => handleOpenCategoryDetail()}

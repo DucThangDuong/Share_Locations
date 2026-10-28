@@ -5,7 +5,7 @@ using MediatR;
 
 namespace Application.Features.Blogs.Queries;
 
-public record GetBlogsQuery(BlogFilterParams FilterParams) : IRequest<Result<IReadOnlyList<BlogListItemDto>>>
+public record GetBlogsQuery(BlogFilterParams FilterParams) : IRequest<Result<PagedResult<BlogListItemDto>>>
 {
     public GetBlogsQuery(
         string? category = null,
@@ -22,7 +22,7 @@ public record GetBlogsQuery(BlogFilterParams FilterParams) : IRequest<Result<IRe
     }
 }
 
-public class GetBlogsQueryHandler : IRequestHandler<GetBlogsQuery, Result<IReadOnlyList<BlogListItemDto>>>
+public class GetBlogsQueryHandler : IRequestHandler<GetBlogsQuery, Result<PagedResult<BlogListItemDto>>>
 {
     private readonly IBlogRepository _blogRepository;
 
@@ -31,10 +31,10 @@ public class GetBlogsQueryHandler : IRequestHandler<GetBlogsQuery, Result<IReadO
         _blogRepository = blogRepository;
     }
 
-    public async Task<Result<IReadOnlyList<BlogListItemDto>>> Handle(GetBlogsQuery request, CancellationToken ct)
+    public async Task<Result<PagedResult<BlogListItemDto>>> Handle(GetBlogsQuery request, CancellationToken ct)
     {
         var blogs = await _blogRepository.GetBlogsAsync(request.FilterParams, ct);
 
-        return Result<IReadOnlyList<BlogListItemDto>>.Success(blogs);
+        return Result<PagedResult<BlogListItemDto>>.Success(blogs);
     }
 }

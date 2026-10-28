@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react'
 import {
   X,
   Send,
-  Lock,
   AlertTriangle,
   FileText,
   Image as ImageIcon,
@@ -190,11 +189,8 @@ export const ItineraryPublishModal: React.FC<ItineraryPublishModalProps> = ({
 
         <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1 text-xs">
           <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200/80 text-amber-900 flex items-start gap-3">
-            <div className="p-1 bg-amber-100 rounded-lg text-amber-800 shrink-0 mt-0.5">
-              <Lock size={15} />
-            </div>
             <div className="space-y-1">
-              <p className="font-bold text-xs">Chế độ Chỉ xem sau khi xuất bản:</p>
+              <p className="font-bold text-xs">Chế độ Chỉ xem sau khi xuất bản</p>
               <p className="text-[11px] leading-relaxed text-amber-800/90 font-medium">
                 Sau khi xuất bản, chuyến đi sẽ được chia sẻ công khai và <strong>khóa ở chế độ chỉ xem</strong>. Bạn (và các thành viên) sẽ không thể chỉnh sửa điểm dừng, ngày đi hoặc mời thêm thành viên nữa.
               </p>
@@ -267,7 +263,7 @@ export const ItineraryPublishModal: React.FC<ItineraryPublishModalProps> = ({
             <div className="flex items-center justify-between mb-1.5">
               <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
                 <ImageIcon size={13} className="text-emerald-700" />
-                <span>Ảnh bìa chuyến đi (Tùy chọn)</span>
+                <span>Ảnh bìa chuyến đi</span>
               </label>
               <span className="text-[10px] text-slate-400">Hỗ trợ JPG, PNG, WEBP, GIF (Tối đa 5MB)</span>
             </div>
@@ -329,9 +325,6 @@ export const ItineraryPublishModal: React.FC<ItineraryPublishModalProps> = ({
                 </div>
                 <p className="text-xs font-bold text-slate-800">
                   Nhấn để chọn ảnh từ máy tính hoặc kéo thả vào đây
-                </p>
-                <p className="text-[11px] text-slate-500 mt-0.5">
-                  Chọn bức ảnh đẹp nhất để thu hút người xem trong thư viện cộng đồng
                 </p>
               </div>
             )}

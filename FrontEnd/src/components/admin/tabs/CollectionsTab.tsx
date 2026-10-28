@@ -24,7 +24,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Image as ImageIcon,
-  Save
+  Save,
+  Eye,
+  EyeOff
 } from "lucide-react";
 import {
   adminService,
@@ -769,7 +771,7 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
                       value={inlineTitleValue}
                       onChange={(e) => setInlineTitleValue(e.target.value)}
                       placeholder="Nhập tên bộ sưu tập..."
-                      className="px-3 py-1 text-sm font-extrabold text-slate-900 bg-slate-50 border border-emerald-500 rounded-lg outline-none focus:bg-white w-full max-w-md"
+                      className="px-3 py-1 text-sm font-bold text-slate-900 bg-slate-50 border border-emerald-500 rounded-lg outline-none focus:bg-white w-full max-w-md"
                       autoFocus
                       onKeyDown={(e) => {
                         if (e.key === "Enter") handleSaveInlineTitle();
@@ -795,9 +797,20 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h2 className="text-base sm:text-lg font-extrabold text-slate-900 truncate">
+                    <h2 className="text-base sm:text-lg font-bold text-slate-900 truncate">
                       {activeCollection.title}
                     </h2>
+                    {!isCreatingNew && (
+                      <span
+                        className={`inline-flex items-center justify-center px-3 py-0.5 rounded-xl text-xs font-bold border transition-colors ${
+                          activeCollection.status === 1
+                            ? "bg-[#e6fcf5] text-[#087f5b] border-[#63e6be]"
+                            : "bg-slate-100 text-slate-700 border-slate-300"
+                        }`}
+                      >
+                        {activeCollection.status === 1 ? "Công khai" : "Tạm ẩn"}
+                      </span>
+                    )}
                     <button
                       type="button"
                       onClick={() => {
@@ -920,20 +933,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
                     />
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => handleToggleCollectionStatus(activeCollection.id)}
-                    className={`inline-flex items-center justify-center px-3.5 py-1 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${activeCollection.status === 1
-                      ? "bg-[#e6fcf5] text-[#087f5b] border-[#63e6be] hover:bg-[#d3f9ec]"
-                      : "bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200"
-                      }`}
-                    title={activeCollection.status === 1 ? "Bấm để chuyển sang Tạm ẩn" : "Bấm để chuyển sang Công khai"}
-                  >
-                    <span>{activeCollection.status === 1 ? "Công khai" : "Tạm ẩn"}</span>
-                  </button>
-
-                  <span className="text-slate-300">•</span>
-                  <span>Thứ tự: <strong className="text-slate-800">#{activeCollection.displayOrder}</strong></span>
                   <span className="text-slate-300">•</span>
                   <span><strong className="text-emerald-800">{collectionPlaces.length}</strong> địa điểm đã chọn</span>
                 </div>
@@ -941,6 +940,21 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
             </div>
 
             <div className="flex items-center gap-2 shrink-0 flex-wrap">
+              {!isCreatingNew && (
+                <button
+                  type="button"
+                  onClick={() => handleToggleCollectionStatus(activeCollection.id)}
+                  className={`flex items-center gap-1.5 px-3 py-2 font-semibold rounded-xl cursor-pointer transition-colors text-xs ${
+                    activeCollection.status === 1
+                      ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200"
+                      : "bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-xs"
+                  }`}
+                  title={activeCollection.status === 1 ? "Tạm ẩn bộ sưu tập khỏi trang người dùng" : "Công khai lại bộ sưu tập"}
+                >
+                  {activeCollection.status === 1 ? <EyeOff size={14} /> : <Eye size={14} />}
+                  <span>{activeCollection.status === 1 ? "Tạm ẩn bộ sưu tập" : "Công khai bộ sưu tập"}</span>
+                </button>
+              )}
               {hasUnsavedChanges && !isCreatingNew && (
                 <button
                   type="button"
@@ -973,7 +987,7 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
                 type="button"
                 disabled={isSavingPlaces || (!hasUnsavedChanges && !isCreatingNew)}
                 onClick={handleSaveCollectionPlaces}
-                className={`px-4 py-2.5 rounded-xl font-extrabold transition-all flex items-center gap-2 text-xs ${hasUnsavedChanges || isCreatingNew
+                className={`px-4 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 text-xs ${hasUnsavedChanges || isCreatingNew
                   ? "bg-emerald-800 hover:bg-emerald-900 text-white shadow-sm ring-2 ring-emerald-400/50 cursor-pointer"
                   : "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed shadow-none"
                   }`}
@@ -1411,17 +1425,18 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
                     return (
                       <div
                         key={place.id}
-                        className={`bg-white rounded-2xl border overflow-hidden transition-all flex flex-col ${isInCollection
+                        className={`group bg-white rounded-2xl border overflow-hidden transition-all flex flex-col ${isInCollection
                           ? "border-emerald-300 ring-1 ring-emerald-200 shadow-2xs"
                           : "border-slate-200 hover:border-slate-300 hover:shadow-xs"
                           }`}
                       >
-                        <div className="relative h-44 w-full bg-slate-100 overflow-hidden group flex items-center justify-center">
+                        <div className="relative aspect-[4/3] w-full bg-slate-100 overflow-hidden shrink-0">
                           {rawThumbnail ? (
                             <img
                               src={rawThumbnail}
                               alt={place.name}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              className="w-full h-full object-cover"
+                              loading="lazy"
                               onError={(e) => {
                                 const target = e.target as HTMLImageElement;
                                 target.style.display = "none";
@@ -1442,29 +1457,50 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
                             <span className="text-[11px] font-semibold text-slate-400">Chưa có hình ảnh</span>
                           </div>
 
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+                          {/* Hover trắng mờ */}
+                          <div className="absolute inset-0 bg-white/0 group-hover:bg-white/20 transition-colors duration-200 pointer-events-none" />
 
-                          <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between text-white text-[11px] font-bold z-10">
-                            <span className="flex items-center gap-1 truncate max-w-[170px] drop-shadow-xs">
-                              <MapPin size={11} className="text-emerald-400 shrink-0" />
-                              <span className="truncate">{place.provinceName || place.regionName || "Việt Nam"}</span>
-                            </span>
-                            <span className="flex items-center gap-1 bg-black/40 backdrop-blur-xs px-2 py-0.5 rounded-md border border-white/20 shrink-0">
-                              <Star size={11} className="fill-amber-400 text-amber-400" />
-                              <span>{Number(place.avgRating || 5).toFixed(1)}</span>
-                              <span className="text-white/70 font-normal">({place.reviewCount || 0})</span>
-                            </span>
-                          </div>
+                          {/* Badge khi đã thêm vào BST */}
+                          {isInCollection && (
+                            <div className="absolute top-2.5 right-2.5 bg-emerald-700 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-sm">
+                              <Check size={12} strokeWidth={3} />
+                              <span>Đã thêm</span>
+                            </div>
+                          )}
                         </div>
 
                         <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
                           <div>
-                            <h4 className="font-extrabold text-sm text-slate-900 line-clamp-1 hover:text-emerald-800 transition-colors">
-                              <Link to={`/places/${place.id}`} target="_blank" rel="noreferrer">
+                            <div className="flex items-center justify-between text-xs text-slate-500">
+                              <div className="flex items-center gap-1.5 text-slate-600 font-medium truncate">
+                                <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                <span className="truncate">
+                                  {place.provinceName
+                                    ? place.regionName
+                                      ? `${place.provinceName}, ${place.regionName}`
+                                      : place.provinceName
+                                    : place.address || "Việt Nam"}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1 font-bold text-slate-900 shrink-0">
+                                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                                <span>{Number(place.avgRating || 5).toFixed(1)}</span>
+                                <span className="text-slate-400 font-normal">({place.reviewCount || 0})</span>
+                              </div>
+                            </div>
+
+                            <h3 className="font-extrabold text-base text-emerald-950 group-hover:text-emerald-700 transition-colors line-clamp-1 mt-1.5">
+                              <Link
+                                to={`/places/${place.id}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="hover:underline"
+                              >
                                 {place.name}
                               </Link>
-                            </h4>
-                            <p className="text-[11px] text-slate-500 line-clamp-2 mt-1 leading-relaxed">
+                            </h3>
+
+                            <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed mt-1 font-normal">
                               {place.description || place.address || "Địa điểm hấp dẫn được cộng đồng đánh giá cao."}
                             </p>
                           </div>
@@ -1474,20 +1510,20 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
                               type="button"
                               onClick={() => handleAddPlaceToCollection(place)}
                               disabled={isInCollection}
-                              className={`w-full py-2 px-3 rounded-xl font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs ${isInCollection
+                              className={`w-full py-2 px-3 rounded-xl font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all shadow-2xs ${isInCollection
                                 ? "bg-emerald-50 text-emerald-800 border border-emerald-200 cursor-default"
-                                : "bg-emerald-800 hover:bg-emerald-900 text-white shadow-xs"
+                                : "bg-emerald-800 hover:bg-emerald-900 text-white shadow-xs cursor-pointer"
                                 }`}
                             >
                               {isInCollection ? (
                                 <>
                                   <Check size={13} strokeWidth={3} />
-                                  <span>Đã thêm</span>
+                                  <span>Đã có trong BST</span>
                                 </>
                               ) : (
                                 <>
                                   <Plus size={13} strokeWidth={2.5} />
-                                  <span>Thêm vào</span>
+                                  <span>Thêm vào bộ sưu tập</span>
                                 </>
                               )}
                             </button>
@@ -1708,7 +1744,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
                 <th className="p-3.5">Bộ sưu tập</th>
                 <th className="p-3.5">Tỉnh / Thành</th>
                 <th className="p-3.5">Số lượng địa điểm</th>
-                <th className="p-3.5">Thứ tự</th>
                 <th className="p-3.5">Trạng thái</th>
                 <th className="p-3.5 text-center">Xem chi tiết</th>
               </tr>
@@ -1718,11 +1753,8 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
                 <tr key={col.id} className="hover:bg-slate-50/70 transition-colors group">
                   <td className="p-3.5">
                     <div className="min-w-0">
-                      <div className="font-extrabold text-sm text-slate-900 group-hover:text-emerald-800 transition-colors">
+                      <div className="font-bold text-xs text-slate-900 group-hover:text-emerald-700 transition-colors">
                         {col.title}
-                      </div>
-                      <div className="text-[11px] text-slate-400 mt-0.5">
-                        Mã: #{col.id}
                       </div>
                     </div>
                   </td>
@@ -1735,11 +1767,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
                   <td className="p-3.5">
                     <span className="font-bold text-slate-800 bg-emerald-50 text-emerald-900 border border-emerald-200 px-2.5 py-1 rounded-lg text-xs">
                       {col.placeCount ?? 0} địa điểm
-                    </span>
-                  </td>
-                  <td className="p-3.5">
-                    <span className="font-extrabold text-slate-700 text-xs">
-                      {col.displayOrder}
                     </span>
                   </td>
                   <td className="p-3.5">

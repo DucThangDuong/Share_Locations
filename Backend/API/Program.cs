@@ -14,6 +14,9 @@ public class Program
 {
     public static async Task Main(string[] args)
     {
+        System.Globalization.CultureInfo.DefaultThreadCurrentCulture = System.Globalization.CultureInfo.InvariantCulture;
+        System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = System.Globalization.CultureInfo.InvariantCulture;
+
         var builder = WebApplication.CreateBuilder(args);
 
         builder.Host.UseSerilog((context, services, configuration) => configuration
@@ -88,6 +91,9 @@ public class Program
                     ep.Description(b => b.WithTags(tag));
                 }
             };
+
+            c.Serializer.Options.Converters.Add(new Application.Common.Converters.DateTimeUtcJsonConverter());
+            c.Serializer.Options.Converters.Add(new Application.Common.Converters.NullableDateTimeUtcJsonConverter());
 
             c.Binding.ValueParserFor<IFormFile>(input => new(true, null));
 

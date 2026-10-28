@@ -23,15 +23,18 @@ public class CreatePlaceReviewCommandHandler : IRequestHandler<CreatePlaceReview
     private readonly IUnitOfWork _unitOfWork;
     private readonly IBlobService? _blobService;
     private readonly IRecommendationService _recommendationService;
+    private readonly IReputationService? _reputationService;
 
     public CreatePlaceReviewCommandHandler(
         IUnitOfWork unitOfWork,
         IRecommendationService recommendationService,
-        IBlobService? blobService = null)
+        IBlobService? blobService = null,
+        IReputationService? reputationService = null)
     {
         _unitOfWork = unitOfWork;
         _recommendationService = recommendationService;
         _blobService = blobService;
+        _reputationService = reputationService;
     }
 
     public async Task<Result<ReviewItemDto>> Handle(CreatePlaceReviewCommand request, CancellationToken ct)
@@ -122,6 +125,18 @@ public class CreatePlaceReviewCommandHandler : IRequestHandler<CreatePlaceReview
         }, ct);
 
         await _recommendationService.InvalidateUserVectorCacheAsync(request.UserId, ct);
+
+        if (_reputationService != null)
+        {
+            var hasMedia = uploadedImages.Count > 0 || uploadedVideos.Count > 0;
+            var actionType = hasMedia ? ReputationActionType.ReviewWithMediaCreated : ReputationActionType.ReviewCreated;
+            await _reputationService.AwardPointsAsync(
+                request.UserId,
+                actionType,
+                review.Id,
+                $"Đánh giá địa điểm '{place.Name}'",
+                ct);
+        }
 
         var dto = new ReviewItemDto
         {

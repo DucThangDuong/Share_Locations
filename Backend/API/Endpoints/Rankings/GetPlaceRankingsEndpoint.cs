@@ -26,6 +26,9 @@ public class GetPlaceRankingsRequest
 
     [QueryParam]
     public int Limit { get; set; } = 10;
+
+    [QueryParam]
+    public bool IncludeExcluded { get; set; } = false;
 }
 
 public class GetPlaceRankingsEndpoint : Endpoint<GetPlaceRankingsRequest, ApiSuccessResponse<IReadOnlyList<PlaceRankingItemDto>>>
@@ -40,7 +43,7 @@ public class GetPlaceRankingsEndpoint : Endpoint<GetPlaceRankingsRequest, ApiSuc
         Summary(s =>
         {
             s.Summary = "Bảng xếp hạng địa điểm (hỗ trợ lọc theo loại hình PlaceType, Tỉnh thành, Vùng miền)";
-            s.Description = "Xếp hạng các địa điểm theo công thức Bayesian Weighted Rating kết hợp đa tín hiệu tương tác (Review, Favorite, Trip, View).";
+            s.Description = "Xếp hạng các địa điểm theo công thức Hybrid (Bayesian Weighted Rating + cấu hình trọng số Admin, ghim và loại trừ).";
         });
     }
 
@@ -52,7 +55,8 @@ public class GetPlaceRankingsEndpoint : Endpoint<GetPlaceRankingsRequest, ApiSuc
             req.ProvinceId,
             req.RegionId,
             req.Period,
-            req.Limit), ct);
+            req.Limit,
+            req.IncludeExcluded), ct);
 
         await this.SendApiResponseAsync(result, ct);
     }

@@ -6,10 +6,13 @@ export const itineraryService = {
   async getItineraries(params?: ItineraryFilterParams): Promise<ApiSuccessResponse<ItineraryDto[]>> {
     const cleanParams: Record<string, unknown> = {}
 
+    if (params?.destination && params.destination !== 'all') cleanParams.destination = params.destination.trim()
     if (params?.duration && params.duration !== 'all') cleanParams.duration = params.duration
-    if (params?.keyword?.trim()) cleanParams.keyword = params.keyword.trim()
+    if (params?.budget && params.budget !== 'all') cleanParams.budget = params.budget
+    const kw = (params?.keyword || params?.q || '').trim()
+    if (kw) cleanParams.keyword = kw
     cleanParams.page = params?.page || 1
-    cleanParams.pageSize = params?.pageSize || 10
+    cleanParams.pageSize = params?.pageSize || 12
 
     const response = await apiClient.get<ApiSuccessResponse<ItineraryDto[]>>('/api/itineraries', {
       params: cleanParams

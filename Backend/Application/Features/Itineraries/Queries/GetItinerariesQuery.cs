@@ -5,16 +5,20 @@ using MediatR;
 
 namespace Application.Features.Itineraries.Queries;
 
-public record GetItinerariesQuery(ItineraryFilterParams FilterParams) : IRequest<Result<IReadOnlyList<ItineraryDto>>>
+public record GetItinerariesQuery(ItineraryFilterParams FilterParams) : IRequest<Result<PagedResult<ItineraryDto>>>
 {
     public GetItinerariesQuery(
+        string? destination = null,
         string? duration = null,
+        string? budget = null,
         string? keyword = null,
         int page = 1,
-        int pageSize = 10,
+        int pageSize = 12,
         long? userId = null) : this(new ItineraryFilterParams
         {
+            Destination = destination,
             Duration = duration,
+            Budget = budget,
             Keyword = keyword,
             Page = page,
             PageSize = pageSize,
@@ -24,7 +28,7 @@ public record GetItinerariesQuery(ItineraryFilterParams FilterParams) : IRequest
     }
 }
 
-public class GetItinerariesQueryHandler : IRequestHandler<GetItinerariesQuery, Result<IReadOnlyList<ItineraryDto>>>
+public class GetItinerariesQueryHandler : IRequestHandler<GetItinerariesQuery, Result<PagedResult<ItineraryDto>>>
 {
     private readonly ITripRepository _tripRepository;
 
@@ -33,18 +37,18 @@ public class GetItinerariesQueryHandler : IRequestHandler<GetItinerariesQuery, R
         _tripRepository = tripRepository;
     }
 
-    public async Task<Result<IReadOnlyList<ItineraryDto>>> Handle(GetItinerariesQuery request, CancellationToken ct)
+    public async Task<Result<PagedResult<ItineraryDto>>> Handle(GetItinerariesQuery request, CancellationToken ct)
     {
-        var itineraries = await _tripRepository.GetItinerariesAsync(request.FilterParams, ct);
+        var pagedResult = await _tripRepository.GetItinerariesAsync(request.FilterParams, ct);
 
-        if (request.FilterParams.UserId.HasValue && itineraries.Count > 0)
+        if (request.FilterParams.UserId.HasValue && pagedResult.Items.Count > 0)
         {
-            foreach (var item in itineraries)
+            foreach (var item in pagedResult.Items)
             {
                 item.IsSaved = await _tripRepository.IsItinerarySavedAsync(request.FilterParams.UserId.Value, item.Id, ct);
             }
         }
 
-        return Result<IReadOnlyList<ItineraryDto>>.Success(itineraries);
+        return Result<PagedResult<ItineraryDto>>.Success(pagedResult);
     }
 }

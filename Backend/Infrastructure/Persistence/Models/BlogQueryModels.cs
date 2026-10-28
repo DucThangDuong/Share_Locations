@@ -26,25 +26,29 @@ internal static class BlogMappingExtensions
     {
         var slug = Repositories.BlogRepository.GenerateSlug(b.Title);
         var readTime = b.ReadTimeMinutes > 0 ? $"{b.ReadTimeMinutes} phút đọc" : "5 phút đọc";
-        var publishedDate = b.CreatedAt.ToString("dd 'Tháng' MM, yyyy", CultureInfo.GetCultureInfo("vi-VN"));
 
         return new BlogListItemDto
         {
             Id = b.Id,
             Slug = slug,
             Title = b.Title,
+            Summary = b.Excerpt ?? (b.Title.Length > 80 ? b.Title[..80] + "..." : b.Title),
             Excerpt = b.Excerpt ?? (b.Title.Length > 80 ? b.Title[..80] + "..." : b.Title),
             Content = b.ContentJSON,
+            CategoryId = b.CategoryId,
             Category = b.CategoryName ?? "Cẩm nang du lịch",
-            ReadTime = readTime,
             CoverUrl = b.CoverImageUrl,
+            CoverImageUrl = b.CoverImageUrl,
+            AuthorName = b.AuthorName ?? "Ban Biên Tập Lang Thang",
+            AuthorAvatar = b.AuthorAvatar,
             Author = new BlogAuthorDto
             {
                 Name = b.AuthorName ?? "Ban Biên Tập Lang Thang",
                 Avatar = b.AuthorAvatar,
                 Role = "Travel Blogger"
             },
-            PublishedAt = publishedDate,
+            PublishedAt = b.CreatedAt,
+            ViewCount = b.ViewCount,
             Tags = new List<string> { b.CategoryName ?? "Du lịch", "Kinh nghiệm", "Việt Nam" },
             Featured = isFeatured || b.ViewCount > 500
         };

@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import type { AdminUserItem, AdminUserDetail, AdminUserActivities, AdminUserAccessHistoryItem } from '@/types/admin.types'
+import type { AdminUserItem, AdminUserDetail, AdminUserActivities, AdminUserAccessHistoryItem, AdminAuditLogItem } from '@/types/admin.types'
+import { AuditLogDetailModal } from '../modals/AuditLogDetailModal'
+import { ACTION_TYPE_MAP, getActionMeta, getBadgeStyle, formatDateTime } from './AuditLogsTab'
 import { isUserSystemAdmin } from '@/utils/authUtils'
 import { adminService, extractList } from '@/services/adminService'
 import { geographyService } from '@/services/geographyService'
@@ -16,13 +18,17 @@ import {
   Users,
   Check,
   Star,
-  CheckCircle2,
+
   Save,
   Loader2,
   Power,
   Eye,
   EyeOff,
   ExternalLink,
+  Layers,
+  History,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react'
 
 export interface AdminCategoryDto {
@@ -57,6 +63,9 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
   const [userDetail, setUserDetail] = useState<AdminUserDetail | null>(null)
   const [userActivities, setUserActivities] = useState<AdminUserActivities | null>(null)
   const [accessHistory, setAccessHistory] = useState<AdminUserAccessHistoryItem[]>([])
+  const [auditLogs, setAuditLogs] = useState<AdminAuditLogItem[]>([])
+  const [selectedLogId, setSelectedLogId] = useState<number | null>(null)
+  const [logCurrentPage, setLogCurrentPage] = useState(1)
   const [isLoading, setIsLoading] = useState(true)
   const [isSavingScopes, setIsSavingScopes] = useState(false)
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
@@ -220,11 +229,67 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
 
       if (isTargetAdmin) {
         try {
-          const histRes = await adminService.getUserAccessHistory(user.userId)
-          const histData = extractList<AdminUserAccessHistoryItem>(histRes)
-          setAccessHistory(histData)
+          const logsRes: any = await adminService.getAuditLogs({ adminId: user.userId, pageSize: 100 })
+          const logsData = logsRes?.data?.items || logsRes?.items || extractList<AdminAuditLogItem>(logsRes)
+          if (Array.isArray(logsData) && logsData.length > 0) {
+            setAuditLogs(logsData)
+            setAccessHistory(logsData as any)
+          } else {
+            const histRes = await adminService.getUserAccessHistory(user.userId)
+            const histData = extractList<any>(histRes)
+            const mapped: AdminAuditLogItem[] = histData.map((h: any, idx: number) => {
+              const numericId = h.id || parseInt(String(h.logId || '').replace(/\D/g, ''), 10) || idx + 1
+              return {
+                id: numericId,
+                adminId: user.userId,
+                adminName: userDetail?.fullName || user.fullName || user.email || 'Admin',
+                adminEmail: user.email || '',
+                adminAvatar: userDetail?.avatarUrl || user.avatarUrl || null,
+                actorRoleCode: isSystemAdmin ? 'SystemAdmin' : 'CategoryAdmin',
+                actionType: h.action || h.actionType || 'UPDATE_PLACE',
+                targetTable: h.targetType || h.category || 'Places',
+                targetId: h.targetId || 0,
+                targetName: h.targetName || h.target || '',
+                actionStatus: h.result === 'Thất bại' ? 0 : 1,
+                actionStatusText: h.result || 'Thành công',
+                reason: h.targetName || h.action || '',
+                ipAddress: h.ipAddress || h.ip || '::1',
+                createdAt: h.timestamp || h.time || new Date().toISOString(),
+              }
+            })
+            setAuditLogs(mapped)
+            setAccessHistory(histData)
+          }
         } catch {
-          setAccessHistory([])
+          try {
+            const histRes = await adminService.getUserAccessHistory(user.userId)
+            const histData = extractList<any>(histRes)
+            const mapped: AdminAuditLogItem[] = histData.map((h: any, idx: number) => {
+              const numericId = h.id || parseInt(String(h.logId || '').replace(/\D/g, ''), 10) || idx + 1
+              return {
+                id: numericId,
+                adminId: user.userId,
+                adminName: userDetail?.fullName || user.fullName || user.email || 'Admin',
+                adminEmail: user.email || '',
+                adminAvatar: userDetail?.avatarUrl || user.avatarUrl || null,
+                actorRoleCode: isSystemAdmin ? 'SystemAdmin' : 'CategoryAdmin',
+                actionType: h.action || h.actionType || 'UPDATE_PLACE',
+                targetTable: h.targetType || h.category || 'Places',
+                targetId: h.targetId || 0,
+                targetName: h.targetName || h.target || '',
+                actionStatus: h.result === 'Thất bại' ? 0 : 1,
+                actionStatusText: h.result || 'Thành công',
+                reason: h.targetName || h.action || '',
+                ipAddress: h.ipAddress || h.ip || '::1',
+                createdAt: h.timestamp || h.time || new Date().toISOString(),
+              }
+            })
+            setAuditLogs(mapped)
+            setAccessHistory(histData)
+          } catch {
+            setAuditLogs([])
+            setAccessHistory([])
+          }
         }
       }
     } catch (err: any) {
@@ -375,6 +440,29 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
   const blogsList = userActivities?.blogs || []
   const tripsList = userActivities?.trips || []
   const proposalsList = userActivities?.proposals || []
+
+  const filteredAuditLogs = useMemo(() => {
+    if (!searchQuery.trim()) return auditLogs;
+    const q = searchQuery.toLowerCase().trim();
+    return auditLogs.filter(
+      (log) =>
+        String(log.id).includes(q) ||
+        (log.actionType || '').toLowerCase().includes(q) ||
+        (ACTION_TYPE_MAP[log.actionType]?.label || '').toLowerCase().includes(q) ||
+        (log.targetTable || '').toLowerCase().includes(q) ||
+        (log.targetName || '').toLowerCase().includes(q) ||
+        (log.reason || '').toLowerCase().includes(q) ||
+        (log.ipAddress || '').toLowerCase().includes(q) ||
+        (log.adminName || '').toLowerCase().includes(q)
+    );
+  }, [auditLogs, searchQuery]);
+
+  const LOGS_PAGE_SIZE = 10;
+  const logTotalPages = Math.max(1, Math.ceil(filteredAuditLogs.length / LOGS_PAGE_SIZE));
+  const safeLogPage = Math.min(logCurrentPage, logTotalPages);
+  const paginatedAuditLogs = useMemo(() => {
+    return filteredAuditLogs.slice((safeLogPage - 1) * LOGS_PAGE_SIZE, safeLogPage * LOGS_PAGE_SIZE);
+  }, [filteredAuditLogs, safeLogPage]);
 
   return (
     <div className="space-y-6 font-sans antialiased text-slate-800 animate-in fade-in duration-200">
@@ -564,7 +652,7 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
                     : 'border-transparent text-slate-500 hover:text-slate-800'
                     }`}
                 >
-                  <span>Lịch sử hoạt động ({accessHistory.length})</span>
+                  <span>Lịch sử hoạt động ({auditLogs.length || accessHistory.length})</span>
                 </button>
 
                 <div className="h-4 w-px bg-slate-200 self-center hidden sm:block" />
@@ -624,7 +712,10 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
               <input
                 type="text"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value)
+                  setLogCurrentPage(1)
+                }}
                 placeholder="Tìm kiếm nội dung..."
                 className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 placeholder-slate-400 outline-none focus:border-emerald-600 focus:bg-white transition-all"
               />
@@ -931,59 +1022,200 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
         )}
 
         {!isLoading && activeTab === 'logs' && (
-          <div className="overflow-x-auto max-h-[500px] overflow-y-auto rounded-xl border border-slate-100 shadow-2xs">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead className="sticky top-0 bg-white z-10 shadow-2xs border-b border-slate-200">
-                <tr className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                  <th className="py-3 px-4 bg-slate-50/90 backdrop-blur-xs">Mã nhật ký</th>
-                  <th className="py-3 px-4 bg-slate-50/90 backdrop-blur-xs">Hành động kiểm duyệt</th>
-                  <th className="py-3 px-4 bg-slate-50/90 backdrop-blur-xs">Đối tượng tác động</th>
-                  <th className="py-3 px-4 bg-slate-50/90 backdrop-blur-xs">Danh mục &amp; Tỉnh</th>
-                  <th className="py-3 px-4 bg-slate-50/90 backdrop-blur-xs">Thời gian</th>
-                  <th className="py-3 px-4 bg-slate-50/90 backdrop-blur-xs">Kết quả</th>
-                  <th className="py-3 px-4 text-right bg-slate-50/90 backdrop-blur-xs">IP Thao tác</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 font-medium text-slate-700 bg-white">
-                {accessHistory.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="py-8 text-center text-slate-400">
-                      Chưa ghi nhận lịch sử hoạt động nào của quản trị viên này
-                    </td>
+          <div className="bg-white rounded-xl border border-slate-200/80 shadow-2xs overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-[900px] text-xs">
+                <thead>
+                  <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-bold text-[11px] uppercase tracking-wider">
+                    <th className="p-3.5 pl-4">Thời gian</th>
+                    <th className="p-3.5">Quản trị viên</th>
+                    <th className="p-3.5">Bảng</th>
+                    <th className="p-3.5">Hành động</th>
+                    <th className="p-3.5">Lý do / Nghiệp vụ</th>
+                    <th className="p-3.5">IP &amp; Trạng thái</th>
                   </tr>
-                ) : (
-                  accessHistory
-                    .filter((log) =>
-                      !searchQuery.trim()
-                        ? true
-                        : (log.action || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-                        (log.targetName || log.target || '').toLowerCase().includes(searchQuery.toLowerCase())
-                    )
-                    .map((log, idx) => (
-                      <tr key={log.id || log.logId || idx} className="hover:bg-slate-50/70 transition-colors">
-                        <td className="py-3.5 px-4 font-bold text-slate-900">{log.logId || `#LOG-${idx + 1}`}</td>
-                        <td className="py-3.5 px-4">
-                          <span className="font-bold text-slate-900">{log.action}</span>
-                        </td>
-                        <td className="py-3.5 px-4 text-slate-700 font-semibold">{log.targetName || log.target || '--'}</td>
-                        <td className="py-3.5 px-4 text-slate-500">
-                          {log.category || 'Hệ thống'} • <strong className="text-slate-700">{log.province || 'Toàn quốc'}</strong>
-                        </td>
-                        <td className="py-3.5 px-4 text-slate-500">{formatDate(log.timestamp || log.time)}</td>
-                        <td className="py-3.5 px-4">
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-2xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            <CheckCircle2 size={11} />
-                            <span>{log.result || 'Thành công'}</span>
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-4 text-right text-slate-400 font-mono text-[11px]">
-                          {log.ipAddress || log.ip || '127.0.0.1'}
-                        </td>
-                      </tr>
-                    ))
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredAuditLogs.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-12 text-center text-slate-400">
+                        <History size={32} className="mx-auto mb-2 text-slate-300 stroke-1" />
+                        <p className="font-bold text-slate-600 text-sm">Không tìm thấy bản ghi kiểm toán nào</p>
+                        <p className="text-slate-400 text-xs">
+                          {searchQuery.trim()
+                            ? 'Không có thao tác nào khớp với từ khóa tìm kiếm.'
+                            : 'Chưa ghi nhận lịch sử hoạt động nào của quản trị viên này.'}
+                        </p>
+                      </td>
+                    </tr>
+                  ) : (
+                    paginatedAuditLogs.map((log) => {
+                      const meta = getActionMeta(log.actionType, log.actionTypeName, log.targetTable);
+                      const isSysAdmin =
+                        log.actorRoleCode === 'SystemAdmin' ||
+                        log.actorRoleCode === '1' ||
+                        isSystemAdmin;
+
+                      return (
+                        <tr
+                          key={log.id}
+                          className="hover:bg-slate-50/80 transition-colors group cursor-pointer"
+                          onClick={() => setSelectedLogId(log.id)}
+                        >
+                          <td className="p-3.5 pl-4 align-top whitespace-nowrap">
+                            <div className="font-mono text-[11px] font-semibold text-slate-800">
+                              {formatDateTime(log.createdAt)}
+                            </div>
+                            <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                              ID: #{log.id}
+                            </div>
+                          </td>
+
+                          <td className="p-3.5 align-top">
+                            <div className="flex items-start gap-2.5">
+                              {log.adminAvatar || userDetail?.avatarUrl || user.avatarUrl ? (
+                                <img
+                                  src={log.adminAvatar || userDetail?.avatarUrl || user.avatarUrl || ''}
+                                  alt={log.adminName || userDetail?.fullName || user.fullName}
+                                  className="w-7 h-7 rounded-full object-cover border border-slate-200 shrink-0"
+                                />
+                              ) : (
+                                <div className="w-7 h-7 rounded-full bg-slate-800 text-white font-bold text-xs flex items-center justify-center shrink-0">
+                                  {(log.adminName || userDetail?.fullName || user.fullName || 'A')
+                                    .charAt(0)
+                                    .toUpperCase()}
+                                </div>
+                              )}
+                              <div className="min-w-0">
+                                <div className="font-bold text-slate-900 truncate flex items-center gap-1.5">
+                                  <span>{log.adminName || userDetail?.fullName || user.fullName || `Admin #${log.adminId}`}</span>
+                                  <span
+                                    className={`inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-bold border ${isSysAdmin
+                                      ? 'bg-purple-50 text-purple-700 border-purple-200'
+                                      : 'bg-blue-50 text-blue-700 border-blue-200'
+                                      }`}
+                                  >
+                                    {isSysAdmin ? <ShieldCheck size={10} /> : <Shield size={10} />}
+                                    <span>{log.actorRoleCode && log.actorRoleCode !== 'Admin Cấp 1' && log.actorRoleCode !== 'System Admin' ? log.actorRoleCode : (isSysAdmin ? 'SystemAdmin' : 'CategoryAdmin')}</span>
+                                  </span>
+                                </div>
+                                {(log.adminEmail || user.email) && (
+                                  <div className="text-[11px] text-slate-400 truncate">
+                                    {log.adminEmail || user.email}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+
+                          <td className="p-3.5 align-top whitespace-nowrap">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-slate-700 font-bold text-[11px]">
+                              <Layers size={12} className="text-slate-500 shrink-0" />
+                              <span>{log.targetTable || '—'}</span>
+                            </span>
+                          </td>
+
+                          <td className="p-3.5 align-top whitespace-nowrap">
+                            <span
+                              className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-bold border ${getBadgeStyle(
+                                meta.color
+                              )}`}
+                            >
+                              {meta.label}
+                            </span>
+                          </td>
+
+                          <td className="p-3.5 align-top max-w-sm">
+                            <p
+                              className="text-slate-700 text-xs leading-relaxed line-clamp-2"
+                              title={log.reason || log.targetName}
+                            >
+                              {log.reason || log.targetName || '—'}
+                            </p>
+                          </td>
+
+                          <td className="p-3.5 align-top whitespace-nowrap">
+                            <div className="space-y-1">
+                              <span className="inline-block font-mono text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200">
+                                {log.ipAddress || '—'}
+                              </span>
+                              <div>
+                                <span
+                                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold ${log.actionStatus === 1 || log.actionStatusText === 'Thành công'
+                                    ? 'bg-emerald-50 text-emerald-700'
+                                    : 'bg-rose-50 text-rose-700'
+                                    }`}
+                                >
+                                  {log.actionStatusText || (log.actionStatus === 1 ? 'Thành công' : 'Thất bại')}
+                                </span>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {filteredAuditLogs.length > 0 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 border-t border-slate-100 text-xs text-slate-500 font-medium">
+                <div>
+                  Hiển thị <strong>{paginatedAuditLogs.length}</strong> / <strong>{filteredAuditLogs.length}</strong> bản ghi (Trang <strong>{safeLogPage}</strong> / {logTotalPages})
+                </div>
+
+                {logTotalPages > 1 && (
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      disabled={safeLogPage <= 1}
+                      onClick={() => setLogCurrentPage((p) => Math.max(1, p - 1))}
+                      className="px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-bold text-slate-700 transition-colors flex items-center gap-1 cursor-pointer"
+                    >
+                      <ChevronLeft size={14} />
+                      <span>Trước</span>
+                    </button>
+
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: Math.min(5, logTotalPages) }, (_, i) => {
+                        let pNum = safeLogPage - 2 + i;
+                        if (safeLogPage <= 3) {
+                          pNum = i + 1;
+                        } else if (safeLogPage >= logTotalPages - 2) {
+                          pNum = logTotalPages - 4 + i;
+                        }
+                        if (pNum < 1 || pNum > logTotalPages) return null;
+
+                        return (
+                          <button
+                            key={pNum}
+                            type="button"
+                            onClick={() => setLogCurrentPage(pNum)}
+                            className={`w-7 h-7 rounded-xl font-bold text-xs transition-colors flex items-center justify-center cursor-pointer ${safeLogPage === pNum
+                              ? 'bg-emerald-700 text-white shadow-xs'
+                              : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200'
+                              }`}
+                          >
+                            {pNum}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <button
+                      type="button"
+                      disabled={safeLogPage >= logTotalPages}
+                      onClick={() => setLogCurrentPage((p) => Math.min(logTotalPages, p + 1))}
+                      className="px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-bold text-slate-700 transition-colors flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>Sau</span>
+                      <ChevronRight size={14} />
+                    </button>
+                  </div>
                 )}
-              </tbody>
-            </table>
+              </div>
+            )}
           </div>
         )}
 
@@ -1051,14 +1283,14 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
                           <button
                             type="button"
                             onClick={(e) => handleToggleReviewStatus(e, rev.id, rev.status)}
-                            className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium transition-colors cursor-pointer border ${isRevActive
-                              ? 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
-                              : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200'
+                            className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] font-bold transition-colors cursor-pointer border ${isRevActive
+                              ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+                              : 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600 shadow-xs'
                               }`}
-                            title={isRevActive ? 'Ẩn bài đánh giá này' : 'Hiện bài đánh giá này'}
+                            title={isRevActive ? 'Tạm ẩn bài đánh giá này' : 'Công khai bài đánh giá này'}
                           >
                             {isRevActive ? <EyeOff size={11} /> : <Eye size={11} />}
-                            <span>{isRevActive ? 'Ẩn' : 'Hiện'}</span>
+                            <span>{isRevActive ? 'Tạm ẩn' : 'Công khai'}</span>
                           </button>
 
                           <button
@@ -1122,8 +1354,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
                           <span>Ngày xuất bản: <span className="text-slate-600 font-medium">{formatDate(blog.publishedAt)}</span></span>
                           <span className="text-slate-300">•</span>
                           <span>Lượt xem: <span className="text-slate-600 font-medium">{blog.views || 0}</span></span>
-                          <span className="text-slate-300">•</span>
-                          <span>Lượt thích: <span className="text-slate-600 font-medium">{blog.likes || 0}</span></span>
                         </div>
                       </div>
 
@@ -1140,14 +1370,14 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
                         <button
                           type="button"
                           onClick={(e) => handleToggleBlogStatus(e, blog.id, blog.status)}
-                          className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium transition-colors cursor-pointer border ${isBlogPub
-                            ? 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
-                            : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200'
+                          className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] font-bold transition-colors cursor-pointer border ${isBlogPub
+                            ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+                            : 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600 shadow-xs'
                             }`}
-                          title={isBlogPub ? 'Ẩn bài viết này' : 'Công khai bài viết này'}
+                          title={isBlogPub ? 'Tạm ẩn bài viết này' : 'Công khai bài viết này'}
                         >
                           {isBlogPub ? <EyeOff size={11} /> : <Eye size={11} />}
-                          <span>{isBlogPub ? 'Ẩn' : 'Hiện'}</span>
+                          <span>{isBlogPub ? 'Tạm ẩn' : 'Công khai'}</span>
                         </button>
 
                         <button
@@ -1199,8 +1429,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
                           <span>Số địa điểm: <span className="text-slate-600 font-medium">{trip.placesCount || 0} địa điểm</span></span>
                           <span className="text-slate-300">•</span>
                           <span>Ngày tạo: <span className="text-slate-600 font-medium">{formatDate(trip.createdAt)}</span></span>
-                          <span className="text-slate-300">•</span>
-                          <span>Lượt lưu: <span className="text-slate-600 font-medium">{trip.likes || 0}</span></span>
                         </div>
                       </div>
 
@@ -1217,14 +1445,14 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
                         <button
                           type="button"
                           onClick={(e) => handleToggleTripStatus(e, trip.id, trip.status)}
-                          className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium transition-colors cursor-pointer border ${isTripPub
-                            ? 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
-                            : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200'
+                          className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] font-bold transition-colors cursor-pointer border ${isTripPub
+                            ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+                            : 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600 shadow-xs'
                             }`}
-                          title={isTripPub ? 'Ẩn chuyến đi này' : 'Công khai chuyến đi này'}
+                          title={isTripPub ? 'Tạm ẩn chuyến đi này' : 'Công khai chuyến đi này'}
                         >
                           {isTripPub ? <EyeOff size={11} /> : <Eye size={11} />}
-                          <span>{isTripPub ? 'Ẩn' : 'Hiện'}</span>
+                          <span>{isTripPub ? 'Tạm ẩn' : 'Công khai'}</span>
                         </button>
 
                         <button
@@ -1248,7 +1476,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-slate-50/90 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                  <th className="py-2.5 px-4">Mã đề xuất</th>
                   <th className="py-2.5 px-4">Tên địa điểm đề xuất</th>
                   <th className="py-2.5 px-4">Danh mục</th>
                   <th className="py-2.5 px-4">Tỉnh thành</th>
@@ -1260,7 +1487,7 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
               <tbody className="divide-y divide-slate-100 font-medium text-slate-700 bg-white">
                 {proposalsList.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-slate-400">
+                    <td colSpan={6} className="py-12 text-center text-slate-400">
                       Chưa có đề xuất địa điểm nào từ tài khoản này
                     </td>
                   </tr>
@@ -1278,7 +1505,6 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
                         onClick={() => navigate(`/admin/proposals/${prop.id}`)}
                         className="hover:bg-slate-50/80 transition-colors cursor-pointer group"
                       >
-                        <td className="py-3 px-4 font-bold text-slate-900 font-mono text-[11px]">#PROP-{prop.id}</td>
                         <td className="py-3 px-4 font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">
                           {prop.placeName}
                         </td>
@@ -1331,6 +1557,12 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
           showToast={showToast}
         />
       )}
+
+      <AuditLogDetailModal
+        logId={selectedLogId}
+        onClose={() => setSelectedLogId(null)}
+        fallbackLog={filteredAuditLogs.find((l) => l.id === selectedLogId)}
+      />
     </div>
   )
 }

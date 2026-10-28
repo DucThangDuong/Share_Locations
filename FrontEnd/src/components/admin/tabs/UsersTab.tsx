@@ -422,11 +422,6 @@ export const UsersTab: React.FC<UsersTabProps> = ({
               </button>
             )}
           </div>
-
-          <div className="text-xs text-slate-400 font-medium">
-            Trang <strong>{pagination.page}</strong> / {pagination.totalPages} • Tổng cộng{' '}
-            <strong>{pagination.totalCount}</strong> tài khoản
-          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">

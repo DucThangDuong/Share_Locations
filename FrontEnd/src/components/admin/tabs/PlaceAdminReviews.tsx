@@ -818,14 +818,14 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
                       <button
                         type="button"
                         onClick={(e) => handleToggleReviewStatus(rev, e)}
-                        className={`p-2 rounded-xl border text-xs font-bold transition-colors cursor-pointer flex items-center gap-1 ${isHidden
-                          ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200'
+                        className={`px-2.5 py-1.5 rounded-xl border text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5 ${isHidden
+                          ? 'bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-xs border-emerald-600'
                           : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
                           }`}
                         title={isHidden ? 'Bấm để công khai lại đánh giá này' : 'Bấm để tạm ẩn đánh giá này'}
                       >
                         {isHidden ? <Eye size={14} /> : <EyeOff size={14} />}
-                        <span>{isHidden ? 'Hiện' : 'Ẩn'}</span>
+                        <span>{isHidden ? 'Công khai' : 'Tạm ẩn'}</span>
                       </button>
 
                       <button
@@ -1022,13 +1022,13 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
                                     type="button"
                                     onClick={(e) => handleToggleCommentStatus(rev.id, comment.id, e)}
                                     className={`px-2 py-1 text-[11px] font-bold rounded-lg border transition-colors cursor-pointer flex items-center gap-1 ${comment.status === 'hidden'
-                                      ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200'
+                                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600 shadow-xs'
                                       : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
                                       }`}
                                     title={comment.status === 'hidden' ? 'Bấm để công khai lại bình luận này' : 'Bấm để tạm ẩn bình luận này'}
                                   >
                                     {comment.status === 'hidden' ? <Eye size={12} /> : <EyeOff size={12} />}
-                                    <span>{comment.status === 'hidden' ? 'Hiện' : 'Ẩn'}</span>
+                                    <span>{comment.status === 'hidden' ? 'Công khai' : 'Tạm ẩn'}</span>
                                   </button>
 
                                   <button
@@ -1159,13 +1159,13 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
                                           type="button"
                                           onClick={(e) => handleToggleCommentStatus(rev.id, reply.id, e)}
                                           className={`px-1.5 py-0.5 text-[10px] font-bold rounded-md border transition-colors cursor-pointer flex items-center gap-1 ${reply.status === 'hidden'
-                                            ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200'
+                                            ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600 shadow-xs'
                                             : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
                                             }`}
                                           title={reply.status === 'hidden' ? 'Bấm để công khai lại phản hồi này' : 'Bấm để tạm ẩn phản hồi này'}
                                         >
                                           {reply.status === 'hidden' ? <Eye size={10} /> : <EyeOff size={10} />}
-                                          <span>{reply.status === 'hidden' ? 'Hiện' : 'Ẩn'}</span>
+                                          <span>{reply.status === 'hidden' ? 'Công khai' : 'Tạm ẩn'}</span>
                                         </button>
 
                                         <button

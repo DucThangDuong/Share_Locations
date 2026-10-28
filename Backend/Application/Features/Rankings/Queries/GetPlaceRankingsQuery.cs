@@ -12,7 +12,8 @@ public record GetPlaceRankingsQuery(
     int? ProvinceId = null,
     int? RegionId = null,
     string Period = "all_time",
-    int Limit = 10) : IRequest<Result<IReadOnlyList<PlaceRankingItemDto>>>;
+    int Limit = 10,
+    bool IncludeExcluded = false) : IRequest<Result<IReadOnlyList<PlaceRankingItemDto>>>;
 
 public class GetPlaceRankingsQueryHandler : IRequestHandler<GetPlaceRankingsQuery, Result<IReadOnlyList<PlaceRankingItemDto>>>
 {
@@ -28,12 +29,15 @@ public class GetPlaceRankingsQueryHandler : IRequestHandler<GetPlaceRankingsQuer
     public async Task<Result<IReadOnlyList<PlaceRankingItemDto>>> Handle(GetPlaceRankingsQuery request, CancellationToken ct)
     {
         var safeLimit = Math.Clamp(request.Limit, 1, 50);
-        var cacheKey = $"rank:places:pt_{request.PlaceTypeId?.ToString() ?? "all"}:cat_{request.CategoryId?.ToString() ?? "all"}:prov_{request.ProvinceId?.ToString() ?? "all"}:reg_{request.RegionId?.ToString() ?? "all"}:p_{request.Period}:{safeLimit}";
+        var cacheKey = $"rank:places:pt_{request.PlaceTypeId?.ToString() ?? "all"}:cat_{request.CategoryId?.ToString() ?? "all"}:prov_{request.ProvinceId?.ToString() ?? "all"}:reg_{request.RegionId?.ToString() ?? "all"}:p_{request.Period}:ex_{request.IncludeExcluded}:{safeLimit}";
 
-        var cached = await _cacheService.GetAsync<IReadOnlyList<PlaceRankingItemDto>>(cacheKey, ct);
-        if (cached != null)
+        if (!request.IncludeExcluded)
         {
-            return Result<IReadOnlyList<PlaceRankingItemDto>>.Success(cached);
+            var cached = await _cacheService.GetAsync<IReadOnlyList<PlaceRankingItemDto>>(cacheKey, ct);
+            if (cached != null)
+            {
+                return Result<IReadOnlyList<PlaceRankingItemDto>>.Success(cached);
+            }
         }
 
         var places = await _rankingRepository.GetPlaceRankingsAsync(
@@ -43,9 +47,13 @@ public class GetPlaceRankingsQueryHandler : IRequestHandler<GetPlaceRankingsQuer
             request.RegionId,
             request.Period,
             safeLimit,
+            request.IncludeExcluded,
             ct);
 
-        await _cacheService.SetAsync(cacheKey, places, TimeSpan.FromMinutes(30), ct);
+        if (!request.IncludeExcluded)
+        {
+            await _cacheService.SetAsync(cacheKey, places, TimeSpan.FromMinutes(30), ct);
+        }
 
         return Result<IReadOnlyList<PlaceRankingItemDto>>.Success(places);
     }

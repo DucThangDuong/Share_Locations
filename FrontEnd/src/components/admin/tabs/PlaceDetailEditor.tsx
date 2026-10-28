@@ -24,13 +24,12 @@ import {
 } from "lucide-react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { catalogService } from "@/services/catalogService";
+import { placeService } from "@/services/placeService";
 import { geographyService } from "@/services/geographyService";
 import { adminService, extractList } from "@/services/adminService";
 import { PlaceAdminReviews } from "./PlaceAdminReviews";
 import { PlaceAdminFoods, type AdminPlaceFoodDto } from "./PlaceAdminFoods";
 import { UtensilsCrossed } from "lucide-react";
-import type { PlaceTypeDto } from "@/types/models/place.model";
 import type { ProvinceDto } from "@/types/models/geography.model";
 import { CustomSelect } from "@/components/common/CustomSelect";
 
@@ -180,7 +179,7 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
   const [saveSuccessMsg, setSaveSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
 
-  const [categories, setCategories] = useState<PlaceTypeDto[]>([]);
+  const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
   const [provinces, setProvinces] = useState<ProvinceDto[]>([]);
 
   const [name, setName] = useState(place?.name || "");
@@ -554,21 +553,57 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
     let mounted = true;
     const loadMetadata = async () => {
       try {
-        const [catRes, provRes] = await Promise.all([
-          catalogService.getPlaceTypes(),
+        const [catRes, provRes, filterRes] = await Promise.allSettled([
+          adminService.getCatalogCategories({ pageSize: 100 }),
           geographyService.getProvinces(),
+          placeService.getFilterOptions(),
         ]);
         if (mounted) {
-          const catList = extractList<PlaceTypeDto>(catRes?.data || catRes);
-          if (catList.length > 0) {
-            setCategories(catList);
+          const catMap = new Map<number, { id: number; name: string }>();
+
+          if (catRes.status === "fulfilled") {
+            const list = extractList<any>(catRes.value?.data || catRes.value);
+            list.forEach((c: any) => {
+              if (c?.id && c?.name) {
+                catMap.set(Number(c.id), { id: Number(c.id), name: c.name });
+              }
+            });
           }
-          const provList = extractList<ProvinceDto>(provRes?.data || provRes);
-          if (provList.length > 0) {
-            setProvinces(provList);
+
+          if (filterRes.status === "fulfilled") {
+            const fCats = filterRes.value?.data?.categories || (filterRes.value as any)?.categories || [];
+            if (Array.isArray(fCats)) {
+              fCats.forEach((c: any) => {
+                if (c?.id && c?.name && !catMap.has(Number(c.id))) {
+                  catMap.set(Number(c.id), { id: Number(c.id), name: c.name });
+                }
+              });
+            }
+          }
+
+          if (place?.categoryId && (place?.category || place?.categoryName)) {
+            const pCatId = Number(place.categoryId);
+            if (!catMap.has(pCatId)) {
+              catMap.set(pCatId, {
+                id: pCatId,
+                name: place.category || place.categoryName,
+              });
+            }
+          }
+
+          if (catMap.size > 0) {
+            setCategories(Array.from(catMap.values()));
+          }
+
+          if (provRes.status === "fulfilled") {
+            const provList = extractList<ProvinceDto>(provRes.value?.data || provRes.value);
+            if (provList.length > 0) {
+              setProvinces(provList);
+            }
           }
         }
-      } catch {
+      } catch (err) {
+        console.error("Error loading editor metadata:", err);
       }
     };
     loadMetadata();
@@ -877,18 +912,19 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
         lat,
         lng,
         description: description.trim(),
-        desc: description.trim(),
-        img: images[0] || place.img,
-        coverImg: images[0] || place.coverImg || place.img,
-        thumbnailUrl: images[0] || place.thumbnailUrl || place.img,
+        primaryImageUrl: images[0] || place.primaryImageUrl || place.coverImg || place.img || "",
+        coverImg: images[0] || place.coverImg || place.img || "",
+        thumbnailUrl: images[0] || place.thumbnailUrl || place.img || "",
+        img: images[0] || place.img || "",
         images,
         mediaUrls: images,
         photos: images,
         statusNum: statusNum === 1 ? 1 : 0,
         status: statusStr,
         rating: Number(rating) || 4.8,
-        foodIds: associatedFoods.map((f) => f.id),
-        foods: associatedFoods,
+        foodIds: associatedFoods.map((f) => Number(f.id)),
+        foods: associatedFoods.map((f) => Number(f.id)),
+        autoApprove: true,
       };
 
       if (onSave) {
@@ -968,8 +1004,8 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
               type="button"
               disabled={isTogglingStatus}
               onClick={handleToggleStatusClick}
-              className={`flex items-center gap-1.5 px-3 py-2 disabled:opacity-50 font-semibold rounded-xl cursor-pointer transition-colors ${statusNum === 1
-                ? "bg-slate-100 hover:bg-slate-200 text-slate-700"
+              className={`flex items-center gap-1.5 px-3 py-2 text-xs disabled:opacity-50 font-semibold rounded-xl cursor-pointer transition-colors ${statusNum === 1
+                ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200"
                 : "bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-xs"
                 }`}
             >
@@ -1051,7 +1087,7 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
             }`}
         >
           <UtensilsCrossed className="w-4 h-4" />
-          <span>Món ăn & Đặc sản</span>
+          <span>Món ăn</span>
           {foodsCount > 0 && (
             <span
               className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${activeEditorTab === "foods"

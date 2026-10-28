@@ -1,4 +1,4 @@
-﻿namespace Domain.Entities;
+namespace Domain.Entities;
 
 public class UserProfile
 {
@@ -66,9 +66,31 @@ public class UserProfile
         UpdatedAt = DateTime.UtcNow;
     }
 
+    public static string CalculateRankLevel(int score, string? currentRankLevel = null)
+    {
+        if (!string.IsNullOrWhiteSpace(currentRankLevel) && currentRankLevel.StartsWith("Quản trị viên", StringComparison.OrdinalIgnoreCase))
+        {
+            return currentRankLevel;
+        }
+
+        return score switch
+        {
+            >= 2500 => "Chuyên gia du lịch",
+            >= 1200 => "Thổ địa du lịch",
+            >= 300 => "Nhà khám phá",
+            _ => "Tân binh"
+        };
+    }
+
     public void AddReputationScore(int points)
     {
-        ReputationScore += points;
+        ApplyReputationChange(points);
+    }
+
+    public void ApplyReputationChange(int delta)
+    {
+        ReputationScore = Math.Max(0, ReputationScore + delta);
+        RankLevel = CalculateRankLevel(ReputationScore, RankLevel);
         UpdatedAt = DateTime.UtcNow;
     }
 

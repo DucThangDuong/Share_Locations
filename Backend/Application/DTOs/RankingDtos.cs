@@ -1,4 +1,4 @@
-﻿namespace Application.DTOs;
+namespace Application.DTOs;
 
 public class RankingOverviewCategoryDto
 {
@@ -91,6 +91,26 @@ public class RankingDetailViewDto
     public int TotalPages => PageSize > 0 ? (int)Math.Ceiling((double)TotalCount / PageSize) : 0;
 }
 
+public class RankingGovernanceConfigDto
+{
+    public int RatingPct { get; set; } = 60;
+    public int ReviewPct { get; set; } = 25;
+    public int ViewPct { get; set; } = 10;
+    public int FavoritePct { get; set; } = 5;
+    public double RatingMultiplier { get; set; } = 25.0;
+    public double ReviewMultiplier { get; set; } = 1.5;
+    public double ViewMultiplier { get; set; } = 0.01;
+    public double FavoriteMultiplier { get; set; } = 2.0;
+    public int MinReviews { get; set; } = 5;
+    public bool RequirePublic { get; set; } = true;
+    public bool IsCustomFormula { get; set; } = false;
+    public Dictionary<long, int> PinnedPlaces { get; set; } = new();
+    public List<long> ExcludedPlaceIds { get; set; } = new();
+    public Dictionary<int, int> PinnedProvinces { get; set; } = new();
+    public List<int> ExcludedProvinceIds { get; set; } = new();
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+}
+
 public class PlaceRankingItemDto
 {
     public int Rank { get; set; }
@@ -109,6 +129,14 @@ public class PlaceRankingItemDto
     public int ViewCount { get; set; }
     public int FavoritesCount { get; set; }
     public double Score { get; set; }
+    public double RatingScore { get; set; }
+    public double ReviewScore { get; set; }
+    public double ViewScore { get; set; }
+    public double FavoriteScore { get; set; }
+    public int? RankDelta { get; set; }
+    public bool IsNewTrend { get; set; }
+    public int? PinnedRank { get; set; }
+    public bool IsExcluded { get; set; }
     public string? Badge { get; set; }
 }
 
@@ -126,6 +154,13 @@ public class ProvinceRankingItemDto
     public int TotalReviews { get; set; }
     public decimal AvgRating { get; set; }
     public double Score { get; set; }
+    public double RatingScore { get; set; }
+    public double ReviewScore { get; set; }
+    public double PlaceCoverageScore { get; set; }
+    public int? RankDelta { get; set; }
+    public bool IsNewTrend { get; set; }
+    public int? PinnedRank { get; set; }
+    public bool IsExcluded { get; set; }
     public string? Badge { get; set; }
 }
 

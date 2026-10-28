@@ -91,6 +91,25 @@ export interface RankingDetailParams {
   pageSize?: number;
 }
 
+export interface RankingGovernanceConfig {
+  ratingPct: number;
+  reviewPct: number;
+  viewPct: number;
+  favoritePct: number;
+  ratingMultiplier: number;
+  reviewMultiplier: number;
+  viewMultiplier: number;
+  favoriteMultiplier: number;
+  minReviews: number;
+  requirePublic: boolean;
+  isCustomFormula: boolean;
+  pinnedPlaces: Record<string, number>;
+  excludedPlaceIds: number[];
+  pinnedProvinces: Record<string, number>;
+  excludedProvinceIds: number[];
+  updatedAt?: string;
+}
+
 export interface PlaceRankingItem {
   rank: number;
   badge?: string | null;
@@ -109,6 +128,14 @@ export interface PlaceRankingItem {
   favoritesCount: number;
   thumbnailUrl?: string | null;
   score: number;
+  ratingScore?: number;
+  reviewScore?: number;
+  viewScore?: number;
+  favoriteScore?: number;
+  rankDelta?: number | null;
+  isNewTrend?: boolean;
+  pinnedRank?: number | null;
+  isExcluded?: boolean;
 }
 
 export interface PlaceRankingParams {
@@ -118,6 +145,7 @@ export interface PlaceRankingParams {
   regionId?: number;
   period?: 'all_time' | 'month' | 'week' | string;
   limit?: number;
+  includeExcluded?: boolean;
 }
 
 export interface ProvinceRankingItem {
@@ -134,11 +162,19 @@ export interface ProvinceRankingItem {
   totalReviews: number;
   avgRating: number;
   score: number;
+  ratingScore?: number;
+  reviewScore?: number;
+  placeCoverageScore?: number;
+  rankDelta?: number | null;
+  isNewTrend?: boolean;
+  pinnedRank?: number | null;
+  isExcluded?: boolean;
 }
 
 export interface ProvinceRankingParams {
   regionId?: number;
   limit?: number;
+  includeExcluded?: boolean;
 }
 
 export interface RegionRankingItem {

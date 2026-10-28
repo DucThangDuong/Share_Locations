@@ -1,3 +1,4 @@
+using System.Globalization;
 using Application.Common;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
@@ -18,7 +19,7 @@ public class TripRepository : ITripRepository
         _dbContext = dbContext;
     }
 
-    public Task<IReadOnlyList<ItineraryDto>> GetItinerariesAsync(
+    public Task<PagedResult<ItineraryDto>> GetItinerariesAsync(
         string? duration,
         string? keyword,
         int page,
@@ -34,7 +35,7 @@ public class TripRepository : ITripRepository
         }, ct);
     }
 
-    public async Task<IReadOnlyList<ItineraryDto>> GetItinerariesAsync(
+    public async Task<PagedResult<ItineraryDto>> GetItinerariesAsync(
         ItineraryFilterParams p,
         CancellationToken ct = default)
     {
@@ -45,24 +46,138 @@ public class TripRepository : ITripRepository
 
         if (!string.IsNullOrWhiteSpace(p.Keyword))
         {
-            conditions.Add("(t.Title LIKE @Keyword OR t.Description LIKE @Keyword)");
+            conditions.Add(@"(
+                t.Title LIKE @Keyword 
+                OR t.Description LIKE @Keyword
+                OR EXISTS (
+                    SELECT 1 FROM dbo.TripDays td
+                    INNER JOIN dbo.TripPlaces tp ON td.Id = tp.TripDayId
+                    INNER JOIN dbo.Places pl ON tp.PlaceId = pl.Id
+                    WHERE td.TripId = t.Id AND pl.IsDeleted = 0 AND (
+                        pl.Name LIKE @Keyword
+                        OR pl.Address LIKE @Keyword
+                    )
+                )
+            )");
             parameters.Add("Keyword", $"%{p.Keyword.Trim()}%");
         }
 
-        if (!string.IsNullOrWhiteSpace(p.Duration) && p.Duration != "all")
+        if (!string.IsNullOrWhiteSpace(p.Destination) &&
+            !p.Destination.Equals("all", StringComparison.OrdinalIgnoreCase) &&
+            !p.Destination.Equals("Tất cả điểm đến", StringComparison.OrdinalIgnoreCase))
         {
-            if (int.TryParse(p.Duration, out var durationDays))
+            var rawDest = p.Destination.Trim();
+            var cleanDest = rawDest
+                .Replace("Tỉnh ", "", StringComparison.OrdinalIgnoreCase)
+                .Replace("Thành phố ", "", StringComparison.OrdinalIgnoreCase)
+                .Replace("TP. ", "", StringComparison.OrdinalIgnoreCase)
+                .Replace("TP ", "", StringComparison.OrdinalIgnoreCase)
+                .Trim();
+
+            conditions.Add(@"(
+                t.Title LIKE @DestKeyword
+                OR t.Title LIKE @CleanDestKeyword
+                OR t.Description LIKE @DestKeyword
+                OR t.Description LIKE @CleanDestKeyword
+                OR (
+                    SELECT TOP 1 pr.Name
+                    FROM dbo.TripDays td
+                    INNER JOIN dbo.TripPlaces tp ON td.Id = tp.TripDayId
+                    INNER JOIN dbo.Places pl ON tp.PlaceId = pl.Id
+                    INNER JOIN dbo.Provinces pr ON pl.ProvinceId = pr.Id
+                    WHERE td.TripId = t.Id AND pl.IsDeleted = 0
+                    GROUP BY pr.Name
+                    ORDER BY COUNT(1) DESC
+                ) LIKE @DestKeyword
+                OR (
+                    SELECT TOP 1 pr.Name
+                    FROM dbo.TripDays td
+                    INNER JOIN dbo.TripPlaces tp ON td.Id = tp.TripDayId
+                    INNER JOIN dbo.Places pl ON tp.PlaceId = pl.Id
+                    INNER JOIN dbo.Provinces pr ON pl.ProvinceId = pr.Id
+                    WHERE td.TripId = t.Id AND pl.IsDeleted = 0
+                    GROUP BY pr.Name
+                    ORDER BY COUNT(1) DESC
+                ) LIKE @CleanDestKeyword
+            )");
+            parameters.Add("DestKeyword", $"%{rawDest}%");
+            parameters.Add("CleanDestKeyword", $"%{cleanDest}%");
+        }
+
+        if (!string.IsNullOrWhiteSpace(p.Duration) && !p.Duration.Equals("all", StringComparison.OrdinalIgnoreCase))
+        {
+            var durationTrimmed = p.Duration.Trim();
+            if (int.TryParse(durationTrimmed, out var durationDays))
             {
-                conditions.Add("(SELECT COUNT(1) FROM dbo.TripDays td WHERE td.TripId = t.Id) = @DaysFilter");
-                parameters.Add("DaysFilter", durationDays);
+                if (durationDays >= 5)
+                {
+                    conditions.Add("(SELECT COUNT(1) FROM dbo.TripDays td WHERE td.TripId = t.Id) >= 5");
+                }
+                else
+                {
+                    conditions.Add("(SELECT COUNT(1) FROM dbo.TripDays td WHERE td.TripId = t.Id) = @DaysFilter");
+                    parameters.Add("DaysFilter", durationDays);
+                }
             }
-            else if (p.Duration.Contains("4"))
+            else if (durationTrimmed.StartsWith("5") || durationTrimmed.Contains("5N"))
             {
-                conditions.Add("(SELECT COUNT(1) FROM dbo.TripDays td WHERE td.TripId = t.Id) >= 4");
+                conditions.Add("(SELECT COUNT(1) FROM dbo.TripDays td WHERE td.TripId = t.Id) >= 5");
+            }
+            else if (durationTrimmed.StartsWith("4") || durationTrimmed.Contains("4N"))
+            {
+                conditions.Add("(SELECT COUNT(1) FROM dbo.TripDays td WHERE td.TripId = t.Id) = 4");
+            }
+            else if (durationTrimmed.StartsWith("3") || durationTrimmed.Contains("3N"))
+            {
+                conditions.Add("(SELECT COUNT(1) FROM dbo.TripDays td WHERE td.TripId = t.Id) = 3");
+            }
+            else if (durationTrimmed.StartsWith("2") || durationTrimmed.Contains("2N"))
+            {
+                conditions.Add("(SELECT COUNT(1) FROM dbo.TripDays td WHERE td.TripId = t.Id) = 2");
+            }
+            else if (durationTrimmed.StartsWith("1") || durationTrimmed.Contains("1N"))
+            {
+                conditions.Add("(SELECT COUNT(1) FROM dbo.TripDays td WHERE td.TripId = t.Id) = 1");
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(p.Budget) && !p.Budget.Equals("all", StringComparison.OrdinalIgnoreCase))
+        {
+            var budgetTrimmed = p.Budget.Trim().ToLowerInvariant();
+            const string costExpression = @"COALESCE(
+                NULLIF(t.EstimatedBudget, 0),
+                NULLIF((SELECT SUM(tp.EstimatedCost) FROM dbo.TripDays td INNER JOIN dbo.TripPlaces tp ON td.Id = tp.TripDayId WHERE td.TripId = t.Id), 0),
+                (CASE WHEN (SELECT COUNT(1) FROM dbo.TripDays td WHERE td.TripId = t.Id) = 0 THEN 1 ELSE (SELECT COUNT(1) FROM dbo.TripDays td WHERE td.TripId = t.Id) END) * 1200000
+            )";
+
+            if (budgetTrimmed == "under1m" || budgetTrimmed == "<1m" || budgetTrimmed == "under-1m")
+            {
+                conditions.Add($"{costExpression} < 1000000");
+            }
+            else if (budgetTrimmed == "1m-3m" || budgetTrimmed == "1-3m")
+            {
+                conditions.Add($"{costExpression} >= 1000000 AND {costExpression} <= 3000000");
+            }
+            else if (budgetTrimmed == "3m-5m" || budgetTrimmed == "3-5m")
+            {
+                conditions.Add($"{costExpression} > 3000000 AND {costExpression} <= 5000000");
+            }
+            else if (budgetTrimmed == "above5m" || budgetTrimmed == ">5m" || budgetTrimmed == "above-5m")
+            {
+                conditions.Add($"{costExpression} > 5000000");
             }
         }
 
         var whereClause = string.Join(" AND ", conditions);
+
+        var countSql = $"SELECT COUNT(1) FROM dbo.Trips t WHERE {whereClause};";
+        var totalCount = await connection.ExecuteScalarAsync<long>(countSql, parameters);
+
+        if (totalCount == 0)
+        {
+            return new PagedResult<ItineraryDto>(Array.Empty<ItineraryDto>(), 0, p.Page, p.PageSize);
+        }
+
         var offset = Math.Max(0, (p.Page - 1) * p.PageSize);
         parameters.Add("Offset", offset);
         parameters.Add("PageSize", Math.Max(1, p.PageSize));
@@ -74,12 +189,31 @@ public class TripRepository : ITripRepository
                 t.Title,
                 t.Description,
                 t.CoverImageUrl,
+                t.EstimatedBudget,
                 t.StartDate,
                 t.EndDate,
                 t.Privacy,
+                t.CreatedAt,
                 ISNULL(up.FullName, N'Lang Thang Editor') AS AuthorName,
                 up.AvatarUrl AS AuthorAvatar,
-                (SELECT COUNT(1) FROM dbo.TripDays td WHERE td.TripId = t.Id) AS DayCount
+                (SELECT COUNT(1) FROM dbo.TripDays td WHERE td.TripId = t.Id) AS DayCount,
+                (SELECT TOP 1 pr.Name
+                 FROM dbo.TripDays td
+                 INNER JOIN dbo.TripPlaces tp ON td.Id = tp.TripDayId
+                 INNER JOIN dbo.Places pl ON tp.PlaceId = pl.Id
+                 INNER JOIN dbo.Provinces pr ON pl.ProvinceId = pr.Id
+                 WHERE td.TripId = t.Id AND pl.IsDeleted = 0
+                 GROUP BY pr.Name
+                 ORDER BY COUNT(1) DESC) AS PrimaryProvinceName,
+                (SELECT TOP 1 reg.Name
+                 FROM dbo.TripDays td
+                 INNER JOIN dbo.TripPlaces tp ON td.Id = tp.TripDayId
+                 INNER JOIN dbo.Places pl ON tp.PlaceId = pl.Id
+                 INNER JOIN dbo.Provinces pr ON pl.ProvinceId = pr.Id
+                 INNER JOIN dbo.Regions reg ON pr.RegionId = reg.Id
+                 WHERE td.TripId = t.Id AND pl.IsDeleted = 0
+                 GROUP BY reg.Name
+                 ORDER BY COUNT(1) DESC) AS PrimaryRegionName
             FROM dbo.Trips t
             LEFT JOIN dbo.UserProfiles up ON t.UserId = up.UserId
             WHERE {whereClause}
@@ -90,7 +224,7 @@ public class TripRepository : ITripRepository
 
         if (trips.Count == 0)
         {
-            return Array.Empty<ItineraryDto>();
+            return new PagedResult<ItineraryDto>(Array.Empty<ItineraryDto>(), totalCount, p.Page, p.PageSize);
         }
 
         var tripIds = trips.Select(t => t.Id).ToList();
@@ -129,6 +263,7 @@ public class TripRepository : ITripRepository
 
         var daysByTrip = days.ToLookup(d => d.TripId);
         var stopsByDay = stops.ToLookup(s => s.TripDayId);
+        var viCulture = new CultureInfo("vi-VN");
 
         var result = new List<ItineraryDto>();
 
@@ -136,22 +271,37 @@ public class TripRepository : ITripRepository
         {
             int calculatedDays = trip.DayCount > 0 ? trip.DayCount : 1;
             int calculatedNights = Math.Max(0, calculatedDays - 1);
-            string durationText = calculatedDays == 1 ? "1 Ngày (Đi về trong ngày)" : $"{calculatedDays} Ngày {calculatedNights} Đêm";
+            string durationText = calculatedDays == 1 ? "1 Ngày" : $"{calculatedDays} Ngày {calculatedNights} Đêm";
 
             var dayDtos = new List<ItineraryDayDto>();
+            decimal totalStopsCost = 0;
+
             foreach (var day in daysByTrip[trip.Id])
             {
-                var stopDtos = stopsByDay[day.Id].Select(s => new ItineraryStopDto
+                var stopDtos = new List<ItineraryStopDto>();
+                foreach (var s in stopsByDay[day.Id])
                 {
-                    Time = s.StartTime.HasValue ? s.StartTime.Value.ToString(@"hh\:mm") : "09:00",
-                    Activity = !string.IsNullOrWhiteSpace(s.PlaceName) ? s.PlaceName : (!string.IsNullOrWhiteSpace(s.Note) ? s.Note : "Điểm tham quan"),
-                    PlaceName = s.PlaceName,
-                    Note = s.Note,
-                    Location = s.PlaceAddress ?? s.PlaceName,
-                    Description = s.PlaceDescription,
-                    CostEstimate = s.EstimatedCost.HasValue ? s.EstimatedCost.Value.ToString("N0") + " VNĐ" : "Tự túc",
-                    Tips = string.IsNullOrWhiteSpace(s.TransportMode) ? "Nên mang trang phục phù hợp và máy ảnh." : $"Di chuyển bằng: {s.TransportMode}. Nên mang trang phục phù hợp và máy ảnh."
-                }).ToList();
+                    if (s.EstimatedCost.HasValue && s.EstimatedCost.Value > 0)
+                    {
+                        totalStopsCost += s.EstimatedCost.Value;
+                    }
+
+                    string costText = s.EstimatedCost.HasValue && s.EstimatedCost.Value > 0
+                        ? $"{s.EstimatedCost.Value.ToString("#,##0", viCulture)}đ"
+                        : "Miễn phí";
+
+                    stopDtos.Add(new ItineraryStopDto
+                    {
+                        Time = s.StartTime.HasValue ? s.StartTime.Value.ToString(@"hh\:mm") : "08:00",
+                        PlaceName = s.PlaceName,
+                        Activity = !string.IsNullOrWhiteSpace(s.PlaceName) ? s.PlaceName : (!string.IsNullOrWhiteSpace(s.Note) ? s.Note : "Điểm tham quan"),
+                        Location = s.PlaceAddress ?? s.PlaceName,
+                        CostEstimate = costText,
+                        Note = s.Note,
+                        Description = s.PlaceDescription,
+                        Tips = string.IsNullOrWhiteSpace(s.TransportMode) ? "Nên mang trang phục phù hợp và máy ảnh." : $"Di chuyển bằng: {s.TransportMode}. Nên mang trang phục phù hợp và máy ảnh."
+                    });
+                }
 
                 dayDtos.Add(new ItineraryDayDto
                 {
@@ -161,22 +311,40 @@ public class TripRepository : ITripRepository
                 });
             }
 
-            string detectedRegion = "central";
-            if (trip.Title.Contains("Hà Nội") || trip.Title.Contains("Bắc") || trip.Title.Contains("Sa Pa") || trip.Title.Contains("Hạ Long") || trip.Title.Contains("Sơn La") || trip.Title.Contains("Hà Giang") || trip.Title.Contains("Mộc Châu") || trip.Title.Contains("Ninh Bình"))
-                detectedRegion = "north";
-            else if (trip.Title.Contains("Sài Gòn") || trip.Title.Contains("Nam") || trip.Title.Contains("Cần Thơ") || trip.Title.Contains("Phú Quốc") || trip.Title.Contains("Miền Tây") || trip.Title.Contains("Vũng Tàu"))
-                detectedRegion = "south";
+            decimal finalCost = 0;
+            if (trip.EstimatedBudget.HasValue && trip.EstimatedBudget.Value > 0)
+            {
+                finalCost = trip.EstimatedBudget.Value;
+            }
+            else if (totalStopsCost > 0)
+            {
+                finalCost = totalStopsCost;
+            }
+            else
+            {
+                finalCost = calculatedDays * 1200000m;
+            }
+
+            string formattedEstimatedCost = $"{finalCost.ToString("#,##0", viCulture)}đ";
+
+            string destination = !string.IsNullOrWhiteSpace(trip.PrimaryProvinceName)
+                ? trip.PrimaryProvinceName
+                : DetectDestination(trip.Title, p.Destination);
+
+            string region = !string.IsNullOrWhiteSpace(trip.PrimaryRegionName)
+                ? trip.PrimaryRegionName
+                : DetectRegionName(trip.Title, destination);
 
             result.Add(new ItineraryDto
             {
                 Id = trip.Id,
                 Title = trip.Title,
-                Destination = trip.Title,
-                Region = detectedRegion,
+                Destination = destination,
+                Region = region,
                 Duration = durationText,
                 DaysCount = calculatedDays,
                 Style = "Văn hóa & Trải nghiệm",
-                EstimatedCost = $"{calculatedDays * 1200000:N0}đ",
+                EstimatedCost = formattedEstimatedCost,
                 CoverUrl = trip.CoverImageUrl,
                 Author = new ItineraryAuthorDto
                 {
@@ -184,11 +352,12 @@ public class TripRepository : ITripRepository
                     Avatar = trip.AuthorAvatar
                 },
                 Overview = trip.Description,
+                CreatedAt = trip.CreatedAt,
                 Days = dayDtos
             });
         }
 
-        return result;
+        return new PagedResult<ItineraryDto>(result, totalCount, p.Page, p.PageSize);
     }
 
     public async Task<bool> IsItinerarySavedAsync(
@@ -547,5 +716,59 @@ public class TripRepository : ITripRepository
         }
 
         return name.Trim();
+    }
+
+    private static string DetectDestination(string title, string? fallback)
+    {
+        if (!string.IsNullOrWhiteSpace(fallback) &&
+            !fallback.Equals("all", StringComparison.OrdinalIgnoreCase) &&
+            !fallback.Equals("Tất cả điểm đến", StringComparison.OrdinalIgnoreCase))
+        {
+            return fallback;
+        }
+
+        var commonDestinations = new[]
+        {
+            "Đà Nẵng", "Hà Nội", "Hồ Chí Minh", "Sài Gòn", "Đà Lạt", "Phú Quốc",
+            "Nha Trang", "Hội An", "Huế", "Hạ Long", "Sa Pa", "Hà Giang",
+            "Ninh Bình", "Vũng Tàu", "Quy Nhơn", "Cần Thơ", "Phan Thiết", "Mộc Châu"
+        };
+
+        foreach (var dest in commonDestinations)
+        {
+            if (title.Contains(dest, StringComparison.OrdinalIgnoreCase))
+                return dest;
+        }
+
+        return !string.IsNullOrWhiteSpace(fallback) ? fallback : title;
+    }
+
+    private static string DetectRegionName(string title, string? destination)
+    {
+        var text = $"{title} {destination}";
+        if (text.Contains("Hà Nội", StringComparison.OrdinalIgnoreCase) ||
+            text.Contains("Bắc", StringComparison.OrdinalIgnoreCase) ||
+            text.Contains("Sa Pa", StringComparison.OrdinalIgnoreCase) ||
+            text.Contains("Hạ Long", StringComparison.OrdinalIgnoreCase) ||
+            text.Contains("Sơn La", StringComparison.OrdinalIgnoreCase) ||
+            text.Contains("Hà Giang", StringComparison.OrdinalIgnoreCase) ||
+            text.Contains("Mộc Châu", StringComparison.OrdinalIgnoreCase) ||
+            text.Contains("Ninh Bình", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Miền Bắc";
+        }
+
+        if (text.Contains("Sài Gòn", StringComparison.OrdinalIgnoreCase) ||
+            text.Contains("Hồ Chí Minh", StringComparison.OrdinalIgnoreCase) ||
+            text.Contains("Nam", StringComparison.OrdinalIgnoreCase) ||
+            text.Contains("Cần Thơ", StringComparison.OrdinalIgnoreCase) ||
+            text.Contains("Phú Quốc", StringComparison.OrdinalIgnoreCase) ||
+            text.Contains("Miền Tây", StringComparison.OrdinalIgnoreCase) ||
+            text.Contains("Vũng Tàu", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Miền Nam";
+        }
+
+        return "Miền Trung";
     }
 }

@@ -1,5 +1,12 @@
 namespace Application.DTOs.Admin;
 
+public class AdminFoodPlaceDto
+{
+    public long Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string? CoverImageUrl { get; set; }
+}
+
 public class AdminFoodItemDto
 {
     public long Id { get; set; }
@@ -10,9 +17,11 @@ public class AdminFoodItemDto
     public decimal? MaxPrice { get; set; }
     public string? CoverImg { get; set; }
     public string? Desc { get; set; }
+    public string? HistoryInfo { get; set; }
     public string Status { get; set; } = "active";
     public int StatusNum => Status == "active" ? 1 : 0;
     public int PlacesCount { get; set; }
+    public IReadOnlyList<AdminFoodPlaceDto> Places { get; set; } = Array.Empty<AdminFoodPlaceDto>();
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public string? UpdatedBy { get; set; }

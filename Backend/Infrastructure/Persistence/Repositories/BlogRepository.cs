@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using Application.Common;
+using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using Application.Common.Interfaces.Repositories;
@@ -42,7 +43,7 @@ public class BlogRepository : IBlogRepository
         return clean;
     }
 
-    public Task<IReadOnlyList<BlogListItemDto>> GetBlogsAsync(
+    public Task<PagedResult<BlogListItemDto>> GetBlogsAsync(
         string? category,
         string? keyword,
         int page,
@@ -58,7 +59,7 @@ public class BlogRepository : IBlogRepository
         }, ct);
     }
 
-    public async Task<IReadOnlyList<BlogListItemDto>> GetBlogsAsync(
+    public async Task<PagedResult<BlogListItemDto>> GetBlogsAsync(
         BlogFilterParams p,
         CancellationToken ct = default)
     {
@@ -94,6 +95,16 @@ public class BlogRepository : IBlogRepository
         }
 
         var whereClause = string.Join(" AND ", conditions);
+
+        // Count query
+        var countSql = $"SELECT COUNT(1) FROM dbo.Blogs b LEFT JOIN dbo.Categories c ON b.CategoryId = c.Id WHERE {whereClause};";
+        var totalCount = await connection.ExecuteScalarAsync<long>(countSql, parameters);
+
+        if (totalCount == 0)
+        {
+            return new PagedResult<BlogListItemDto>(Array.Empty<BlogListItemDto>(), 0, p.Page, p.PageSize);
+        }
+
         var offset = Math.Max(0, (p.Page - 1) * p.PageSize);
         parameters.Add("Offset", offset);
         parameters.Add("PageSize", Math.Max(1, p.PageSize));
@@ -121,7 +132,8 @@ public class BlogRepository : IBlogRepository
             OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 
         var rows = (await connection.QueryAsync<RawBlogRow>(sql, parameters)).ToList();
-        return rows.Select(r => r.ToDto()).ToList();
+        var items = rows.Select(r => r.ToDto()).ToList();
+        return new PagedResult<BlogListItemDto>(items, totalCount, p.Page, p.PageSize);
     }
 
     public async Task<BlogListItemDto?> GetFeaturedBlogAsync(CancellationToken ct = default)
@@ -220,10 +232,13 @@ public class BlogRepository : IBlogRepository
             Excerpt = baseDto.Excerpt,
             Content = baseDto.Content,
             Category = baseDto.Category,
-            ReadTime = baseDto.ReadTime,
             CoverUrl = baseDto.CoverUrl,
+            CoverImageUrl = baseDto.CoverImageUrl ?? baseDto.CoverUrl,
             Author = baseDto.Author,
+            AuthorName = baseDto.AuthorName,
+            AuthorAvatar = baseDto.AuthorAvatar,
             PublishedAt = baseDto.PublishedAt,
+            ViewCount = baseDto.ViewCount,
             Tags = baseDto.Tags,
             Featured = baseDto.Featured
         };
@@ -256,3 +271,4 @@ public class BlogRepository : IBlogRepository
         return await connection.QueryFirstOrDefaultAsync<BlogForEditDto>(sql, new { Id = blogId, UserId = userId });
     }
 }
+

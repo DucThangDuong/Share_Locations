@@ -14,6 +14,7 @@ export const extractList = <T = any>(data: any): T[] => {
   if (Array.isArray(data)) return data;
   if (Array.isArray(data.items)) return data.items;
   if (Array.isArray(data.data)) return data.data;
+  if (Array.isArray(data.data?.items)) return data.data.items;
   if (Array.isArray(data.places)) return data.places;
   return [];
 };
@@ -231,7 +232,40 @@ export const adminService = {
     get<AdminContributorsSummaryDto>("/api/admin/dashboard/contributors-summary"),
   getPlaces: (params: Record<string, unknown>) => get<AdminPage<Record<string, unknown>>>("/api/admin/places", params),
   getPlace: (id: number) => get<Record<string, unknown>>(`/api/admin/places/${id}`),
-  createPlace: (data: unknown) => write<number>("post", "/api/admin/places", data),
+  createPlace: async (data: unknown) => {
+    if (typeof FormData !== "undefined" && data instanceof FormData) {
+      return write<number>("post", "/api/admin/places", data);
+    }
+    try {
+      const res = await apiClient.post<ApiSuccessResponse<number>>("/api/admin/places", data, {
+        headers: { "Content-Type": "application/json" },
+      });
+      return res.data;
+    } catch (err: any) {
+      if (err?.response?.status === 415 && typeof data === "object" && data !== null) {
+        const fd = new FormData();
+        Object.entries(data as Record<string, any>).forEach(([key, val]) => {
+          if (val === undefined || val === null) return;
+          if (Array.isArray(val)) {
+            val.forEach((item) => {
+              if (item !== undefined && item !== null) {
+                const isFile = item instanceof File || item instanceof Blob;
+                const formKey = isFile && (key === "photos" || key === "images") ? "mediaFiles" : key;
+                fd.append(formKey, isFile ? item : String(item));
+              }
+            });
+          } else if (val instanceof File || val instanceof Blob) {
+            const formKey = key === "primaryImageUrl" || key === "coverImg" ? "coverImage" : key;
+            fd.append(formKey, val);
+          } else {
+            fd.append(key, String(val));
+          }
+        });
+        return write<number>("post", "/api/admin/places", fd);
+      }
+      throw err;
+    }
+  },
   updatePlace: (id: number, data: unknown) => write<boolean>("put", `/api/admin/places/${id}`, data),
   updatePlaceStatus: (id: number, status: string | number) => {
     const isOne = status === 1 || status === "1" || String(status).toLowerCase() === "active" || String(status).toLowerCase() === "approved";

@@ -22,11 +22,13 @@ public interface IRankingRepository
         int? regionId = null,
         string period = "all_time",
         int limit = 10,
+        bool includeExcluded = false,
         CancellationToken ct = default);
 
     Task<IReadOnlyList<ProvinceRankingItemDto>> GetProvinceRankingsAsync(
         int? regionId = null,
         int limit = 10,
+        bool includeExcluded = false,
         CancellationToken ct = default);
 
     Task<IReadOnlyList<DestinationRankingItemDto>> GetDestinationRankingsAsync(
@@ -34,4 +36,13 @@ public interface IRankingRepository
         int? categoryId = null,
         int limit = 10,
         CancellationToken ct = default);
+
+    Task<RankingGovernanceConfigDto> GetGovernanceConfigAsync(CancellationToken ct = default);
+
+    Task<RankingGovernanceConfigDto> UpdateGovernanceConfigAsync(
+        RankingGovernanceConfigDto config,
+        long adminId,
+        CancellationToken ct = default);
+
+    Task SnapshotCurrentRanksAsync(CancellationToken ct = default);
 }

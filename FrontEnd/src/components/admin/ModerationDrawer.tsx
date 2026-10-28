@@ -6,7 +6,9 @@ import { CustomSelect } from "@/components/common/CustomSelect";
 const formatDateTime = (dateStr?: string) => {
   if (!dateStr) return "";
   try {
-    const d = new Date(dateStr);
+    const raw = String(dateStr).trim();
+    const utcStr = raw.endsWith("Z") || raw.includes("+") || (raw.includes("-") && raw.indexOf("-", 10) !== -1) ? raw : `${raw}Z`;
+    const d = new Date(utcStr);
     if (isNaN(d.getTime())) return dateStr;
     const hours = String(d.getHours()).padStart(2, "0");
     const minutes = String(d.getMinutes()).padStart(2, "0");
@@ -60,6 +62,13 @@ export const ModerationDrawer: React.FC<ModerationDrawerProps> = ({
   if (!activeReportGroup) return null;
 
   const currentReport = selectedReportInDrawer || activeReportGroup.reportsList[0];
+
+  const effectiveStatus = currentReport?.status ?? activeReportGroup.status;
+  const isAlreadyHandled =
+    effectiveStatus === 1 ||
+    effectiveStatus === 2 ||
+    activeReportGroup.status === 1 ||
+    activeReportGroup.status === 2;
 
   const selectedActions = React.useMemo(() => {
     if (!drawerActionTaken) return ["hide_target"];
@@ -130,6 +139,31 @@ export const ModerationDrawer: React.FC<ModerationDrawerProps> = ({
                   </span>
                 )}
               </div>
+
+              {(activeReportGroup.placeName || activeReportGroup.placeSubtitle) && (
+                <div className="flex items-center gap-3 p-2.5 rounded-lg bg-emerald-50/70 border border-emerald-200/70">
+                  {(activeReportGroup.placeImage || activeReportGroup.targetImage) ? (
+                    <img
+                      src={activeReportGroup.placeImage || activeReportGroup.targetImage}
+                      alt={activeReportGroup.placeName || "Địa điểm"}
+                      className="w-12 h-12 rounded-lg object-cover border border-emerald-200 shrink-0"
+                    />
+                  ) : null}
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">
+                      Địa điểm liên quan
+                    </div>
+                    <div className="font-bold text-slate-900 text-xs truncate">
+                      {activeReportGroup.placeName || activeReportGroup.targetSubtitle}
+                    </div>
+                    {activeReportGroup.placeSubtitle && activeReportGroup.placeSubtitle !== activeReportGroup.placeName && (
+                      <div className="text-[11px] text-slate-500 truncate">
+                        {activeReportGroup.placeSubtitle}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {activeReportGroup.targetImage ? (
                 <img
@@ -203,12 +237,22 @@ export const ModerationDrawer: React.FC<ModerationDrawerProps> = ({
                           {formatDateTime(rep.submittedAt)}
                         </span>
                       </div>
-                      <p className="text-rose-700 font-semibold text-xs">{rep.reasonContent}</p>
-                      {rep.description && (
-                        <p className="text-slate-600 text-[11px] mt-1 line-clamp-2">
-                          "{rep.description}"
-                        </p>
-                      )}
+                      <p className="text-rose-700 font-semibold text-xs">
+                        {rep.reportTypeName || rep.reasonContent || "Vi phạm quy định"}
+                      </p>
+                      {(() => {
+                        const detailText = rep.reasonContent || rep.description;
+                        const isDuplicate =
+                          detailText &&
+                          rep.reportTypeName &&
+                          detailText.trim().toLowerCase() === rep.reportTypeName.trim().toLowerCase();
+                        if (!detailText || isDuplicate) return null;
+                        return (
+                          <p className="text-slate-600 text-[11px] mt-1 line-clamp-2">
+                            "{detailText}"
+                          </p>
+                        );
+                      })()}
                     </div>
                   );
                 })}
@@ -217,129 +261,232 @@ export const ModerationDrawer: React.FC<ModerationDrawerProps> = ({
           </div>
 
           <div className="lg:col-span-5 p-6 bg-slate-50/50 flex flex-col justify-between space-y-4">
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-2 p-1 bg-slate-200/60 rounded-xl">
-                <button
-                  type="button"
-                  onClick={() => setDrawerDecisionTab("accept")}
-                  className={`py-2 rounded-lg font-bold text-center transition-all cursor-pointer ${drawerDecisionTab === "accept"
-                    ? "bg-rose-600 text-white shadow-xs"
-                    : "text-slate-600 hover:text-slate-900"
-                    }`}
+            {isAlreadyHandled ? (
+              <div className="space-y-4">
+                <div
+                  className={`p-4 rounded-2xl border ${
+                    effectiveStatus === 1
+                      ? "bg-emerald-50/90 border-emerald-200 text-emerald-950"
+                      : "bg-slate-100/90 border-slate-200 text-slate-900"
+                  }`}
                 >
-                  Xác nhận vi phạm
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDrawerDecisionTab("dismiss")}
-                  className={`py-2 rounded-lg font-bold text-center transition-all cursor-pointer ${drawerDecisionTab === "dismiss"
-                    ? "bg-emerald-600 text-white shadow-xs"
-                    : "text-slate-600 hover:text-slate-900"
-                    }`}
-                >
-                  Bác bỏ báo cáo
-                </button>
-              </div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                        effectiveStatus === 1
+                          ? "bg-emerald-600 text-white"
+                          : "bg-slate-600 text-white"
+                      }`}
+                    >
+                      {effectiveStatus === 1 ? "✓ Đã giải quyết" : "✕ Đã bác bỏ"}
+                    </span>
+                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                      Hồ sơ đã đóng
+                    </span>
+                  </div>
+                  <h3 className="font-bold text-sm">
+                    {effectiveStatus === 1
+                      ? "Đã xác nhận vi phạm và thực thi xử lý"
+                      : "Báo cáo phản ánh đã bị bác bỏ"}
+                  </h3>
+                  <p className="text-[11px] text-slate-600 mt-1 leading-relaxed">
+                    Báo cáo này đã được quản trị viên thẩm định và xử lý hoàn tất.
+                  </p>
+                </div>
 
-              {drawerDecisionTab === "accept" ? (
-                /* Action taken when confirmed: Clean checklist options */
-                <div className="space-y-3.5">
+                <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-3.5">
                   <div>
-                    <label className="font-bold text-slate-800 block mb-2">
-                      Hành động xử lý thực thi:
-                    </label>
-                    <div className="space-y-2.5 bg-white p-3.5 rounded-xl border border-slate-200">
-                      <label className="flex items-start gap-2.5 cursor-pointer select-none">
-                        <input
-                          type="checkbox"
-                          checked={isHideChecked}
-                          onChange={() => toggleAction("hide_target")}
-                          className="w-4 h-4 mt-0.5 rounded text-rose-600 border-slate-300 focus:ring-rose-500 cursor-pointer"
-                        />
-                        <div>
-                          <span className="text-slate-800 font-bold text-xs block">
-                            Ẩn đối tượng vi phạm
-                          </span>
-                          <span className="text-[11px] text-slate-500 block mt-0.5 leading-relaxed">
-                            {activeReportGroup.targetType === "place"}
-                            {activeReportGroup.targetType === "review"}
-                            {activeReportGroup.targetType === "comment"}
-                            {activeReportGroup.targetType === "blog"}
-                            {!["place", "review", "comment", "blog"].includes(activeReportGroup.targetType) && "Ẩn đối tượng vi phạm khỏi hệ thống người dùng."}
-                          </span>
-                        </div>
-                      </label>
-                    </div>
-                    {!hasAtLeastOneAction && (
-                      <p className="text-[11px] text-rose-600 font-semibold mt-1">
-                        * Bắt buộc phải chọn ít nhất 1 hành động xử lý để thi hành.
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                      Hành động xử lý đã thực thi
+                    </span>
+                    <span className="font-semibold text-slate-800 text-xs mt-1 block">
+                      {currentReport?.resolutionAction === "hide_target" ||
+                      currentReport?.resolutionAction === "hide_content"
+                        ? "Ẩn đối tượng vi phạm khỏi hệ thống"
+                        : currentReport?.resolutionAction ||
+                          (effectiveStatus === 1
+                            ? "Đã xử lý vi phạm"
+                            : "Bác bỏ - Nội dung hợp lệ")}
+                    </span>
+                  </div>
+
+                  {currentReport?.resolutionNote && (
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                        Ghi chú / Căn cứ kết luận
+                      </span>
+                      <p className="text-slate-700 text-xs mt-1 italic bg-slate-50 p-2.5 rounded-lg border border-slate-200/60 leading-relaxed">
+                        "{currentReport.resolutionNote}"
                       </p>
-                    )}
-                  </div>
+                    </div>
+                  )}
 
-                  <div>
-                    <label className="font-bold text-slate-800 block mb-1.5">
-                      Ghi chú kết luận kiểm duyệt:
-                    </label>
-                    <textarea
-                      rows={3}
-                      value={drawerResolutionNote}
-                      onChange={(e) => setDrawerResolutionNote(e.target.value)}
-                      placeholder="Nêu rõ lý do hoặc bằng chứng vi phạm..."
-                      className="w-full p-2.5 rounded-xl border border-slate-300 bg-white text-slate-800 outline-none focus:border-rose-500 resize-none"
-                    />
-                  </div>
+                  {currentReport?.assignedToAdminName && (
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                        Quản trị viên thẩm định
+                      </span>
+                      <span className="font-semibold text-slate-800 text-xs mt-1 block">
+                        👤 {currentReport.assignedToAdminName}
+                      </span>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                /* Dismiss Form */
-                <div className="space-y-3">
-                  <div>
-                    <CustomSelect
-                      label="Lý do bác bỏ phản ánh:"
-                      value={drawerDismissReason}
-                      onChange={(val) => setDrawerDismissReason(val)}
-                      options={[
-                        { value: "NO_VIOLATION", label: "Nội dung hợp lệ, không vi phạm điều khoản" },
-                        { value: "INSUFFICIENT_EVIDENCE", label: "Không đủ bằng chứng xác thực" },
-                        { value: "SPAM_ABUSE", label: "Báo cáo sai mục đích hoặc quấy rối" },
-                        { value: "OTHER", label: "Lý do nghiệp vụ khác" },
-                      ]}
-                      size="sm"
-                    />
-                  </div>
 
-                  <div>
-                    <label className="font-bold text-slate-800 block mb-1.5">
-                      Giải trình bác bỏ:
-                    </label>
-                    <textarea
-                      rows={4}
-                      value={drawerResolutionNote}
-                      onChange={(e) => setDrawerResolutionNote(e.target.value)}
-                      placeholder="Ghi chú chi tiết lý do bác bỏ để lưu hồ sơ kiểm toán..."
-                      className="w-full p-2.5 rounded-xl border border-slate-300 bg-white text-slate-800 outline-none focus:border-emerald-500 resize-none"
-                    />
-                  </div>
+                <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-[11px] text-amber-900 flex items-start gap-2">
+                  <span className="text-sm">🔒</span>
+                  <span>
+                    Hồ sơ đã được lưu trữ vào nhật ký kiểm toán. Các chức năng thực thi đã bị khóa để đảm bảo tính toàn vẹn dữ liệu.
+                  </span>
                 </div>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-2 p-1 bg-slate-200/60 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => setDrawerDecisionTab("accept")}
+                    className={`py-2 rounded-lg font-bold text-center transition-all cursor-pointer ${
+                      drawerDecisionTab === "accept"
+                        ? "bg-rose-600 text-white shadow-xs"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    Xác nhận vi phạm
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDrawerDecisionTab("dismiss")}
+                    className={`py-2 rounded-lg font-bold text-center transition-all cursor-pointer ${
+                      drawerDecisionTab === "dismiss"
+                        ? "bg-emerald-600 text-white shadow-xs"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    Bác bỏ báo cáo
+                  </button>
+                </div>
+
+                {drawerDecisionTab === "accept" ? (
+                  <div className="space-y-3.5">
+                    <div>
+                      <label className="font-bold text-slate-800 block mb-2">
+                        Hành động xử lý thực thi:
+                      </label>
+                      <div className="space-y-2.5 bg-white p-3.5 rounded-xl border border-slate-200">
+                        <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={isHideChecked}
+                            onChange={() => toggleAction("hide_target")}
+                            className="w-4 h-4 mt-0.5 rounded text-rose-600 border-slate-300 focus:ring-rose-500 cursor-pointer"
+                          />
+                          <div>
+                            <span className="text-slate-800 font-bold text-xs block">
+                              Ẩn đối tượng vi phạm
+                            </span>
+                            <span className="text-[11px] text-slate-500 block mt-0.5 leading-relaxed">
+                              {activeReportGroup.targetType === "place"}
+                              {activeReportGroup.targetType === "review"}
+                              {activeReportGroup.targetType === "comment"}
+                              {activeReportGroup.targetType === "blog"}
+                              {!["place", "review", "comment", "blog"].includes(
+                                activeReportGroup.targetType
+                              )}
+                            </span>
+                          </div>
+                        </label>
+                      </div>
+                      {!hasAtLeastOneAction && (
+                        <p className="text-[11px] text-rose-600 font-semibold mt-1">
+                          * Bắt buộc phải chọn ít nhất 1 hành động xử lý để thi hành.
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-slate-800 block mb-1.5">
+                        Ghi chú kết luận kiểm duyệt:
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={drawerResolutionNote}
+                        onChange={(e) => setDrawerResolutionNote(e.target.value)}
+                        placeholder="Nêu rõ lý do hoặc bằng chứng vi phạm..."
+                        className="w-full p-2.5 rounded-xl border border-slate-300 bg-white text-slate-800 outline-none focus:border-rose-500 resize-none"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div>
+                      <CustomSelect
+                        label="Lý do bác bỏ phản ánh:"
+                        value={drawerDismissReason}
+                        onChange={(val) => setDrawerDismissReason(val)}
+                        options={[
+                          {
+                            value: "NO_VIOLATION",
+                            label: "Nội dung hợp lệ, không vi phạm điều khoản",
+                          },
+                          {
+                            value: "INSUFFICIENT_EVIDENCE",
+                            label: "Không đủ bằng chứng xác thực",
+                          },
+                          {
+                            value: "SPAM_ABUSE",
+                            label: "Báo cáo sai mục đích hoặc quấy rối",
+                          },
+                          { value: "OTHER", label: "Lý do nghiệp vụ khác" },
+                        ]}
+                        size="sm"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-slate-800 block mb-1.5">
+                        Giải trình bác bỏ:
+                      </label>
+                      <textarea
+                        rows={4}
+                        value={drawerResolutionNote}
+                        onChange={(e) => setDrawerResolutionNote(e.target.value)}
+                        placeholder="Ghi chú chi tiết lý do bác bỏ để lưu hồ sơ kiểm toán..."
+                        className="w-full p-2.5 rounded-xl border border-slate-300 bg-white text-slate-800 outline-none focus:border-emerald-500 resize-none"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="pt-4 border-t border-slate-200">
-              <button
-                type="button"
-                disabled={!hasAtLeastOneAction}
-                onClick={handleConfirmDrawerResolution}
-                className={`w-full py-2.5 rounded-xl font-bold text-white transition-all shadow-md ${!hasAtLeastOneAction
-                  ? "bg-slate-300 text-slate-500 cursor-not-allowed shadow-none"
-                  : drawerDecisionTab === "accept"
-                    ? "bg-rose-600 hover:bg-rose-700 shadow-rose-600/20 cursor-pointer"
-                    : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20 cursor-pointer"
+              {isAlreadyHandled ? (
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="w-full py-2.5 rounded-xl font-bold bg-slate-200 hover:bg-slate-300 text-slate-700 transition-all cursor-pointer text-xs"
+                >
+                  Đóng cửa sổ chi tiết
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={!hasAtLeastOneAction}
+                  onClick={handleConfirmDrawerResolution}
+                  className={`w-full py-2.5 rounded-xl font-bold text-white transition-all shadow-md ${
+                    !hasAtLeastOneAction
+                      ? "bg-slate-300 text-slate-500 cursor-not-allowed shadow-none"
+                      : drawerDecisionTab === "accept"
+                        ? "bg-rose-600 hover:bg-rose-700 shadow-rose-600/20 cursor-pointer"
+                        : "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20 cursor-pointer"
                   }`}
-              >
-                {drawerDecisionTab === "accept"
-                  ? "Xác nhận & Thi hành xử lý"
-                  : "Hoàn tất bác bỏ phản ánh"}
-              </button>
+                >
+                  {drawerDecisionTab === "accept"
+                    ? "Xác nhận & Thi hành xử lý"
+                    : "Hoàn tất bác bỏ phản ánh"}
+                </button>
+              )}
             </div>
           </div>
         </div>

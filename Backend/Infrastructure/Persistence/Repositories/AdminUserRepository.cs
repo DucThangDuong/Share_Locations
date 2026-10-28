@@ -518,7 +518,7 @@ public class AdminUserRepository : IAdminUserRepository
             transaction.Commit();
 
             await _auditLogService.LogAsync(
-                actionType: "ASSIGN_SCOPES",
+                actionType: Domain.Enums.AdminActionType.ASSIGN_SCOPES,
                 targetTable: "Users",
                 targetId: targetUserId,
                 reason: $"Cập nhật phân quyền: {categoryIds?.Count ?? 0} danh mục, {provinceIds?.Count ?? 0} tỉnh thành, {regionIds?.Count ?? 0} vùng miền.",
@@ -562,7 +562,7 @@ public class AdminUserRepository : IAdminUserRepository
         var rows = await connection.ExecuteAsync(updateSql, new { UserId = targetUserId, Status = status });
         if (rows > 0)
         {
-            var actionType = status == 1 ? "ACTIVATE_USER" : "LOCK_USER";
+            var actionType = status == 1 ? Domain.Enums.AdminActionType.ACTIVATE_USER : Domain.Enums.AdminActionType.LOCK_USER;
             var actionReason = reason ?? (status == 1 ? "Mở khóa tài khoản" : "Khóa tài khoản");
 
             await _auditLogService.LogAsync(
@@ -697,15 +697,27 @@ public class AdminUserRepository : IAdminUserRepository
         var offset = (page - 1) * pageSize;
         const string dataSql = @"
             SELECT
-                CAST(l.Id AS NVARCHAR) AS LogId,
+                '#LOG-' + CAST(l.Id AS NVARCHAR) AS LogId,
                 l.ActionType AS Action,
                 l.TargetTable AS TargetType,
                 l.TargetId,
-                l.Reason AS TargetName,
+                ISNULL(l.Reason, l.TargetTable + ' #' + CAST(l.TargetId AS NVARCHAR)) AS TargetName,
+                COALESCE(cPlace.Name, cProp.Name, cBlog.Name, cCat.Name) AS Category,
+                COALESCE(pPlace.Name, pProp.Name, pProv.Name) AS Province,
                 l.CreatedAt AS Timestamp,
                 CASE l.ActionStatus WHEN 1 THEN N'Thành công' ELSE N'Thất bại' END AS Result,
                 l.IpAddress
             FROM dbo.AdminActionLogs l
+            LEFT JOIN dbo.Places pl ON l.TargetTable = 'Places' AND l.TargetId = pl.Id
+            LEFT JOIN dbo.Categories cPlace ON pl.CategoryId = cPlace.Id
+            LEFT JOIN dbo.Provinces pPlace ON pl.ProvinceId = pPlace.Id
+            LEFT JOIN dbo.Proposals pr ON l.TargetTable = 'Proposals' AND l.TargetId = pr.Id
+            LEFT JOIN dbo.Categories cProp ON pr.CategoryId = cProp.Id
+            LEFT JOIN dbo.Provinces pProp ON pr.ProvinceId = pProp.Id
+            LEFT JOIN dbo.Blogs b ON l.TargetTable = 'Blogs' AND l.TargetId = b.Id
+            LEFT JOIN dbo.Categories cBlog ON b.CategoryId = cBlog.Id
+            LEFT JOIN dbo.Categories cCat ON l.TargetTable = 'Categories' AND l.TargetId = cCat.Id
+            LEFT JOIN dbo.Provinces pProv ON l.TargetTable = 'Provinces' AND l.TargetId = pProv.Id
             WHERE l.AdminId = @AdminId
             ORDER BY l.CreatedAt DESC
             OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
@@ -716,6 +728,12 @@ public class AdminUserRepository : IAdminUserRepository
             Offset = offset,
             PageSize = pageSize
         })).ToList();
+
+        foreach (var item in items)
+        {
+            item.Action = Domain.Constants.AdminDisplayNames.GetActionTypeName(item.Action);
+            item.Category ??= Domain.Constants.AdminDisplayNames.GetTargetTableName(item.TargetType);
+        }
 
         return new AdminAccessHistoryResultDto
         {
@@ -748,7 +766,7 @@ public class AdminUserRepository : IAdminUserRepository
             var userIdExists = await connection.ExecuteScalarAsync<long?>(checkUserSql, new { UserId = targetUserId }, transaction);
             if (!userIdExists.HasValue)
             {
-                throw new InvalidOperationException("Không tìm thấy người dùng hoặc người dùng đã bị xóa.");
+                throw new InvalidOperationException(Domain.Constants.ErrorMessage.USER_NOT_FOUND);
             }
 
             const string oldRolesSql = @"
@@ -895,7 +913,7 @@ public class AdminUserRepository : IAdminUserRepository
             };
 
             await _auditLogService.LogAsync(
-                actionType: "CHANGE_USER_ROLE",
+                actionType: Domain.Enums.AdminActionType.CHANGE_USER_ROLE,
                 targetTable: "Users",
                 targetId: targetUserId,
                 reason: reason ?? $"Thay đổi vai trò người dùng thành {targetRoleDescription}",

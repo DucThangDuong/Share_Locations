@@ -297,11 +297,11 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return prev.map((item) =>
             item.roomId === msgRoomId
               ? {
-                  ...item,
-                  lastMessage: newMsg.content || (newMsg.attachments?.length > 0 ? 'Đã gửi tệp đính kèm' : ''),
-                  lastMessageAt: newMsg.createdAt,
-                  unreadCount: isChatActivelyOpen ? 0 : (item.unreadCount || 0) + 1,
-                }
+                ...item,
+                lastMessage: newMsg.content || (newMsg.attachments?.length > 0 ? 'Đã gửi tệp đính kèm' : ''),
+                lastMessageAt: newMsg.createdAt,
+                unreadCount: isChatActivelyOpen ? 0 : (item.unreadCount || 0) + 1,
+              }
               : item
           )
         } else {
@@ -333,9 +333,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
           let snippet = newMsg.content || ''
           if (!snippet && newMsg.attachments && newMsg.attachments.length > 0) {
             const first = newMsg.attachments[0]
-            if (first.attachmentType === 4) snippet = '📷 Đã gửi một ảnh'
-            else if (first.attachmentType === 1) snippet = `📍 Đã chia sẻ địa điểm: ${first.placeName || ''}`
-            else snippet = '📄 Đã gửi một tệp đính kèm'
+            if (first.attachmentType === 4) snippet = 'Đã gửi một ảnh'
+            else if (first.attachmentType === 1) snippet = `Đã chia sẻ địa điểm: ${first.placeName || ''}`
+            else snippet = 'Đã gửi một tệp đính kèm'
           }
 
           setIncomingToast({
@@ -424,9 +424,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         prev.map((item) =>
           item.roomId === roomId
             ? {
-                ...item,
-                lastMessage: updatedMsg.content || item.lastMessage,
-              }
+              ...item,
+              lastMessage: updatedMsg.content || item.lastMessage,
+            }
             : item
         )
       )
@@ -710,10 +710,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
             prev.map((item) =>
               item.roomId === roomId
                 ? {
-                    ...item,
-                    lastMessage: sentMsg.content || (sentMsg.attachments.length > 0 ? 'Đã gửi tệp đính kèm' : ''),
-                    lastMessageAt: sentMsg.createdAt,
-                  }
+                  ...item,
+                  lastMessage: sentMsg.content || (sentMsg.attachments.length > 0 ? 'Đã gửi tệp đính kèm' : ''),
+                  lastMessageAt: sentMsg.createdAt,
+                }
                 : item
             )
           )

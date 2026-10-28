@@ -18,7 +18,6 @@ import type {
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { AdminTopbar } from "@/components/admin/AdminTopbar";
 import { ModerationDrawer } from "@/components/admin/ModerationDrawer";
-import { AddPlaceModal } from "@/components/admin/modals/AddPlaceModal";
 
 import { DashboardTab } from "@/components/admin/tabs/DashboardTab";
 import { UsersTab } from "@/components/admin/tabs/UsersTab";
@@ -182,6 +181,87 @@ export const AdminPage: React.FC = () => {
         setReportTargetTypeFilterState(typeFromUrl);
       }
     }
+    if (tabFromUrl === "places") {
+      const params = new URLSearchParams(location.search);
+      const urlProv = params.get("provinceId") || params.get("province") || "all";
+      const urlCat = params.get("categoryId") || params.get("category") || "all";
+      const urlStat = params.get("status") || "all";
+      const urlKw = params.get("keyword") || params.get("search") || "";
+      const urlSortBy = params.get("sortBy") || undefined;
+      const urlSortOrder = (params.get("sortOrder") as "asc" | "desc") || undefined;
+      const urlPage = Number(params.get("page")) || 1;
+
+      const pId = urlProv !== "all" && !isNaN(Number(urlProv)) ? Number(urlProv) : undefined;
+      const cId = urlCat !== "all" && !isNaN(Number(urlCat)) ? Number(urlCat) : undefined;
+
+      setPlaceFilterProvince((prev) => (prev !== urlProv ? urlProv : prev));
+      setPlaceFilterCategory((prev) => (prev !== urlCat ? urlCat : prev));
+      setPlaceFilterStatus((prev) => (prev !== urlStat ? urlStat : prev));
+      setPlaceSearchText((prev) => (prev !== urlKw ? urlKw : prev));
+
+      setPlaceFilters((prev: any) => {
+        if (
+          prev.province === urlProv &&
+          prev.provinceId === pId &&
+          prev.category === urlCat &&
+          prev.categoryId === cId &&
+          prev.status === urlStat &&
+          prev.keyword === urlKw &&
+          prev.sortBy === urlSortBy &&
+          prev.sortOrder === urlSortOrder &&
+          prev.page === urlPage
+        ) {
+          return prev;
+        }
+        return {
+          ...prev,
+          province: urlProv,
+          provinceId: pId,
+          category: urlCat,
+          categoryId: cId,
+          status: urlStat,
+          keyword: urlKw,
+          sortBy: urlSortBy,
+          sortOrder: urlSortOrder,
+          page: urlPage,
+        };
+      });
+    }
+    if (tabFromUrl === "foods") {
+      const params = new URLSearchParams(location.search);
+      const urlProv = params.get("provinceId") || params.get("province") || "all";
+      const urlStat = params.get("status") || "all";
+      const urlKw = params.get("keyword") || params.get("search") || "";
+      const urlSortBy = params.get("sortBy") || undefined;
+      const urlSortOrder = (params.get("sortOrder") as "asc" | "desc") || undefined;
+      const urlPage = Number(params.get("page")) || 1;
+
+      const pId = urlProv !== "all" && !isNaN(Number(urlProv)) ? Number(urlProv) : undefined;
+
+      setFoodFilters((prev: any) => {
+        if (
+          prev.province === urlProv &&
+          prev.provinceId === pId &&
+          prev.status === urlStat &&
+          prev.keyword === urlKw &&
+          prev.sortBy === urlSortBy &&
+          prev.sortOrder === urlSortOrder &&
+          prev.page === urlPage
+        ) {
+          return prev;
+        }
+        return {
+          ...prev,
+          province: urlProv,
+          provinceId: pId,
+          status: urlStat,
+          keyword: urlKw,
+          sortBy: urlSortBy,
+          sortOrder: urlSortOrder,
+          page: urlPage,
+        };
+      });
+    }
   }, [location.pathname, location.search]);
 
   const setMainTab = (tab: AdminMainTab) => {
@@ -277,6 +357,7 @@ export const AdminPage: React.FC = () => {
   const [foodFilters, setFoodFilters] = useState<{
     keyword?: string;
     province?: string;
+    provinceId?: number;
     status?: string;
     sortBy?: string;
     sortOrder?: "asc" | "desc";
@@ -308,10 +389,23 @@ export const AdminPage: React.FC = () => {
   const [auditLogs] = useState<AdminAuditLog[]>([]);
 
   const [selectedPlaceId, setSelectedPlaceId] = useState<number | null>(null);
-  const [placeSearchText, setPlaceSearchText] = useState("");
-  const [placeFilterProvince, setPlaceFilterProvince] = useState("all");
-  const [placeFilterCategory, setPlaceFilterCategory] = useState("all");
-  const [placeFilterStatus, setPlaceFilterStatus] = useState("all");
+
+  const [placeSearchText, setPlaceSearchText] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("keyword") || params.get("search") || "";
+  });
+  const [placeFilterProvince, setPlaceFilterProvince] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("province") || "all";
+  });
+  const [placeFilterCategory, setPlaceFilterCategory] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("category") || "all";
+  });
+  const [placeFilterStatus, setPlaceFilterStatus] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("status") || "all";
+  });
   const [isPlacesLoading, setIsPlacesLoading] = useState(false);
   const [placesPagination, setPlacesPagination] = useState<{
     page: number;
@@ -327,13 +421,37 @@ export const AdminPage: React.FC = () => {
   const [placeFilters, setPlaceFilters] = useState<{
     keyword?: string;
     province?: string;
+    provinceId?: number;
     category?: string;
-    status?: string;
+    categoryId?: number;
+    status?: any;
     sortBy?: string;
     sortOrder?: "asc" | "desc";
     page?: number;
     pageSize?: number;
-  }>({ page: 1, pageSize: 10 });
+  }>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const filters: any = { page: 1, pageSize: 10 };
+
+    const pId = params.get("provinceId") || params.get("province");
+    if (pId) {
+      filters.province = pId;
+      if (!isNaN(Number(pId))) filters.provinceId = Number(pId);
+    }
+    const cId = params.get("categoryId") || params.get("category");
+    if (cId) {
+      filters.category = cId;
+      if (!isNaN(Number(cId))) filters.categoryId = Number(cId);
+    }
+    if (params.get("status")) filters.status = params.get("status")!;
+    if (params.get("keyword")) filters.keyword = params.get("keyword")!;
+    if (params.get("search")) filters.keyword = params.get("search")!;
+    if (params.get("sortBy")) filters.sortBy = params.get("sortBy")!;
+    if (params.get("sortOrder")) filters.sortOrder = params.get("sortOrder") as "asc" | "desc";
+    if (params.get("page")) filters.page = Number(params.get("page")) || 1;
+
+    return filters;
+  });
 
   const [proposalStatusFilter, setProposalStatusFilter] = useState<"all" | "0" | "1" | "2">("all");
   const [proposalSort, setProposalSort] = useState<{ sortBy?: string; sortOrder?: "asc" | "desc" }>({});
@@ -361,20 +479,8 @@ export const AdminPage: React.FC = () => {
   const [drawerAutoCloseDuplicates, setDrawerAutoCloseDuplicates] = useState(true);
   const [drawerAutoNotifyReporters, setDrawerAutoNotifyReporters] = useState(true);
   const [drawerAutoRecalculateRating, setDrawerAutoRecalculateRating] = useState(true);
+  const [reportsRefreshKey, setReportsRefreshKey] = useState(0);
 
-  const [isAddPlaceModalOpen, setIsAddPlaceModalOpen] = useState(false);
-  const [newPlaceForm, setNewPlaceForm] = useState({
-    name: "",
-    category: "Nhà hàng & Quán ăn",
-    province: "Đà Nẵng",
-    location: "",
-    price: "35.000đ – 75.000đ",
-    hours: "07:00 – 22:00",
-    phone: "0905 123 456",
-    website: "https://langthang.vn",
-    desc: "",
-    img: "",
-  });
 
   const currentPlace = placesList.find((p) => p.id === selectedPlaceId) || null;
 
@@ -460,16 +566,28 @@ export const AdminPage: React.FC = () => {
               };
               if (placeFilters.keyword?.trim()) {
                 cleanParams.keyword = placeFilters.keyword.trim();
+                cleanParams.search = placeFilters.keyword.trim();
               }
-              if (placeFilters.province && placeFilters.province !== "all") {
-                cleanParams.province = placeFilters.province;
+              if (placeFilters.provinceId !== undefined && placeFilters.provinceId !== null) {
+                cleanParams.provinceId = Number(placeFilters.provinceId);
+              } else if (placeFilters.province && placeFilters.province !== "all" && !isNaN(Number(placeFilters.province))) {
+                cleanParams.provinceId = Number(placeFilters.province);
               }
-              if (placeFilters.category && placeFilters.category !== "all") {
-                cleanParams.category = placeFilters.category;
+
+              if (placeFilters.categoryId !== undefined && placeFilters.categoryId !== null) {
+                cleanParams.categoryId = Number(placeFilters.categoryId);
+              } else if (placeFilters.category && placeFilters.category !== "all" && !isNaN(Number(placeFilters.category))) {
+                cleanParams.categoryId = Number(placeFilters.category);
               }
-              if (placeFilters.status && placeFilters.status !== "all") {
-                cleanParams.status = placeFilters.status;
+
+              if (placeFilters.status !== undefined && placeFilters.status !== null && placeFilters.status !== "all") {
+                if (placeFilters.status === "active" || placeFilters.status === "1" || placeFilters.status === 1) {
+                  cleanParams.status = 1;
+                } else if (placeFilters.status === "hidden" || placeFilters.status === "0" || placeFilters.status === 0) {
+                  cleanParams.status = 0;
+                }
               }
+
               if (placeFilters.sortBy) {
                 cleanParams.sortBy = placeFilters.sortBy;
               }
@@ -798,8 +916,14 @@ export const AdminPage: React.FC = () => {
               if (foodFilters.keyword?.trim()) {
                 cleanParams.keyword = foodFilters.keyword.trim();
               }
-              if (foodFilters.province && foodFilters.province !== "all") {
-                cleanParams.province = foodFilters.province;
+              if (foodFilters.provinceId !== undefined && foodFilters.provinceId !== null) {
+                cleanParams.provinceId = Number(foodFilters.provinceId);
+              } else if (foodFilters.province && foodFilters.province !== "all") {
+                if (!isNaN(Number(foodFilters.province))) {
+                  cleanParams.provinceId = Number(foodFilters.province);
+                } else {
+                  cleanParams.province = foodFilters.province;
+                }
               }
               if (foodFilters.status && foodFilters.status !== "all") {
                 cleanParams.status = foodFilters.status;
@@ -842,6 +966,8 @@ export const AdminPage: React.FC = () => {
                           item.maxPrice || item.minPrice
                         ).toLocaleString("vi-VN")}đ`
                         : ""),
+                    places: item.places || [],
+                    placesCount: item.placesCount ?? (item.places?.length ?? 0),
                     createdAt: item.createdAt || "",
                     updatedAt: item.updatedAt || item.createdAt || "",
                     updatedBy: item.updatedBy || "Admin",
@@ -983,7 +1109,7 @@ export const AdminPage: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [mainTab, userFilters, placeFilters, foodFilters, blogFilters, proposalSort, reportSort, revComSort, reportTargetTypeFilter, reportSubTab, reportSearchText]);
+  }, [mainTab, userFilters, placeFilters, foodFilters, blogFilters, proposalSort, reportSort, revComSort, reportTargetTypeFilter, reportSubTab, reportSearchText, reportsRefreshKey]);
 
   const addAuditLog = (
     _action: string,
@@ -1037,12 +1163,13 @@ export const AdminPage: React.FC = () => {
       hours: updatedPlace.openingHours || updatedPlace.hours,
       minPrice: updatedPlace.minPrice,
       maxPrice: updatedPlace.maxPrice,
-      primaryImageUrl: updatedPlace.coverImg || updatedPlace.img,
+      primaryImageUrl: updatedPlace.primaryImageUrl || updatedPlace.coverImg || updatedPlace.img,
       phone: updatedPlace.phone,
       website: updatedPlace.website,
       foodIds: updatedPlace.foodIds,
       foods: updatedPlace.foods,
       photos: updatedPlace.images || updatedPlace.photos || updatedPlace.mediaUrls,
+      autoApprove: true,
     });
     setPlacesList((prev) =>
       prev.map((p) => (p.id === updatedPlace.id ? { ...p, ...updatedPlace } : p))
@@ -1076,28 +1203,6 @@ export const AdminPage: React.FC = () => {
     }
   };
 
-  const handleAddPlaceSubmit = async () => {
-    if (!newPlaceForm.name || !newPlaceForm.location) {
-      alert("Vui lòng điền đầy đủ tên và địa chỉ địa điểm.");
-      return;
-    }
-
-    const response = await adminService.createPlace({
-      name: newPlaceForm.name,
-      desc: newPlaceForm.desc,
-      coverImg: newPlaceForm.img,
-      address: newPlaceForm.location,
-      provinceId: Number(newPlaceForm.province) || undefined,
-      categoryId: Number(newPlaceForm.category) || undefined,
-      openingHours: newPlaceForm.hours,
-    });
-    const newPlace = { id: response.data, ...newPlaceForm, statusNum: 1, status: "Đã duyệt" };
-
-    setPlacesList((prev) => [newPlace, ...prev]);
-    addAuditLog("Tạo địa điểm mới", newPlace.name, "Địa điểm được số hóa bởi Quản trị viên", "create");
-    showToast(`Đã tạo địa điểm "${newPlace.name}" thành công.`);
-    setIsAddPlaceModalOpen(false);
-  };
 
   const handleOpenModerationDrawer = (groupKey: string, specificReportId?: number) => {
     setActiveReportGroupKey(groupKey);
@@ -1133,6 +1238,10 @@ export const AdminPage: React.FC = () => {
         targetRating: first.targetRating,
         province: first.province,
         category: first.category,
+        placeId: first.placeId,
+        placeName: first.placeName,
+        placeSubtitle: first.placeSubtitle,
+        placeImage: first.placeImage,
         reportsCount: groupReports.length,
         reportsList: groupReports,
         highestPriority: isUrgent ? "urgent" : isHigh ? "high" : "normal",
@@ -1148,6 +1257,16 @@ export const AdminPage: React.FC = () => {
   const handleConfirmDrawerResolution = async () => {
     if (!activeReportGroup) return;
 
+    const currentStatus = selectedReportIdInDrawer
+      ? activeReportGroup.reportsList.find((r) => r.id === selectedReportIdInDrawer)?.status
+      : activeReportGroup.status;
+
+    if (currentStatus === 1 || currentStatus === 2 || activeReportGroup.status === 1 || activeReportGroup.status === 2) {
+      showToast("Báo cáo này đã được xử lý xong trước đó rồi.");
+      setActiveReportGroupKey(null);
+      return;
+    }
+
     const newStatus = drawerDecisionTab === "accept" ? 1 : 2;
     const actionName = drawerDecisionTab === "accept" ? "Chấp thuận & Xử lý vi phạm" : "Bác bỏ phản ánh";
     const selectedId = selectedReportIdInDrawer || activeReportGroup.reportsList[0].id;
@@ -1156,62 +1275,74 @@ export const AdminPage: React.FC = () => {
       ? (drawerActionTaken || "hide_target")
       : drawerDismissReason;
 
-    await adminService.resolveReport(selectedId, {
-      id: selectedId,
-      targetType: activeReportGroup.targetType,
-      decision: drawerDecisionTab,
-      actionTaken: effectiveActionTaken,
-      resolutionNote: drawerResolutionNote,
-    });
+    try {
+      await adminService.resolveReport(selectedId, {
+        id: selectedId,
+        targetType: activeReportGroup.targetType,
+        decision: drawerDecisionTab,
+        actionTaken: effectiveActionTaken,
+        resolutionNote: drawerResolutionNote,
+      });
 
-    if (drawerDecisionTab === "accept" && (effectiveActionTaken.includes("hide_target") || effectiveActionTaken.includes("hide_content"))) {
-      const targetId = activeReportGroup.targetId;
-      if (activeReportGroup.targetType === "place") {
-        setPlacesList((prev) =>
-          prev.map((p) => (p.id === targetId ? { ...p, status: "Đang ẩn", statusNum: 0 } : p))
-        );
-      } else if (activeReportGroup.targetType === "review") {
-        setReviewsList((prev) =>
-          prev.map((rev) => (rev.id === targetId ? { ...rev, status: "hidden" } : rev))
-        );
-      } else if (activeReportGroup.targetType === "comment") {
-        setCommentsList((prev) =>
-          prev.map((c) => (c.id === targetId ? { ...c, status: "hidden" } : c))
-        );
-      } else if (activeReportGroup.targetType === "blog") {
-        setBlogsList((prev) =>
-          prev.map((b) => (b.id === targetId ? { ...b, status: "archived" } : b))
-        );
-      }
-    }
-
-    setReports((prev) =>
-      prev.map((r) => {
-        if (
-          drawerAutoCloseDuplicates
-            ? r.targetType === activeReportGroup.targetType && r.targetId === activeReportGroup.targetId
-            : r.id === (selectedReportIdInDrawer || activeReportGroup.reportsList[0].id)
-        ) {
-          return {
-            ...r,
-            status: newStatus,
-            resolutionAction: effectiveActionTaken,
-            resolutionNote: drawerResolutionNote,
-          };
+      if (drawerDecisionTab === "accept" && (effectiveActionTaken.includes("hide_target") || effectiveActionTaken.includes("hide_content"))) {
+        const targetId = activeReportGroup.targetId;
+        if (activeReportGroup.targetType === "place") {
+          setPlacesList((prev) =>
+            prev.map((p) => (p.id === targetId ? { ...p, status: "Đang ẩn", statusNum: 0 } : p))
+          );
+        } else if (activeReportGroup.targetType === "review") {
+          setReviewsList((prev) =>
+            prev.map((rev) => (rev.id === targetId ? { ...rev, status: "hidden" } : rev))
+          );
+        } else if (activeReportGroup.targetType === "comment") {
+          setCommentsList((prev) =>
+            prev.map((c) => (c.id === targetId ? { ...c, status: "hidden" } : c))
+          );
+        } else if (activeReportGroup.targetType === "blog") {
+          setBlogsList((prev) =>
+            prev.map((b) => (b.id === targetId ? { ...b, status: "archived" } : b))
+          );
         }
-        return r;
-      })
-    );
+      }
 
-    addAuditLog(
-      actionName,
-      activeReportGroup.targetTitle,
-      `Đã xử lý quyết định: ${drawerDecisionTab === "accept" ? drawerActionTaken : drawerDismissReason}`,
-      drawerDecisionTab === "accept" ? "resolve" : "reject"
-    );
+      const targetTypeNorm = String(activeReportGroup.targetType).toLowerCase().trim();
+      const targetIdNorm = Number(activeReportGroup.targetId);
 
-    showToast(`Đã hoàn tất xử lý cho "${activeReportGroup.targetTitle}".`);
-    setActiveReportGroupKey(null);
+      setReports((prev) =>
+        prev.map((r) => {
+          const isMatch = drawerAutoCloseDuplicates
+            ? String(r.targetType).toLowerCase().trim() === targetTypeNorm && Number(r.targetId) === targetIdNorm
+            : r.id === selectedId;
+
+          if (isMatch) {
+            return {
+              ...r,
+              status: newStatus,
+              statusText: newStatus === 1 ? "Đã giải quyết" : "Đã bác bỏ",
+              resolutionAction: effectiveActionTaken,
+              resolutionNote: drawerResolutionNote,
+              assignedToAdminId: currentAdminInfo.adminId,
+              assignedToAdminName: currentAdminInfo.adminName,
+            };
+          }
+          return r;
+        })
+      );
+
+      addAuditLog(
+        actionName,
+        activeReportGroup.targetTitle,
+        `Đã xử lý quyết định: ${drawerDecisionTab === "accept" ? drawerActionTaken : drawerDismissReason}`,
+        drawerDecisionTab === "accept" ? "resolve" : "reject"
+      );
+
+      showToast(`Đã hoàn tất xử lý cho "${activeReportGroup.targetTitle}".`);
+      setActiveReportGroupKey(null);
+      setReportsRefreshKey((k) => k + 1);
+    } catch (err) {
+      console.error("Lỗi khi giải quyết báo cáo:", err);
+      showToast("Có lỗi xảy ra khi xử lý báo cáo. Vui lòng thử lại.");
+    }
   };
 
   const handleAssignToMe = (groupKey: string) => {
@@ -1329,7 +1460,6 @@ export const AdminPage: React.FC = () => {
                   setRevComTab={setRevComTab}
                   setRevReportFilter={setRevReportFilter}
                   setReportSubTab={setReportSubTab}
-                  setIsAddPlaceModalOpen={setIsAddPlaceModalOpen}
                   showToast={showToast}
                   onRefresh={async () => {
                     try {
@@ -1338,7 +1468,6 @@ export const AdminPage: React.FC = () => {
                         setDashboardMetrics(res.data);
                       }
                     } catch {
-                      // ignore
                     }
                   }}
                 />
@@ -1381,10 +1510,14 @@ export const AdminPage: React.FC = () => {
                   setPlaceFilterCategory={setPlaceFilterCategory}
                   placeFilterStatus={placeFilterStatus}
                   setPlaceFilterStatus={setPlaceFilterStatus}
-                  setIsAddPlaceModalOpen={setIsAddPlaceModalOpen}
                   handleTogglePlaceStatus={handleTogglePlaceStatus}
                   handleUpdatePlace={handleUpdatePlace}
                   handleDeletePlace={handleDeletePlace}
+                  onPlaceCreated={(createdPlace) => {
+                    setPlacesList((prev) => [createdPlace, ...prev]);
+                    addAuditLog("Tạo địa điểm mới", createdPlace.name, "Địa điểm được số hóa bởi Quản trị viên", "create");
+                  }}
+                  showToast={showToast}
                 />
               )}
 
@@ -1525,14 +1658,6 @@ export const AdminPage: React.FC = () => {
         handleConfirmDrawerResolution={handleConfirmDrawerResolution}
         handleAssignToMe={handleAssignToMe}
         onClose={() => setActiveReportGroupKey(null)}
-      />
-
-      <AddPlaceModal
-        isOpen={isAddPlaceModalOpen}
-        onClose={() => setIsAddPlaceModalOpen(false)}
-        form={newPlaceForm}
-        setForm={setNewPlaceForm}
-        onSubmit={handleAddPlaceSubmit}
       />
     </div>
   );

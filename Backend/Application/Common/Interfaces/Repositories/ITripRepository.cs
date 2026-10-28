@@ -6,11 +6,11 @@ namespace Application.Common.Interfaces.Repositories;
 
 public interface ITripRepository
 {
-    Task<IReadOnlyList<ItineraryDto>> GetItinerariesAsync(
+    Task<PagedResult<ItineraryDto>> GetItinerariesAsync(
         ItineraryFilterParams filterParams,
         CancellationToken ct = default);
 
-    Task<IReadOnlyList<ItineraryDto>> GetItinerariesAsync(
+    Task<PagedResult<ItineraryDto>> GetItinerariesAsync(
         string? duration,
         string? keyword,
         int page,

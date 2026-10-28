@@ -213,7 +213,7 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
         if (r.id === reviewId) {
           const nextStatus = r.status === "active" ? "hidden" : "active";
           addAuditLog(
-            nextStatus === "hidden" ? "Tạm ẩn đánh giá" : "Hiện lại đánh giá",
+            nextStatus === "hidden" ? "Tạm ẩn đánh giá" : "Công khai đánh giá",
             `Đánh giá #${r.id}`,
             `Cập nhật trạng thái đánh giá tại ${r.placeName}`,
             "hide"
@@ -251,7 +251,7 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
         if (c.id === commentId) {
           const nextStatus = c.status === "active" ? "hidden" : "active";
           addAuditLog(
-            nextStatus === "hidden" ? "Tạm ẩn bình luận" : "Hiện lại bình luận",
+            nextStatus === "hidden" ? "Tạm ẩn bình luận" : "Công khai bình luận",
             `Bình luận #${c.id}`,
             "Cập nhật trạng thái bình luận",
             "hide"
@@ -576,7 +576,7 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
                                 {rev.status === "hidden" ? (
                                   <>
                                     <Eye size={13} className="text-emerald-600" />
-                                    <span>Hiện lại đánh giá</span>
+                                    <span>Công khai đánh giá</span>
                                   </>
                                 ) : (
                                   <>
@@ -701,7 +701,7 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
                                 {comm.status === "hidden" ? (
                                   <>
                                     <Eye size={13} className="text-emerald-600" />
-                                    <span>Hiện lại bình luận</span>
+                                    <span>Công khai bình luận</span>
                                   </>
                                 ) : (
                                   <>
@@ -924,9 +924,14 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
                       prev ? { ...prev, status: prev.status === "active" ? "hidden" : "active" } : null
                     );
                   }}
-                  className="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-bold cursor-pointer transition-colors"
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer transition-colors ${
+                    selectedComment.status === "hidden"
+                      ? "bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-xs"
+                      : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200"
+                  }`}
                 >
-                  {selectedComment.status === "hidden" ? "Khôi phục hiển thị" : "Tạm ẩn bình luận"}
+                  {selectedComment.status === "hidden" ? <Eye size={14} /> : <EyeOff size={14} />}
+                  <span>{selectedComment.status === "hidden" ? "Công khai bình luận" : "Tạm ẩn bình luận"}</span>
                 </button>
 
                 <button

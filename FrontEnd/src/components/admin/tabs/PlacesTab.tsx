@@ -2,11 +2,11 @@ import React, { useMemo, useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Search, Plus, Star, ChevronLeft, ChevronRight, Loader2, X, ImageIcon, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { PlaceDetailEditor } from "./PlaceDetailEditor";
+import { AddPlaceView } from "./AddPlaceView";
 import { geographyService } from "@/services/geographyService";
-import { catalogService } from "@/services/catalogService";
-import { extractList } from "@/services/adminService";
+import { placeService } from "@/services/placeService";
+import { adminService, extractList } from "@/services/adminService";
 import type { ProvinceDto } from "@/types/models/geography.model";
-import type { PlaceTypeDto } from "@/types/models/place.model";
 import { CustomSelect } from "@/components/common/CustomSelect";
 
 interface PlacesTabProps {
@@ -22,8 +22,10 @@ interface PlacesTabProps {
   onFilterChange?: (filters: {
     keyword?: string;
     province?: string;
+    provinceId?: number;
     category?: string;
-    status?: string;
+    categoryId?: number;
+    status?: any;
     sortBy?: string;
     sortOrder?: "asc" | "desc";
     page?: number;
@@ -39,10 +41,12 @@ interface PlacesTabProps {
   setPlaceFilterCategory?: (v: string) => void;
   placeFilterStatus: string;
   setPlaceFilterStatus: (v: string) => void;
-  setIsAddPlaceModalOpen: (v: boolean) => void;
+  setIsAddPlaceModalOpen?: (v: boolean) => void;
   handleTogglePlaceStatus?: (id: number) => void;
   handleUpdatePlace?: (updatedPlace: any) => void;
   handleDeletePlace?: (id: number) => Promise<void> | void;
+  onPlaceCreated?: (newPlace: any) => void;
+  showToast?: (msg: string) => void;
 }
 
 export const PlacesTab: React.FC<PlacesTabProps> = ({
@@ -66,10 +70,12 @@ export const PlacesTab: React.FC<PlacesTabProps> = ({
   setPlaceFilterCategory: propSetFilterCategory,
   placeFilterStatus,
   setPlaceFilterStatus,
-  setIsAddPlaceModalOpen,
+  setIsAddPlaceModalOpen: _setIsAddPlaceModalOpen,
   handleTogglePlaceStatus,
   handleUpdatePlace,
   handleDeletePlace,
+  onPlaceCreated,
+  showToast,
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -79,13 +85,115 @@ export const PlacesTab: React.FC<PlacesTabProps> = ({
   const setCategoryFilter = propSetFilterCategory ?? setLocalCategoryFilter;
 
   const [provinces, setProvinces] = useState<ProvinceDto[]>([]);
-  const [categories, setCategories] = useState<PlaceTypeDto[]>([]);
+  const [categories, setCategories] = useState<{ id: string | number; name: string }[]>([]);
 
   type SortField = "name" | "rating" | "updatedAt" | null;
   type SortOrder = "asc" | "desc";
 
-  const [sortField, setSortField] = useState<SortField>(null);
-  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+  const [sortField, setSortField] = useState<SortField>(() => {
+    return (new URLSearchParams(window.location.search).get("sortBy") as SortField) || null;
+  });
+  const [sortOrder, setSortOrder] = useState<SortOrder>(() => {
+    return (new URLSearchParams(window.location.search).get("sortOrder") as SortOrder) || "desc";
+  });
+
+  const updateUrlParams = (updates: {
+    keyword?: string;
+    province?: string;
+    provinceId?: number | string | null;
+    category?: string;
+    categoryId?: number | string | null;
+    status?: any;
+    sortBy?: string | null;
+    sortOrder?: "asc" | "desc" | null;
+    page?: number;
+  }) => {
+    const params = new URLSearchParams(location.search);
+
+    const merged = {
+      keyword: updates.keyword !== undefined ? updates.keyword : placeSearchText,
+      provinceId: updates.provinceId !== undefined ? updates.provinceId : placeFilterProvince,
+      categoryId: updates.categoryId !== undefined ? updates.categoryId : categoryFilter,
+      status: updates.status !== undefined ? updates.status : placeFilterStatus,
+      sortBy: updates.sortBy !== undefined ? updates.sortBy : sortField,
+      sortOrder: updates.sortOrder !== undefined ? updates.sortOrder : sortOrder,
+      page: updates.page !== undefined ? updates.page : 1,
+    };
+
+    if (merged.keyword?.trim()) {
+      params.set("keyword", merged.keyword.trim());
+    } else {
+      params.delete("keyword");
+      params.delete("search");
+    }
+
+    if (merged.provinceId && merged.provinceId !== "all") {
+      params.set("provinceId", String(merged.provinceId));
+      params.delete("province");
+    } else {
+      params.delete("provinceId");
+      params.delete("province");
+    }
+
+    if (merged.categoryId && merged.categoryId !== "all") {
+      params.set("categoryId", String(merged.categoryId));
+      params.delete("category");
+    } else {
+      params.delete("categoryId");
+      params.delete("category");
+    }
+
+    if (merged.status !== undefined && merged.status !== null && merged.status !== "all") {
+      params.set("status", String(merged.status));
+    } else {
+      params.delete("status");
+    }
+
+    if (merged.sortBy) {
+      params.set("sortBy", merged.sortBy);
+      params.set("sortOrder", merged.sortOrder || "desc");
+    } else {
+      params.delete("sortBy");
+      params.delete("sortOrder");
+    }
+
+    if (merged.page && merged.page > 1) {
+      params.set("page", String(merged.page));
+    } else {
+      params.delete("page");
+    }
+
+    const qs = params.toString();
+    const newPath = `/admin/places${qs ? `?${qs}` : ""}`;
+    if (location.pathname + location.search !== newPath) {
+      navigate(newPath, { replace: true });
+    }
+  };
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const urlSort = (params.get("sortBy") as SortField) || null;
+    const urlOrder = (params.get("sortOrder") as SortOrder) || "desc";
+    setSortField((prev) => (prev !== urlSort ? urlSort : prev));
+    setSortOrder((prev) => (prev !== urlOrder ? urlOrder : prev));
+
+    const urlProv = params.get("provinceId") || params.get("province");
+    if (urlProv && urlProv !== placeFilterProvince) {
+      setPlaceFilterProvince(urlProv);
+    }
+    const urlCat = params.get("categoryId") || params.get("category");
+    if (urlCat && urlCat !== categoryFilter) {
+      setCategoryFilter(urlCat);
+    }
+    const urlStat = params.get("status");
+    if (urlStat && urlStat !== placeFilterStatus) {
+      setPlaceFilterStatus(urlStat);
+    }
+    const urlKw = params.get("keyword") || params.get("search");
+    if (urlKw !== null && urlKw !== undefined && urlKw !== placeSearchText) {
+      setPlaceSearchText(urlKw);
+    }
+  }, [location.search]);
 
   const handleSort = (field: "name" | "rating" | "updatedAt") => {
     let nextOrder: SortOrder = "desc";
@@ -102,6 +210,11 @@ export const PlacesTab: React.FC<PlacesTabProps> = ({
 
     setSortField(nextField);
     setSortOrder(nextOrder);
+    updateUrlParams({
+      sortBy: nextField,
+      sortOrder: nextField ? nextOrder : null,
+      page: 1,
+    });
     onFilterChange?.({
       sortBy: nextField || undefined,
       sortOrder: nextField ? nextOrder : undefined,
@@ -109,9 +222,84 @@ export const PlacesTab: React.FC<PlacesTabProps> = ({
     });
   };
 
+  const matchProvince = (p: any, filterVal: string) => {
+    if (!filterVal || filterVal === "all") return true;
+    if (String(p.provinceId) === String(filterVal)) return true;
+    const pName = String(p.province || p.provinceName || "").trim().toLowerCase();
+    const fName = String(filterVal).trim().toLowerCase();
+    if (pName === fName) return true;
+    if (pName.includes(fName) || fName.includes(pName)) return true;
+
+    const cleanP = pName.replace(/^(tp\.?|thành phố|tỉnh)\s+/i, "").trim();
+    const cleanF = fName.replace(/^(tp\.?|thành phố|tỉnh)\s+/i, "").trim();
+    return cleanP === cleanF || cleanP.includes(cleanF) || cleanF.includes(cleanP);
+  };
+
+  const matchCategory = (p: any, filterVal: string) => {
+    if (!filterVal || filterVal === "all") return true;
+    if (String(p.categoryId) === String(filterVal)) return true;
+    const pCat = String(p.category || p.categoryName || "").trim().toLowerCase();
+    const fCat = String(filterVal).trim().toLowerCase();
+    return pCat === fCat || pCat.includes(fCat) || fCat.includes(pCat);
+  };
+
+  const matchStatus = (p: any, filterVal: string) => {
+    if (!filterVal || filterVal === "all") return true;
+    const isPlaceActive =
+      Number(p.statusNum ?? p.status) === 1 ||
+      String(p.status || "").toLowerCase() === "active" ||
+      p.status === "Công khai" ||
+      p.status === "Đang hiển thị" ||
+      p.status === "Đã duyệt";
+
+    if (filterVal === "active" || filterVal === "1") return isPlaceActive;
+    if (filterVal === "hidden" || filterVal === "0") return !isPlaceActive;
+    return true;
+  };
+
+  const filteredPlaces = useMemo(() => {
+    return placesList.filter((p) => {
+      if (placeSearchText.trim()) {
+        const query = placeSearchText.trim().toLowerCase();
+        const name = String(p.name || "").toLowerCase();
+        const address = String(p.location || p.address || "").toLowerCase();
+        const cat = String(p.category || p.categoryName || "").toLowerCase();
+        const prov = String(p.province || p.provinceName || "").toLowerCase();
+        if (
+          !name.includes(query) &&
+          !address.includes(query) &&
+          !cat.includes(query) &&
+          !prov.includes(query)
+        ) {
+          return false;
+        }
+      }
+
+      if (placeFilterProvince && placeFilterProvince !== "all") {
+        if (!matchProvince(p, placeFilterProvince)) {
+          return false;
+        }
+      }
+
+      if (categoryFilter && categoryFilter !== "all") {
+        if (!matchCategory(p, categoryFilter)) {
+          return false;
+        }
+      }
+
+      if (placeFilterStatus && placeFilterStatus !== "all") {
+        if (!matchStatus(p, placeFilterStatus)) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [placesList, placeSearchText, placeFilterProvince, categoryFilter, placeFilterStatus]);
+
   const sortedPlaces = useMemo(() => {
-    if (!sortField) return placesList;
-    return [...placesList].sort((a, b) => {
+    if (!sortField) return filteredPlaces;
+    return [...filteredPlaces].sort((a, b) => {
       if (sortField === "name") {
         const nameA = String(a.name || "").trim().toLowerCase();
         const nameB = String(b.name || "").trim().toLowerCase();
@@ -131,7 +319,7 @@ export const PlacesTab: React.FC<PlacesTabProps> = ({
       }
       return 0;
     });
-  }, [placesList, sortField, sortOrder]);
+  }, [filteredPlaces, sortField, sortOrder]);
 
   const renderSortIcon = (field: "name" | "rating" | "updatedAt") => {
     if (sortField !== field) {
@@ -162,25 +350,77 @@ export const PlacesTab: React.FC<PlacesTabProps> = ({
 
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const addUniqueCategory = (
+    list: { id: string | number; name: string }[],
+    item: { id: string | number; name: string }
+  ) => {
+    if (!item.name) return;
+    const normName = item.name.trim().toLowerCase();
+    const exists = list.some(
+      (c) =>
+        String(c.id) === String(item.id) ||
+        c.name.trim().toLowerCase() === normName
+    );
+    if (!exists) {
+      list.push(item);
+    }
+  };
+
   useEffect(() => {
     let mounted = true;
     const loadMetadata = async () => {
       try {
-        const [provRes, catRes] = await Promise.all([
+        const [provRes, catRes, filterRes] = await Promise.allSettled([
           geographyService.getProvinces(),
-          catalogService.getPlaceTypes(),
+          adminService.getCatalogCategories({ pageSize: 100 }),
+          placeService.getFilterOptions(),
         ]);
         if (mounted) {
-          const provList = extractList<ProvinceDto>(provRes?.data || provRes);
-          if (provList.length > 0) {
-            setProvinces(provList);
+          if (provRes.status === "fulfilled") {
+            const provList = extractList<ProvinceDto>(provRes.value?.data || provRes.value);
+            if (provList.length > 0) {
+              setProvinces(provList);
+            }
           }
-          const catList = extractList<PlaceTypeDto>(catRes?.data || catRes);
+
+          const catList: { id: string | number; name: string }[] = [];
+
+          if (catRes.status === "fulfilled") {
+            const list = extractList<any>(catRes.value?.data || catRes.value);
+            list.forEach((c: any) => {
+              if (c?.id && c?.name) {
+                addUniqueCategory(catList, { id: c.id, name: c.name });
+              }
+            });
+          }
+
+          if (filterRes.status === "fulfilled") {
+            const fCats = filterRes.value?.data?.categories || (filterRes.value as any)?.categories || [];
+            if (Array.isArray(fCats)) {
+              fCats.forEach((c: any) => {
+                if (c?.id && c?.name) {
+                  addUniqueCategory(catList, { id: c.id, name: c.name });
+                }
+              });
+            }
+          }
+
+          if (placesList && placesList.length > 0) {
+            placesList.forEach((p) => {
+              const cName = p.categoryName || p.category;
+              const cId = p.categoryId;
+              if (cName) {
+                addUniqueCategory(catList, { id: cId || cName, name: cName });
+              }
+            });
+          }
+
           if (catList.length > 0) {
             setCategories(catList);
           }
         }
-      } catch {
+      } catch (err) {
+        console.error("Error loading places metadata:", err);
       }
     };
     loadMetadata();
@@ -188,6 +428,30 @@ export const PlacesTab: React.FC<PlacesTabProps> = ({
       mounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!placesList || placesList.length === 0) return;
+    setCategories((prev) => {
+      let changed = false;
+      const next = [...prev];
+      placesList.forEach((p) => {
+        const cName = p.categoryName || p.category;
+        const cId = p.categoryId;
+        if (!cName) return;
+        const normName = cName.trim().toLowerCase();
+        const exists = next.some(
+          (c) =>
+            (cId && String(c.id) === String(cId)) ||
+            c.name.trim().toLowerCase() === normName
+        );
+        if (!exists) {
+          next.push({ id: cId || cName, name: cName });
+          changed = true;
+        }
+      });
+      return changed ? next : prev;
+    });
+  }, [placesList]);
 
   const allProvinces = useMemo(() => {
     const list: { id: string | number; name: string }[] = [...provinces];
@@ -201,74 +465,213 @@ export const PlacesTab: React.FC<PlacesTabProps> = ({
   }, [provinces, placesList]);
 
   const allCategories = useMemo(() => {
-    const list: { id: string | number; name: string }[] = [...categories];
-    placesList.forEach((p) => {
-      const cName = p.categoryName || p.category;
-      if (cName && !list.some((c) => c.name.toLowerCase() === cName.toLowerCase())) {
-        list.push({ id: p.categoryId || cName, name: cName });
-      }
-    });
-    return list;
-  }, [categories, placesList]);
+    return categories;
+  }, [categories]);
 
   const placePathMatch = location.pathname.match(/\/admin\/places\/(\d+)/i);
   const urlPlaceId = placePathMatch ? Number(placePathMatch[1]) : selectedPlaceId;
 
+  const [detailPlace, setDetailPlace] = useState<any>(null);
+  const [isDetailLoading, setIsDetailLoading] = useState(false);
+
+  useEffect(() => {
+    if (!urlPlaceId) {
+      setDetailPlace(null);
+      return;
+    }
+
+    const found = placesList.find((p) => Number(p.id) === urlPlaceId);
+    if (found) {
+      setDetailPlace(found);
+      return;
+    }
+
+    let active = true;
+    setIsDetailLoading(true);
+    adminService
+      .getPlace(urlPlaceId)
+      .then((res: any) => {
+        if (!active) return;
+        const data = res?.data || res;
+        if (data) {
+          const isVis =
+            data.status === 1 ||
+            data.status === "1" ||
+            data.statusNum === 1 ||
+            String(data.status || "").toLowerCase() === "active" ||
+            String(data.status || "").toLowerCase() === "approved" ||
+            data.status === "Đang hiển thị" ||
+            data.status === "Đã duyệt";
+          const formatted = {
+            ...data,
+            id: data.id || urlPlaceId,
+            name: data.name || data.title || "",
+            province: data.provinceName || data.province || "",
+            provinceName: data.provinceName || data.province || "",
+            provinceId: data.provinceId,
+            category: data.categoryName || data.category || "",
+            categoryName: data.categoryName || data.category || "",
+            categoryId: data.categoryId,
+            location: data.address || data.location || "",
+            address: data.address || data.location || "",
+            img: data.coverImg || data.thumbnailUrl || data.img || data.image || "",
+            coverImg: data.coverImg || data.thumbnailUrl || data.img || data.image || "",
+            rating: Number(data.avgRating ?? data.rating ?? 0),
+            avgRating: Number(data.avgRating ?? data.rating ?? 0),
+            price: data.priceLevel || data.price || "",
+            hours: data.openingHours || data.hours || "",
+            latitude: data.latitude ?? data.lat,
+            longitude: data.longitude ?? data.lng,
+            desc: data.desc || data.description || "",
+            status: isVis ? "Đang hiển thị" : "Đang ẩn",
+            statusNum: isVis ? 1 : 0,
+          };
+          setDetailPlace(formatted);
+        }
+      })
+      .catch((err: any) => {
+        console.error("Lỗi khi tải chi tiết địa điểm:", err);
+      })
+      .finally(() => {
+        if (active) setIsDetailLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [urlPlaceId, placesList]);
+
   const currentPlace = useMemo(() => {
     if (!urlPlaceId) return null;
-    return placesList.find((p) => Number(p.id) === urlPlaceId) || null;
-  }, [urlPlaceId, placesList]);
+    return placesList.find((p) => Number(p.id) === urlPlaceId) || detailPlace;
+  }, [urlPlaceId, placesList, detailPlace]);
 
   const handleSearchChange = (value: string) => {
     setPlaceSearchText(value);
-    if (onFilterChange) {
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
-      debounceTimerRef.current = setTimeout(() => {
-        onFilterChange({ keyword: value, page: 1 });
-      }, 350);
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
     }
+    debounceTimerRef.current = setTimeout(() => {
+      updateUrlParams({ keyword: value, page: 1 });
+      onFilterChange?.({ keyword: value, page: 1 });
+    }, 350);
   };
+
+  const selectedProvinceValue = useMemo(() => {
+    if (!placeFilterProvince || placeFilterProvince === "all") return "all";
+    if (allProvinces.some((p) => String(p.id) === String(placeFilterProvince))) {
+      return String(placeFilterProvince);
+    }
+    const found = allProvinces.find(
+      (p) => p.name.toLowerCase() === String(placeFilterProvince).toLowerCase()
+    );
+    if (found) return String(found.id);
+    return String(placeFilterProvince);
+  }, [placeFilterProvince, allProvinces]);
+
+  const selectedCategoryValue = useMemo(() => {
+    if (!categoryFilter || categoryFilter === "all") return "all";
+    if (allCategories.some((c) => String(c.id) === String(categoryFilter))) {
+      return String(categoryFilter);
+    }
+    const found = allCategories.find(
+      (c) => c.name.toLowerCase() === String(categoryFilter).toLowerCase()
+    );
+    if (found) return String(found.id);
+    return String(categoryFilter);
+  }, [categoryFilter, allCategories]);
+
+  const selectedStatusValue = useMemo(() => {
+    if (!placeFilterStatus || placeFilterStatus === "all") return "all";
+    if (String(placeFilterStatus) === "1" || placeFilterStatus === "active") return "1";
+    if (String(placeFilterStatus) === "0" || placeFilterStatus === "hidden") return "0";
+    return String(placeFilterStatus);
+  }, [placeFilterStatus]);
 
   const handleProvinceChange = (value: string) => {
     setPlaceFilterProvince(value);
-    onFilterChange?.({ province: value, page: 1 });
+    const pId = value === "all" ? undefined : Number(value);
+    updateUrlParams({ provinceId: value === "all" ? null : value, page: 1 });
+    onFilterChange?.({ provinceId: pId, province: value, page: 1 });
   };
 
   const handleCategoryChange = (value: string) => {
     setCategoryFilter(value);
-    onFilterChange?.({ category: value, page: 1 });
+    const cId = value === "all" ? undefined : Number(value);
+    updateUrlParams({ categoryId: value === "all" ? null : value, page: 1 });
+    onFilterChange?.({ categoryId: cId, category: value, page: 1 });
   };
 
   const handleStatusChange = (value: string) => {
     setPlaceFilterStatus(value);
-    onFilterChange?.({ status: value, page: 1 });
+    const sId = value === "all" ? undefined : Number(value);
+    updateUrlParams({ status: value === "all" ? null : value, page: 1 });
+    onFilterChange?.({ status: sId, page: 1 });
   };
 
-  if (currentPlace) {
+  const isCreateMode = Boolean(
+    location.pathname.match(/\/admin\/places\/(create|new|them-dia-diem)/i)
+  );
+
+  if (isCreateMode) {
     return (
-      <PlaceDetailEditor
-        place={currentPlace}
-        onBack={() => {
-          setSelectedPlaceId(null);
-          navigate('/admin/places');
+      <AddPlaceView
+        onBack={() => navigate(`/admin/places${location.search}`)}
+        onPlaceCreated={(createdPlace) => {
+          if (onPlaceCreated) onPlaceCreated(createdPlace);
+          navigate(`/admin/places${location.search}`);
         }}
-        onSave={async (updatedPlace) => {
-          if (handleUpdatePlace) {
-            return await handleUpdatePlace(updatedPlace);
-          }
-        }}
-        onToggleStatus={handleTogglePlaceStatus}
-        onDelete={async (deletedId) => {
-          if (handleDeletePlace) {
-            await handleDeletePlace(deletedId);
-          }
-          setSelectedPlaceId(null);
-          navigate('/admin/places');
-        }}
+        showToast={showToast}
       />
     );
+  }
+
+  if (urlPlaceId) {
+    if (isDetailLoading && !currentPlace) {
+      return (
+        <div className="bg-white p-16 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col items-center justify-center gap-3">
+          <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+          <span className="text-xs text-slate-500 font-medium">Đang tải thông tin địa điểm...</span>
+        </div>
+      );
+    }
+
+    if (currentPlace) {
+      return (
+        <PlaceDetailEditor
+          place={currentPlace}
+          onBack={() => {
+            setSelectedPlaceId(null);
+            navigate(`/admin/places${location.search}`);
+          }}
+          onSave={async (updatedPlace) => {
+            if (handleUpdatePlace) {
+              await handleUpdatePlace(updatedPlace);
+            }
+            setDetailPlace((prev: any) => ({ ...prev, ...updatedPlace }));
+          }}
+          onToggleStatus={(id) => {
+            handleTogglePlaceStatus?.(id);
+            setDetailPlace((prev: any) => {
+              if (!prev) return prev;
+              const nextStatusNum = prev.statusNum === 1 ? 0 : 1;
+              return {
+                ...prev,
+                statusNum: nextStatusNum,
+                status: nextStatusNum === 1 ? "Đang hiển thị" : "Đang ẩn",
+              };
+            });
+          }}
+          onDelete={async (deletedId) => {
+            if (handleDeletePlace) {
+              await handleDeletePlace(deletedId);
+            }
+            setSelectedPlaceId(null);
+            navigate(`/admin/places${location.search}`);
+          }}
+        />
+      );
+    }
   }
 
   return (
@@ -297,12 +700,12 @@ export const PlacesTab: React.FC<PlacesTabProps> = ({
 
           <div className="flex flex-wrap items-center gap-2">
             <CustomSelect
-              value={placeFilterProvince}
+              value={selectedProvinceValue}
               onChange={(val) => handleProvinceChange(val)}
               options={[
                 { value: "all", label: "Tất cả tỉnh thành" },
                 ...allProvinces.map((prov) => ({
-                  value: prov.name,
+                  value: String(prov.id),
                   label: prov.name,
                 })),
               ]}
@@ -311,12 +714,12 @@ export const PlacesTab: React.FC<PlacesTabProps> = ({
             />
 
             <CustomSelect
-              value={categoryFilter}
+              value={selectedCategoryValue}
               onChange={(val) => handleCategoryChange(val)}
               options={[
                 { value: "all", label: "Tất cả danh mục" },
                 ...allCategories.map((cat) => ({
-                  value: cat.name,
+                  value: String(cat.id),
                   label: cat.name,
                 })),
               ]}
@@ -325,12 +728,12 @@ export const PlacesTab: React.FC<PlacesTabProps> = ({
             />
 
             <CustomSelect
-              value={placeFilterStatus}
+              value={selectedStatusValue}
               onChange={(val) => handleStatusChange(val)}
               options={[
                 { value: "all", label: "Tất cả trạng thái" },
-                { value: "active", label: "Công khai" },
-                { value: "hidden", label: "Đang ẩn" },
+                { value: "1", label: "Công khai" },
+                { value: "0", label: "Đang ẩn" },
               ]}
               size="sm"
               className="min-w-[130px]"
@@ -338,7 +741,7 @@ export const PlacesTab: React.FC<PlacesTabProps> = ({
 
             <button
               type="button"
-              onClick={() => setIsAddPlaceModalOpen(true)}
+              onClick={() => navigate('/admin/places/create')}
               className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold cursor-pointer transition-all shadow-sm shadow-emerald-600/20 text-xs"
             >
               <Plus size={14} />
@@ -400,7 +803,7 @@ export const PlacesTab: React.FC<PlacesTabProps> = ({
                     </div>
                   </td>
                 </tr>
-              ) : placesList.length === 0 ? (
+              ) : sortedPlaces.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-slate-400 font-medium">
                     Không tìm thấy địa điểm nào phù hợp với bộ lọc.
@@ -484,7 +887,7 @@ export const PlacesTab: React.FC<PlacesTabProps> = ({
                           type="button"
                           onClick={() => {
                             setSelectedPlaceId(p.id);
-                            navigate(`/admin/places/${p.id}`);
+                            navigate(`/admin/places/${p.id}${location.search}`);
                           }}
                           className="px-2.5 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
                         >
@@ -502,7 +905,7 @@ export const PlacesTab: React.FC<PlacesTabProps> = ({
         {pagination && pagination.totalElements > 0 && (
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 px-1 border-t border-slate-100 text-xs text-slate-500 font-medium">
             <div>
-              Hiển thị <strong>{placesList.length}</strong> / <strong>{pagination.totalElements}</strong> địa điểm (Trang <strong>{pagination.page}</strong> / {pagination.totalPages || 1})
+              Hiển thị <strong>{sortedPlaces.length}</strong> / <strong>{pagination.totalElements || placesList.length}</strong> địa điểm (Trang <strong>{pagination.page}</strong> / {pagination.totalPages || 1})
             </div>
 
             {pagination.totalPages > 1 && (

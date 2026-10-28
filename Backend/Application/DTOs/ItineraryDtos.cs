@@ -38,6 +38,7 @@ public class ItineraryDto
     public string? CoverUrl { get; set; }
     public ItineraryAuthorDto Author { get; set; } = new();
     public string? Overview { get; set; }
+    public DateTime CreatedAt { get; set; }
     public bool IsSaved { get; set; }
     public IReadOnlyList<ItineraryDayDto> Days { get; set; } = [];
 }
@@ -50,9 +51,11 @@ public class SaveItineraryResponseDto
 
 public class ItineraryFilterParams
 {
-    public string? Keyword { get; set; }
+    public string? Destination { get; set; }
     public string? Duration { get; set; }
+    public string? Budget { get; set; }
+    public string? Keyword { get; set; }
     public int Page { get; set; } = 1;
-    public int PageSize { get; set; } = 10;
+    public int PageSize { get; set; } = 12;
     public long? UserId { get; set; }
 }

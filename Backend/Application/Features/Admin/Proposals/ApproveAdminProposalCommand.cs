@@ -1,4 +1,4 @@
-﻿using Application.Common;
+using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using MediatR;
@@ -16,15 +16,18 @@ public class ApproveAdminProposalCommandHandler : IRequestHandler<ApproveAdminPr
     private readonly IAdminProposalRepository _proposalRepository;
     private readonly INotificationRepository _notificationRepository;
     private readonly INotificationNotifier _notifier;
+    private readonly IReputationService? _reputationService;
 
     public ApproveAdminProposalCommandHandler(
         IAdminProposalRepository proposalRepository,
         INotificationRepository notificationRepository,
-        INotificationNotifier notifier)
+        INotificationNotifier notifier,
+        IReputationService? reputationService = null)
     {
         _proposalRepository = proposalRepository;
         _notificationRepository = notificationRepository;
         _notifier = notifier;
+        _reputationService = reputationService;
     }
 
     public async Task<Result<bool>> Handle(ApproveAdminProposalCommand request, CancellationToken ct)
@@ -67,6 +70,19 @@ public class ApproveAdminProposalCommandHandler : IRequestHandler<ApproveAdminPr
             }
             catch
             {
+            }
+
+            if (_reputationService != null)
+            {
+                var isNewPlace = string.Equals(detail.Type, "new_place", StringComparison.OrdinalIgnoreCase) || !detail.Type.Contains("edit", StringComparison.OrdinalIgnoreCase);
+                var actionType = isNewPlace ? Domain.Enums.ReputationActionType.ProposalApprovedNewPlace : Domain.Enums.ReputationActionType.ProposalApprovedEditPlace;
+                var placeName = !string.IsNullOrWhiteSpace(detail.PlaceData?.Name) ? detail.PlaceData.Name : "Địa điểm";
+                await _reputationService.AwardPointsAsync(
+                    detail.Proposer.Id,
+                    actionType,
+                    request.ProposalId,
+                    $"Đề xuất địa điểm '{placeName}' được phê duyệt",
+                    ct);
             }
         }
 

@@ -471,28 +471,6 @@ export const ExplorePage: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const searchSuggestions = useMemo(() => {
-    if (!draftSearch.trim()) {
-      return categories.slice(0, 5).map((c) => c.name)
-    }
-    const term = draftSearch.toLowerCase().trim()
-    const matches: string[] = []
-
-    allProvinces.forEach((p) => {
-      if (p.name.toLowerCase().includes(term)) matches.push(p.name)
-    })
-
-    categories.forEach((c) => {
-      if (c.name.toLowerCase().includes(term)) matches.push(c.name)
-    })
-
-    places.forEach((pl) => {
-      if (pl.name.toLowerCase().includes(term)) matches.push(pl.name)
-    })
-
-    return Array.from(new Set(matches)).slice(0, 6)
-  }, [draftSearch, categories, allProvinces, places])
-
   const activeChips = useMemo(() => {
     const chips: Array<{ label: string; onRemove: () => void }> = []
 
@@ -555,7 +533,6 @@ export const ExplorePage: React.FC = () => {
           value={draftSearch}
           onChange={setDraftSearch}
           onSubmit={(val) => updateFilters({ q: (val || '').trim() || undefined })}
-          suggestions={searchSuggestions}
         />
 
         <div className="flex items-center justify-between gap-4 lg:hidden">

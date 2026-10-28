@@ -14,6 +14,9 @@ public class GetProvinceRankingsRequest
 
     [QueryParam]
     public int Limit { get; set; } = 10;
+
+    [QueryParam]
+    public bool IncludeExcluded { get; set; } = false;
 }
 
 public class GetProvinceRankingsEndpoint : Endpoint<GetProvinceRankingsRequest, ApiSuccessResponse<IReadOnlyList<ProvinceRankingItemDto>>>
@@ -36,7 +39,8 @@ public class GetProvinceRankingsEndpoint : Endpoint<GetProvinceRankingsRequest, 
     {
         var result = await Mediator.Send(new GetProvinceRankingsQuery(
             req.RegionId,
-            req.Limit), ct);
+            req.Limit,
+            req.IncludeExcluded), ct);
 
         await this.SendApiResponseAsync(result, ct);
     }

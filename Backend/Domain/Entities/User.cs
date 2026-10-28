@@ -1,4 +1,4 @@
-﻿using Domain.Enums;
+using Domain.Enums;
 
 namespace Domain.Entities;
 
@@ -72,6 +72,9 @@ public class User
 
     private readonly List<ChatRoomMember> _chatRoomMembers = new();
     public virtual IReadOnlyCollection<ChatRoomMember> ChatRoomMembers => _chatRoomMembers.AsReadOnly();
+
+    private readonly List<ReputationLog> _reputationLogs = new();
+    public virtual IReadOnlyCollection<ReputationLog> ReputationLogs => _reputationLogs.AsReadOnly();
 
     private readonly List<Message> _messages = new();
     public virtual IReadOnlyCollection<Message> Messages => _messages.AsReadOnly();

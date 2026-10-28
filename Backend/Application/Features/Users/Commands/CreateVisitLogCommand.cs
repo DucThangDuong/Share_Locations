@@ -1,4 +1,5 @@
 using Application.Common;
+using Application.Common.Interfaces;
 using Application.DTOs;
 using Domain.Entities;
 using Domain.Enums;
@@ -16,10 +17,14 @@ public record CreateVisitLogCommand(
 public class CreateVisitLogCommandHandler : IRequestHandler<CreateVisitLogCommand, Result<UserVisitLogItemDto>>
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IReputationService? _reputationService;
 
-    public CreateVisitLogCommandHandler(IUnitOfWork unitOfWork)
+    public CreateVisitLogCommandHandler(
+        IUnitOfWork unitOfWork,
+        IReputationService? reputationService = null)
     {
         _unitOfWork = unitOfWork;
+        _reputationService = reputationService;
     }
 
     public async Task<Result<UserVisitLogItemDto>> Handle(CreateVisitLogCommand request, CancellationToken ct)
@@ -47,6 +52,16 @@ public class CreateVisitLogCommandHandler : IRequestHandler<CreateVisitLogComman
         var visitLog = new VisitLog(request.UserId, request.PlaceId, date, privacy);
         await _unitOfWork.VisitLogs.AddAsync(visitLog, ct);
         await _unitOfWork.SaveChangesAsync(ct);
+
+        if (_reputationService != null)
+        {
+            await _reputationService.AwardPointsAsync(
+                request.UserId,
+                ReputationActionType.VisitLogCreated,
+                visitLog.Id,
+                $"Ghé thăm và check-in địa điểm '{place.Name}'",
+                ct);
+        }
 
         var dto = new UserVisitLogItemDto
         {

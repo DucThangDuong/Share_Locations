@@ -48,8 +48,15 @@ public class AdminAuditLogRepository : IAdminAuditLogRepository
 
         if (!string.IsNullOrWhiteSpace(filter.TargetTable))
         {
-            whereClauses.Add("l.TargetTable = @TargetTable");
-            parameters.Add("TargetTable", filter.TargetTable.Trim());
+            if (filter.TargetTable.Trim().Equals("Reports", StringComparison.OrdinalIgnoreCase))
+            {
+                whereClauses.Add("l.TargetTable IN ('Reports', 'PlaceReports', 'ReviewReports', 'CommentReports', 'BlogReports')");
+            }
+            else
+            {
+                whereClauses.Add("l.TargetTable = @TargetTable");
+                parameters.Add("TargetTable", filter.TargetTable.Trim());
+            }
         }
 
         if (filter.TargetId.HasValue && filter.TargetId.Value > 0)
@@ -101,7 +108,7 @@ public class AdminAuditLogRepository : IAdminAuditLogRepository
                 ISNULL(up.FullName, u.Email) AS AdminName,
                 u.Email AS AdminEmail,
                 up.AvatarUrl AS AdminAvatar,
-                l.ActorRoleCode,
+                ISNULL(l.ActorRoleCode, (SELECT TOP 1 CASE r.Code WHEN 'SYSTEM_ADMIN' THEN 'SystemAdmin' WHEN 'CATEGORY_ADMIN' THEN 'CategoryAdmin' ELSE r.Code END FROM dbo.UserRoles ur JOIN dbo.Roles r ON ur.RoleId = r.Id WHERE ur.UserId = l.AdminId ORDER BY r.Id DESC)) AS ActorRoleCode,
                 l.ActionType,
                 l.TargetTable,
                 l.TargetId,
@@ -135,7 +142,7 @@ public class AdminAuditLogRepository : IAdminAuditLogRepository
                 ISNULL(up.FullName, u.Email) AS AdminName,
                 u.Email AS AdminEmail,
                 up.AvatarUrl AS AdminAvatar,
-                l.ActorRoleCode,
+                ISNULL(l.ActorRoleCode, (SELECT TOP 1 CASE r.Code WHEN 'SYSTEM_ADMIN' THEN 'SystemAdmin' WHEN 'CATEGORY_ADMIN' THEN 'CategoryAdmin' ELSE r.Code END FROM dbo.UserRoles ur JOIN dbo.Roles r ON ur.RoleId = r.Id WHERE ur.UserId = l.AdminId ORDER BY r.Id DESC)) AS ActorRoleCode,
                 l.ActionType,
                 l.TargetTable,
                 l.TargetId,

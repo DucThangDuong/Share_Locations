@@ -147,13 +147,12 @@ export const RecentVisitedFloatingDock: React.FC = () => {
   if (recentItems.length === 0) return null
 
   return (
-    <div ref={dockRef} className="fixed bottom-5 left-4 sm:left-6 z-40 font-sans">
+    <div ref={dockRef} className="fixed bottom-6 left-6 sm:left-8 z-40 font-sans select-none">
       {!isOpen ? (
-        /* Floating Button (Pill Mode) */
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="group flex items-center gap-2.5 px-3.5 py-2.5 rounded-full bg-white/95 hover:bg-white text-slate-800 text-xs font-bold shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:shadow-[0_12px_35px_rgb(0,0,0,0.18)] backdrop-blur-md border border-slate-200/90 transition-all duration-300 hover:scale-[1.02] cursor-pointer"
+          className="group flex items-center gap-2.5 px-3.5 py-2.5 rounded-full bg-white/95 hover:bg-white text-slate-800 text-xs font-bold shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:shadow-[0_12px_35px_rgb(0,0,0,0.18)] backdrop-blur-md border border-slate-200/90 transition-all duration-300 hover:scale-[1.02] cursor-pointer whitespace-nowrap shrink-0"
         >
           <div className="relative flex items-center justify-center w-6 h-6 rounded-full bg-emerald-50 text-emerald-600">
             <History size={13} className="group-hover:rotate-[-20deg] transition-transform duration-300" />
@@ -168,7 +167,6 @@ export const RecentVisitedFloatingDock: React.FC = () => {
           <ChevronUp size={14} className="text-slate-400 group-hover:text-slate-600 transition-colors" />
         </button>
       ) : (
-        /* Expanded Floating Card */
         <div className="w-[330px] sm:w-[380px] rounded-2xl bg-white border border-slate-200/90 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.2)] overflow-hidden transition-all duration-300 animate-in fade-in slide-in-from-bottom-3">
           <div className="p-3.5 px-4 bg-gradient-to-r from-emerald-50/90 via-slate-50/60 to-white border-b border-slate-100 flex items-center justify-between">
             <div className="flex items-center gap-2">

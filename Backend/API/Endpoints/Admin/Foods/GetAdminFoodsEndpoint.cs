@@ -12,6 +12,7 @@ namespace API.Endpoints.Admin.Foods;
 public class GetAdminFoodsRequest
 {
     public int? ProvinceId { get; set; }
+    public string? Province { get; set; }
     public string? Status { get; set; }
     public string? Keyword { get; set; }
     public int Page { get; set; } = 1;
@@ -46,7 +47,8 @@ public class GetAdminFoodsEndpoint : Endpoint<GetAdminFoodsRequest, ApiSuccessRe
                 req.Page,
                 req.PageSize,
                 req.SortBy,
-                req.SortOrder),
+                req.SortOrder,
+                req.Province),
             ct);
 
         await this.SendPagedApiResponseAsync(result, ct);

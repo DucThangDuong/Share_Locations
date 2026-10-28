@@ -203,7 +203,6 @@ public class RecommendationRepository : IRecommendationRepository
         var connection = _dbContext.Database.GetDbConnection();
         var foodDict = new Dictionary<long, RecommendedFoodDto>();
 
-        // 1. Món ăn gắn trực tiếp vào các địa điểm gợi ý (FoodPlaces)
         const string directSql = @"
             SELECT 
                 f.Id AS FoodId,
@@ -212,14 +211,17 @@ public class RecommendationRepository : IRecommendationRepository
                 f.CoverImageUrl,
                 f.MinPrice,
                 f.MaxPrice,
-                fp.PlaceId AS MatchedPlaceId,
-                p.Name AS MatchedPlaceName
+                p.Id AS MatchedPlaceId,
+                p.Name AS MatchedPlaceName,
+                p.Address AS MatchedPlaceAddress,
+                p.AvgRating AS MatchedPlaceRating
             FROM dbo.FoodPlaces fp WITH (NOLOCK)
             INNER JOIN dbo.Foods f WITH (NOLOCK) ON fp.FoodId = f.Id
             INNER JOIN dbo.Places p WITH (NOLOCK) ON fp.PlaceId = p.Id
             WHERE fp.PlaceId IN @PlaceIds
               AND f.Status = 1
-              AND p.IsDeleted = 0;";
+              AND p.IsDeleted = 0
+              AND p.Status = 1;";
 
         var directFoods = (await connection.QueryAsync<RecommendedFoodDto>(
             new CommandDefinition(directSql, new { PlaceIds = placeIds }, cancellationToken: ct))).AsList();
@@ -233,46 +235,126 @@ public class RecommendationRepository : IRecommendationRepository
             }
         }
 
-        // 2. Mở rộng sang đặc sản cùng Tỉnh/Thành (FoodProvinces) của các địa điểm gợi ý
         if (foodDict.Count < topK)
         {
+            var excludedIds = foodDict.Keys.Count > 0 ? foodDict.Keys.ToArray() : new long[] { -1 };
             const string provinceSql = @"
+                WITH RankedProvinceFoodPlaces AS (
+                    SELECT 
+                        f.Id AS FoodId,
+                        f.Name,
+                        f.Slug,
+                        f.CoverImageUrl,
+                        f.MinPrice,
+                        f.MaxPrice,
+                        p.Id AS MatchedPlaceId,
+                        p.Name AS MatchedPlaceName,
+                        p.Address AS MatchedPlaceAddress,
+                        p.AvgRating AS MatchedPlaceRating,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY f.Id 
+                            ORDER BY 
+                                CASE WHEN p.ProvinceId = fpr.ProvinceId THEN 1 ELSE 0 END DESC,
+                                p.AvgRating DESC, 
+                                p.ReviewCount DESC, 
+                                p.Id ASC
+                        ) AS rn
+                    FROM dbo.FoodProvinces fpr WITH (NOLOCK)
+                    INNER JOIN dbo.Foods f WITH (NOLOCK) ON fpr.FoodId = f.Id
+                    INNER JOIN dbo.FoodPlaces fp WITH (NOLOCK) ON f.Id = fp.FoodId
+                    INNER JOIN dbo.Places p WITH (NOLOCK) ON fp.PlaceId = p.Id
+                    WHERE fpr.ProvinceId IN (
+                        SELECT DISTINCT p_user.ProvinceId 
+                        FROM dbo.Places p_user WITH (NOLOCK) 
+                        WHERE p_user.Id IN @PlaceIds AND p_user.ProvinceId IS NOT NULL
+                    )
+                      AND f.Status = 1
+                      AND p.IsDeleted = 0
+                      AND p.Status = 1
+                      AND f.Id NOT IN @ExcludedFoodIds
+                )
                 SELECT 
-                    f.Id AS FoodId,
-                    f.Name,
-                    f.Slug,
-                    f.CoverImageUrl,
-                    f.MinPrice,
-                    f.MaxPrice,
-                    p.Id AS MatchedPlaceId,
-                    p.Name AS MatchedPlaceName
-                FROM dbo.Places p WITH (NOLOCK)
-                INNER JOIN dbo.FoodProvinces fpr WITH (NOLOCK) ON p.ProvinceId = fpr.ProvinceId
-                INNER JOIN dbo.Foods f WITH (NOLOCK) ON fpr.FoodId = f.Id
-                WHERE p.Id IN @PlaceIds
-                  AND f.Status = 1
-                  AND p.IsDeleted = 0;";
+                    FoodId, Name, Slug, CoverImageUrl, MinPrice, MaxPrice,
+                    MatchedPlaceId, MatchedPlaceName, MatchedPlaceAddress, MatchedPlaceRating
+                FROM RankedProvinceFoodPlaces
+                WHERE rn = 1;";
 
             var provinceFoods = (await connection.QueryAsync<RecommendedFoodDto>(
-                new CommandDefinition(provinceSql, new { PlaceIds = placeIds }, cancellationToken: ct))).AsList();
+                new CommandDefinition(provinceSql, new
+                {
+                    PlaceIds = placeIds,
+                    ExcludedFoodIds = excludedIds
+                }, cancellationToken: ct))).AsList();
 
             foreach (var f in provinceFoods)
             {
                 if (foodDict.ContainsKey(f.FoodId))
                     continue;
 
-                f.PlaceMatchPercentage = placeMatchScores.GetValueOrDefault(f.MatchedPlaceId, 70.0);
-                if (!foodDict.TryGetValue(f.FoodId, out var existing) || f.PlaceMatchPercentage > existing.PlaceMatchPercentage)
-                {
-                    foodDict[f.FoodId] = f;
-                }
+                f.PlaceMatchPercentage = 75.0;
+                foodDict[f.FoodId] = f;
             }
         }
 
-        // 3. Nếu vẫn chưa đủ topK món ăn, bổ sung các đặc sản nổi bật khác trong hệ thống
         if (foodDict.Count < topK)
         {
             var excludedIds = foodDict.Keys.Count > 0 ? foodDict.Keys.ToArray() : new long[] { -1 };
+            int remainCount = topK - foodDict.Count;
+
+            const string topAllFoodsSql = @"
+                WITH RankedAllFoods AS (
+                    SELECT 
+                        f.Id AS FoodId,
+                        f.Name,
+                        f.Slug,
+                        f.CoverImageUrl,
+                        f.MinPrice,
+                        f.MaxPrice,
+                        p.Id AS MatchedPlaceId,
+                        p.Name AS MatchedPlaceName,
+                        p.Address AS MatchedPlaceAddress,
+                        p.AvgRating AS MatchedPlaceRating,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY f.Id 
+                            ORDER BY 
+                                p.AvgRating DESC, 
+                                p.ReviewCount DESC, 
+                                p.Id ASC
+                        ) AS rn
+                    FROM dbo.Foods f WITH (NOLOCK)
+                    INNER JOIN dbo.FoodPlaces fp WITH (NOLOCK) ON f.Id = fp.FoodId
+                    INNER JOIN dbo.Places p WITH (NOLOCK) ON fp.PlaceId = p.Id
+                    WHERE f.Status = 1
+                      AND p.IsDeleted = 0
+                      AND p.Status = 1
+                      AND f.Id NOT IN @ExcludedFoodIds
+                )
+                SELECT TOP (@RemainCount)
+                    FoodId, Name, Slug, CoverImageUrl, MinPrice, MaxPrice,
+                    MatchedPlaceId, MatchedPlaceName, MatchedPlaceAddress, MatchedPlaceRating
+                FROM RankedAllFoods
+                WHERE rn = 1
+                ORDER BY MatchedPlaceRating DESC, FoodId ASC;";
+
+            var remainingFoods = (await connection.QueryAsync<RecommendedFoodDto>(
+                new CommandDefinition(topAllFoodsSql, new
+                {
+                    RemainCount = remainCount,
+                    ExcludedFoodIds = excludedIds
+                }, cancellationToken: ct))).AsList();
+
+            foreach (var f in remainingFoods)
+            {
+                f.PlaceMatchPercentage = 60.0;
+                foodDict[f.FoodId] = f;
+            }
+        }
+
+        if (foodDict.Count < topK)
+        {
+            var excludedIds = foodDict.Keys.Count > 0 ? foodDict.Keys.ToArray() : new long[] { -1 };
+            int remainCount = topK - foodDict.Count;
+
             const string fallbackAllSql = @"
                 SELECT TOP (@RemainCount)
                     f.Id AS FoodId,
@@ -282,22 +364,24 @@ public class RecommendationRepository : IRecommendationRepository
                     f.MinPrice,
                     f.MaxPrice,
                     0 AS MatchedPlaceId,
-                    N'Đặc sản ẩm thực nổi bật' AS MatchedPlaceName
+                    CAST(NULL AS NVARCHAR) AS MatchedPlaceName,
+                    CAST(NULL AS NVARCHAR) AS MatchedPlaceAddress,
+                    CAST(NULL AS DECIMAL(3,2)) AS MatchedPlaceRating
                 FROM dbo.Foods f WITH (NOLOCK)
                 WHERE f.Status = 1
                   AND f.Id NOT IN @ExcludedFoodIds
                 ORDER BY f.Id ASC;";
 
-            var remainingFoods = await connection.QueryAsync<RecommendedFoodDto>(
+            var lastResortFoods = await connection.QueryAsync<RecommendedFoodDto>(
                 new CommandDefinition(fallbackAllSql, new
                 {
-                    RemainCount = topK - foodDict.Count,
+                    RemainCount = remainCount,
                     ExcludedFoodIds = excludedIds
                 }, cancellationToken: ct));
 
-            foreach (var f in remainingFoods)
+            foreach (var f in lastResortFoods)
             {
-                f.PlaceMatchPercentage = 60.0;
+                f.PlaceMatchPercentage = 50.0;
                 foodDict[f.FoodId] = f;
             }
         }

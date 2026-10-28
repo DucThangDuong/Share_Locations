@@ -8,6 +8,7 @@ import type {
   PlaceRankingParams,
   ProvinceRankingItem,
   ProvinceRankingParams,
+  RankingGovernanceConfig,
 } from "@/types/ranking";
 
 export const rankingService = {
@@ -40,6 +41,21 @@ export const rankingService = {
       { params }
     );
     return res.data?.data || [];
+  },
+
+  getRankingConfig: async (): Promise<RankingGovernanceConfig | null> => {
+    const res = await apiClient.get<ApiSuccessResponse<RankingGovernanceConfig>>(
+      "/api/admin/rankings/config"
+    );
+    return res.data?.data || null;
+  },
+
+  updateRankingConfig: async (config: RankingGovernanceConfig): Promise<RankingGovernanceConfig | null> => {
+    const res = await apiClient.put<ApiSuccessResponse<RankingGovernanceConfig>>(
+      "/api/admin/rankings/config",
+      config
+    );
+    return res.data?.data || null;
   },
 
   clearRankingCache: async (): Promise<boolean> => {

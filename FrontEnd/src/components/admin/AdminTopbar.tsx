@@ -67,17 +67,17 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
 
         <div className="flex items-center gap-2 text-xs font-medium">
           <span className="text-slate-900 font-bold">
-            {mainTab === "dashboard" && "Tổng quan (Dashboard)"}
+            {mainTab === "dashboard" && "Tổng quan"}
             {(mainTab === "admin_profile" || (mainTab as any) === "profile") && "Phạm vi điều hành"}
-            {mainTab === "users" && "Quản lý Tài khoản & Phân quyền"}
+            {mainTab === "users" && "Quản lý Tài khoản"}
             {mainTab === "places" && (selectedPlaceId ? `Chi tiết: ${currentPlaceName || ""}` : "Quản lý Địa điểm")}
             {mainTab === "proposals" && "Đề xuất đóng góp"}
             {mainTab === "reviews_comments" && "Đánh giá & Bình luận"}
             {mainTab === "reports" && "Báo cáo vi phạm"}
-            {mainTab === "foods" && "Ẩm thực"}
+            {mainTab === "foods" && "Món ăn"}
             {mainTab === "collections" && "Bộ sưu tập"}
-            {mainTab === "blogs" && "Blog & Cẩm nang"}
-            {mainTab === "provinces" && "Tỉnh thành & Vùng"}
+            {mainTab === "blogs" && "Cẩm nang"}
+            {mainTab === "provinces" && "Tỉnh thành"}
             {mainTab === "categories" && "Danh mục hệ thống"}
             {mainTab === "settings" && "Cài đặt hệ thống"}
             {mainTab === "notifications_profile" && "Cài đặt hệ thống"}
@@ -95,11 +95,10 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
               }
               setIsNotifOpen(!isNotifOpen);
             }}
-            className={`relative p-2 rounded-xl transition-colors cursor-pointer ${
-              isNotifOpen
-                ? "bg-emerald-100 text-emerald-800"
-                : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
-            }`}
+            className={`relative p-2 rounded-xl transition-colors cursor-pointer ${isNotifOpen
+              ? "bg-emerald-100 text-emerald-800"
+              : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+              }`}
             title="Thông báo hệ thống & kiểm duyệt"
             aria-expanded={isNotifOpen}
           >

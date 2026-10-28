@@ -29,6 +29,7 @@ export const ItineraryPage: React.FC = () => {
   const { user: currentUser } = useAuth()
 
   const [catalogItineraries, setCatalogItineraries] = useState<ItineraryDto[]>([])
+  const [isCatalogLoading, setIsCatalogLoading] = useState(false)
   const [plannerTrip, setPlannerTrip] = useState<DetailedItineraryItem | null>(null)
   const [viewMode, setViewMode] = useState<'catalog' | 'planner'>('catalog')
 
@@ -96,7 +97,7 @@ export const ItineraryPage: React.FC = () => {
       id: dto.id,
       title: dto.title,
       slug: `itinerary-${dto.id}`,
-      province: dto.destination,
+      province: dto.destination || 'Việt Nam',
       region: (dto.region as DetailedItineraryItem['region']) || 'Miền Bắc',
       durationDays: dto.daysCount || 1,
       nightsCount: Math.max(0, (dto.daysCount || 1) - 1),
@@ -196,11 +197,15 @@ export const ItineraryPage: React.FC = () => {
     const q = searchParams.get('q') || searchParams.get('keyword') || ''
     const duration = searchParams.get('duration') || 'all'
     const budget = searchParams.get('budget') || 'all'
+    const destination = searchParams.get('destination') || 'all'
+    const sortBy = searchParams.get('sortBy') || 'popular'
 
     return {
       search: q,
       duration,
-      budget
+      budget,
+      destination,
+      sortBy
     }
   }, [searchParams])
 
@@ -242,17 +247,40 @@ export const ItineraryPage: React.FC = () => {
     setSearchParams(p)
   }
 
+  const handleSelectDestination = (dest: string) => {
+    const p = new URLSearchParams(searchParams)
+    if (dest && dest !== 'all') {
+      p.set('destination', dest)
+    } else {
+      p.delete('destination')
+    }
+    setSearchParams(p)
+  }
+
+  const handleSelectSortBy = (sort: string) => {
+    const p = new URLSearchParams(searchParams)
+    if (sort && sort !== 'popular') {
+      p.set('sortBy', sort)
+    } else {
+      p.delete('sortBy')
+    }
+    setSearchParams(p)
+  }
+
   const handleResetFilters = () => {
     setSearchParams({})
   }
 
   const fetchCatalog = useCallback(async () => {
+    setIsCatalogLoading(true)
     try {
       const res = await itineraryService.getItineraries({
+        destination: appliedFilters.destination === 'all' ? undefined : appliedFilters.destination,
         duration: appliedFilters.duration === 'all' ? undefined : appliedFilters.duration,
+        budget: appliedFilters.budget === 'all' ? undefined : appliedFilters.budget,
         keyword: appliedFilters.search.trim() || undefined,
         page: 1,
-        pageSize: 50
+        pageSize: 12
       })
       if (res.success && Array.isArray(res.data)) {
         setCatalogItineraries(res.data)
@@ -261,6 +289,8 @@ export const ItineraryPage: React.FC = () => {
       }
     } catch {
       setCatalogItineraries([])
+    } finally {
+      setIsCatalogLoading(false)
     }
   }, [appliedFilters])
 
@@ -279,6 +309,12 @@ export const ItineraryPage: React.FC = () => {
     const mode = searchParams.get('mode')
 
     if (mode === 'create' || params.id === 'new') {
+      if (!currentUser) {
+        showToast('Vui lòng đăng nhập để tạo chuyến đi mới.')
+        navigate('/login', { state: { from: '/itinerary?mode=create' } })
+        return
+      }
+
       const blankTrip: DetailedItineraryItem = {
         id: Date.now(),
         title: 'Chuyến đi của tôi',
@@ -477,6 +513,12 @@ export const ItineraryPage: React.FC = () => {
   }
 
   const handleApplyItinerary = async (dto: ItineraryDto) => {
+    if (!currentUser) {
+      showToast('Vui lòng đăng nhập để sử dụng lịch trình này.')
+      navigate('/login', { state: { from: location.pathname } })
+      return
+    }
+
     const itinerary = mapCatalogDtoToDetailed(dto)
     try {
       const res = await tripService.createTrip({
@@ -527,11 +569,11 @@ export const ItineraryPage: React.FC = () => {
         setPlannerTrip((prev) =>
           prev
             ? {
-                ...prev,
-                title: data.title || prev.title,
-                description: data.description || prev.description,
-                privacy: 0
-              }
+              ...prev,
+              title: data.title || prev.title,
+              description: data.description || prev.description,
+              privacy: 0
+            }
             : null
         )
         setHasUnsavedChanges(false)
@@ -947,11 +989,11 @@ export const ItineraryPage: React.FC = () => {
     setPlannerTrip((prev) =>
       prev
         ? {
-            ...prev,
-            startDate: startDate || undefined,
-            endDate: endDate || undefined,
-            days: updatedDays
-          }
+          ...prev,
+          startDate: startDate || undefined,
+          endDate: endDate || undefined,
+          days: updatedDays
+        }
         : null
     )
     setHasUnsavedChanges(true)
@@ -968,7 +1010,7 @@ export const ItineraryPage: React.FC = () => {
               tripService.updateTripDay(plannerTrip.id, d.dayNumber, {
                 dayTitle: d.title,
                 date: d.date
-              }).catch(() => {})
+              }).catch(() => { })
             )
           )
         }
@@ -1445,17 +1487,21 @@ export const ItineraryPage: React.FC = () => {
       ) : (
         <ItineraryCatalogView
           itineraries={catalogItineraries}
+          isLoading={isCatalogLoading}
           searchQuery={appliedFilters.search}
           selectedDuration={appliedFilters.duration}
           selectedBudget={appliedFilters.budget}
+          selectedDestination={appliedFilters.destination}
+          sortBy={appliedFilters.sortBy}
           appliedItineraryIds={appliedItineraryIds}
           onSearchChange={handleSearchChange}
           onClearSearch={handleClearSearch}
           onSelectDuration={handleSelectDuration}
           onSelectBudget={handleSelectBudget}
+          onSelectDestination={handleSelectDestination}
+          onSelectSortBy={handleSelectSortBy}
           onResetFilters={handleResetFilters}
           onApplyItinerary={handleApplyItinerary}
-          onCreateTrip={() => navigate('/itinerary?mode=create')}
         />
       )}
 

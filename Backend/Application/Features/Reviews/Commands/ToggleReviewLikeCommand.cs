@@ -1,4 +1,4 @@
-﻿using Application.Common;
+using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
@@ -16,15 +16,18 @@ public class ToggleReviewLikeCommandHandler : IRequestHandler<ToggleReviewLikeCo
     private readonly IUnitOfWork _unitOfWork;
     private readonly INotificationRepository _notificationRepository;
     private readonly INotificationNotifier _notifier;
+    private readonly IReputationService? _reputationService;
 
     public ToggleReviewLikeCommandHandler(
         IUnitOfWork unitOfWork,
         INotificationRepository notificationRepository,
-        INotificationNotifier notifier)
+        INotificationNotifier notifier,
+        IReputationService? reputationService = null)
     {
         _unitOfWork = unitOfWork;
         _notificationRepository = notificationRepository;
         _notifier = notifier;
+        _reputationService = reputationService;
     }
 
     public async Task<Result<ReviewLikeResponseDto>> Handle(ToggleReviewLikeCommand request, CancellationToken ct)
@@ -53,6 +56,29 @@ public class ToggleReviewLikeCommandHandler : IRequestHandler<ToggleReviewLikeCo
         }
 
         await _unitOfWork.SaveChangesAsync(ct);
+
+        if (_reputationService != null && review.UserId != request.UserId)
+        {
+            if (isLiked)
+            {
+                await _reputationService.AwardPointsAsync(
+                    review.UserId,
+                    ReputationActionType.ReviewLiked,
+                    review.Id,
+                    "Bài đánh giá nhận được lượt thích hữu ích",
+                    ct);
+            }
+            else
+            {
+                await _reputationService.DeductPointsAsync(
+                    review.UserId,
+                    ReputationActionType.ReviewUnliked,
+                    2,
+                    review.Id,
+                    "Hủy lượt thích bài đánh giá",
+                    ct);
+            }
+        }
 
         if (isLiked && review.UserId != request.UserId)
         {

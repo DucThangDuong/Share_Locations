@@ -176,13 +176,6 @@ export const HeaderChatDropdown: React.FC<HeaderChatDropdownProps> = ({ onClose 
         >
           Nhóm
         </button>
-        <button
-          type="button"
-          className="w-7 h-7 rounded-full hover:bg-slate-100 text-slate-500 flex items-center justify-center transition-colors cursor-pointer text-xs"
-          title="Thêm bộ lọc"
-        >
-          •••
-        </button>
       </div>
 
       <div className="flex-1 max-h-[380px] overflow-y-auto px-2 py-1 space-y-0.5 divide-y divide-transparent">
@@ -268,7 +261,7 @@ export const HeaderChatDropdown: React.FC<HeaderChatDropdownProps> = ({ onClose 
                     </p>
                     {item.lastMessageAt && (
                       <span className="text-[11px] text-slate-400 shrink-0">
-                        · {formatTimestamp(item.lastMessageAt)}
+                        {formatTimestamp(item.lastMessageAt)}
                       </span>
                     )}
                   </div>

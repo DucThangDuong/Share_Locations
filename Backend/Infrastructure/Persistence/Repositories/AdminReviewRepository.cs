@@ -13,15 +13,18 @@ public class AdminReviewRepository : IAdminReviewRepository
     private readonly TravelReviewDbContext _dbContext;
     private readonly ICurrentUserService _currentUserService;
     private readonly IAuditLogService _auditLogService;
+    private readonly IReputationService? _reputationService;
 
     public AdminReviewRepository(
         TravelReviewDbContext dbContext,
         ICurrentUserService currentUserService,
-        IAuditLogService auditLogService)
+        IAuditLogService auditLogService,
+        IReputationService? reputationService = null)
     {
         _dbContext = dbContext;
         _currentUserService = currentUserService;
         _auditLogService = auditLogService;
+        _reputationService = reputationService;
     }
 
     public async Task<PagedResult<AdminReviewItemDto>> GetAdminReviewsAsync(
@@ -217,6 +220,17 @@ public class AdminReviewRepository : IAdminReviewRepository
             reason: $"Xóa đánh giá #{id} tại địa điểm #{placeId}",
             oldData: oldReviewData,
             ct: ct);
+
+        if (_reputationService != null)
+        {
+            await _reputationService.DeductPointsAsync(
+                review.UserId,
+                Domain.Enums.ReputationActionType.ReviewRemovedViolation,
+                30,
+                id,
+                $"Trừ điểm do đánh giá #{id} tại địa điểm #{placeId} bị gỡ do vi phạm tiêu chuẩn cộng đồng",
+                ct);
+        }
 
         return true;
     }

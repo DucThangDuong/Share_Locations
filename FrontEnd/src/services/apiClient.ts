@@ -7,6 +7,9 @@ export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: 15000,
   withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json',
+  },
   paramsSerializer: (params) => {
     const searchParams = new URLSearchParams()
     Object.entries(params).forEach(([key, value]) => {
@@ -34,6 +37,8 @@ apiClient.interceptors.request.use(
     if (config.data instanceof FormData && config.headers) {
       delete config.headers['Content-Type']
       delete config.headers['content-type']
+    } else if (config.headers && !config.headers['Content-Type']) {
+      config.headers['Content-Type'] = 'application/json'
     }
     const method = config.method?.toLowerCase()
     if ((method === 'post' || method === 'put' || method === 'patch') && config.data === undefined) {

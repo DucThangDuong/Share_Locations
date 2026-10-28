@@ -1,4 +1,4 @@
-﻿using API.DTOs;
+using API.DTOs;
 using API.DTOs.Blogs;
 using API.Extensions;
 using Application.DTOs;
@@ -38,11 +38,11 @@ public class GetBlogsEndpoint : Endpoint<GetBlogsRequest, ApiSuccessResponse<IRe
             PlaceTypeIds = placeTypeIds,
             Keyword = req.Keyword,
             Page = req.Page,
-            PageSize = req.PageSize
+            PageSize = req.GetEffectivePageSize()
         };
 
         var result = await Mediator.Send(new GetBlogsQuery(filterParams), ct);
-        await this.SendApiResponseAsync(result, ct);
+        await this.SendPagedApiResponseAsync(result, ct);
     }
 
     private List<int> ExtractIds(List<int>? boundList, int? boundSingle, string keyPlural, string keySingular)

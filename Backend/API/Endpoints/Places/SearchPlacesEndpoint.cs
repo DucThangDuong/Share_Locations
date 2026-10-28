@@ -1,4 +1,4 @@
-﻿using API.DTOs;
+using API.DTOs;
 using API.DTOs.Places;
 using API.Extensions;
 using Application.DTOs;
@@ -31,6 +31,16 @@ public class SearchPlacesEndpoint : Endpoint<SearchPlacesRequest, ApiSuccessResp
         var categoryIds = ExtractIds(req.CategoryIds, req.CategoryId, "categoryIds", "categoryId");
         var placeTypeIds = ExtractIds(req.PlaceTypeIds, req.PlaceTypeId, "placeTypeIds", "placeTypeId");
 
+        decimal? minRating = null;
+        if (!string.IsNullOrWhiteSpace(req.MinRating))
+        {
+            var cleaned = req.MinRating.Trim().Replace(',', '.');
+            if (decimal.TryParse(cleaned, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var parsedRating))
+            {
+                minRating = parsedRating;
+            }
+        }
+
         var filterParams = new PlaceFilterParams
         {
             Keyword = req.Keyword,
@@ -44,7 +54,7 @@ public class SearchPlacesEndpoint : Endpoint<SearchPlacesRequest, ApiSuccessResp
             PlaceTypeIds = placeTypeIds,
             MinPrice = req.MinPrice,
             MaxPrice = req.MaxPrice,
-            MinRating = req.MinRating,
+            MinRating = minRating,
             SortBy = req.SortBy,
             Page = req.Page,
             PageSize = req.PageSize

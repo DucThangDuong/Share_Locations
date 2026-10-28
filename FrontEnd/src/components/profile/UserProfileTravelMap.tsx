@@ -71,6 +71,13 @@ export const UserProfileTravelMap: React.FC<UserProfileTravelMapProps> = ({
       mapPlaces.forEach((p) => {
         const key = `${p.interactionType}-${p.placeId || p.id}`
         seenKeys.add(key)
+        if (p.interactionType === 'proposal') {
+          seenKeys.add(`proposal-${p.id}`)
+          if (p.placeId) {
+            seenKeys.add(`proposal-${p.placeId}`)
+            seenKeys.add(`proposal-place-${p.placeId}`)
+          }
+        }
         const coords = sanitizeCoordinates(p.coordinates?.[0], p.coordinates?.[1])
         list.push({
           id: p.id,
@@ -113,9 +120,24 @@ export const UserProfileTravelMap: React.FC<UserProfileTravelMapProps> = ({
     })
 
     proposals.forEach((p, idx) => {
+      // Chỉ lấy các địa điểm đề xuất thành công (Status = 1)
+      if (p.status !== undefined && p.status !== 1) return
+
       const key = `proposal-${p.id}`
-      if (seenKeys.has(key)) return
+      const targetPlaceKey = p.targetPlaceId ? `proposal-${p.targetPlaceId}` : null
+      const placeKey = (p as any).placeId ? `proposal-${(p as any).placeId}` : null
+
+      if (
+        seenKeys.has(key) ||
+        (targetPlaceKey && seenKeys.has(targetPlaceKey)) ||
+        (placeKey && seenKeys.has(placeKey))
+      ) {
+        return
+      }
+
       seenKeys.add(key)
+      if (targetPlaceKey) seenKeys.add(targetPlaceKey)
+      if (placeKey) seenKeys.add(placeKey)
 
       const coords = sanitizeCoordinates(
         p.longitude ?? (105.85 + ((idx * 0.05) % 0.2)),

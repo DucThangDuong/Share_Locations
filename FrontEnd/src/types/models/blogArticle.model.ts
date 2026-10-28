@@ -7,37 +7,54 @@ export interface BlogAuthorDto {
   role: string
 }
 
-export interface BlogListItemDto {
-  id: number
+export interface MentionedPlaceDto {
+  id: number | string
+  name: string
+  province?: string
+  category?: string
+  address?: string
+  rating?: number
+  reviewCount?: number
+  coverUrl?: string
   slug?: string
-  title: string
-  excerpt?: string | null
-  summary?: string | null
-  content: string
-  category: string
-  categoryId?: number
-  categoryName?: string
-  readTime?: string
-  coverUrl?: string | null
-  coverImg?: string | null
-  coverImageUrl?: string | null
-  author?: BlogAuthorDto
-  authorId?: number
-  authorName?: string
-  authorAvatar?: string | null
-  publishedAt?: string
-  createdAt?: string
-  updatedAt?: string
-  tags?: string[]
-  featured?: boolean
-  views?: number
-  viewCount?: number
-  likes?: number
-  likesCount?: number
-  status?: string | number
 }
 
-export interface BlogDetailDto extends BlogListItemDto {}
+export interface BlogListItemDto {
+  id: number
+  title: string
+  slug?: string
+  summary?: string | null
+  excerpt?: string | null
+  coverImageUrl?: string | null
+  coverUrl?: string | null
+  coverImg?: string | null
+  authorName?: string
+  authorAvatar?: string | null
+  author?: BlogAuthorDto
+  publishedAt?: string
+  createdAt?: string
+  views?: number
+  viewCount?: number
+  featured?: boolean
+  categoryId?: number
+  content?: string
+  category?: string
+  categoryName?: string
+}
+
+export interface BlogDetailDto extends BlogListItemDto {
+  content?: string
+  contentJSON?: string
+  categoryName?: string
+  category?: string
+  mentionedPlaces?: MentionedPlaceDto[]
+  updatedAt?: string
+  status?: number
+  likes?: number
+  likesCount?: number
+  isLiked?: boolean
+  isSaved?: boolean
+}
 
 export interface BlogLikeResponseDto {
   isLiked: boolean
@@ -45,13 +62,11 @@ export interface BlogLikeResponseDto {
 }
 
 export interface BlogFilterParams {
-  category?: string
-  categoryId?: number
-  categoryIds?: number[]
-  placeTypeId?: number
-  placeTypeIds?: number[]
   keyword?: string
+  categoryId?: number
+  category?: string
   page?: number
+  size?: number
   pageSize?: number
 }
 

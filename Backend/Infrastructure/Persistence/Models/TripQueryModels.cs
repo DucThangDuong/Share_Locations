@@ -7,12 +7,16 @@ internal sealed class RawTripRow
     public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }
     public string? CoverImageUrl { get; set; }
+    public decimal? EstimatedBudget { get; set; }
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
     public byte Privacy { get; set; }
+    public DateTime CreatedAt { get; set; }
     public string? AuthorName { get; set; }
     public string? AuthorAvatar { get; set; }
     public int DayCount { get; set; }
+    public string? PrimaryProvinceName { get; set; }
+    public string? PrimaryRegionName { get; set; }
 }
 
 internal sealed class RawTripDay

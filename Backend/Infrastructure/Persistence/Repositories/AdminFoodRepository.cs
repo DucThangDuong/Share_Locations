@@ -16,6 +16,14 @@ public class AdminFoodRepository : IAdminFoodRepository
     private readonly IBlobService? _blobService;
     private readonly IAuditLogService _auditLogService;
 
+    private sealed class RawAdminFoodPlaceRow
+    {
+        public long FoodId { get; set; }
+        public long Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string? CoverImageUrl { get; set; }
+    }
+
     public AdminFoodRepository(
         TravelReviewDbContext dbContext,
         ICurrentUserService currentUserService,
@@ -36,6 +44,7 @@ public class AdminFoodRepository : IAdminFoodRepository
         int pageSize,
         string? sortBy = null,
         string? sortOrder = null,
+        string? province = null,
         CancellationToken ct = default)
     {
         var connection = _dbContext.Database.GetDbConnection();
@@ -49,6 +58,22 @@ public class AdminFoodRepository : IAdminFoodRepository
         {
             whereClauses.Add("EXISTS (SELECT 1 FROM dbo.FoodProvinces fp WHERE fp.FoodId = f.Id AND fp.ProvinceId = @ProvinceId)");
             parameters.Add("ProvinceId", provinceId.Value);
+        }
+        else if (!string.IsNullOrWhiteSpace(province) && !province.Equals("all", StringComparison.OrdinalIgnoreCase))
+        {
+            var cleanName = province.Replace("Thành phố", "", StringComparison.OrdinalIgnoreCase)
+                                    .Replace("Tỉnh", "", StringComparison.OrdinalIgnoreCase)
+                                    .Replace("TP.", "", StringComparison.OrdinalIgnoreCase)
+                                    .Replace("TP", "", StringComparison.OrdinalIgnoreCase)
+                                    .Trim();
+
+            whereClauses.Add(@"EXISTS (
+                SELECT 1 FROM dbo.FoodProvinces fp
+                INNER JOIN dbo.Provinces prov ON fp.ProvinceId = prov.Id
+                WHERE fp.FoodId = f.Id AND (prov.Name = @ProvinceName OR prov.Name LIKE @ProvinceLike)
+            )");
+            parameters.Add("ProvinceName", province.Trim());
+            parameters.Add("ProvinceLike", $"%{cleanName}%");
         }
 
         if (!string.IsNullOrWhiteSpace(status) && status.ToLowerInvariant() != "all")
@@ -92,8 +117,9 @@ public class AdminFoodRepository : IAdminFoodRepository
                 f.MaxPrice,
                 f.CoverImageUrl AS CoverImg,
                 f.Description AS [Desc],
+                f.HistoryInfo,
                 CASE WHEN f.Status = 1 THEN 'active' ELSE 'hidden' END AS Status,
-                (SELECT COUNT(1) FROM dbo.FoodPlaces fpl WHERE fpl.FoodId = f.Id) AS PlacesCount,
+                (SELECT COUNT(1) FROM dbo.FoodPlaces fpl INNER JOIN dbo.Places p ON fpl.PlaceId = p.Id WHERE fpl.FoodId = f.Id) AS PlacesCount,
                 f.CreatedAt,
                 (SELECT TOP 1 al.CreatedAt FROM dbo.AdminActionLogs al WHERE al.TargetTable = 'Foods' AND al.TargetId = f.Id ORDER BY al.CreatedAt DESC) AS UpdatedAt,
                 COALESCE(
@@ -117,6 +143,43 @@ public class AdminFoodRepository : IAdminFoodRepository
             OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 
         var items = (await connection.QueryAsync<AdminFoodItemDto>(dataSql, parameters)).ToList();
+
+        if (items.Count > 0)
+        {
+            var foodIds = items.Select(x => x.Id).Distinct().ToList();
+            const string placesSql = @"
+                SELECT
+                    fpl.FoodId,
+                    p.Id,
+                    p.Name,
+                    COALESCE(
+                        NULLIF(p.CoverImageUrl, ''),
+                        (SELECT TOP 1 pm.Url FROM dbo.PlaceMedia pm WHERE pm.PlaceId = p.Id ORDER BY pm.DisplayOrder ASC, pm.Id ASC)
+                    ) AS CoverImageUrl
+                FROM dbo.FoodPlaces fpl
+                INNER JOIN dbo.Places p ON fpl.PlaceId = p.Id
+                WHERE fpl.FoodId IN @FoodIds
+                ORDER BY p.Id DESC;";
+
+            var placeRows = (await connection.QueryAsync<RawAdminFoodPlaceRow>(placesSql, new { FoodIds = foodIds })).ToList();
+            var placesByFood = placeRows.ToLookup(r => r.FoodId);
+
+            foreach (var item in items)
+            {
+                var foodPlaces = placesByFood[item.Id]
+                    .Select(r => new AdminFoodPlaceDto
+                    {
+                        Id = r.Id,
+                        Name = r.Name,
+                        CoverImageUrl = r.CoverImageUrl
+                    })
+                    .ToList();
+
+                item.Places = foodPlaces;
+                item.PlacesCount = foodPlaces.Count;
+            }
+        }
+
         return new PagedResult<AdminFoodItemDto>(items, totalCount, page, pageSize);
     }
 

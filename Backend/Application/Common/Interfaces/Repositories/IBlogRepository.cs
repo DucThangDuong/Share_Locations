@@ -1,14 +1,15 @@
+using Application.Common;
 using Application.DTOs;
 
 namespace Application.Common.Interfaces.Repositories;
 
 public interface IBlogRepository
 {
-    Task<IReadOnlyList<BlogListItemDto>> GetBlogsAsync(
+    Task<PagedResult<BlogListItemDto>> GetBlogsAsync(
         BlogFilterParams filterParams,
         CancellationToken ct = default);
 
-    Task<IReadOnlyList<BlogListItemDto>> GetBlogsAsync(
+    Task<PagedResult<BlogListItemDto>> GetBlogsAsync(
         string? category,
         string? keyword,
         int page,

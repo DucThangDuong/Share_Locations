@@ -42,6 +42,10 @@ public class ReportQueueItemDto
     public string? AssignedToAdminName { get; set; }
     public string? Province { get; set; }
     public string? Category { get; set; }
+    public long? PlaceId { get; set; }
+    public string? PlaceName { get; set; }
+    public string? PlaceSubtitle { get; set; }
+    public string? PlaceImage { get; set; }
 }
 
 public class GroupedReportDto
@@ -52,9 +56,14 @@ public class GroupedReportDto
     public string TargetTitle { get; set; } = string.Empty;
     public string? TargetSubtitle { get; set; }
     public string? TargetContent { get; set; }
+    public string? TargetImage { get; set; }
     public decimal? TargetRating { get; set; }
     public string? Province { get; set; }
     public string? Category { get; set; }
+    public long? PlaceId { get; set; }
+    public string? PlaceName { get; set; }
+    public string? PlaceSubtitle { get; set; }
+    public string? PlaceImage { get; set; }
     public int ReportsCount { get; set; }
     public string HighestPriority { get; set; } = "normal";
     public bool HasUnresolvedUrgent { get; set; }

@@ -1,4 +1,4 @@
-﻿using Application.Common;
+using Application.Common;
 using Application.Common.Interfaces;
 using Application.DTOs;
 using Domain.Enums;
@@ -17,11 +17,16 @@ public class PublishTripCommandHandler : IRequestHandler<PublishTripCommand, Res
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IBlobService _blobService;
+    private readonly IReputationService? _reputationService;
 
-    public PublishTripCommandHandler(IUnitOfWork unitOfWork, IBlobService blobService)
+    public PublishTripCommandHandler(
+        IUnitOfWork unitOfWork,
+        IBlobService blobService,
+        IReputationService? reputationService = null)
     {
         _unitOfWork = unitOfWork;
         _blobService = blobService;
+        _reputationService = reputationService;
     }
 
     public async Task<Result> Handle(PublishTripCommand request, CancellationToken ct)
@@ -63,6 +68,17 @@ public class PublishTripCommandHandler : IRequestHandler<PublishTripCommand, Res
         trip.ChangePrivacy(TripPrivacy.Public);
 
         await _unitOfWork.SaveChangesAsync(ct);
+
+        if (_reputationService != null)
+        {
+            await _reputationService.AwardPointsAsync(
+                request.UserId,
+                ReputationActionType.TripCreated,
+                trip.Id,
+                $"Xuất bản lịch trình du lịch '{trip.Title}'",
+                ct);
+        }
+
         return Result.Success("Xuất bản chuyến đi thành công. Lịch trình của bạn hiện đã được công khai trên nền tảng!");
     }
 }

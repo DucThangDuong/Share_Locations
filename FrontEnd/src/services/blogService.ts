@@ -17,14 +17,13 @@ export const blogService = {
   async getBlogs(params?: BlogFilterParams): Promise<ApiSuccessResponse<BlogListItemDto[]>> {
     const cleanParams: Record<string, unknown> = {}
 
-    if (params?.category && params.category !== 'Tất cả') cleanParams.category = params.category
     if (params?.categoryId && params.categoryId > 0) cleanParams.categoryId = params.categoryId
-    if (params?.categoryIds && params.categoryIds.length > 0) cleanParams.categoryIds = params.categoryIds
-    if (params?.placeTypeId && params.placeTypeId > 0) cleanParams.placeTypeId = params.placeTypeId
-    if (params?.placeTypeIds && params.placeTypeIds.length > 0) cleanParams.placeTypeIds = params.placeTypeIds
+    if (params?.category && params.category !== 'Tất cả') cleanParams.category = params.category
     if (params?.keyword?.trim()) cleanParams.keyword = params.keyword.trim()
     cleanParams.page = params?.page || 1
-    cleanParams.pageSize = params?.pageSize || 9
+    const resolvedSize = params?.size || params?.pageSize || 9
+    cleanParams.pageSize = resolvedSize
+    cleanParams.size = resolvedSize
 
     const response = await apiClient.get<ApiSuccessResponse<BlogListItemDto[]>>('/api/blogs', {
       params: cleanParams

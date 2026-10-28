@@ -10,7 +10,6 @@ import {
   Bed,
   Camera,
   ArrowUpRight,
-  Sparkles,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { adminService, extractList } from "@/services/adminService";
@@ -426,7 +425,6 @@ export const AdminProfileTab: React.FC<AdminProfileTabProps> = ({
                         className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-white border border-slate-200/80 text-slate-800 text-xs font-semibold shadow-2xs ${group.chipHover} transition-all cursor-pointer group text-left`}
                       >
                         <div className="flex items-center gap-2 min-w-0">
-                          <Sparkles size={12} className="text-slate-300 group-hover:text-purple-600 transition-colors shrink-0" />
                           <span className="truncate">{cat.name}</span>
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0">

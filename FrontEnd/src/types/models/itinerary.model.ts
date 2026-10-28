@@ -4,9 +4,9 @@ export interface ItineraryAuthorDto {
 }
 
 export interface ItineraryStopDto {
-  time: string
-  activity: string
-  location: string
+  time?: string
+  activity?: string
+  location?: string
   placeName?: string | null
   note?: string | null
   description?: string | null
@@ -16,25 +16,32 @@ export interface ItineraryStopDto {
 
 export interface ItineraryDayDto {
   dayNumber: number
-  title: string
-  stops: ItineraryStopDto[]
+  title?: string
+  stops?: ItineraryStopDto[]
 }
 
 export interface ItineraryDto {
   id: number
   title: string
-  destination: string
-  region: string
-  duration: string
-  daysCount: number
-  style: string
-  estimatedCost: string
+  destination?: string
+  region?: string
+  duration?: string
+  daysCount?: number
+  style?: string
+  estimatedCost?: string
   coverUrl?: string | null
   coverImageUrl?: string | null
-  author: ItineraryAuthorDto
+  author?: ItineraryAuthorDto
   overview?: string | null
-  isSaved: boolean
-  days: ItineraryDayDto[]
+  isSaved?: boolean
+  createdAt?: string
+  days?: ItineraryDayDto[]
+}
+
+export interface ExtendedItineraryDto extends ItineraryDto {
+  destinationBadge?: string
+  postedDate?: string
+  costPerPerson?: string
 }
 
 export interface SaveItineraryResponseDto {
@@ -43,8 +50,11 @@ export interface SaveItineraryResponseDto {
 }
 
 export interface ItineraryFilterParams {
+  destination?: string
   duration?: string
+  budget?: string
   keyword?: string
+  q?: string
   page?: number
   pageSize?: number
 }

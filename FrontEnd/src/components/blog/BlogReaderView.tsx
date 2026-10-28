@@ -3,46 +3,72 @@ import { useNavigate } from 'react-router-dom'
 import {
   Flag,
   Eye,
-  Heart,
+  Share2,
+  Calendar,
   Image,
+  Check
 } from 'lucide-react'
 import { ReportModal } from '@/components/report/ReportModal'
 import type { BlogDetailDto, BlogListItemDto } from '@/types/models/blogArticle.model'
 import { BlogTableOfContents } from './BlogTableOfContents'
 import { convertRawContentToHtml, extractHeadingsAndProcessHtml } from '@/utils/contentConverter'
 import { navigateToAuthorProfile } from '@/utils/authorNavigation'
+import {
+  formatEditorialDate,
+  formatViewsCount
+} from './blogEnhancer'
 
 interface BlogReaderViewProps {
   article: BlogDetailDto
-  allArticles: BlogListItemDto[]
-  likedArticles: Set<number>
-  savedArticles: Set<number>
-  onToggleLike: (id: number, e?: React.MouseEvent) => void
-  onToggleSave: (id: number, e?: React.MouseEvent) => void
+  allArticles?: BlogListItemDto[]
+  likedArticles?: Set<number>
+  savedArticles?: Set<number>
+  onToggleLike?: (id: number, e?: React.MouseEvent) => void
+  onToggleSave?: (id: number, e?: React.MouseEvent) => void
   onShare?: (article: BlogDetailDto, e?: React.MouseEvent) => void
-  onSelectArticle: (article: BlogListItemDto) => void
+  onSelectArticle?: (article: BlogListItemDto) => void
   onSelectPlaceByName?: (name: string, province: string) => void
   onNavigateToItinerary?: () => void
 }
 
 export const BlogReaderView: React.FC<BlogReaderViewProps> = ({
-  article
+  article,
+  allArticles = [],
+  savedArticles: _savedArticles,
+  onToggleSave: _onToggleSave,
+  onShare
 }) => {
   const navigate = useNavigate()
   const [readProgress, setReadProgress] = useState(0)
   const [isReportModalOpen, setIsReportModalOpen] = useState(false)
+  const [shareCopied, setShareCopied] = useState(false)
 
-  const authorName = article.author?.name || article.authorName || 'Tác giả'
-  const authorAvatar = article.author?.avatar || article.authorAvatar || null
-  const authorRole = article.author?.role || 'Thành viên cộng đồng LangThang'
-  const coverImage = article.coverImg || article.coverUrl || article.coverImageUrl
+  const authorName = article.authorName || article.author?.name || 'Tác giả'
+  const authorAvatar = article.authorAvatar || article.author?.avatar || null
+  const coverImage = article.coverImageUrl || article.coverUrl || article.coverImg
   const summaryText = article.summary || article.excerpt
-  const categoryName = article.category || article.categoryName || 'Cẩm nang du lịch'
-  const viewsCount = article.views ?? article.viewCount
-  const likesCount = article.likes ?? article.likesCount
+  const categoryName = article.categoryName || article.category || 'Cẩm nang du lịch'
+
+  const formattedDate = formatEditorialDate(article.publishedAt || article.createdAt)
+  const matchedInList = allArticles.find(
+    (a) => a.id === article.id || (article.slug && a.slug === article.slug) || a.title === article.title
+  )
+  const effectiveViews = (article.viewCount || article.views) || (matchedInList?.viewCount || matchedInList?.views) || 0
+  const { formatted: formattedViews } = formatViewsCount(effectiveViews)
 
   const handleNavigateToAuthor = (e?: React.MouseEvent) => {
     navigateToAuthorProfile(navigate, article.author, article, e)
+  }
+
+  const handleShareClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (onShare) {
+      onShare(article, e)
+    } else {
+      navigator.clipboard.writeText(window.location.href)
+      setShareCopied(true)
+      setTimeout(() => setShareCopied(false), 2400)
+    }
   }
 
   useEffect(() => {
@@ -71,18 +97,19 @@ export const BlogReaderView: React.FC<BlogReaderViewProps> = ({
   }
 
   return (
-    <div className="bg-white min-h-screen">
+    <div className="bg-white min-h-screen font-sans">
       <div
         className="fixed top-0 left-0 h-1 bg-emerald-600 z-50 transition-all duration-100"
         style={{ width: `${readProgress}%` }}
       />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
           <div className="lg:col-span-8 space-y-8 min-w-0">
             <div className="space-y-4">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold">
-                <span>{categoryName}</span>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-900 text-xs font-bold border border-emerald-100/60">
+                <span>Danh mục: {categoryName}</span>
               </div>
 
               <h1 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 leading-tight tracking-tight">
@@ -90,63 +117,75 @@ export const BlogReaderView: React.FC<BlogReaderViewProps> = ({
               </h1>
 
               {summaryText && (
-                <p className="text-base sm:text-lg text-slate-600 leading-relaxed font-normal bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
+                <div className="text-base sm:text-lg text-slate-700 leading-relaxed font-normal bg-slate-50 p-5 rounded-2xl border border-slate-200/90 shadow-2xs">
                   {summaryText}
-                </p>
+                </div>
               )}
             </div>
 
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4 border-y border-slate-200">
               <div
                 onClick={handleNavigateToAuthor}
-                className="flex items-center gap-3 cursor-pointer group/author transition-opacity hover:opacity-90 w-fit"
-                title="Xem trang cá nhân của tác giả"
+                className="flex items-center gap-3.5 cursor-pointer group/author transition-opacity hover:opacity-95 w-fit"
+                title={`Xem trang cá nhân của ${authorName}`}
               >
                 {authorAvatar ? (
                   <img
                     src={authorAvatar}
                     alt={authorName}
-                    className="w-12 h-12 rounded-full object-cover border border-slate-200 group-hover/author:ring-2 group-hover/author:ring-emerald-500/50 transition-all"
+                    className="w-12 h-12 rounded-full object-cover border-2 border-slate-200 group-hover/author:ring-2 group-hover/author:ring-emerald-500/50 transition-all shadow-2xs"
                   />
                 ) : (
-                  <div className="w-12 h-12 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-sm group-hover/author:ring-2 group-hover/author:ring-emerald-500/50 transition-all">
+                  <div className="w-12 h-12 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-sm group-hover/author:ring-2 group-hover/author:ring-emerald-500/50 transition-all shadow-2xs">
                     {authorName.charAt(0).toUpperCase()}
                   </div>
                 )}
                 <div>
-                  <h4 className="font-bold text-sm text-slate-900 group-hover/author:text-emerald-700 transition-colors">
+                  <h4 className="font-bold text-sm text-slate-900 group-hover/author:text-emerald-800 transition-colors">
                     {authorName}
                   </h4>
-                  <p className="text-xs text-slate-500">
-                    {authorRole}
-                  </p>
+                  {formattedDate && (
+                    <div className="flex items-center gap-1 text-xs text-slate-500 mt-0.5 font-medium">
+                      <Calendar size={11} className="text-slate-400" />
+                      <span>Đăng ngày {formattedDate}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 text-xs font-semibold text-slate-500 flex-wrap">
-                {viewsCount !== undefined && (
-                  <span className="flex items-center gap-1 text-slate-600">
-                    <Eye size={14} className="text-slate-400" />
-                    <span>{Number(viewsCount).toLocaleString('vi-VN')} lượt xem</span>
-                  </span>
-                )}
-                {likesCount !== undefined && (
-                  <>
-                    <span>•</span>
-                    <span className="flex items-center gap-1 text-rose-600">
-                      <Heart size={14} className="text-rose-400 fill-rose-100" />
-                      <span>{Number(likesCount).toLocaleString('vi-VN')}</span>
-                    </span>
-                  </>
-                )}
+              <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
+                <div className="flex items-center gap-1 text-xs text-slate-500 font-medium px-2 py-1 bg-slate-50 rounded-xl border border-slate-200/80 mr-1">
+                  <Eye size={13} className="text-slate-400" />
+                  <span>{formattedViews}</span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleShareClick}
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-white border border-slate-200/90 text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all cursor-pointer shadow-2xs"
+                  title="Sao chép liên kết chia sẻ"
+                >
+                  {shareCopied ? (
+                    <>
+                      <Check size={14} className="text-emerald-600" />
+                      <span className="text-emerald-700">Đã chép!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Share2 size={14} className="text-slate-500" />
+                      <span>Chia sẻ</span>
+                    </>
+                  )}
+                </button>
+
                 <button
                   type="button"
                   onClick={() => setIsReportModalOpen(true)}
-                  className="flex items-center gap-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 px-2 py-1 rounded-lg transition-colors cursor-pointer"
-                  title="Báo cáo bài viết vi phạm"
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-white border border-slate-200/90 text-slate-600 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50/60 transition-all cursor-pointer shadow-2xs"
+                  title="Báo cáo bài viết"
                 >
-                  <Flag size={13} />
-                  <span>Báo cáo</span>
+                  <Flag size={14} className="text-rose-500" />
+                  <span>Báo cáo bài viết</span>
                 </button>
               </div>
             </div>
@@ -156,16 +195,16 @@ export const BlogReaderView: React.FC<BlogReaderViewProps> = ({
                 <img
                   src={coverImage}
                   alt={article.title}
-                  className="w-full max-h-[480px] object-cover"
+                  className="w-full max-h-[500px] object-cover"
                   onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                    const parent = target.parentElement;
+                    const target = e.target as HTMLImageElement
+                    target.style.display = 'none'
+                    const parent = target.parentElement
                     if (parent && !parent.querySelector('.no-img-placeholder')) {
-                      const fallback = document.createElement('div');
-                      fallback.className = 'no-img-placeholder w-full py-16 flex items-center justify-center bg-slate-50 text-slate-300 select-none';
-                      fallback.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-300"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>';
-                      parent.appendChild(fallback);
+                      const fallback = document.createElement('div')
+                      fallback.className = 'no-img-placeholder w-full py-16 flex items-center justify-center bg-slate-50 text-slate-300 select-none'
+                      fallback.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-300"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>'
+                      parent.appendChild(fallback)
                     }
                   }}
                 />
@@ -185,48 +224,13 @@ export const BlogReaderView: React.FC<BlogReaderViewProps> = ({
               )}
             </div>
 
-            <div className="pt-8 border-t border-slate-200 space-y-6">
-              <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200 flex flex-col sm:flex-row items-center gap-4">
-                <div
-                  onClick={handleNavigateToAuthor}
-                  className="cursor-pointer group/bottomAuthor shrink-0"
-                  title="Xem trang cá nhân của tác giả"
-                >
-                  {authorAvatar ? (
-                    <img
-                      src={authorAvatar}
-                      alt={authorName}
-                      className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-sm group-hover/bottomAuthor:ring-2 group-hover/bottomAuthor:ring-emerald-500/50 transition-all"
-                    />
-                  ) : (
-                    <div className="w-16 h-16 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-lg group-hover/bottomAuthor:ring-2 group-hover/bottomAuthor:ring-emerald-500/50 transition-all">
-                      {authorName.charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                </div>
-                <div className="space-y-1 text-center sm:text-left flex-1">
-                  <h4
-                    onClick={handleNavigateToAuthor}
-                    className="font-bold text-base text-slate-900 hover:text-emerald-700 cursor-pointer transition-colors inline-block"
-                    title="Xem trang cá nhân của tác giả"
-                  >
-                    {authorName}
-                  </h4>
-                  <p className="text-xs text-slate-500">
-                    {authorRole}
-                  </p>
-                  <p className="text-xs text-slate-600 pt-1">
-                    Cảm ơn bạn đã đọc bài viết! Hãy lưu lại cẩm nang hoặc chia sẻ cho bạn bè cùng chuyến đi nhé.
-                  </p>
-                </div>
-              </div>
-            </div>
           </div>
 
           <aside className="lg:col-span-4 space-y-6 sticky top-20">
             {extractedHeadings && extractedHeadings.length > 0 && (
               <BlogTableOfContents
                 headings={extractedHeadings}
+                articleTitle={article.title}
                 onScrollToSection={scrollToSection}
               />
             )}

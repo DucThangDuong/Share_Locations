@@ -136,13 +136,21 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
   const formatUpdatedDate = (blog: any) => {
     const rawDate = blog.updatedAt || blog.updatedDate || blog.publishedAt || blog.createdAt;
     const author = blog.authorName || blog.author || "Ban Biên Tập LangThang";
-    if (!rawDate) return { dateStr: "20/10/2026", author };
-    const d = new Date(rawDate);
-    if (isNaN(d.getTime())) return { dateStr: String(rawDate), author };
+    if (!rawDate) return { dateStr: "—", timeStr: "", fullStr: "—", author };
+    const raw = String(rawDate).trim();
+    const d = new Date(raw);
+    if (isNaN(d.getTime())) return { dateStr: String(rawDate), timeStr: "", fullStr: String(rawDate), author };
+    const hours = String(d.getHours()).padStart(2, "0");
+    const minutes = String(d.getMinutes()).padStart(2, "0");
     const day = String(d.getDate()).padStart(2, "0");
     const month = String(d.getMonth() + 1).padStart(2, "0");
     const year = d.getFullYear();
-    return { dateStr: `${day}/${month}/${year}`, author };
+    return {
+      dateStr: `${day}/${month}/${year}`,
+      timeStr: `${hours}:${minutes}`,
+      fullStr: `${hours}:${minutes} ${day}/${month}/${year}`,
+      author
+    };
   };
 
   const currentBlog = selectedBlogId
@@ -376,7 +384,7 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
                     className="group inline-flex items-center gap-1.5 hover:text-slate-900 transition-colors cursor-pointer select-none"
                     title="Sắp xếp theo tiêu đề bài viết"
                   >
-                    <span>Bài viết / Cẩm nang</span>
+                    <span>Cẩm nang</span>
                     {renderSortIcon("title")}
                   </button>
                 </th>
@@ -388,7 +396,7 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
                     className="group inline-flex items-center gap-1.5 hover:text-slate-900 transition-colors cursor-pointer select-none"
                     title="Sắp xếp theo lượt xem"
                   >
-                    <span>Lượt xem &amp; Thích</span>
+                    <span>Lượt xem</span>
                     {renderSortIcon("views")}
                   </button>
                 </th>
@@ -441,7 +449,7 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
                           <Image size={16} className="text-slate-300" />
                         </div>
                         <div className="max-w-md">
-                          <div className="font-bold text-slate-900 group-hover:text-emerald-700 transition-colors line-clamp-1 text-xs sm:text-sm">
+                          <div className="font-bold text-slate-900 group-hover:text-emerald-700 transition-colors line-clamp-1 text-xs">
                             {blog.title || "--"}
                           </div>
                           {blog.category && (
@@ -480,11 +488,6 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
                           <div className="font-semibold text-slate-900 text-xs">
                             {blog.authorName || "--"}
                           </div>
-                          {blog.publishedAt && (
-                            <div className="text-[10px] text-slate-400">
-                              {blog.publishedAt}
-                            </div>
-                          )}
                         </div>
                       </div>
                     </td>
@@ -526,8 +529,13 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
                       {(() => {
                         const info = formatUpdatedDate(blog);
                         return (
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex flex-col leading-tight">
                             <span className="font-semibold text-slate-800">{info.dateStr}</span>
+                            {info.timeStr && (
+                              <span className="text-[10px] text-slate-400 font-medium mt-0.5">
+                                {info.timeStr}
+                              </span>
+                            )}
                           </div>
                         );
                       })()}
@@ -827,12 +835,15 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
               onToggleStatus();
               setStatus((prev: string) => (prev === "published" ? "hidden" : "published"));
             }}
-            className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl cursor-pointer transition-colors"
+            className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl cursor-pointer transition-colors ${
+              isHidden
+                ? "bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-xs"
+                : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200"
+            }`}
+            title={isHidden ? "Công khai bài viết lên hệ thống" : "Tạm ẩn bài viết khỏi hệ thống"}
           >
             {isHidden ? <Eye size={14} /> : <EyeOff size={14} />}
-            <span className="hidden sm:inline">
-              {isHidden ? "Hiện lại" : "Tạm ẩn"}
-            </span>
+            <span>{isHidden ? "Công khai bài viết" : "Tạm ẩn bài viết"}</span>
           </button>
 
           <button
@@ -1021,7 +1032,7 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
                 <div className="space-y-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                      Tiêu đề bài viết / Cẩm nang <span className="text-rose-500">*</span>
+                      Tiêu đề Cẩm nang <span className="text-rose-500">*</span>
                     </label>
                     <input
                       type="text"

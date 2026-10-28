@@ -1,4 +1,4 @@
-﻿namespace Infrastructure.Persistence;
+namespace Infrastructure.Persistence;
 
 public class TravelReviewDbContext : DbContext
 {
@@ -54,6 +54,7 @@ public class TravelReviewDbContext : DbContext
     public virtual DbSet<VisitLog> VisitLogs => Set<VisitLog>();
     public virtual DbSet<AccessHistory> AccessHistories => Set<AccessHistory>();
     public virtual DbSet<Notification> Notifications => Set<Notification>();
+    public virtual DbSet<ReputationLog> ReputationLogs => Set<ReputationLog>();
 
     public virtual DbSet<ReportType> ReportTypes => Set<ReportType>();
     public virtual DbSet<PlaceReport> PlaceReports => Set<PlaceReport>();

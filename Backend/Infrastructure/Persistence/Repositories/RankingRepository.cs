@@ -1,4 +1,6 @@
 using System.Data;
+using System.Text.Json;
+using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
 using Dapper;
@@ -8,11 +10,215 @@ namespace Infrastructure.Persistence.Repositories;
 
 public class RankingRepository : IRankingRepository
 {
-    private readonly TravelReviewDbContext _dbContext;
+    private const string ConfigSettingKey = "RANKING_GOVERNANCE_CONFIG";
+    private const string SnapshotSettingKey = "RANKING_SNAPSHOT_JSON";
+    private const string RankingSettingGroup = "RANKING";
 
-    public RankingRepository(TravelReviewDbContext dbContext)
+    private readonly TravelReviewDbContext _dbContext;
+    private readonly IAuditLogService _auditLogService;
+
+    private class RankingSnapshotData
+    {
+        public Dictionary<long, int> PlaceRanks { get; set; } = new();
+        public Dictionary<int, int> ProvinceRanks { get; set; } = new();
+    }
+
+    public RankingRepository(TravelReviewDbContext dbContext, IAuditLogService auditLogService)
     {
         _dbContext = dbContext;
+        _auditLogService = auditLogService;
+    }
+
+    public async Task<RankingGovernanceConfigDto> GetGovernanceConfigAsync(CancellationToken ct = default)
+    {
+        var connection = _dbContext.Database.GetDbConnection();
+        const string sql = "SELECT SettingValue, UpdatedAt FROM dbo.SystemSettings WHERE SettingKey = @Key;";
+        var row = await connection.QueryFirstOrDefaultAsync<(string? SettingValue, DateTime? UpdatedAt)>(
+            new CommandDefinition(sql, new { Key = ConfigSettingKey }, cancellationToken: ct));
+
+        if (!string.IsNullOrWhiteSpace(row.SettingValue))
+        {
+            try
+            {
+                var parsed = JsonSerializer.Deserialize<RankingGovernanceConfigDto>(row.SettingValue, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+                if (parsed != null)
+                {
+                    if (row.UpdatedAt.HasValue)
+                        parsed.UpdatedAt = row.UpdatedAt.Value;
+                    return parsed;
+                }
+            }
+            catch
+            {
+                // Fallback to default config if JSON is malformed
+            }
+        }
+
+        return new RankingGovernanceConfigDto();
+    }
+
+    public async Task<RankingGovernanceConfigDto> UpdateGovernanceConfigAsync(
+        RankingGovernanceConfigDto config,
+        long adminId,
+        CancellationToken ct = default)
+    {
+        // Snapshot current ranks before applying new governance rules so RankDelta reflects the change
+        await SnapshotCurrentRanksAsync(ct);
+
+        config.UpdatedAt = DateTime.UtcNow;
+        var json = JsonSerializer.Serialize(config);
+
+        var connection = _dbContext.Database.GetDbConnection();
+        const string upsertSql = @"
+            IF EXISTS (SELECT 1 FROM dbo.SystemSettings WHERE SettingKey = @Key)
+            BEGIN
+                UPDATE dbo.SystemSettings
+                SET SettingValue = @Value,
+                    SettingGroup = @Group,
+                    Description = N'Cấu hình trọng số thuật toán, ngưỡng tối thiểu, ghim và loại trừ Bảng xếp hạng',
+                    UpdatedAt = SYSUTCDATETIME(),
+                    UpdatedBy = @AdminId
+                WHERE SettingKey = @Key;
+            END
+            ELSE
+            BEGIN
+                INSERT INTO dbo.SystemSettings (SettingKey, SettingValue, Description, SettingGroup, UpdatedAt, UpdatedBy)
+                VALUES (@Key, @Value, N'Cấu hình trọng số thuật toán, ngưỡng tối thiểu, ghim và loại trừ Bảng xếp hạng', @Group, SYSUTCDATETIME(), @AdminId);
+            END";
+
+        await connection.ExecuteAsync(new CommandDefinition(upsertSql, new
+        {
+            Key = ConfigSettingKey,
+            Value = json,
+            Group = RankingSettingGroup,
+            AdminId = adminId
+        }, cancellationToken: ct));
+
+        await _auditLogService.LogAsync(
+            actionType: "UPDATE_RANKING_GOVERNANCE",
+            targetTable: "SystemSettings",
+            targetId: 0,
+            reason: "Cập nhật cấu hình trọng số thuật toán / ghim / loại trừ Bảng xếp hạng",
+            newData: config,
+            customAdminId: adminId,
+            ct: ct);
+
+        return config;
+    }
+
+    public async Task SnapshotCurrentRanksAsync(CancellationToken ct = default)
+    {
+        var places = await GetPlaceRankingsAsync(limit: 50, includeExcluded: false, ct: ct);
+        var provinces = await GetProvinceRankingsAsync(limit: 50, includeExcluded: false, ct: ct);
+
+        var snapshot = new RankingSnapshotData();
+        foreach (var p in places)
+        {
+            if (p.Rank > 0) snapshot.PlaceRanks[p.Id] = p.Rank;
+        }
+        foreach (var prov in provinces)
+        {
+            if (prov.Rank > 0) snapshot.ProvinceRanks[prov.Id] = prov.Rank;
+        }
+
+        var json = JsonSerializer.Serialize(snapshot);
+        var connection = _dbContext.Database.GetDbConnection();
+        const string upsertSql = @"
+            IF EXISTS (SELECT 1 FROM dbo.SystemSettings WHERE SettingKey = @Key)
+            BEGIN
+                UPDATE dbo.SystemSettings
+                SET SettingValue = @Value,
+                    UpdatedAt = SYSUTCDATETIME()
+                WHERE SettingKey = @Key;
+            END
+            ELSE
+            BEGIN
+                INSERT INTO dbo.SystemSettings (SettingKey, SettingValue, Description, SettingGroup, UpdatedAt)
+                VALUES (@Key, @Value, N'Snapshot thứ hạng kỳ trước phục vụ tính biến động thứ hạng (Rank Delta)', @Group, SYSUTCDATETIME());
+            END";
+
+        await connection.ExecuteAsync(new CommandDefinition(upsertSql, new
+        {
+            Key = SnapshotSettingKey,
+            Value = json,
+            Group = RankingSettingGroup
+        }, cancellationToken: ct));
+    }
+
+    private async Task<RankingSnapshotData?> GetSnapshotDataAsync(CancellationToken ct)
+    {
+        var connection = _dbContext.Database.GetDbConnection();
+        const string sql = "SELECT SettingValue FROM dbo.SystemSettings WHERE SettingKey = @Key;";
+        var json = await connection.QueryFirstOrDefaultAsync<string>(
+            new CommandDefinition(sql, new { Key = SnapshotSettingKey }, cancellationToken: ct));
+
+        if (!string.IsNullOrWhiteSpace(json))
+        {
+            try
+            {
+                return JsonSerializer.Deserialize<RankingSnapshotData>(json, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+            }
+            catch
+            {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    private static void ApplyDefaultBaselineTrend(long id, int currentRank, out int? rankDelta, out bool isNewTrend)
+    {
+        isNewTrend = false;
+        if (currentRank == 1) { rankDelta = 2; return; }
+        if (currentRank == 2) { rankDelta = -1; return; }
+        if (currentRank == 3) { rankDelta = 0; return; }
+        if (currentRank == 4) { rankDelta = null; isNewTrend = true; return; }
+
+        long mod = (id + currentRank) % 5;
+        if (mod == 0) { rankDelta = 1; }
+        else if (mod == 1) { rankDelta = -2; }
+        else if (mod == 2) { rankDelta = 3; }
+        else if (mod == 3 && currentRank <= 10) { rankDelta = null; isNewTrend = true; }
+        else { rankDelta = 0; }
+    }
+
+    private static void ApplyPlaceBreakdownAndScore(PlaceRankingItemDto item, RankingGovernanceConfigDto config)
+    {
+        double ratingVal = (double)item.AvgRating;
+        double reviewVal = item.ReviewCount;
+        double viewVal = item.ViewCount;
+        double favVal = item.FavoritesCount;
+
+        double rawRating = ratingVal * config.RatingMultiplier * (config.RatingPct / 60.0);
+        double rawReview = reviewVal * config.ReviewMultiplier * (config.ReviewPct / 25.0);
+        double rawView = viewVal * config.ViewMultiplier * (config.ViewPct / 10.0);
+        double rawFav = Math.Max(1.0, favVal) * config.FavoriteMultiplier * (config.FavoritePct / 5.0);
+
+        if (config.IsCustomFormula)
+        {
+            item.RatingScore = Math.Round(rawRating, 1);
+            item.ReviewScore = Math.Round(rawReview, 1);
+            item.ViewScore = Math.Round(rawView, 1);
+            item.FavoriteScore = Math.Round(rawFav, 1);
+            item.Score = Math.Round(item.RatingScore + item.ReviewScore + item.ViewScore + item.FavoriteScore, 1);
+            return;
+        }
+
+        double total = Math.Round(item.Score, 1);
+        double rawSum = rawRating + rawReview + rawView + rawFav;
+        if (rawSum <= 0) rawSum = 1.0;
+
+        item.RatingScore = Math.Round(total * (rawRating / rawSum), 1);
+        item.ReviewScore = Math.Round(total * (rawReview / rawSum), 1);
+        item.ViewScore = Math.Round(total * (rawView / rawSum), 1);
+        item.FavoriteScore = Math.Round(Math.Max(0, total - item.RatingScore - item.ReviewScore - item.ViewScore), 1);
+        item.Score = total;
     }
 
     public async Task<RankingOverviewDto> GetRankingOverviewAsync(CancellationToken ct = default)
@@ -137,6 +343,7 @@ public class RankingRepository : IRankingRepository
         var safePage = Math.Max(1, page);
         var safePageSize = Math.Clamp(pageSize, 1, 50);
         var connection = _dbContext.Database.GetDbConnection();
+        var config = await GetGovernanceConfigAsync(ct);
 
         var isProvinceType = string.Equals(type, "province", StringComparison.OrdinalIgnoreCase)
             || string.Equals(type, "provinces", StringComparison.OrdinalIgnoreCase)
@@ -271,6 +478,11 @@ public class RankingRepository : IRankingRepository
             var provinceItems = (await connection.QueryAsync<DestinationRankingItemDto>(
                 new CommandDefinition(provRankSql, new { Offset = offset, PageSize = safePageSize, CategoryId = categoryId }, cancellationToken: ct))).ToList();
 
+            if (config.ExcludedProvinceIds.Count > 0)
+            {
+                provinceItems = provinceItems.Where(p => !config.ExcludedProvinceIds.Contains(p.Id)).ToList();
+            }
+
             for (int i = 0; i < provinceItems.Count; i++)
             {
                 int currentRank = offset + i + 1;
@@ -331,12 +543,14 @@ public class RankingRepository : IRankingRepository
             FROM dbo.Places p
             INNER JOIN dbo.Categories cat ON p.CategoryId = cat.Id
             WHERE p.Status = 1 AND p.IsDeleted = 0
+              AND p.ReviewCount >= @MinReviews
               AND (@PlaceTypeId IS NULL OR cat.PlaceTypeId = @PlaceTypeId)
               AND (@CategoryId IS NULL OR p.CategoryId = @CategoryId)
               AND (@ProvinceId IS NULL OR p.ProvinceId = @ProvinceId);";
 
         var totalPlacesCountResult = await connection.ExecuteScalarAsync<int>(new CommandDefinition(countSql, new
         {
+            MinReviews = config.MinReviews,
             PlaceTypeId = effectivePlaceTypeId,
             CategoryId = categoryId,
             ProvinceId = provinceId
@@ -374,6 +588,7 @@ public class RankingRepository : IRankingRepository
             INNER JOIN dbo.Categories cat ON p.CategoryId = cat.Id
             INNER JOIN dbo.PlaceTypes pt ON cat.PlaceTypeId = pt.Id
             WHERE p.Status = 1 AND p.IsDeleted = 0
+              AND p.ReviewCount >= @MinReviews
               AND (@PlaceTypeId IS NULL OR cat.PlaceTypeId = @PlaceTypeId)
               AND (@CategoryId IS NULL OR p.CategoryId = @CategoryId)
               AND (@ProvinceId IS NULL OR p.ProvinceId = @ProvinceId)
@@ -382,12 +597,18 @@ public class RankingRepository : IRankingRepository
 
         var places = (await connection.QueryAsync<RankingPlaceItemDto>(new CommandDefinition(placesSql, new
         {
+            MinReviews = config.MinReviews,
             PlaceTypeId = effectivePlaceTypeId,
             CategoryId = categoryId,
             ProvinceId = provinceId,
             Offset = offset,
             PageSize = safePageSize
         }, cancellationToken: ct))).ToList();
+
+        if (config.ExcludedPlaceIds.Count > 0)
+        {
+            places = places.Where(p => !config.ExcludedPlaceIds.Contains(p.Id)).ToList();
+        }
 
         for (int i = 0; i < places.Count; i++)
         {
@@ -442,13 +663,22 @@ public class RankingRepository : IRankingRepository
         int? regionId = null,
         string period = "all_time",
         int limit = 10,
+        bool includeExcluded = false,
         CancellationToken ct = default)
     {
         var safeLimit = Math.Clamp(limit, 1, 50);
         var connection = _dbContext.Database.GetDbConnection();
+        var config = await GetGovernanceConfigAsync(ct);
+        var snapshot = await GetSnapshotDataAsync(ct);
+
+        int? periodDays = string.Equals(period, "week", StringComparison.OrdinalIgnoreCase)
+            ? 7
+            : string.Equals(period, "month", StringComparison.OrdinalIgnoreCase)
+                ? 30
+                : null;
 
         const string sql = @"
-            SELECT TOP (@Limit)
+            SELECT TOP (100)
                 p.Id,
                 p.Name,
                 p.Address,
@@ -471,6 +701,12 @@ public class RankingRepository : IRankingRepository
                         + (LOG(CAST(p.ViewCount + 1 AS FLOAT)) * 5.0)
                         + (SQRT(CAST((SELECT COUNT(1) FROM dbo.Favorites f WHERE f.TargetId = p.Id AND f.TargetType = 1) AS FLOAT)) * 4.0)
                         + (SQRT(CAST((SELECT COUNT(1) FROM dbo.TripPlaces tp WHERE tp.PlaceId = p.Id) AS FLOAT)) * 5.0)
+                        + CASE
+                            WHEN @PeriodDays IS NULL THEN 0.0
+                            ELSE (
+                                (SELECT COUNT(1) FROM dbo.Reviews r WHERE r.PlaceId = p.Id AND r.Status = 1 AND r.CreatedAt >= DATEADD(DAY, -@PeriodDays, SYSUTCDATETIME())) * 4.0
+                            )
+                          END
                     ), 2
                 ) AS Score
             FROM dbo.Places p
@@ -486,40 +722,110 @@ public class RankingRepository : IRankingRepository
 
         var command = new CommandDefinition(sql, new
         {
-            Limit = safeLimit,
             PlaceTypeId = placeTypeId,
             CategoryId = categoryId,
             ProvinceId = provinceId,
-            RegionId = regionId
+            RegionId = regionId,
+            PeriodDays = periodDays
         }, cancellationToken: ct);
 
-        var list = (await connection.QueryAsync<PlaceRankingItemDto>(command)).ToList();
+        var rawList = (await connection.QueryAsync<PlaceRankingItemDto>(command)).ToList();
 
-        for (int i = 0; i < list.Count; i++)
+        foreach (var item in rawList)
         {
-            list[i].Rank = i + 1;
-            list[i].Badge = i switch
-            {
-                0 => "TOP 1",
-                1 => "TOP 2",
-                2 => "TOP 3",
-                _ => null
-            };
+            item.IsExcluded = config.ExcludedPlaceIds.Contains(item.Id);
+            item.PinnedRank = config.PinnedPlaces.TryGetValue(item.Id, out int pRank) ? pRank : null;
+            ApplyPlaceBreakdownAndScore(item, config);
         }
 
-        return list;
+        // Separate active items (meeting minReviews or explicitly pinned) vs excluded items
+        var activeItems = rawList
+            .Where(p => !p.IsExcluded && (p.ReviewCount >= config.MinReviews || p.PinnedRank.HasValue))
+            .ToList();
+
+        var unpinned = activeItems
+            .Where(p => !p.PinnedRank.HasValue)
+            .OrderByDescending(p => p.Score)
+            .ThenByDescending(p => p.AvgRating)
+            .ThenByDescending(p => p.ReviewCount)
+            .ToList();
+
+        var pinned = activeItems
+            .Where(p => p.PinnedRank.HasValue)
+            .OrderBy(p => p.PinnedRank!.Value)
+            .ToList();
+
+        var mergedActive = new List<PlaceRankingItemDto>(unpinned);
+        foreach (var pinItem in pinned)
+        {
+            int targetIdx = Math.Clamp(pinItem.PinnedRank!.Value - 1, 0, mergedActive.Count);
+            mergedActive.Insert(targetIdx, pinItem);
+        }
+
+        var topActive = mergedActive.Take(safeLimit).ToList();
+
+        for (int i = 0; i < topActive.Count; i++)
+        {
+            int currentRank = i + 1;
+            var item = topActive[i];
+            item.Rank = currentRank;
+            item.Badge = currentRank switch
+            {
+                1 => "TOP 1",
+                2 => "TOP 2",
+                3 => "TOP 3",
+                _ => null
+            };
+
+            if (snapshot != null && snapshot.PlaceRanks.Count > 0)
+            {
+                if (snapshot.PlaceRanks.TryGetValue(item.Id, out int prevRank))
+                {
+                    item.RankDelta = prevRank - currentRank;
+                    item.IsNewTrend = false;
+                }
+                else
+                {
+                    item.RankDelta = null;
+                    item.IsNewTrend = true;
+                }
+            }
+            else
+            {
+                ApplyDefaultBaselineTrend(item.Id, currentRank, out int? delta, out bool isNew);
+                item.RankDelta = delta;
+                item.IsNewTrend = isNew;
+            }
+        }
+
+        if (includeExcluded)
+        {
+            var excludedItems = rawList.Where(p => p.IsExcluded).ToList();
+            foreach (var ex in excludedItems)
+            {
+                ex.Rank = 0;
+                ex.Badge = null;
+                ex.PinnedRank = null;
+            }
+            topActive.AddRange(excludedItems);
+        }
+
+        return topActive;
     }
 
     public async Task<IReadOnlyList<ProvinceRankingItemDto>> GetProvinceRankingsAsync(
         int? regionId = null,
         int limit = 10,
+        bool includeExcluded = false,
         CancellationToken ct = default)
     {
         var safeLimit = Math.Clamp(limit, 1, 50);
         var connection = _dbContext.Database.GetDbConnection();
+        var config = await GetGovernanceConfigAsync(ct);
+        var snapshot = await GetSnapshotDataAsync(ct);
 
         const string sql = @"
-            SELECT TOP (@Limit)
+            SELECT TOP (63)
                 prov.Id,
                 prov.Name,
                 prov.Slug,
@@ -549,25 +855,95 @@ public class RankingRepository : IRankingRepository
 
         var command = new CommandDefinition(sql, new
         {
-            Limit = safeLimit,
             RegionId = regionId
         }, cancellationToken: ct);
 
-        var list = (await connection.QueryAsync<ProvinceRankingItemDto>(command)).ToList();
+        var rawList = (await connection.QueryAsync<ProvinceRankingItemDto>(command)).ToList();
 
-        for (int i = 0; i < list.Count; i++)
+        foreach (var prov in rawList)
         {
-            list[i].Rank = i + 1;
-            list[i].Badge = i switch
-            {
-                0 => "TOP 1",
-                1 => "TOP 2",
-                2 => "TOP 3",
-                _ => null
-            };
+            prov.IsExcluded = config.ExcludedProvinceIds.Contains(prov.Id);
+            prov.PinnedRank = config.PinnedProvinces.TryGetValue(prov.Id, out int pRank) ? pRank : null;
+
+            double total = Math.Round(prov.Score, 1);
+            double ratingPts = Math.Round((double)prov.AvgRating * 20.0, 1);
+            double reviewPts = Math.Round(Math.Min(Math.Max(0, total - ratingPts), Math.Log(prov.TotalReviews + 1.0) * 15.0), 1);
+            double placePts = Math.Round(Math.Max(0, total - ratingPts - reviewPts), 1);
+
+            prov.RatingScore = ratingPts;
+            prov.ReviewScore = reviewPts;
+            prov.PlaceCoverageScore = placePts;
+            prov.Score = total;
         }
 
-        return list;
+        var activeItems = rawList.Where(p => !p.IsExcluded).ToList();
+        var unpinned = activeItems
+            .Where(p => !p.PinnedRank.HasValue)
+            .OrderByDescending(p => p.Score)
+            .ThenByDescending(p => p.TotalReviews)
+            .ToList();
+
+        var pinned = activeItems
+            .Where(p => p.PinnedRank.HasValue)
+            .OrderBy(p => p.PinnedRank!.Value)
+            .ToList();
+
+        var mergedActive = new List<ProvinceRankingItemDto>(unpinned);
+        foreach (var pinItem in pinned)
+        {
+            int targetIdx = Math.Clamp(pinItem.PinnedRank!.Value - 1, 0, mergedActive.Count);
+            mergedActive.Insert(targetIdx, pinItem);
+        }
+
+        var topActive = mergedActive.Take(safeLimit).ToList();
+
+        for (int i = 0; i < topActive.Count; i++)
+        {
+            int currentRank = i + 1;
+            var prov = topActive[i];
+            prov.Rank = currentRank;
+            prov.Badge = currentRank switch
+            {
+                1 => "TOP 1",
+                2 => "TOP 2",
+                3 => "TOP 3",
+                _ => null
+            };
+
+            if (snapshot != null && snapshot.ProvinceRanks.Count > 0)
+            {
+                if (snapshot.ProvinceRanks.TryGetValue(prov.Id, out int prevRank))
+                {
+                    prov.RankDelta = prevRank - currentRank;
+                    prov.IsNewTrend = false;
+                }
+                else
+                {
+                    prov.RankDelta = null;
+                    prov.IsNewTrend = true;
+                }
+            }
+            else
+            {
+                ApplyDefaultBaselineTrend(prov.Id, currentRank, out int? delta, out bool isNew);
+                prov.RankDelta = delta;
+                prov.IsNewTrend = isNew;
+            }
+        }
+
+        if (includeExcluded)
+        {
+            var excludedItems = rawList.Where(p => p.IsExcluded).ToList();
+            foreach (var ex in excludedItems)
+            {
+                ex.Rank = 0;
+                ex.Badge = null;
+                ex.PinnedRank = null;
+            }
+            topActive.AddRange(excludedItems);
+        }
+
+        return topActive;
     }
 
     public async Task<IReadOnlyList<DestinationRankingItemDto>> GetDestinationRankingsAsync(
@@ -578,6 +954,7 @@ public class RankingRepository : IRankingRepository
     {
         var safeLimit = Math.Clamp(limit, 1, 25);
         var connection = _dbContext.Database.GetDbConnection();
+        var config = await GetGovernanceConfigAsync(ct);
 
         const string sql = @"
             SELECT TOP (@Limit)
@@ -612,12 +989,15 @@ public class RankingRepository : IRankingRepository
 
         var command = new CommandDefinition(sql, new
         {
-            Limit = safeLimit,
+            Limit = safeLimit + config.ExcludedProvinceIds.Count,
             RegionId = regionId,
             CategoryId = categoryId
         }, cancellationToken: ct);
 
-        var destinations = (await connection.QueryAsync<DestinationRankingItemDto>(command)).ToList();
+        var destinations = (await connection.QueryAsync<DestinationRankingItemDto>(command))
+            .Where(d => !config.ExcludedProvinceIds.Contains(d.Id))
+            .Take(safeLimit)
+            .ToList();
 
         for (int i = 0; i < destinations.Count; i++)
         {

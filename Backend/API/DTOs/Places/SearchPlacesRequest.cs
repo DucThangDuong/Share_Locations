@@ -16,7 +16,7 @@ public class SearchPlacesRequest
     public List<int>? PlaceTypeIds { get; set; }
     public decimal? MinPrice { get; set; }
     public decimal? MaxPrice { get; set; }
-    public decimal? MinRating { get; set; }
+    public string? MinRating { get; set; }
     public string? SortBy { get; set; }
     public int Page { get; set; } = 1;
     public int PageSize { get; set; } = 12;
@@ -45,8 +45,15 @@ public class SearchPlacesRequestValidator : Validator<SearchPlacesRequest>
             .WithMessage("Giá tối đa không được âm.");
 
         RuleFor(x => x.MinRating)
-            .InclusiveBetween(1.0m, 5.0m)
-            .When(x => x.MinRating.HasValue)
+            .Must(val =>
+            {
+                if (string.IsNullOrWhiteSpace(val)) return true;
+                var cleaned = val.Trim().Replace(',', '.');
+                if (!decimal.TryParse(cleaned, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var r))
+                    return false;
+                return r >= 1.0m && r <= 5.0m;
+            })
+            .When(x => !string.IsNullOrWhiteSpace(x.MinRating))
             .WithMessage("Đánh giá sao tối thiểu phải từ 1.0 đến 5.0.");
     }
 }

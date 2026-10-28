@@ -98,7 +98,9 @@ public class RecommendedFoodDto
     public decimal? MinPrice { get; set; }
     public decimal? MaxPrice { get; set; }
     public long MatchedPlaceId { get; set; }
-    public string MatchedPlaceName { get; set; } = string.Empty;
+    public string? MatchedPlaceName { get; set; }
+    public string? MatchedPlaceAddress { get; set; }
+    public decimal? MatchedPlaceRating { get; set; }
     public double PlaceMatchPercentage { get; set; }
 }
 

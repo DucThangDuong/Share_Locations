@@ -134,7 +134,11 @@ public class AdminReportRepository : IAdminReportRepository
                 pr.Reason AS ReasonContent,
                 pr.Reason AS Description,
                 pr.CreatedAt AS SubmittedAt,
-                CAST(pr.Status AS INT) AS Status
+                CAST(pr.Status AS INT) AS Status,
+                p.Id AS PlaceId,
+                p.Name AS PlaceName,
+                p.Address AS PlaceSubtitle,
+                p.CoverImageUrl AS PlaceImage
             FROM dbo.PlaceReports pr
             LEFT JOIN dbo.Places p ON pr.PlaceId = p.Id
             WHERE pr.ReporterId = @UserId
@@ -151,7 +155,11 @@ public class AdminReportRepository : IAdminReportRepository
                 rr.Reason AS ReasonContent,
                 rr.Reason AS Description,
                 rr.CreatedAt AS SubmittedAt,
-                CAST(rr.Status AS INT) AS Status
+                CAST(rr.Status AS INT) AS Status,
+                p.Id AS PlaceId,
+                p.Name AS PlaceName,
+                p.Address AS PlaceSubtitle,
+                p.CoverImageUrl AS PlaceImage
             FROM dbo.ReviewReports rr
             LEFT JOIN dbo.Reviews r ON rr.ReviewId = r.Id
             LEFT JOIN dbo.Places p ON r.PlaceId = p.Id
@@ -164,13 +172,20 @@ public class AdminReportRepository : IAdminReportRepository
                 CONCAT('REP-C', cr.Id) AS CodeId,
                 'comment' AS TargetType,
                 cr.CommentId AS TargetId,
-                N'Bình luận' AS TargetTitle,
-                NULL AS TargetSubtitle,
+                CONCAT(N'Bình luận tại ', COALESCE(p.Name, N'địa điểm')) AS TargetTitle,
+                p.Name AS TargetSubtitle,
                 cr.Reason AS ReasonContent,
                 cr.Reason AS Description,
                 cr.CreatedAt AS SubmittedAt,
-                CAST(cr.Status AS INT) AS Status
+                CAST(cr.Status AS INT) AS Status,
+                p.Id AS PlaceId,
+                p.Name AS PlaceName,
+                p.Address AS PlaceSubtitle,
+                p.CoverImageUrl AS PlaceImage
             FROM dbo.CommentReports cr
+            LEFT JOIN dbo.Comments c ON cr.CommentId = c.Id
+            LEFT JOIN dbo.Reviews r ON c.ReviewId = r.Id
+            LEFT JOIN dbo.Places p ON r.PlaceId = p.Id
             WHERE cr.ReporterId = @UserId
 
             UNION ALL
@@ -185,7 +200,11 @@ public class AdminReportRepository : IAdminReportRepository
                 br.Reason AS ReasonContent,
                 br.Reason AS Description,
                 br.CreatedAt AS SubmittedAt,
-                CAST(br.Status AS INT) AS Status
+                CAST(br.Status AS INT) AS Status,
+                CAST(NULL AS BIGINT) AS PlaceId,
+                CAST(NULL AS NVARCHAR(255)) AS PlaceName,
+                CAST(NULL AS NVARCHAR(255)) AS PlaceSubtitle,
+                CAST(NULL AS NVARCHAR(500)) AS PlaceImage
             FROM dbo.BlogReports br
             LEFT JOIN dbo.Blogs b ON br.BlogId = b.Id
             WHERE br.ReporterId = @UserId
@@ -220,6 +239,10 @@ public class AdminReportRepository : IAdminReportRepository
                     p.Address AS TargetSubtitle,
                     p.Description AS TargetContent,
                     p.CoverImageUrl AS TargetImage,
+                    p.Id AS PlaceId,
+                    p.Name AS PlaceName,
+                    p.Address AS PlaceSubtitle,
+                    p.CoverImageUrl AS PlaceImage,
                     pr.ReporterId,
                     COALESCE(prof.FullName, u.Email, N'Người dùng') AS ReporterName,
                     prof.AvatarUrl AS ReporterAvatar,
@@ -261,7 +284,11 @@ public class AdminReportRepository : IAdminReportRepository
                     CONCAT(N'Đánh giá tại ', p.Name) AS TargetTitle,
                     CONCAT(p.Name, N' • ', prov.Name) AS TargetSubtitle,
                     r.Content AS TargetContent,
-                    NULL AS TargetImage,
+                    p.CoverImageUrl AS TargetImage,
+                    p.Id AS PlaceId,
+                    p.Name AS PlaceName,
+                    CONCAT(p.Name, N' • ', prov.Name) AS PlaceSubtitle,
+                    p.CoverImageUrl AS PlaceImage,
                     rr.ReporterId,
                     COALESCE(prof.FullName, u.Email, N'Người dùng') AS ReporterName,
                     prof.AvatarUrl AS ReporterAvatar,
@@ -301,10 +328,14 @@ public class AdminReportRepository : IAdminReportRepository
                     CONCAT('REP-C', cr.Id) AS CodeId,
                     'comment' AS TargetType,
                     cr.CommentId AS TargetId,
-                    N'Bình luận' AS TargetTitle,
-                    NULL AS TargetSubtitle,
+                    CONCAT(N'Bình luận tại ', COALESCE(p.Name, N'địa điểm')) AS TargetTitle,
+                    CONCAT(p.Name, N' • ', prov.Name) AS TargetSubtitle,
                     c.Content AS TargetContent,
-                    NULL AS TargetImage,
+                    p.CoverImageUrl AS TargetImage,
+                    p.Id AS PlaceId,
+                    p.Name AS PlaceName,
+                    CONCAT(p.Name, N' • ', prov.Name) AS PlaceSubtitle,
+                    p.CoverImageUrl AS PlaceImage,
                     cr.ReporterId,
                     COALESCE(prof.FullName, u.Email, N'Người dùng') AS ReporterName,
                     prof.AvatarUrl AS ReporterAvatar,
@@ -345,6 +376,10 @@ public class AdminReportRepository : IAdminReportRepository
                     NULL AS TargetSubtitle,
                     b.Excerpt AS TargetContent,
                     b.CoverImageUrl AS TargetImage,
+                    CAST(NULL AS BIGINT) AS PlaceId,
+                    CAST(NULL AS NVARCHAR(255)) AS PlaceName,
+                    CAST(NULL AS NVARCHAR(255)) AS PlaceSubtitle,
+                    CAST(NULL AS NVARCHAR(500)) AS PlaceImage,
                     br.ReporterId,
                     COALESCE(prof.FullName, u.Email, N'Người dùng') AS ReporterName,
                     prof.AvatarUrl AS ReporterAvatar,
@@ -477,8 +512,13 @@ public class AdminReportRepository : IAdminReportRepository
                     TargetTitle = first.TargetTitle,
                     TargetSubtitle = first.TargetSubtitle,
                     TargetContent = first.TargetContent,
+                    TargetImage = first.TargetImage,
                     Province = first.Province,
                     Category = first.Category,
+                    PlaceId = first.PlaceId,
+                    PlaceName = first.PlaceName,
+                    PlaceSubtitle = first.PlaceSubtitle,
+                    PlaceImage = first.PlaceImage,
                     ReportsCount = g.Count(),
                     HighestPriority = g.Any(x => x.Priority == "urgent") ? "urgent" : (g.Any(x => x.Priority == "high") ? "high" : "normal"),
                     HasUnresolvedUrgent = g.Any(x => x.Priority == "urgent" && x.Status == 0),

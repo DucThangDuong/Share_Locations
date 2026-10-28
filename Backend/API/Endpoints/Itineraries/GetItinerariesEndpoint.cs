@@ -24,7 +24,7 @@ public class GetItinerariesEndpoint : Endpoint<GetItinerariesRequest, ApiSuccess
         Summary(s =>
         {
             s.Summary = "Lấy danh sách lịch trình du lịch công khai";
-            s.Description = "Lấy danh sách các lịch trình du lịch gợi ý công khai kèm tìm kiếm theo tên/từ khóa, thời lượng chuyến đi và phân trang.";
+            s.Description = "Lấy danh sách các lịch trình du lịch gợi ý công khai kèm tìm kiếm theo điểm đến (destination), thời lượng (duration), khoảng giá (budget), từ khóa (keyword/q) và phân trang.";
         });
     }
 
@@ -38,8 +38,10 @@ public class GetItinerariesEndpoint : Endpoint<GetItinerariesRequest, ApiSuccess
 
         var filterParams = new ItineraryFilterParams
         {
-            Keyword = req.Keyword,
+            Destination = req.Destination,
             Duration = req.Duration,
+            Budget = req.Budget,
+            Keyword = req.GetEffectiveKeyword(),
             Page = req.Page,
             PageSize = req.PageSize,
             UserId = currentUserId
@@ -47,6 +49,6 @@ public class GetItinerariesEndpoint : Endpoint<GetItinerariesRequest, ApiSuccess
 
         var result = await Mediator.Send(new GetItinerariesQuery(filterParams), ct);
 
-        await this.SendApiResponseAsync(result, ct);
+        await this.SendPagedApiResponseAsync(result, ct);
     }
 }

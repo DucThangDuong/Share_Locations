@@ -185,6 +185,10 @@ export interface AdminReportItem {
   resolutionNote?: string;
   province: string;
   category: string;
+  placeId?: number;
+  placeName?: string;
+  placeSubtitle?: string;
+  placeImage?: string;
 }
 
 export interface GroupedReport {
@@ -206,6 +210,10 @@ export interface GroupedReport {
   assignedAdminName?: string;
   hasUnresolvedUrgent: boolean;
   status: 0 | 1 | 2;
+  placeId?: number;
+  placeName?: string;
+  placeSubtitle?: string;
+  placeImage?: string;
 }
 
 export interface AdminFoodItem {
@@ -230,6 +238,7 @@ export interface AdminFoodItem {
   status?: "active" | "hidden";
   statusNum?: number;
   placesCount?: number;
+  places?: { id: number; name: string; coverImageUrl?: string }[];
 }
 
 export interface AdminBlogItem {
@@ -261,8 +270,11 @@ export interface AdminAuditLogItem {
   adminEmail: string;
   adminAvatar: string | null;
   actorRoleCode: "SystemAdmin" | "CategoryAdmin" | string;
+  actorRoleName?: string;
   actionType: string;
+  actionTypeName?: string;
   targetTable: string;
+  targetTableName?: string;
   targetId: number;
   targetName: string;
   actionStatus: number;

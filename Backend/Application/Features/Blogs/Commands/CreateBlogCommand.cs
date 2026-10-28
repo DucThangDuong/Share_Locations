@@ -1,4 +1,5 @@
 using Application.Common;
+using Application.Common.Interfaces;
 using Application.DTOs;
 using Domain.Entities;
 using Domain.Enums;
@@ -12,10 +13,14 @@ public record CreateBlogCommand(long UserId, CreateBlogRequestDto Dto) : IReques
 public class CreateBlogCommandHandler : IRequestHandler<CreateBlogCommand, Result<UserBlogItemDto>>
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IReputationService? _reputationService;
 
-    public CreateBlogCommandHandler(IUnitOfWork unitOfWork)
+    public CreateBlogCommandHandler(
+        IUnitOfWork unitOfWork,
+        IReputationService? reputationService = null)
     {
         _unitOfWork = unitOfWork;
+        _reputationService = reputationService;
     }
 
     public async Task<Result<UserBlogItemDto>> Handle(CreateBlogCommand request, CancellationToken ct)
@@ -42,6 +47,16 @@ public class CreateBlogCommandHandler : IRequestHandler<CreateBlogCommand, Resul
 
         await _unitOfWork.Blogs.AddAsync(blog, ct);
         await _unitOfWork.SaveChangesAsync(ct);
+
+        if (_reputationService != null && blog.Status == BlogStatus.Published)
+        {
+            await _reputationService.AwardPointsAsync(
+                request.UserId,
+                ReputationActionType.BlogPublished,
+                blog.Id,
+                $"Xuất bản bài viết blog '{blog.Title}'",
+                ct);
+        }
 
         var responseDto = new UserBlogItemDto
         {

@@ -26,15 +26,17 @@ import type {
 import { adminService } from "@/services/adminService";
 import { CustomSelect } from "@/components/common/CustomSelect";
 
-interface ActionMeta {
+export interface ActionMeta {
   label: string;
   category: string;
   color: "emerald" | "rose" | "amber" | "sky" | "purple" | "slate";
 }
 
-const ACTION_TYPE_MAP: Record<string, ActionMeta> = {
+export const ACTION_TYPE_MAP: Record<string, ActionMeta> = {
   ASSIGN_SCOPES: { label: "Phân quyền quản lý", category: "Users", color: "purple" },
+  CHANGE_USER_ROLE: { label: "Phân quyền vai trò", category: "Users", color: "purple" },
   ACTIVATE_USER: { label: "Mở khóa tài khoản", category: "Users", color: "emerald" },
+  UNLOCK_USER: { label: "Mở khóa tài khoản", category: "Users", color: "emerald" },
   LOCK_USER: { label: "Khóa tài khoản", category: "Users", color: "rose" },
 
   APPROVE_PROPOSAL: { label: "Phê duyệt đề xuất", category: "Proposals", color: "emerald" },
@@ -49,6 +51,8 @@ const ACTION_TYPE_MAP: Record<string, ActionMeta> = {
   DELETE_COMMENT: { label: "Xóa bình luận", category: "Comments", color: "rose" },
 
   CREATE_PLACE: { label: "Tạo mới địa điểm", category: "Places", color: "emerald" },
+  APPROVE_PLACE: { label: "Duyệt công khai địa điểm", category: "Places", color: "emerald" },
+  REJECT_PLACE: { label: "Từ chối duyệt địa điểm", category: "Places", color: "rose" },
   UPDATE_PLACE: { label: "Cập nhật địa điểm", category: "Places", color: "sky" },
   UPDATE_PLACE_STATUS: { label: "Đổi trạng thái địa điểm", category: "Places", color: "amber" },
   DELETE_PLACE: { label: "Xóa địa điểm", category: "Places", color: "rose" },
@@ -67,25 +71,126 @@ const ACTION_TYPE_MAP: Record<string, ActionMeta> = {
   DELETE_BLOG: { label: "Xóa bài viết", category: "Blogs", color: "rose" },
 
   CREATE_COLLECTION: { label: "Tạo bộ sưu tập", category: "Collections", color: "emerald" },
+  UPDATE_COLLECTION: { label: "Cập nhật bộ sưu tập", category: "Collections", color: "sky" },
   UPDATE_COLLECTION_PLACES: { label: "Cập nhật địa điểm BST", category: "Collections", color: "sky" },
   UPDATE_COLLECTION_STATUS: { label: "Đổi trạng thái BST", category: "Collections", color: "amber" },
+  DELETE_COLLECTION: { label: "Xóa bộ sưu tập", category: "Collections", color: "rose" },
+
+  CREATE_TRIP: { label: "Tạo lịch trình chuyến đi", category: "Trips", color: "emerald" },
+  UPDATE_TRIP: { label: "Cập nhật lịch trình", category: "Trips", color: "sky" },
+  UPDATE_TRIP_STATUS: { label: "Đổi trạng thái lịch trình", category: "Trips", color: "amber" },
+  DELETE_TRIP: { label: "Xóa lịch trình chuyến đi", category: "Trips", color: "rose" },
+
+  CREATE_PLACE_TYPE: { label: "Thêm loại địa điểm", category: "PlaceTypes", color: "emerald" },
+  UPDATE_PLACE_TYPE: { label: "Cập nhật loại địa điểm", category: "PlaceTypes", color: "sky" },
+  CHANGE_PLACE_TYPE_STATUS: { label: "Đổi trạng thái loại địa điểm", category: "PlaceTypes", color: "amber" },
+  DELETE_PLACE_TYPE: { label: "Xóa loại địa điểm", category: "PlaceTypes", color: "rose" },
+
+  CREATE_CATEGORY: { label: "Thêm danh mục", category: "Categories", color: "emerald" },
+  UPDATE_CATEGORY: { label: "Cập nhật danh mục", category: "Categories", color: "sky" },
+  CHANGE_CATEGORY_STATUS: { label: "Đổi trạng thái danh mục", category: "Categories", color: "amber" },
+  DELETE_CATEGORY: { label: "Xóa danh mục", category: "Categories", color: "rose" },
+
+  CREATE_REGION: { label: "Thêm vùng miền", category: "Regions", color: "emerald" },
+  UPDATE_REGION: { label: "Cập nhật vùng miền", category: "Regions", color: "sky" },
+  CHANGE_REGION_STATUS: { label: "Đổi trạng thái vùng miền", category: "Regions", color: "amber" },
+  DELETE_REGION: { label: "Xóa vùng miền", category: "Regions", color: "rose" },
+
+  CREATE_PROVINCE: { label: "Thêm tỉnh thành", category: "Provinces", color: "emerald" },
+  UPDATE_PROVINCE: { label: "Cập nhật tỉnh thành", category: "Provinces", color: "sky" },
+  UPDATE_PROVINCE_IMAGE: { label: "Cập nhật ảnh tỉnh thành", category: "Provinces", color: "sky" },
+  CHANGE_PROVINCE_STATUS: { label: "Đổi trạng thái tỉnh thành", category: "Provinces", color: "amber" },
+  DELETE_PROVINCE: { label: "Xóa tỉnh thành", category: "Provinces", color: "rose" },
+
+  CREATE_REPORT_TYPE: { label: "Thêm lý do báo cáo", category: "ReportTypes", color: "emerald" },
+  UPDATE_REPORT_TYPE: { label: "Cập nhật lý do báo cáo", category: "ReportTypes", color: "sky" },
+  CHANGE_REPORT_TYPE_STATUS: { label: "Đổi trạng thái lý do báo cáo", category: "ReportTypes", color: "amber" },
+  DELETE_REPORT_TYPE: { label: "Xóa lý do báo cáo", category: "ReportTypes", color: "rose" },
+
+  UPDATE_SYSTEM_SETTING: { label: "Cập nhật tham số hệ thống", category: "SystemSettings", color: "purple" },
+  BATCH_UPDATE_SYSTEM_SETTINGS: { label: "Cập nhật cấu hình hệ thống", category: "SystemSettings", color: "purple" },
 };
 
-const TARGET_TABLES = [
+export const getActionMeta = (
+  actionType?: string,
+  actionTypeName?: string,
+  targetTable?: string
+): ActionMeta => {
+  const raw = (actionType || "").trim();
+  if (ACTION_TYPE_MAP[raw]) return ACTION_TYPE_MAP[raw];
+  const upper = raw.toUpperCase();
+  if (ACTION_TYPE_MAP[upper]) return ACTION_TYPE_MAP[upper];
+
+  let color: ActionMeta["color"] = "slate";
+  if (
+    upper.startsWith("CREATE_") ||
+    upper.startsWith("ADD_") ||
+    upper.startsWith("APPROVE_") ||
+    upper.startsWith("ACTIVATE_") ||
+    upper.startsWith("UNLOCK_") ||
+    raw.startsWith("Thêm") ||
+    raw.startsWith("Tạo") ||
+    raw.startsWith("Duyệt") ||
+    raw.startsWith("Mở khóa")
+  ) {
+    color = "emerald";
+  } else if (
+    upper.startsWith("CHANGE_") ||
+    upper.startsWith("RESOLVE_") ||
+    upper.endsWith("_STATUS") ||
+    raw.startsWith("Đổi trạng thái") ||
+    raw.startsWith("Xử lý")
+  ) {
+    color = "amber";
+  } else if (
+    upper.startsWith("UPDATE_") ||
+    upper.startsWith("BATCH_UPDATE_") ||
+    raw.startsWith("Cập nhật") ||
+    raw.startsWith("Đổi ảnh")
+  ) {
+    color = "sky";
+  } else if (
+    upper.startsWith("DELETE_") ||
+    upper.startsWith("REJECT_") ||
+    upper.startsWith("LOCK_") ||
+    raw.startsWith("Xóa") ||
+    raw.startsWith("Từ chối") ||
+    raw.startsWith("Khóa")
+  ) {
+    color = "rose";
+  } else if (upper.startsWith("ASSIGN_") || raw.startsWith("Phân quyền")) {
+    color = "purple";
+  }
+
+  return {
+    label: actionTypeName && actionTypeName !== raw ? actionTypeName : raw || "Thao tác hệ thống",
+    category: targetTable || "",
+    color,
+  };
+};
+
+export const TARGET_TABLES = [
   { value: "all", label: "Tất cả phân hệ" },
   { value: "Places", label: "Địa điểm (Places)" },
   { value: "Proposals", label: "Đề xuất (Proposals)" },
+  { value: "Reports", label: "Báo cáo vi phạm (Reports)" },
   { value: "Reviews", label: "Đánh giá (Reviews)" },
   { value: "Comments", label: "Bình luận (Comments)" },
   { value: "Foods", label: "Món ăn đặc sản (Foods)" },
   { value: "Blogs", label: "Cẩm nang (Blogs)" },
   { value: "Collections", label: "Bộ sưu tập (Collections)" },
+  { value: "Trips", label: "Chuyến đi (Trips)" },
   { value: "Users", label: "Người dùng (Users)" },
+  { value: "PlaceTypes", label: "Loại địa điểm (PlaceTypes)" },
+  { value: "Categories", label: "Danh mục (Categories)" },
+  { value: "Regions", label: "Vùng miền (Regions)" },
+  { value: "Provinces", label: "Tỉnh thành (Provinces)" },
+  { value: "ReportTypes", label: "Lý do báo cáo (ReportTypes)" },
+  { value: "SystemSettings", label: "Cài đặt hệ thống (SystemSettings)" },
   { value: "PlaceMedia", label: "Thư viện ảnh (PlaceMedia)" },
-  { value: "Reports", label: "Báo cáo vi phạm (Reports)" },
 ];
 
-const getBadgeStyle = (color: ActionMeta["color"]) => {
+export const getBadgeStyle = (color: ActionMeta["color"]) => {
   switch (color) {
     case "emerald":
       return "bg-emerald-50 text-emerald-700 border-emerald-200/80";
@@ -102,7 +207,7 @@ const getBadgeStyle = (color: ActionMeta["color"]) => {
   }
 };
 
-const formatDateTime = (dateStr: string) => {
+export const formatDateTime = (dateStr: string) => {
   if (!dateStr) return "—";
   try {
     const d = new Date(dateStr);
@@ -416,11 +521,7 @@ export const AuditLogsTab: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {logs.map((log) => {
-                  const meta = ACTION_TYPE_MAP[log.actionType] || {
-                    label: log.actionType,
-                    category: log.targetTable,
-                    color: "slate",
-                  };
+                  const meta = getActionMeta(log.actionType, log.actionTypeName, log.targetTable);
                   const isSystemAdmin =
                     log.actorRoleCode === "SystemAdmin" || log.actorRoleCode === "1";
 
@@ -582,10 +683,10 @@ export const AuditLogsTab: React.FC = () => {
                     {detailLog && (
                       <span
                         className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border ${getBadgeStyle(
-                          ACTION_TYPE_MAP[detailLog.actionType]?.color || "slate"
+                          getActionMeta(detailLog.actionType, detailLog.actionTypeName, detailLog.targetTable).color
                         )}`}
                       >
-                        {ACTION_TYPE_MAP[detailLog.actionType]?.label || detailLog.actionType}
+                        {getActionMeta(detailLog.actionType, detailLog.actionTypeName, detailLog.targetTable).label}
                       </span>
                     )}
                   </div>
