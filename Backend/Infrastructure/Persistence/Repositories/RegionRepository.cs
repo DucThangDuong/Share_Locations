@@ -576,7 +576,7 @@ public class RegionRepository : IRegionRepository
             INNER JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id
             INNER JOIN dbo.Users u ON rev.UserId = u.Id
             LEFT JOIN dbo.UserProfiles up ON u.Id = up.UserId
-            WHERE prov.RegionId = @RegionId AND rev.Status = 1 AND p.Status = 1 AND p.IsDeleted = 0
+            WHERE prov.RegionId = @RegionId AND rev.Status <> 0 AND p.Status = 1 AND p.IsDeleted = 0
             ORDER BY rev.CreatedAt DESC;";
 
         var reviewRows = (await connection.QueryAsync(reviewsSql, new { RegionId = regionId })).ToList();

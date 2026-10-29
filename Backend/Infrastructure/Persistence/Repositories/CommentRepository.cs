@@ -24,14 +24,14 @@ public class CommentRepository : ICommentRepository
         return await _dbContext.Comments
             .Include(c => c.User)
                 .ThenInclude(u => u.Profile)
-            .FirstOrDefaultAsync(c => c.Id == id && c.Status == CommentStatus.Active, ct);
+            .FirstOrDefaultAsync(c => c.Id == id && c.Status != CommentStatus.Hidden, ct);
     }
 
     public async Task<IReadOnlyList<Comment>> GetByReviewIdAsync(long reviewId, bool includeHidden = false, CancellationToken ct = default)
     {
         return await _dbContext.Comments
             .AsNoTracking()
-            .Where(c => c.ReviewId == reviewId && (includeHidden || c.Status == CommentStatus.Active))
+            .Where(c => c.ReviewId == reviewId && (includeHidden || c.Status != CommentStatus.Hidden))
             .Include(c => c.User)
                 .ThenInclude(u => u.Profile)
             .OrderBy(c => c.CreatedAt)
@@ -51,7 +51,7 @@ public class CommentRepository : ICommentRepository
     public async Task HideByReviewIdAsync(long reviewId, CancellationToken ct = default)
     {
         var comments = await _dbContext.Comments
-            .Where(c => c.ReviewId == reviewId && c.Status == CommentStatus.Active)
+            .Where(c => c.ReviewId == reviewId && c.Status != CommentStatus.Hidden)
             .ToListAsync(ct);
 
         foreach (var comment in comments)
@@ -66,7 +66,7 @@ public class CommentRepository : ICommentRepository
         if (parent == null) return;
 
         var comments = await _dbContext.Comments
-            .Where(c => c.ReviewId == parent.ReviewId && c.Status == CommentStatus.Active)
+            .Where(c => c.ReviewId == parent.ReviewId && c.Status != CommentStatus.Hidden)
             .ToListAsync(ct);
 
         var lookup = comments.ToLookup(c => c.ParentId);

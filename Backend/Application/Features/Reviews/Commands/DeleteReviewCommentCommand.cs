@@ -33,7 +33,7 @@ public class DeleteReviewCommentCommandHandler : IRequestHandler<DeleteReviewCom
 
         await _unitOfWork.ExecuteInTransactionAsync(async () =>
         {
-            comment.Hide();
+            comment.Hide(request.UserId);
             _unitOfWork.Comments.Update(comment);
             await _unitOfWork.Comments.HideRepliesAsync(request.CommentId, ct);
 

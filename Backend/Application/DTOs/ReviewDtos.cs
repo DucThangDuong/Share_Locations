@@ -42,6 +42,15 @@ public class ReviewItemDto
 
     [JsonPropertyName("status")]
     public string Status { get; set; } = "active";
+
+    [JsonPropertyName("hiddenReason")]
+    public string? HiddenReason { get; set; }
+
+    [JsonPropertyName("hiddenBy")]
+    public long? HiddenBy { get; set; }
+
+    [JsonPropertyName("hiddenAt")]
+    public DateTime? HiddenAt { get; set; }
 }
 
 public class ReviewLikeResponseDto
@@ -81,6 +90,15 @@ public class CommentDto
 
     [JsonPropertyName("status")]
     public string Status { get; set; } = "active";
+
+    [JsonPropertyName("hiddenReason")]
+    public string? HiddenReason { get; set; }
+
+    [JsonPropertyName("hiddenBy")]
+    public long? HiddenBy { get; set; }
+
+    [JsonPropertyName("hiddenAt")]
+    public DateTime? HiddenAt { get; set; }
 
     [JsonPropertyName("replies")]
     public List<CommentDto> Replies { get; set; } = [];

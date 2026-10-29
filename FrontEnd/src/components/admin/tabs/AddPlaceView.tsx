@@ -659,7 +659,6 @@ export const AddPlaceView: React.FC<AddPlaceViewProps> = ({
 
   return (
     <div className="space-y-6 pb-20 font-sans text-slate-900 animate-in fade-in duration-150">
-      {/* Header Bar */}
       <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <button
@@ -706,9 +705,7 @@ export const AddPlaceView: React.FC<AddPlaceViewProps> = ({
 
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Left Column: Form Fields */}
           <div className="lg:col-span-8 space-y-6">
-            {/* 1. Thông tin cơ bản */}
             <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-5">
               <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
                 <FileText className="w-4 h-4 text-emerald-700" />
@@ -871,7 +868,6 @@ export const AddPlaceView: React.FC<AddPlaceViewProps> = ({
               </div>
             </div>
 
-            {/* 2. Thông tin vị trí */}
             <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
                 <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
@@ -938,7 +934,6 @@ export const AddPlaceView: React.FC<AddPlaceViewProps> = ({
               </div>
             </div>
 
-            {/* 3. Thời gian & Giá cả */}
             <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-5">
               <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
                 <Clock className="w-4 h-4 text-emerald-700" />
@@ -1053,7 +1048,6 @@ export const AddPlaceView: React.FC<AddPlaceViewProps> = ({
               </div>
             </div>
 
-            {/* 4. Hình ảnh địa điểm */}
             <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-4">
               <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
                 <ImageIcon className="w-4 h-4 text-emerald-700" />
@@ -1147,7 +1141,6 @@ export const AddPlaceView: React.FC<AddPlaceViewProps> = ({
             </div>
 
 
-            {/* Bottom actions */}
             <div className="space-y-3">
               {errorMsg && (
                 <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium flex items-center gap-2 animate-in fade-in">
@@ -1198,9 +1191,7 @@ export const AddPlaceView: React.FC<AddPlaceViewProps> = ({
             </div>
           </div>
 
-          {/* Right Column: Live Preview & Guidelines */}
           <div className="lg:col-span-4 space-y-6 sticky top-6">
-            {/* Live Preview Card */}
             <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-4">
               <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
                 <Eye className="w-4 h-4 text-emerald-700" />
@@ -1295,7 +1286,6 @@ export const AddPlaceView: React.FC<AddPlaceViewProps> = ({
               </div>
             </div>
 
-            {/* Guidelines */}
             <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-3.5">
               <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
                 <ShieldCheck className="w-4 h-4 text-emerald-700" />

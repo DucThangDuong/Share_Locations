@@ -187,6 +187,8 @@ export const ReviewItemCard: React.FC<ReviewItemCardProps> = ({
             </div>
           )}
 
+
+
           <div className="flex items-center gap-1 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200/60">
             <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
             <span className="text-xs font-bold text-amber-900">{review.rating}</span>
@@ -199,6 +201,8 @@ export const ReviewItemCard: React.FC<ReviewItemCardProps> = ({
           {review.content}
         </p>
       )}
+
+
 
       {(hasPhotos || hasVideos) && (
         <div className="space-y-2 pt-1">

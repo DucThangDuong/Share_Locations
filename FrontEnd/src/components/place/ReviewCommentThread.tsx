@@ -71,8 +71,8 @@ export const ReviewCommentThread: React.FC<ReviewCommentThreadProps> = ({
       } else {
         setError(res.message || 'Không thể gửi bình luận.')
       }
-    } catch {
-      setError('Đã xảy ra lỗi khi gửi bình luận.')
+    } catch (err: any) {
+      setError(err?.response?.data?.message || err?.message || 'Đã xảy ra lỗi khi gửi bình luận.')
     } finally {
       setIsSubmitting(false)
     }
@@ -111,7 +111,8 @@ export const ReviewCommentThread: React.FC<ReviewCommentThreadProps> = ({
         return true
       }
       return false
-    } catch {
+    } catch (err: any) {
+      alert(err?.response?.data?.message || err?.message || 'Không thể gửi phản hồi.')
       return false
     }
   }
@@ -146,8 +147,8 @@ export const ReviewCommentThread: React.FC<ReviewCommentThreadProps> = ({
       }
       alert(res.message || 'Không thể cập nhật bình luận.')
       return false
-    } catch {
-      alert('Đã xảy ra lỗi khi cập nhật bình luận.')
+    } catch (err: any) {
+      alert(err?.response?.data?.message || err?.message || 'Đã xảy ra lỗi khi cập nhật bình luận.')
       return false
     }
   }

@@ -1,4 +1,4 @@
-﻿using Application.Common;
+using Application.Common;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
 using MediatR;
@@ -23,15 +23,16 @@ public class GetUserProposalsQueryHandler : IRequestHandler<GetUserProposalsQuer
 
     public async Task<Result<UserProposalPagedResultDto>> Handle(GetUserProposalsQuery request, CancellationToken ct)
     {
-        const int approvedStatus = 1;
+        bool isOwner = request.CurrentUserId.HasValue && request.CurrentUserId.Value == request.TargetUserId;
+        int? effectiveStatus = isOwner ? request.Status : 1;
 
         var result = await _repo.GetProposalsAsync(
             request.TargetUserId,
-            approvedStatus,
+            effectiveStatus,
             request.Page > 0 ? request.Page : 1,
             request.PageSize > 0 ? request.PageSize : 15,
             ct);
 
-        return Result<UserProposalPagedResultDto>.Success(result, "Lấy danh sách địa điểm đã duyệt thành công.");
+        return Result<UserProposalPagedResultDto>.Success(result, "Lấy danh sách đề xuất thành công.");
     }
 }

@@ -1,4 +1,4 @@
-﻿using Application.Common;
+using Application.Common;
 using Application.DTOs;
 using Domain.Enums;
 using Domain.Interfaces;
@@ -51,7 +51,7 @@ public class UpdateTripCommandHandler : IRequestHandler<UpdateTripCommand, Resul
         trip.UpdateInfo(dto.Title.Trim(), dto.Description?.Trim(), dto.CoverImageUrl?.Trim());
         trip.UpdateDates(dto.StartDate, dto.EndDate);
 
-        if (dto.Privacy.HasValue)
+        if (dto.Privacy.HasValue && dto.Privacy.Value != (byte)trip.Privacy)
         {
             if (!isOwner)
             {

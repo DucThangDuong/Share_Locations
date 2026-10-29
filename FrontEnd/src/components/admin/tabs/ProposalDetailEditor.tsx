@@ -749,7 +749,6 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
                 </div>
               </div>
             ) : status === 1 ? (
-              /* Đã duyệt */
               <div className="p-4 bg-emerald-50/70 border border-emerald-200 rounded-xl space-y-2">
                 <div className="flex items-center gap-2 text-emerald-900 font-bold text-xs">
                   <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
@@ -767,7 +766,6 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
                 )}
               </div>
             ) : (
-              /* Đã từ chối */
               <div className="p-4 bg-rose-50/70 border border-rose-200 rounded-xl space-y-2">
                 <div className="flex items-center gap-2 text-rose-900 font-bold text-xs">
                   <AlertTriangle size={16} className="text-rose-600 shrink-0" />

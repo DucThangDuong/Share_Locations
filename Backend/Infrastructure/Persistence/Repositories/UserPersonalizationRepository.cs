@@ -288,7 +288,7 @@ public class UserPersonalizationRepository : IUserPersonalizationRepository
                 p.Address AS PlaceAddress,
                 COUNT(1) OVER() AS TotalCount
             FROM dbo.Proposals pr
-            LEFT JOIN dbo.Places p ON pr.TargetPlaceId = p.Id AND p.IsDeleted = 0
+            LEFT JOIN dbo.Places p ON pr.TargetPlaceId = p.Id AND p.IsDeleted = 0 AND p.Status = 1
             LEFT JOIN dbo.Categories cat ON (pr.CategoryId IS NOT NULL AND pr.CategoryId = cat.Id)
                 OR (pr.CategoryId IS NULL AND JSON_VALUE(pr.ProposedDataJSON, '$.categoryId') = CAST(cat.Id AS NVARCHAR(10)))
             LEFT JOIN dbo.Categories pCat ON p.CategoryId = pCat.Id
@@ -297,7 +297,6 @@ public class UserPersonalizationRepository : IUserPersonalizationRepository
             LEFT JOIN dbo.Provinces pProv ON p.ProvinceId = pProv.Id
             WHERE pr.UserId = @UserId
               AND (@Status IS NULL OR pr.Status = @Status)
-              AND (pr.Status <> 1 OR COALESCE(pr.TargetPlaceId, p.Id) IS NOT NULL)
             ORDER BY pr.CreatedAt DESC
             OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 
@@ -525,11 +524,11 @@ public class UserPersonalizationRepository : IUserPersonalizationRepository
 
         const string countsSql = @"
             SELECT
-                (SELECT COUNT(1) FROM dbo.Reviews WHERE UserId = @TargetUserId AND Status = 1) AS ReviewCount,
+                (SELECT COUNT(1) FROM dbo.Reviews WHERE UserId = @TargetUserId AND Status <> 0) AS ReviewCount,
                 (SELECT COUNT(1) FROM dbo.VisitLogs WHERE UserId = @TargetUserId AND (@IsCurrentUser = 1 OR Privacy = 0)) AS VisitLogCount,
                 (SELECT COUNT(1) FROM dbo.Trips t WHERE (t.UserId = @TargetUserId OR EXISTS (SELECT 1 FROM dbo.TripMembers tm WHERE tm.TripId = t.Id AND tm.UserId = @TargetUserId)) AND (@IsCurrentUser = 1 OR t.Privacy = 0)) AS TripCount,
                 (SELECT COUNT(1) FROM dbo.Blogs WHERE AuthorId = @TargetUserId AND (@IsCurrentUser = 1 OR Status = 1)) AS BlogCount,
-                (SELECT COUNT(1) FROM dbo.Proposals WHERE UserId = @TargetUserId AND Status = 1) AS ProposalCount;";
+                (SELECT COUNT(1) FROM dbo.Proposals pr INNER JOIN dbo.Places p ON pr.TargetPlaceId = p.Id WHERE pr.UserId = @TargetUserId AND pr.Status = 1 AND p.IsDeleted = 0 AND p.Status = 1) AS ProposalCount;";
 
         var counts = await connection.QuerySingleAsync(countsSql, new
         {
@@ -643,12 +642,12 @@ public class UserPersonalizationRepository : IUserPersonalizationRepository
                 NULL AS Rating,
                 CONVERT(NVARCHAR(10), pr.CreatedAt, 23) AS [Date]
             FROM dbo.Proposals pr
-            LEFT JOIN dbo.Places p ON pr.TargetPlaceId = p.Id AND p.IsDeleted = 0
+            INNER JOIN dbo.Places p ON pr.TargetPlaceId = p.Id AND p.IsDeleted = 0 AND p.Status = 1
             LEFT JOIN dbo.Categories cat ON pr.CategoryId = cat.Id
             LEFT JOIN dbo.Provinces prov ON pr.ProvinceId = prov.Id
             WHERE pr.UserId = @TargetUserId
               AND pr.Status = 1
-              AND (COALESCE(p.Latitude, TRY_CAST(JSON_VALUE(pr.ProposedDataJSON, '$.latitude') AS FLOAT), TRY_CAST(JSON_VALUE(pr.ProposedDataJSON, '$.Latitude') AS FLOAT)) IS NOT NULL)
+              AND p.Latitude IS NOT NULL
 
             ORDER BY [Date] DESC;";
 
@@ -729,7 +728,7 @@ public class UserPersonalizationRepository : IUserPersonalizationRepository
             INNER JOIN dbo.Places p ON r.PlaceId = p.Id
             LEFT JOIN dbo.Categories cat ON p.CategoryId = cat.Id
             LEFT JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id
-            WHERE r.UserId = @UserId AND r.Status = 1 AND p.Status = 1 AND p.IsDeleted = 0
+            WHERE r.UserId = @UserId AND r.Status <> 0 AND p.Status = 1 AND p.IsDeleted = 0
             {orderByClause}
             OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 
@@ -818,7 +817,7 @@ public class UserPersonalizationRepository : IUserPersonalizationRepository
             LEFT JOIN dbo.Comments parent ON c.ParentId = parent.Id
             LEFT JOIN dbo.Users pu ON parent.UserId = pu.Id
             LEFT JOIN dbo.UserProfiles pup ON pu.Id = pup.UserId
-            WHERE c.UserId = @UserId AND c.Status = 1 AND r.Status = 1 AND p.Status = 1 AND p.IsDeleted = 0
+            WHERE c.UserId = @UserId AND c.Status <> 0 AND r.Status <> 0 AND p.Status = 1 AND p.IsDeleted = 0
             ORDER BY c.CreatedAt DESC
             OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 

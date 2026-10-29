@@ -255,6 +255,14 @@ export const ItineraryPlannerToolbar: React.FC<ItineraryPlannerToolbarProps> = (
                 <Send size={13} />
                 <span>Công bố chuyến đi</span>
               </button>
+            ) : roleLower === 'editor' ? (
+              <span
+                className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1.5 select-none"
+                title="Bạn có quyền chỉnh sửa lịch trình chuyến đi này"
+              >
+                <Pencil size={12} className="text-blue-600" />
+                <span>Quyền chỉnh sửa</span>
+              </span>
             ) : (
               <span
                 className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-slate-100 text-slate-600 border border-slate-200 flex items-center gap-1.5 select-none"

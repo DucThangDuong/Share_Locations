@@ -15,6 +15,9 @@ import {
   ArrowLeft,
   Save,
   Upload,
+  Lock,
+  Unlock,
+  ArrowUpRight,
 } from "lucide-react";
 import { adminService, extractList } from "@/services/adminService";
 import { CustomSelect } from "@/components/common/CustomSelect";
@@ -31,7 +34,9 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [activeSubTab, setActiveSubTab] = useState<"categories" | "placeTypes">("categories");
+  const [activeSubTab, setActiveSubTab] = useState<"placeTypes" | "categories">("placeTypes");
+  const [isCategorySlugLocked, setIsCategorySlugLocked] = useState(true);
+  const [isPlaceTypeSlugLocked, setIsPlaceTypeSlugLocked] = useState(true);
 
   const [placeTypes, setPlaceTypes] = useState<AdminCatalogPlaceTypeItem[]>([]);
   const [isPlaceTypesLoading, setIsPlaceTypesLoading] = useState(false);
@@ -167,6 +172,8 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
       const param = pathMatch[1];
       if (param === "new") {
         setDetailView({ type: "category", mode: "create" });
+        setIsCategorySlugLocked(false);
+        setActiveSubTab("categories");
         setCategoryForm({
           placeTypeId: placeTypes[0]?.id || 1,
           name: "",
@@ -181,6 +188,8 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
         const catId = Number(param);
         const found = categories.find((c) => c.id === catId);
         setDetailView({ type: "category", mode: "edit", id: catId });
+        setIsCategorySlugLocked(true);
+        setActiveSubTab("categories");
         setCategoryImageFile(null);
         setCategoryPreviewUrl("");
         if (found) {
@@ -304,6 +313,8 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
     setCategoryPreviewUrl("");
     if (cat) {
       setDetailView({ type: "category", mode: "edit", id: cat.id });
+      setIsCategorySlugLocked(true);
+      setActiveSubTab("categories");
       setCategoryForm({
         placeTypeId: cat.placeTypeId || placeTypes[0]?.id || 1,
         name: cat.name,
@@ -341,6 +352,8 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
       }
     } else {
       setDetailView({ type: "category", mode: "create" });
+      setIsCategorySlugLocked(false);
+      setActiveSubTab("categories");
       setCategoryForm({
         placeTypeId: placeTypes[0]?.id || 1,
         name: "",
@@ -358,6 +371,8 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
     setPlaceTypePreviewUrl("");
     if (pt) {
       setDetailView({ type: "placeType", mode: "edit", id: pt.id });
+      setIsPlaceTypeSlugLocked(true);
+      setActiveSubTab("placeTypes");
       setPlaceTypeForm({
         name: pt.name,
         slug: pt.slug || generateSlug(pt.name),
@@ -366,6 +381,8 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
       });
     } else {
       setDetailView({ type: "placeType", mode: "create" });
+      setIsPlaceTypeSlugLocked(false);
+      setActiveSubTab("placeTypes");
       setPlaceTypeForm({
         name: "",
         slug: "",
@@ -425,7 +442,7 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
   const handleSavePlaceType = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!placeTypeForm.name.trim()) {
-      notify("Vui lòng nhập tên loại địa điểm lớn!");
+      notify("Vui lòng nhập tên danh mục chính!");
       return;
     }
 
@@ -444,17 +461,17 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
 
       if (detailView?.mode === "edit" && detailView.id) {
         await adminService.updateCatalogPlaceType(detailView.id, formData);
-        notify("Cập nhật loại địa điểm thành công!");
+        notify("Cập nhật danh mục chính thành công!");
       } else {
         await adminService.createCatalogPlaceType(formData);
-        notify("Tạo mới loại địa điểm thành công!");
+        notify("Tạo mới danh mục chính thành công!");
       }
       setDetailView(null);
       setPlaceTypeImageFile(null);
       setPlaceTypePreviewUrl("");
       fetchPlaceTypes();
     } catch (err: any) {
-      const msg = err?.response?.data?.message || err?.message || "Có lỗi xảy ra khi lưu loại địa điểm.";
+      const msg = err?.response?.data?.message || err?.message || "Có lỗi xảy ra khi lưu danh mục chính.";
       notify(msg);
     } finally {
       setIsSubmittingPlaceType(false);
@@ -466,11 +483,11 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
     try {
       if (type === "category") {
         await adminService.updateCatalogCategoryStatus(id, targetStatus, reason || undefined);
-        notify(`Đã chuyển trạng thái danh mục sang ${targetStatus === 1 ? "Hoạt động" : "Tạm ẩn"}.`);
+        notify(`Đã chuyển trạng thái danh mục con sang ${targetStatus === 1 ? "Hoạt động" : "Tạm ẩn"}.`);
         fetchCategories();
       } else {
         await adminService.updateCatalogPlaceTypeStatus(id, targetStatus, reason || undefined);
-        notify(`Đã chuyển trạng thái loại địa điểm sang ${targetStatus === 1 ? "Hoạt động" : "Tạm ẩn"}.`);
+        notify(`Đã chuyển trạng thái danh mục chính sang ${targetStatus === 1 ? "Hoạt động" : "Tạm ẩn"}.`);
         fetchPlaceTypes();
       }
       setStatusConfirm((prev) => ({ ...prev, isOpen: false }));
@@ -486,6 +503,13 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
     const inactive = categories.filter((c) => c.status === 2).length;
     return { total, active, inactive };
   }, [categories, pagination.totalCount]);
+
+  const placeTypeStats = useMemo(() => {
+    const total = placeTypes.length;
+    const active = placeTypes.filter((p) => p.status === 1).length;
+    const inactive = placeTypes.filter((p) => p.status === 2).length;
+    return { total, active, inactive };
+  }, [placeTypes]);
 
   if (detailView?.type === "category") {
     const isEdit = detailView.mode === "edit";
@@ -569,14 +593,55 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
             </div>
 
             <div>
-              <label className="block text-slate-700 font-bold mb-1.5">Slug</label>
-              <input
-                type="text"
-                placeholder="quan-ca-phe-tra-sua"
-                value={categoryForm.slug}
-                onChange={(e) => setCategoryForm({ ...categoryForm, slug: e.target.value })}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-              />
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-slate-700 font-bold">Slug (Đường dẫn tĩnh)</label>
+                {isEdit && (
+                  <button
+                    type="button"
+                    onClick={() => setIsCategorySlugLocked(!isCategorySlugLocked)}
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 hover:text-emerald-700 hover:underline cursor-pointer"
+                    title={isCategorySlugLocked ? "Mở khóa để chỉnh sửa đường dẫn slug" : "Khóa chỉnh sửa slug"}
+                  >
+                    {isCategorySlugLocked ? (
+                      <>
+                        <Unlock size={12} className="text-slate-500" />
+                        <span>[Sửa đường dẫn]</span>
+                      </>
+                    ) : (
+                      <>
+                        <Lock size={12} className="text-emerald-600" />
+                        <span>[Khóa lại]</span>
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="bar-pub-club"
+                  value={categoryForm.slug}
+                  readOnly={isEdit && isCategorySlugLocked}
+                  onChange={(e) => setCategoryForm({ ...categoryForm, slug: e.target.value })}
+                  className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-mono transition-colors ${isEdit && isCategorySlugLocked
+                    ? "bg-slate-100/90 border border-slate-200 text-slate-500 cursor-not-allowed select-all"
+                    : "bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                    }`}
+                />
+                {isEdit && isCategorySlugLocked && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                    <Lock size={13} />
+                  </div>
+                )}
+              </div>
+              <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
+                Tự động tạo từ tên danh mục.{" "}
+                {isEdit && !isCategorySlugLocked && (
+                  <span className="text-amber-600 font-medium">
+                    ⚠️ Thay đổi slug có thể ảnh hưởng đến đường dẫn URL hiện tại và SEO.
+                  </span>
+                )}
+              </p>
             </div>
 
             <div>
@@ -614,16 +679,29 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
                 Trạng thái hiển thị
               </h4>
 
-              <div>
+              <div className="space-y-2">
                 <CustomSelect
                   value={categoryForm.status}
                   onChange={(val) => setCategoryForm({ ...categoryForm, status: Number(val) })}
                   options={[
                     { value: 1, label: "Hoạt động" },
-                    { value: 2, label: "Tạm ẩn" },
+                    { value: 2, label: "Tạm ẩn / Ngừng hoạt động" },
                   ]}
                   size="md"
                 />
+
+                {Number(categoryForm.status) === 2 && (
+                  <div className="flex items-start gap-2 p-2.5 bg-amber-50 border border-amber-200/90 rounded-xl text-amber-800 text-[11px] leading-relaxed animate-in fade-in duration-150">
+                    <AlertTriangle size={15} className="text-amber-600 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-bold">⚠️ Lưu ý:</span> Tạm ẩn danh mục này sẽ ảnh hưởng đến việc lọc của{" "}
+                      <span className="font-bold">
+                        {categoryDetailStats.placeCount ?? currentCat?.placeCount ?? 0} địa điểm
+                      </span>{" "}
+                      đang liên kết.
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="pt-2">
@@ -643,34 +721,117 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
                 <h4 className="font-bold text-slate-900 text-xs border-b border-slate-100 pb-2">
                   Dữ liệu liên kết trong hệ thống
                 </h4>
-                <div className="space-y-2 text-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-500 flex items-center gap-1.5">
+                <div className="space-y-1 text-xs">
+                  <div
+                    onClick={() => {
+                      if ((categoryDetailStats.placeCount ?? currentCat?.placeCount ?? 0) > 0) {
+                        navigate(`/admin/places?categoryId=${detailView.id}`);
+                      }
+                    }}
+                    className={`flex items-center justify-between p-2 rounded-xl transition-all ${(categoryDetailStats.placeCount ?? currentCat?.placeCount ?? 0) > 0
+                      ? "hover:bg-emerald-50/70 cursor-pointer group"
+                      : "opacity-80"
+                      }`}
+                    title={
+                      (categoryDetailStats.placeCount ?? currentCat?.placeCount ?? 0) > 0
+                        ? `Bấm để xem danh sách ${categoryDetailStats.placeCount ?? currentCat?.placeCount ?? 0} địa điểm thuộc danh mục này`
+                        : undefined
+                    }
+                  >
+                    <span className="text-slate-600 flex items-center gap-1.5 group-hover:text-emerald-700 transition-colors font-medium">
                       <MapPin size={13} className="text-emerald-500" />
                       Địa điểm liên kết:
                     </span>
-                    <span className="font-bold text-slate-800">{categoryDetailStats.placeCount ?? currentCat?.placeCount ?? 0}</span>
+                    <span className="font-bold text-slate-800 group-hover:text-emerald-600 group-hover:underline transition-colors flex items-center gap-1">
+                      {categoryDetailStats.placeCount ?? currentCat?.placeCount ?? 0}
+                      {(categoryDetailStats.placeCount ?? currentCat?.placeCount ?? 0) > 0 && (
+                        <ArrowUpRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity text-emerald-600" />
+                      )}
+                    </span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-500 flex items-center gap-1.5">
+
+                  <div
+                    onClick={() => {
+                      if ((categoryDetailStats.blogCount ?? currentCat?.blogCount ?? 0) > 0) {
+                        navigate("/admin/blogs");
+                      }
+                    }}
+                    className={`flex items-center justify-between p-2 rounded-xl transition-all ${(categoryDetailStats.blogCount ?? currentCat?.blogCount ?? 0) > 0
+                      ? "hover:bg-blue-50/70 cursor-pointer group"
+                      : "opacity-80"
+                      }`}
+                    title={
+                      (categoryDetailStats.blogCount ?? currentCat?.blogCount ?? 0) > 0
+                        ? `Bấm để mở quản lý bài viết cẩm nang`
+                        : undefined
+                    }
+                  >
+                    <span className="text-slate-600 flex items-center gap-1.5 group-hover:text-blue-700 transition-colors font-medium">
                       <FileText size={13} className="text-blue-500" />
                       Bài viết cẩm nang:
                     </span>
-                    <span className="font-bold text-slate-800">{categoryDetailStats.blogCount ?? currentCat?.blogCount ?? 0}</span>
+                    <span className="font-bold text-slate-800 group-hover:text-blue-600 group-hover:underline transition-colors flex items-center gap-1">
+                      {categoryDetailStats.blogCount ?? currentCat?.blogCount ?? 0}
+                      {(categoryDetailStats.blogCount ?? currentCat?.blogCount ?? 0) > 0 && (
+                        <ArrowUpRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity text-blue-600" />
+                      )}
+                    </span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-500 flex items-center gap-1.5">
+
+                  <div
+                    onClick={() => {
+                      if ((categoryDetailStats.proposalCount ?? currentCat?.proposalCount ?? 0) > 0) {
+                        navigate("/admin/proposals");
+                      }
+                    }}
+                    className={`flex items-center justify-between p-2 rounded-xl transition-all ${(categoryDetailStats.proposalCount ?? currentCat?.proposalCount ?? 0) > 0
+                      ? "hover:bg-amber-50/70 cursor-pointer group"
+                      : "opacity-80"
+                      }`}
+                    title={
+                      (categoryDetailStats.proposalCount ?? currentCat?.proposalCount ?? 0) > 0
+                        ? `Bấm để mở danh sách đề xuất liên quan`
+                        : undefined
+                    }
+                  >
+                    <span className="text-slate-600 flex items-center gap-1.5 group-hover:text-amber-700 transition-colors font-medium">
                       <FileText size={13} className="text-amber-500" />
                       Đề xuất liên quan:
                     </span>
-                    <span className="font-bold text-slate-800">{categoryDetailStats.proposalCount ?? currentCat?.proposalCount ?? 0}</span>
+                    <span className="font-bold text-slate-800 group-hover:text-amber-600 group-hover:underline transition-colors flex items-center gap-1">
+                      {categoryDetailStats.proposalCount ?? currentCat?.proposalCount ?? 0}
+                      {(categoryDetailStats.proposalCount ?? currentCat?.proposalCount ?? 0) > 0 && (
+                        <ArrowUpRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity text-amber-600" />
+                      )}
+                    </span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-500 flex items-center gap-1.5">
+
+                  <div
+                    onClick={() => {
+                      if ((categoryDetailStats.assignedAdminsCount ?? currentCat?.assignedAdminsCount ?? 0) > 0) {
+                        navigate("/admin/users");
+                      }
+                    }}
+                    className={`flex items-center justify-between p-2 rounded-xl transition-all ${(categoryDetailStats.assignedAdminsCount ?? currentCat?.assignedAdminsCount ?? 0) > 0
+                      ? "hover:bg-purple-50/70 cursor-pointer group"
+                      : "opacity-80"
+                      }`}
+                    title={
+                      (categoryDetailStats.assignedAdminsCount ?? currentCat?.assignedAdminsCount ?? 0) > 0
+                        ? `Bấm để mở danh sách người dùng quản trị`
+                        : undefined
+                    }
+                  >
+                    <span className="text-slate-600 flex items-center gap-1.5 group-hover:text-purple-700 transition-colors font-medium">
                       <Users size={13} className="text-purple-500" />
                       Admin quản lý:
                     </span>
-                    <span className="font-bold text-slate-800">{categoryDetailStats.assignedAdminsCount ?? currentCat?.assignedAdminsCount ?? 0}</span>
+                    <span className="font-bold text-slate-800 group-hover:text-purple-600 group-hover:underline transition-colors flex items-center gap-1">
+                      {categoryDetailStats.assignedAdminsCount ?? currentCat?.assignedAdminsCount ?? 0}
+                      {(categoryDetailStats.assignedAdminsCount ?? currentCat?.assignedAdminsCount ?? 0) > 0 && (
+                        <ArrowUpRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity text-purple-600" />
+                      )}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -698,10 +859,10 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
             </button>
             <div>
               <div className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                <span>{isEdit ? `Chi tiết danh mục: ${currentPt?.name || `#${detailView.id}`}` : "Tạo mới Danh mục"}</span>
+                <span>{isEdit ? `Chi tiết danh mục chính: ${currentPt?.name || `#${detailView.id}`}` : "Tạo mới danh mục chính"}</span>
               </div>
               <p className="text-[11px] text-slate-400">
-                {isEdit ? "Cập nhật thông tin danh mục" : "Thiết lập danh mục mới"}
+                {isEdit ? "Cập nhật thông tin danh mục chính" : "Thiết lập danh mục chính mới"}
               </p>
             </div>
           </div>
@@ -721,7 +882,7 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
               className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-all shadow-sm shadow-emerald-600/20 cursor-pointer disabled:opacity-50"
             >
               <Save size={15} />
-              <span>{isSubmittingPlaceType ? "Đang lưu..." : isEdit ? "Lưu thay đổi" : "Tạo mới"}</span>
+              <span>{isSubmittingPlaceType ? "Đang lưu..." : isEdit ? "Lưu thay đổi" : "Tạo danh mục chính"}</span>
             </button>
           </div>
         </div>
@@ -729,14 +890,14 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
         <form id="placetype-detail-form" onSubmit={handleSavePlaceType} className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
             <h3 className="font-bold text-slate-900 text-sm border-b border-slate-100 pb-3">
-              Thông tin danh mục
+              Thông tin danh mục chính
             </h3>
 
             <div>
-              <label className="block text-slate-700 font-bold mb-1.5">Tên danh mục *</label>
+              <label className="block text-slate-700 font-bold mb-1.5">Tên danh mục chính *</label>
               <input
                 type="text"
-                placeholder="Ví dụ: Danh mục"
+                placeholder="Ví dụ: Ẩm thực & Đồ uống"
                 value={placeTypeForm.name}
                 onChange={(e) => {
                   const val = e.target.value;
@@ -752,14 +913,55 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
             </div>
 
             <div>
-              <label className="block text-slate-700 font-bold mb-1.5">Slug</label>
-              <input
-                type="text"
-                placeholder="trai-nghiem-ngoai-troi"
-                value={placeTypeForm.slug}
-                onChange={(e) => setPlaceTypeForm({ ...placeTypeForm, slug: e.target.value })}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-              />
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-slate-700 font-bold">Slug (Đường dẫn tĩnh)</label>
+                {isEdit && (
+                  <button
+                    type="button"
+                    onClick={() => setIsPlaceTypeSlugLocked(!isPlaceTypeSlugLocked)}
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 hover:text-emerald-700 hover:underline cursor-pointer"
+                    title={isPlaceTypeSlugLocked ? "Mở khóa để chỉnh sửa đường dẫn slug" : "Khóa chỉnh sửa slug"}
+                  >
+                    {isPlaceTypeSlugLocked ? (
+                      <>
+                        <Unlock size={12} className="text-slate-500" />
+                        <span>[Sửa đường dẫn]</span>
+                      </>
+                    ) : (
+                      <>
+                        <Lock size={12} className="text-emerald-600" />
+                        <span>[Khóa lại]</span>
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="am-thuc-do-uong"
+                  value={placeTypeForm.slug}
+                  readOnly={isEdit && isPlaceTypeSlugLocked}
+                  onChange={(e) => setPlaceTypeForm({ ...placeTypeForm, slug: e.target.value })}
+                  className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-mono transition-colors ${isEdit && isPlaceTypeSlugLocked
+                    ? "bg-slate-100/90 border border-slate-200 text-slate-500 cursor-not-allowed select-all"
+                    : "bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                    }`}
+                />
+                {isEdit && isPlaceTypeSlugLocked && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                    <Lock size={13} />
+                  </div>
+                )}
+              </div>
+              <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
+                Tự động tạo từ tên danh mục.{" "}
+                {isEdit && !isPlaceTypeSlugLocked && (
+                  <span className="text-amber-600 font-medium">
+                    Thay đổi slug có thể ảnh hưởng đến đường dẫn URL hiện tại và SEO.
+                  </span>
+                )}
+              </p>
             </div>
 
             <div>
@@ -794,18 +996,33 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
           <div className="space-y-4">
             <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-4">
               <h4 className="font-bold text-slate-900 text-xs border-b border-slate-100 pb-2">
-                Trạng thái hoạt động
+                Trạng thái hiển thị
               </h4>
 
-              <CustomSelect
-                value={placeTypeForm.status}
-                onChange={(val) => setPlaceTypeForm({ ...placeTypeForm, status: Number(val) })}
-                options={[
-                  { value: 1, label: "Hoạt động" },
-                  { value: 2, label: "Tạm ẩn" },
-                ]}
-                size="md"
-              />
+              <div className="space-y-2">
+                <CustomSelect
+                  value={placeTypeForm.status}
+                  onChange={(val) => setPlaceTypeForm({ ...placeTypeForm, status: Number(val) })}
+                  options={[
+                    { value: 1, label: "Hoạt động" },
+                    { value: 2, label: "Tạm ẩn / Ngừng hoạt động" },
+                  ]}
+                  size="md"
+                />
+
+                {Number(placeTypeForm.status) === 2 && (
+                  <div className="flex items-start gap-2 p-2.5 bg-amber-50 border border-amber-200/90 rounded-xl text-amber-800 text-[11px] leading-relaxed animate-in fade-in duration-150">
+                    <AlertTriangle size={15} className="text-amber-600 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-bold">⚠️ Lưu ý:</span> Tạm ẩn danh mục chính này sẽ ảnh hưởng đến{" "}
+                      <span className="font-bold">
+                        {currentPt?.totalCategories ?? 0} danh mục con
+                      </span>{" "}
+                      trực thuộc.
+                    </div>
+                  </div>
+                )}
+              </div>
 
               <div className="pt-2">
                 <span className="block text-slate-500 text-[11px] font-bold mb-1.5">Ảnh bìa:</span>
@@ -822,11 +1039,22 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
             {isEdit && currentPt && (
               <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
                 <h4 className="font-bold text-slate-900 text-xs border-b border-slate-100 pb-2">
-                  Danh mục con
+                  Dữ liệu liên kết trong hệ thống
                 </h4>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-500">Danh mục con trực thuộc:</span>
-                  <span className="font-bold text-slate-800">{currentPt.totalCategories ?? 0}</span>
+                <div
+                  onClick={() => {
+                    setDetailView(null);
+                    setActiveSubTab("categories");
+                    setCategoryFilters((prev) => ({ ...prev, placeTypeId: currentPt.id, page: 1 }));
+                  }}
+                  className="flex items-center justify-between p-2 rounded-xl transition-all hover:bg-emerald-50/70 cursor-pointer group text-xs"
+                  title="Bấm để xem danh sách danh mục con trực thuộc"
+                >
+                  <span className="text-slate-600 font-medium group-hover:text-emerald-700">Danh mục con trực thuộc:</span>
+                  <span className="font-bold text-slate-800 group-hover:text-emerald-600 group-hover:underline flex items-center gap-1">
+                    {currentPt.totalCategories ?? 0}
+                    <ArrowUpRight size={12} className="opacity-0 group-hover:opacity-100 text-emerald-600" />
+                  </span>
                 </div>
               </div>
             )}
@@ -841,6 +1069,16 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
       <div className="flex items-center justify-between bg-white px-4 py-2.5 rounded-2xl border border-slate-200/80 shadow-2xs">
         <div className="flex items-center gap-2">
           <button
+            onClick={() => setActiveSubTab("placeTypes")}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${activeSubTab === "placeTypes"
+              ? "bg-emerald-600 text-white shadow-sm shadow-emerald-600/20"
+              : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+              }`}
+          >
+            <span>Danh mục chính ({placeTypes.length})</span>
+          </button>
+
+          <button
             onClick={() => setActiveSubTab("categories")}
             className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${activeSubTab === "categories"
               ? "bg-emerald-600 text-white shadow-sm shadow-emerald-600/20"
@@ -849,24 +1087,18 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
           >
             <span>Danh mục con ({pagination.totalCount || categories.length})</span>
           </button>
-
-          <button
-            onClick={() => setActiveSubTab("placeTypes")}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${activeSubTab === "placeTypes"
-              ? "bg-emerald-600 text-white shadow-sm shadow-emerald-600/20"
-              : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-              }`}
-          >
-            <span>Danh mục ({placeTypes.length})</span>
-          </button>
         </div>
 
         <div className="hidden sm:flex items-center gap-2">
-          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
-            Tổng: {categoryStats.total} danh mục
+          <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+            {activeSubTab === "placeTypes"
+              ? `Tổng: ${placeTypeStats.total} danh mục chính`
+              : `Tổng: ${categoryStats.total} danh mục con`}
           </span>
-          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-            {categoryStats.active} đang hoạt động
+          <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+            {activeSubTab === "placeTypes"
+              ? `${placeTypeStats.active} đang hoạt động`
+              : `${categoryStats.active} đang hoạt động`}
           </span>
         </div>
       </div>
@@ -896,7 +1128,7 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
                   }))
                 }
                 options={[
-                  { value: "", label: "Tất cả loại địa điểm" },
+                  { value: "", label: "Tất cả danh mục chính" },
                   ...placeTypes.map((pt) => ({ value: pt.id, label: pt.name })),
                 ]}
                 size="sm"
@@ -969,7 +1201,7 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
                         </td>
                         <td className="p-3.5">
                           <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
-                            {cat.placeTypeName || "Trụ cột chung"}
+                            {cat.placeTypeName || "Danh mục chính"}
                           </span>
                         </td>
                         <td className="p-3.5 text-center">
@@ -1074,7 +1306,7 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
         <div className="space-y-4">
           <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="font-bold text-slate-800">Danh sách các danh mục</span>
+              <span className="font-bold text-slate-800">Danh sách danh mục chính</span>
             </div>
 
             <div className="flex items-center gap-2">
@@ -1091,7 +1323,7 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
                 className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-all shadow-sm shadow-emerald-600/20 cursor-pointer"
               >
                 <Plus size={16} />
-                <span>Thêm danh mục</span>
+                <span>Thêm danh mục chính</span>
               </button>
             </div>
           </div>
@@ -1101,7 +1333,7 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-bold text-[11px] uppercase tracking-wider">
-                    <th className="p-3.5 pl-4">Trụ cột lớn</th>
+                    <th className="p-3.5 pl-4">DANH MỤC CHÍNH</th>
                     <th className="p-3.5">Danh mục con trực thuộc</th>
                     <th className="p-3.5">Trạng thái</th>
                     <th className="p-3.5 pr-4 text-center">Xem chi tiết</th>
@@ -1170,7 +1402,7 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
                   {placeTypes.length === 0 && !isPlaceTypesLoading && (
                     <tr>
                       <td colSpan={4} className="p-10 text-center text-slate-400">
-                        Chưa có loại địa điểm lớn nào được thiết lập.
+                        Chưa có danh mục chính nào được thiết lập.
                       </td>
                     </tr>
                   )}
@@ -1178,7 +1410,7 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
                     <tr>
                       <td colSpan={4} className="p-10 text-center text-slate-400">
                         <RefreshCw size={20} className="animate-spin mx-auto text-emerald-600 mb-2" />
-                        Đang tải trụ cột địa điểm...
+                        Đang tải danh mục chính...
                       </td>
                     </tr>
                   )}
@@ -1197,13 +1429,38 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
             </div>
             <div>
               <h4 className="font-bold text-slate-900 text-sm">
-                Xác nhận {statusConfirm.targetStatus === 1 ? "kích hoạt" : "tạm ẩn"} {statusConfirm.type === "category" ? "danh mục" : "loại địa điểm"}?
+                Xác nhận {statusConfirm.targetStatus === 1 ? "kích hoạt" : "tạm ẩn"} {statusConfirm.type === "category" ? "danh mục con" : "danh mục chính"}?
               </h4>
               <p className="text-xs text-slate-500 mt-1">
                 Bạn đang chuyển trạng thái của <b>"{statusConfirm.name}"</b> sang{" "}
                 <b>{statusConfirm.targetStatus === 1 ? "Hoạt động" : "Tạm ẩn"}</b>.
               </p>
             </div>
+
+            {statusConfirm.targetStatus === 2 && (
+              <div className="flex items-start gap-2 p-2.5 bg-amber-50 border border-amber-200/90 rounded-xl text-amber-800 text-[11px] leading-relaxed">
+                <AlertTriangle size={15} className="text-amber-600 shrink-0 mt-0.5" />
+                <span>
+                  {statusConfirm.type === "category" ? (
+                    <>
+                      ⚠️ Lưu ý: Tạm ẩn danh mục con này sẽ ảnh hưởng đến việc lọc của{" "}
+                      <b>
+                        {categories.find((c) => c.id === statusConfirm.id)?.placeCount ?? 0} địa điểm
+                      </b>{" "}
+                      đang liên kết.
+                    </>
+                  ) : (
+                    <>
+                      ⚠️ Lưu ý: Tạm ẩn danh mục chính này sẽ ảnh hưởng đến{" "}
+                      <b>
+                        {placeTypes.find((p) => p.id === statusConfirm.id)?.totalCategories ?? 0} danh mục con
+                      </b>{" "}
+                      trực thuộc.
+                    </>
+                  )}
+                </span>
+              </div>
+            )}
 
             <div>
               <label className="block text-slate-700 font-bold mb-1">Lý do điều chỉnh (Tùy chọn):</label>

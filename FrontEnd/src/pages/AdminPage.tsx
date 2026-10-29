@@ -857,7 +857,7 @@ export const AdminPage: React.FC = () => {
             break;
           }
           case "reviews_comments": {
-            const revParams: Record<string, any> = { ...page };
+            const revParams: Record<string, any> = { page: 1, pageSize: 10000 };
             if (revComSort.sortBy) {
               revParams.sortBy = revComSort.sortBy;
             }
@@ -895,6 +895,8 @@ export const AdminPage: React.FC = () => {
                   id: item.id,
                   blogId: item.blogId || 0,
                   blogTitle: item.blogTitle || "Bài viết",
+                  placeId: item.placeId || 0,
+                  placeName: item.placeName || item.blogTitle || "Địa điểm",
                   userName: item.userName || item.authorName || "Người dùng",
                   userAvatar: item.userAvatar || item.avatar || "",
                   content: item.content || item.comment || "",
@@ -1213,6 +1215,30 @@ export const AdminPage: React.FC = () => {
     }
   };
 
+  const handleNavigateToTarget = (targetType: string, targetId: number) => {
+    setActiveReportGroupKey(null);
+    const type = (targetType || "").toLowerCase().trim();
+    if (type === "place") {
+      setSelectedPlaceId(targetId);
+      setMainTabState("places");
+      navigate(`/admin/places/${targetId}`);
+    } else if (type === "blog") {
+      setMainTabState("blogs");
+      navigate(`/admin/blogs/${targetId}`);
+    } else if (type === "review") {
+      setMainTabState("reviews_comments");
+      setRevComTab("reviews");
+      navigate(`/admin/reviews`);
+    } else if (type === "comment") {
+      setMainTabState("reviews_comments");
+      setRevComTab("comments");
+      navigate(`/admin/reviews`);
+    } else if (type === "food") {
+      setMainTabState("foods");
+      navigate(`/admin/foods`);
+    }
+  };
+
   const activeReportGroup: GroupedReport | null = activeReportGroupKey
     ? (() => {
       const [targetType, targetIdStr] = activeReportGroupKey.split("_");
@@ -1272,7 +1298,7 @@ export const AdminPage: React.FC = () => {
     const selectedId = selectedReportIdInDrawer || activeReportGroup.reportsList[0].id;
 
     const effectiveActionTaken = drawerDecisionTab === "accept"
-      ? (drawerActionTaken || "hide_target")
+      ? (drawerActionTaken || (activeReportGroup.targetType === "place" ? "update_info" : "hide_target"))
       : drawerDismissReason;
 
     try {
@@ -1284,24 +1310,35 @@ export const AdminPage: React.FC = () => {
         resolutionNote: drawerResolutionNote,
       });
 
-      if (drawerDecisionTab === "accept" && (effectiveActionTaken.includes("hide_target") || effectiveActionTaken.includes("hide_content"))) {
+      if (drawerDecisionTab === "accept") {
         const targetId = activeReportGroup.targetId;
+        const shouldHidePlace = effectiveActionTaken.includes("hide_target") || effectiveActionTaken.includes("mark_closed");
+        const shouldHideContent = effectiveActionTaken.includes("hide_target") || effectiveActionTaken.includes("hide_content");
+
         if (activeReportGroup.targetType === "place") {
-          setPlacesList((prev) =>
-            prev.map((p) => (p.id === targetId ? { ...p, status: "Đang ẩn", statusNum: 0 } : p))
-          );
+          if (shouldHidePlace) {
+            setPlacesList((prev) =>
+              prev.map((p) => (p.id === targetId ? { ...p, status: "Đang ẩn", statusNum: 0 } : p))
+            );
+          }
         } else if (activeReportGroup.targetType === "review") {
-          setReviewsList((prev) =>
-            prev.map((rev) => (rev.id === targetId ? { ...rev, status: "hidden" } : rev))
-          );
+          if (shouldHideContent) {
+            setReviewsList((prev) =>
+              prev.map((rev) => (rev.id === targetId ? { ...rev, status: "hidden" } : rev))
+            );
+          }
         } else if (activeReportGroup.targetType === "comment") {
-          setCommentsList((prev) =>
-            prev.map((c) => (c.id === targetId ? { ...c, status: "hidden" } : c))
-          );
+          if (shouldHideContent) {
+            setCommentsList((prev) =>
+              prev.map((c) => (c.id === targetId ? { ...c, status: "hidden" } : c))
+            );
+          }
         } else if (activeReportGroup.targetType === "blog") {
-          setBlogsList((prev) =>
-            prev.map((b) => (b.id === targetId ? { ...b, status: "archived" } : b))
-          );
+          if (shouldHideContent) {
+            setBlogsList((prev) =>
+              prev.map((b) => (b.id === targetId ? { ...b, status: "archived" } : b))
+            );
+          }
         }
       }
 
@@ -1658,6 +1695,7 @@ export const AdminPage: React.FC = () => {
         handleConfirmDrawerResolution={handleConfirmDrawerResolution}
         handleAssignToMe={handleAssignToMe}
         onClose={() => setActiveReportGroupKey(null)}
+        onNavigateToTarget={handleNavigateToTarget}
       />
     </div>
   );

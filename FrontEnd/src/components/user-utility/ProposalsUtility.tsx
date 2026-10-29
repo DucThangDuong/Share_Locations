@@ -38,9 +38,8 @@ export const ProposalsUtility: React.FC<ProposalsUtilityProps> = ({
     setIsLoading(true)
     try {
       const res = await userService.getMyProposals({
-        status: statusFilter === 'all' ? undefined : statusFilter,
         page: 1,
-        pageSize: 50
+        pageSize: 100
       })
       if (res.success && res.data) {
         if (Array.isArray(res.data)) {
@@ -58,7 +57,7 @@ export const ProposalsUtility: React.FC<ProposalsUtilityProps> = ({
     } finally {
       setIsLoading(false)
     }
-  }, [statusFilter])
+  }, [])
 
   useEffect(() => {
     fetchProposals()
@@ -185,8 +184,8 @@ export const ProposalsUtility: React.FC<ProposalsUtilityProps> = ({
               type="button"
               onClick={() => setStatusFilter(tab.id)}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${statusFilter === tab.id
-                  ? 'bg-rose-700 text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                ? 'bg-rose-700 text-white shadow-xs'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
             >
               <span>{tab.label}</span>
@@ -221,7 +220,6 @@ export const ProposalsUtility: React.FC<ProposalsUtilityProps> = ({
             </Link>
           </div>
         ) : isDrawer ? (
-          /* Drawer Compact Layout */
           <div className="space-y-2.5">
             {filteredProposals.map((p) => (
               <div
@@ -255,7 +253,6 @@ export const ProposalsUtility: React.FC<ProposalsUtilityProps> = ({
             ))}
           </div>
         ) : (
-          /* Full Page Grid Layout */
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
             {filteredProposals.map((p) => {
               const media =

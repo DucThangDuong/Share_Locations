@@ -18,9 +18,13 @@ public class UpdateAdminCommentStatusCommandHandler : IRequestHandler<UpdateAdmi
 
     public async Task<Result<bool>> Handle(UpdateAdminCommentStatusCommand request, CancellationToken ct)
     {
-        var status = request.Status.Equals("active", StringComparison.OrdinalIgnoreCase)
-            ? CommentStatus.Active
-            : CommentStatus.Hidden;
+        var status = request.Status.ToLowerInvariant() switch
+        {
+            "active" or "1" => CommentStatus.Active,
+            "pending" or "3" => CommentStatus.PendingReview,
+            "reported" or "2" => CommentStatus.Reported,
+            _ => CommentStatus.Hidden
+        };
 
         var success = await _reviewRepository.UpdateCommentStatusAsync(request.Id, status, ct);
         if (!success)

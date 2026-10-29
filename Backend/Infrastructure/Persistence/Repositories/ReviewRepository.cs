@@ -22,26 +22,39 @@ public class ReviewRepository : IReviewRepository
     public async Task<Review?> GetByIdAsync(long id, CancellationToken ct = default)
     {
         return await _dbContext.Reviews
-            .FirstOrDefaultAsync(r => r.Id == id && r.Status == ReviewStatus.Active, ct);
+            .FirstOrDefaultAsync(r => r.Id == id && r.Status != ReviewStatus.Hidden, ct);
     }
 
     public async Task<Review?> GetByIdWithMediaAsync(long id, CancellationToken ct = default)
     {
         return await _dbContext.Reviews
             .Include(r => r.Media)
-            .FirstOrDefaultAsync(r => r.Id == id && r.Status == ReviewStatus.Active, ct);
+            .FirstOrDefaultAsync(r => r.Id == id && r.Status != ReviewStatus.Hidden, ct);
     }
 
     public async Task<bool> ExistsAsync(long id, CancellationToken ct = default)
     {
         return await _dbContext.Reviews
-            .AnyAsync(r => r.Id == id && r.Status == ReviewStatus.Active, ct);
+            .AnyAsync(r => r.Id == id && r.Status != ReviewStatus.Hidden, ct);
     }
 
     public async Task<bool> HasUserReviewedPlaceAsync(long placeId, long userId, CancellationToken ct = default)
     {
         return await _dbContext.Reviews
             .AnyAsync(r => r.PlaceId == placeId && r.UserId == userId && r.Status != ReviewStatus.Hidden, ct);
+    }
+
+    public async Task DeleteHiddenReviewsByPlaceAndUserAsync(long placeId, long userId, CancellationToken ct = default)
+    {
+        var oldHidden = await _dbContext.Reviews
+            .Where(r => r.PlaceId == placeId && r.UserId == userId && r.Status == ReviewStatus.Hidden)
+            .ToListAsync(ct);
+
+        if (oldHidden.Count > 0)
+        {
+            _dbContext.Reviews.RemoveRange(oldHidden);
+            await _dbContext.SaveChangesAsync(ct);
+        }
     }
 
     public void Update(Review review)
@@ -79,7 +92,7 @@ public class ReviewRepository : IReviewRepository
     public async Task<(decimal AvgRating, int ReviewCount)> GetPlaceStatsAsync(long placeId, CancellationToken ct = default)
     {
         var ratings = await _dbContext.Reviews
-            .Where(r => r.PlaceId == placeId && r.Status == ReviewStatus.Active)
+            .Where(r => r.PlaceId == placeId && r.Status != ReviewStatus.Hidden)
             .Select(r => (decimal)r.Rating)
             .ToListAsync(ct);
 

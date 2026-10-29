@@ -194,7 +194,6 @@ export const BlogsUtility: React.FC<BlogsUtilityProps> = ({
             </Link>
           </div>
         ) : isDrawer ? (
-          /* Drawer Compact Layout */
           <div className="space-y-2.5">
             {filteredBlogs.map((b) => (
               <div
@@ -267,7 +266,6 @@ export const BlogsUtility: React.FC<BlogsUtilityProps> = ({
             ))}
           </div>
         ) : (
-          /* Full Page Grid Layout */
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
             {filteredBlogs.map((b) => (
               <div

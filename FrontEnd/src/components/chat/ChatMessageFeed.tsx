@@ -160,9 +160,8 @@ export const ChatMessageFeed: React.FC<ChatMessageFeedProps> = ({
           <button
             type="button"
             onClick={onToggleRightDrawer}
-            className={`min-h-11 min-w-11 rounded-full flex items-center justify-center transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[#0084FF] ${
-              showRightDrawer ? 'bg-[#F0F2F5]' : 'hover:bg-[#F0F2F5]'
-            }`}
+            className={`min-h-11 min-w-11 rounded-full flex items-center justify-center transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[#0084FF] ${showRightDrawer ? 'bg-[#F0F2F5]' : 'hover:bg-[#F0F2F5]'
+              }`}
             aria-label="Mở thông tin đoạn chat"
             title="Thông tin đoạn chat"
           >
@@ -221,9 +220,8 @@ export const ChatMessageFeed: React.FC<ChatMessageFeedProps> = ({
 
             const actionToolbar = (
               <div
-                className={`relative flex items-center gap-1 mb-1 shrink-0 transition-all ${
-                  isMenuOpen ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                }`}
+                className={`relative flex items-center gap-1 mb-1 shrink-0 transition-all ${isMenuOpen ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                  }`}
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="relative">
@@ -233,11 +231,10 @@ export const ChatMessageFeed: React.FC<ChatMessageFeedProps> = ({
                       e.stopPropagation()
                       setActiveMenuMessageId(isMenuOpen ? null : msg.id)
                     }}
-                    className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors cursor-pointer ${
-                      isMenuOpen
+                    className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors cursor-pointer ${isMenuOpen
                         ? 'bg-slate-200 text-slate-900 shadow-2xs'
                         : 'bg-white hover:bg-slate-100 text-slate-500 hover:text-slate-800 border border-slate-200 shadow-2xs'
-                    }`}
+                      }`}
                     title="Tùy chọn khác"
                   >
                     <MoreHorizontal size={15} />
@@ -245,9 +242,8 @@ export const ChatMessageFeed: React.FC<ChatMessageFeedProps> = ({
 
                   {isMenuOpen && (
                     <div
-                      className={`absolute bottom-full mb-1.5 w-40 bg-white rounded-2xl shadow-xl border border-slate-100 py-1.5 z-50 animate-in zoom-in-95 duration-150 ${
-                        isMe ? 'right-0' : 'left-0'
-                      }`}
+                      className={`absolute bottom-full mb-1.5 w-40 bg-white rounded-2xl shadow-xl border border-slate-100 py-1.5 z-50 animate-in zoom-in-95 duration-150 ${isMe ? 'right-0' : 'left-0'
+                        }`}
                     >
                       <button
                         type="button"
@@ -336,9 +332,8 @@ export const ChatMessageFeed: React.FC<ChatMessageFeedProps> = ({
             return (
               <div
                 key={msg.id}
-                className={`group flex items-end gap-2 ${
-                  isMe ? 'justify-end' : 'justify-start'
-                } ${isNextSameSender ? 'mb-0.5' : 'mb-2'}`}
+                className={`group flex items-end gap-2 ${isMe ? 'justify-end' : 'justify-start'
+                  } ${isNextSameSender ? 'mb-0.5' : 'mb-2'}`}
               >
                 {!isMe && (
                   <div className="w-7 h-7 shrink-0">
@@ -357,9 +352,8 @@ export const ChatMessageFeed: React.FC<ChatMessageFeedProps> = ({
                 {isMe && !isEditingThis && actionToolbar}
 
                 <div
-                  className={`flex flex-col max-w-[85%] sm:max-w-[70%] md:max-w-[60%] ${
-                    isMe ? 'items-end' : 'items-start'
-                  }`}
+                  className={`flex flex-col max-w-[85%] sm:max-w-[70%] md:max-w-[60%] ${isMe ? 'items-end' : 'items-start'
+                    }`}
                 >
                   {isGroup && !isMe && !isPrevSameSender && (
                     <span className="text-[11.5px] font-semibold text-[#65676B] mb-0.5 ml-1 select-none">
@@ -422,7 +416,6 @@ export const ChatMessageFeed: React.FC<ChatMessageFeedProps> = ({
                       </div>
                     </div>
                   ) : (
-                    /* Normal Message Bubble */
                     messageContent && (
                       <div
                         onClick={() => {
@@ -437,11 +430,10 @@ export const ChatMessageFeed: React.FC<ChatMessageFeedProps> = ({
                         role="button"
                         tabIndex={0}
                         aria-label="Tin nhắn"
-                        className={`relative text-[15px] leading-snug wrap-break-word rounded-[18px] px-3.5 py-2 shadow-2xs transition-all ${
-                          isMe
+                        className={`relative text-[15px] leading-snug wrap-break-word rounded-[18px] px-3.5 py-2 shadow-2xs transition-all ${isMe
                             ? 'bg-[#0084FF] text-white'
                             : 'bg-[#F0F2F5] text-[#050505] cursor-pointer hover:bg-[#E4E6EB]'
-                        }`}
+                          }`}
                         title={!isMe ? 'Nhấn để phản hồi tin nhắn này' : undefined}
                       >
                         <p className="whitespace-pre-wrap">{messageContent}</p>

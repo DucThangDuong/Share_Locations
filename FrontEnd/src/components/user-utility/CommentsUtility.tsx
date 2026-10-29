@@ -113,7 +113,6 @@ export const CommentsUtility: React.FC<CommentsUtilityProps> = ({
             </Link>
           </div>
         ) : isDrawer ? (
-          /* Drawer Compact Layout */
           <div className="space-y-2.5">
             {filteredComments.map((com) => (
               <div
@@ -146,7 +145,6 @@ export const CommentsUtility: React.FC<CommentsUtilityProps> = ({
             ))}
           </div>
         ) : (
-          /* Full Page Grid Layout */
           <div className="space-y-3">
             {filteredComments.map((comment) => (
               <div

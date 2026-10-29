@@ -34,6 +34,10 @@ public class ReviewConfiguration : IEntityTypeConfiguration<Review>
         builder.Property(e => e.HiddenReason)
             .HasMaxLength(500);
 
+        builder.Property(e => e.HiddenBy);
+
+        builder.Property(e => e.HiddenAt);
+
         builder.Property(e => e.CreatedAt)
             .HasDefaultValueSql("SYSUTCDATETIME()");
 
@@ -106,6 +110,10 @@ public class CommentConfiguration : IEntityTypeConfiguration<Comment>
 
         builder.Property(e => e.HiddenReason)
             .HasMaxLength(500);
+
+        builder.Property(e => e.HiddenBy);
+
+        builder.Property(e => e.HiddenAt);
 
         builder.Property(e => e.CreatedAt)
             .HasDefaultValueSql("SYSUTCDATETIME()");

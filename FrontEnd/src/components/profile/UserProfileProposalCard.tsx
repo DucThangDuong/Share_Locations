@@ -4,6 +4,9 @@ import {
   MapPin,
   Calendar,
   ArrowRight,
+  CheckCircle2,
+  Clock,
+  AlertCircle,
 } from 'lucide-react'
 import type { ProposalItem } from '@/types/models/userProfile.model'
 
@@ -17,7 +20,8 @@ export const UserProfileProposalCard: React.FC<UserProfileProposalCardProps> = (
     (proposal.mediaUrls && proposal.mediaUrls.length > 0 ? proposal.mediaUrls[0] : null) ||
     'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=600&h=300&fit=crop'
 
-  const targetId = proposal.targetPlaceId || proposal.id
+  const isApproved = proposal.status === 1
+  const isRejected = proposal.status === 2
 
   return (
     <div className="bg-white rounded-2xl overflow-hidden border border-slate-200/90 shadow-2xs hover:shadow-md transition-all group flex flex-col sm:flex-row">
@@ -65,17 +69,52 @@ export const UserProfileProposalCard: React.FC<UserProfileProposalCardProps> = (
         </div>
 
         <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-3 text-xs">
-          <span className="inline-flex items-center gap-1 text-emerald-600 font-semibold">
-            Đóng góp bởi thành viên
-          </span>
+          {isApproved ? (
+            <>
+              <span className="inline-flex items-center gap-1.5 text-emerald-600 font-semibold">
+                <CheckCircle2 size={14} />
+                <span>Đóng góp bởi thành viên</span>
+              </span>
 
-          <Link
-            to={`/places/${targetId}`}
-            className="inline-flex items-center gap-1 text-emerald-700 font-bold hover:text-emerald-800 group-hover:translate-x-0.5 transition-all"
-          >
-            <span>Khám phá địa điểm</span>
-            <ArrowRight size={14} />
-          </Link>
+              {proposal.targetPlaceId ? (
+                <Link
+                  to={`/places/${proposal.targetPlaceId}`}
+                  className="inline-flex items-center gap-1 text-emerald-700 font-bold hover:text-emerald-800 group-hover:translate-x-0.5 transition-all"
+                >
+                  <span>Khám phá địa điểm</span>
+                  <ArrowRight size={14} />
+                </Link>
+              ) : null}
+            </>
+          ) : isRejected ? (
+            <>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                <AlertCircle size={13} />
+                <span>Không được duyệt</span>
+              </span>
+
+              {proposal.rejectReason ? (
+                <span className="text-[11px] text-rose-600 italic truncate max-w-[220px]" title={proposal.rejectReason}>
+                  Lý do: {proposal.rejectReason}
+                </span>
+              ) : (
+                <span className="text-[11px] text-slate-400 italic">
+                  Chưa đáp ứng tiêu chuẩn cộng đồng
+                </span>
+              )}
+            </>
+          ) : (
+            <>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                <Clock size={13} />
+                <span>Đang chờ duyệt</span>
+              </span>
+
+              <span className="text-[11px] text-slate-400 italic">
+                Đang chờ quản trị viên thẩm định
+              </span>
+            </>
+          )}
         </div>
       </div>
     </div>

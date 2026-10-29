@@ -144,6 +144,9 @@ export interface ReviewItemDto {
   commentsCount: number
   createdAt: string
   status?: string | number
+  hiddenReason?: string | null
+  hiddenBy?: number | null
+  hiddenAt?: string | null
   is_hidden?: boolean
 }
 
@@ -162,6 +165,9 @@ export interface CommentDto {
   parentId?: number | null
   createdAt: string
   status?: string
+  hiddenReason?: string | null
+  hiddenBy?: number | null
+  hiddenAt?: string | null
   is_hidden?: boolean
   replies?: CommentDto[]
 }

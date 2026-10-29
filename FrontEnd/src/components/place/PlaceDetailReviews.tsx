@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { Star, MessageSquare, Plus, X, ChevronDown, Loader2 } from 'lucide-react'
+import { Star, MessageSquare, Plus, X, ChevronDown, Loader2, CheckCircle2 } from 'lucide-react'
+import { useAuth } from '@/context/AuthContext'
 import { placeService } from '@/services/placeService'
 import { ReviewItemCard } from './ReviewItemCard'
 import { CreateReviewForm } from './CreateReviewForm'
@@ -34,10 +35,20 @@ export const PlaceDetailReviews: React.FC<PlaceDetailReviewsProps> = ({
   onReviewUpdated,
   onReviewDeleted
 }) => {
+  const { user } = useAuth()
   const [isFormOpen, setIsFormOpen] = useState(false)
 
-  const effectiveTotalReviews = totalReviews !== undefined ? totalReviews : reviews.length
-  const shouldShowLoadMore = hasMore !== undefined ? hasMore : reviews.length < effectiveTotalReviews
+  const activeReviews = reviews.filter(
+    (r) => r.status !== 'hidden' && r.status !== 0 && !(r as any).is_hidden
+  )
+  const hasUserReviewed = Boolean(
+    isAuthenticated &&
+    user &&
+    activeReviews.some((r) => String(r.userId) === String(user.id))
+  )
+
+  const effectiveTotalReviews = totalReviews !== undefined ? totalReviews : activeReviews.length
+  const shouldShowLoadMore = hasMore !== undefined ? hasMore : activeReviews.length < effectiveTotalReviews
 
   const handleToggleWriteReview = () => {
     if (!isAuthenticated) {
@@ -75,25 +86,32 @@ export const PlaceDetailReviews: React.FC<PlaceDetailReviewsProps> = ({
           </h2>
         </div>
 
-        <button type="button"
-          onClick={handleToggleWriteReview}
-          className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 font-semibold text-xs sm:text-sm rounded-lg shadow-xs transition-colors cursor-pointer ${isFormOpen
-            ? 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-            : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-            }`}
-        >
-          {isFormOpen ? (
-            <>
-              <X className="w-4 h-4" />
-              <span>Đóng biểu mẫu</span>
-            </>
-          ) : (
-            <>
-              <Plus className="w-4 h-4" />
-              <span>Viết đánh giá</span>
-            </>
-          )}
-        </button>
+        {hasUserReviewed ? (
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Bạn đã đánh giá địa điểm này</span>
+          </div>
+        ) : (
+          <button type="button"
+            onClick={handleToggleWriteReview}
+            className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 font-semibold text-xs sm:text-sm rounded-lg shadow-xs transition-colors cursor-pointer ${isFormOpen
+              ? 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+              : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+              }`}
+          >
+            {isFormOpen ? (
+              <>
+                <X className="w-4 h-4" />
+                <span>Đóng biểu mẫu</span>
+              </>
+            ) : (
+              <>
+                <Plus className="w-4 h-4" />
+                <span>Viết đánh giá</span>
+              </>
+            )}
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-4.5 bg-slate-50/80 rounded-xl border border-slate-100">
@@ -140,14 +158,14 @@ export const PlaceDetailReviews: React.FC<PlaceDetailReviewsProps> = ({
       )}
 
       <div className="space-y-4 pt-2">
-        {reviews.length === 0 ? (
+        {activeReviews.length === 0 ? (
           <div className="text-center py-12 text-slate-500 text-xs sm:text-sm bg-slate-50/50 rounded-xl border border-dashed border-slate-200 space-y-2">
             <MessageSquare className="w-8 h-8 text-slate-300 mx-auto" />
             <p>Chưa có đánh giá nào cho địa điểm này. Hãy là người đầu tiên chia sẻ cảm nhận!</p>
           </div>
         ) : (
           <>
-            {reviews.map((r) => (
+            {activeReviews.map((r) => (
               <ReviewItemCard
                 key={r.id}
                 review={r}

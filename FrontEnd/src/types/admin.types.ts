@@ -49,7 +49,10 @@ export interface PlaceReviewItem {
   content: string;
   images: string[];
   createdAt: string;
-  status: "active" | "hidden";
+  status: "active" | "hidden" | "pending" | "reported";
+  hiddenReason?: string | null;
+  hiddenBy?: number | null;
+  hiddenAt?: string | null;
   reportCount: number;
   reportReason?: string;
   visitDate: string;
@@ -68,7 +71,10 @@ export interface PlaceCommentItem {
   userAvatar?: string;
   content: string;
   createdAt: string;
-  status: "active" | "hidden";
+  status: "active" | "hidden" | "pending" | "reported";
+  hiddenReason?: string | null;
+  hiddenBy?: number | null;
+  hiddenAt?: string | null;
   reportCount: number;
   reportReason?: string;
   parentId?: number;
@@ -530,6 +536,9 @@ export interface AdminGeographyRegionItem {
   statusName?: string;
   totalProvinces?: number;
   activeProvinces?: number;
+  totalPlaces?: number;
+  totalFoods?: number;
+  totalGuides?: number;
 }
 
 export interface AdminGeographyProvinceItem {

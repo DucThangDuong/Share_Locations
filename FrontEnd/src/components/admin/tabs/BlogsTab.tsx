@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   BookOpen,
   Search,
@@ -90,7 +91,49 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
   addAuditLog,
   showToast,
 }) => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [selectedBlogId, setSelectedBlogId] = useState<number | null>(null);
+  const blogPathMatch = location.pathname.match(/\/admin\/blogs\/(\d+)/i);
+  const urlBlogId = blogPathMatch ? Number(blogPathMatch[1]) : selectedBlogId;
+  const [detailBlog, setDetailBlog] = useState<AdminBlogItem | null>(null);
+  const [isDetailLoading, setIsDetailLoading] = useState(false);
+
+  useEffect(() => {
+    if (!urlBlogId) {
+      setDetailBlog(null);
+      return;
+    }
+
+    const found = blogsList.find((b) => Number(b.id) === urlBlogId);
+    if (found) {
+      setDetailBlog(found);
+      return;
+    }
+
+    let active = true;
+    setIsDetailLoading(true);
+    adminService
+      .getBlog(urlBlogId)
+      .then((res: any) => {
+        if (!active) return;
+        const data = res?.data || res;
+        if (data) {
+          setDetailBlog(data);
+        }
+      })
+      .catch((err: any) => {
+        console.error("Lỗi khi tải chi tiết cẩm nang:", err);
+      })
+      .finally(() => {
+        if (active) setIsDetailLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [urlBlogId, blogsList]);
+
   const [blogSearchText, setBlogSearchText] = useState("");
   const [blogFilterCategory, setBlogFilterCategory] = useState("all");
   const [blogFilterStatus, setBlogFilterStatus] = useState("all");
@@ -153,9 +196,10 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
     };
   };
 
-  const currentBlog = selectedBlogId
-    ? blogsList.find((b) => b.id === selectedBlogId)
-    : null;
+  const currentBlog = useMemo(() => {
+    if (!urlBlogId) return null;
+    return blogsList.find((b) => Number(b.id) === urlBlogId) || detailBlog;
+  }, [urlBlogId, blogsList, detailBlog]);
 
   const filteredBlogs = blogsList.filter((b) => {
     if (blogFilterCategory !== "all" && b.category !== blogFilterCategory)
@@ -237,10 +281,15 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
         return b;
       })
     );
+    setDetailBlog((prev) => {
+      if (!prev || prev.id !== blogId) return prev;
+      const isHidden = prev.status === "hidden";
+      return { ...prev, status: isHidden ? "published" : "hidden" };
+    });
   };
 
   const handleDeleteBlog = async (blogId: number) => {
-    const blog = blogsList.find((b) => b.id === blogId);
+    const blog = blogsList.find((b) => b.id === blogId) || detailBlog;
     if (
       !window.confirm(
         `Bạn có chắc chắn muốn xóa bài viết cẩm nang "${blog?.title || blogId}"?`
@@ -262,13 +311,14 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
     if (showToast) {
       showToast(`Đã xóa bài viết thành công.`);
     }
-    if (selectedBlogId === blogId) {
-      setSelectedBlogId(null);
-    }
+    setSelectedBlogId(null);
+    setDetailBlog(null);
+    navigate(`/admin/blogs${location.search}`);
   };
 
   const handleSaveBlog = async (updatedBlog: AdminBlogItem) => {
     await adminService.updateBlog(updatedBlog.id, updatedBlog);
+    setDetailBlog((prev) => (prev ? { ...prev, ...updatedBlog } : updatedBlog));
     if (setBlogsList) {
       setBlogsList((prev) =>
         prev.map((b) => (b.id === updatedBlog.id ? { ...b, ...updatedBlog } : b))
@@ -287,16 +337,30 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
     }
   };
 
-  if (selectedBlogId && currentBlog) {
-    return (
-      <BlogDetailViewer
-        blog={currentBlog}
-        onBack={() => setSelectedBlogId(null)}
-        onSave={handleSaveBlog}
-        onToggleStatus={() => handleToggleHideBlog(currentBlog.id)}
-        onDelete={() => handleDeleteBlog(currentBlog.id)}
-      />
-    );
+  if (urlBlogId) {
+    if (isDetailLoading && !currentBlog) {
+      return (
+        <div className="bg-white p-16 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col items-center justify-center gap-3">
+          <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+          <span className="text-xs text-slate-500 font-medium">Đang tải thông tin cẩm nang...</span>
+        </div>
+      );
+    }
+
+    if (currentBlog) {
+      return (
+        <BlogDetailViewer
+          blog={currentBlog}
+          onBack={() => {
+            setSelectedBlogId(null);
+            navigate(`/admin/blogs${location.search}`);
+          }}
+          onSave={handleSaveBlog}
+          onToggleStatus={() => handleToggleHideBlog(currentBlog.id)}
+          onDelete={() => handleDeleteBlog(currentBlog.id)}
+        />
+      );
+    }
   }
 
   const handleSearchChange = (val: string) => {
@@ -424,7 +488,10 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
                   <tr
                     key={blog.id}
                     className="hover:bg-slate-50/60 transition-colors group cursor-pointer"
-                    onClick={() => setSelectedBlogId(blog.id)}
+                    onClick={() => {
+                      setSelectedBlogId(blog.id);
+                      navigate(`/admin/blogs/${blog.id}${location.search}`);
+                    }}
                   >
                     <td className="p-3.5 pl-4 font-bold text-slate-900">
                       <div className="flex items-center gap-3">
@@ -546,7 +613,10 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
                       onClick={(e) => e.stopPropagation()}
                     >
                       <button
-                        onClick={() => setSelectedBlogId(blog.id)}
+                        onClick={() => {
+                          setSelectedBlogId(blog.id);
+                          navigate(`/admin/blogs/${blog.id}${location.search}`);
+                        }}
                         className="px-2.5 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
                       >
                         Chi tiết →
@@ -636,7 +706,6 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
   );
 };
 
-/* ── DETAIL VIEWER & EDITOR (MATCHING BlogReaderView.tsx) ── */
 interface BlogDetailViewerProps {
   blog: AdminBlogItem;
   onBack: () => void;
@@ -835,11 +904,10 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
               onToggleStatus();
               setStatus((prev: string) => (prev === "published" ? "hidden" : "published"));
             }}
-            className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl cursor-pointer transition-colors ${
-              isHidden
+            className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl cursor-pointer transition-colors ${isHidden
                 ? "bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-xs"
                 : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200"
-            }`}
+              }`}
             title={isHidden ? "Công khai bài viết lên hệ thống" : "Tạm ẩn bài viết khỏi hệ thống"}
           >
             {isHidden ? <Eye size={14} /> : <EyeOff size={14} />}

@@ -186,7 +186,6 @@ export const TripsUtility: React.FC<TripsUtilityProps> = ({
             </button>
           </div>
         ) : isDrawer ? (
-          /* Drawer Compact Clean Layout */
           <div className="space-y-2.5">
             {filteredTrips.map((trip) => {
               const isPublished =

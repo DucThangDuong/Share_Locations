@@ -65,7 +65,12 @@ public class GetMyProposalsEndpoint : Endpoint<GetMyProposalsRequest, ApiSuccess
         }
 
         var result = await Mediator.Send(
-            new GetUserProposalsQuery(userId.Value, req.Status, req.Page, req.PageSize),
+            new GetUserProposalsQuery(
+                TargetUserId: userId.Value,
+                CurrentUserId: userId.Value,
+                Status: req.Status,
+                Page: req.Page,
+                PageSize: req.PageSize),
             ct);
 
         await this.SendApiResponseAsync(result, ct);

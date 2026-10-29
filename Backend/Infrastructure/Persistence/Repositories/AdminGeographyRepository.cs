@@ -35,7 +35,10 @@ public class AdminGeographyRepository : IAdminGeographyRepository
                 r.OrderIndex,
                 r.Status,
                 (SELECT COUNT(1) FROM dbo.Provinces p WHERE p.RegionId = r.Id) AS TotalProvinces,
-                (SELECT COUNT(1) FROM dbo.Provinces p WHERE p.RegionId = r.Id AND p.Status = 1) AS ActiveProvinces
+                (SELECT COUNT(1) FROM dbo.Provinces p WHERE p.RegionId = r.Id AND p.Status = 1) AS ActiveProvinces,
+                (SELECT COUNT(1) FROM dbo.Places pl INNER JOIN dbo.Provinces p ON pl.ProvinceId = p.Id WHERE p.RegionId = r.Id AND pl.Status = 1 AND pl.IsDeleted = 0) AS TotalPlaces,
+                (SELECT COUNT(DISTINCT fp.FoodId) FROM dbo.FoodProvinces fp INNER JOIN dbo.Provinces p ON fp.ProvinceId = p.Id WHERE p.RegionId = r.Id) AS TotalFoods,
+                (SELECT COUNT(1) FROM dbo.Collections c INNER JOIN dbo.Provinces p ON c.ProvinceId = p.Id WHERE p.RegionId = r.Id AND c.Status = 1) AS TotalGuides
             FROM dbo.Regions r
             WHERE (@ActiveOnly IS NULL OR (@ActiveOnly = 1 AND r.Status = 1))
             ORDER BY r.OrderIndex, r.Name;";
@@ -59,7 +62,10 @@ public class AdminGeographyRepository : IAdminGeographyRepository
                 r.OrderIndex,
                 r.Status,
                 (SELECT COUNT(1) FROM dbo.Provinces p WHERE p.RegionId = r.Id) AS TotalProvinces,
-                (SELECT COUNT(1) FROM dbo.Provinces p WHERE p.RegionId = r.Id AND p.Status = 1) AS ActiveProvinces
+                (SELECT COUNT(1) FROM dbo.Provinces p WHERE p.RegionId = r.Id AND p.Status = 1) AS ActiveProvinces,
+                (SELECT COUNT(1) FROM dbo.Places pl INNER JOIN dbo.Provinces p ON pl.ProvinceId = p.Id WHERE p.RegionId = r.Id AND pl.Status = 1 AND pl.IsDeleted = 0) AS TotalPlaces,
+                (SELECT COUNT(DISTINCT fp.FoodId) FROM dbo.FoodProvinces fp INNER JOIN dbo.Provinces p ON fp.ProvinceId = p.Id WHERE p.RegionId = r.Id) AS TotalFoods,
+                (SELECT COUNT(1) FROM dbo.Collections c INNER JOIN dbo.Provinces p ON c.ProvinceId = p.Id WHERE p.RegionId = r.Id AND c.Status = 1) AS TotalGuides
             FROM dbo.Regions r
             WHERE r.Id = @Id;";
 
@@ -303,7 +309,8 @@ public class AdminGeographyRepository : IAdminGeographyRepository
                 p.DisplayOrder,
                 p.Status,
                 (SELECT COUNT(1) FROM dbo.Places pl WHERE pl.ProvinceId = p.Id AND pl.Status = 1 AND pl.IsDeleted = 0) AS PlaceCount,
-                (SELECT COUNT(1) FROM dbo.FoodProvinces fp WHERE fp.ProvinceId = p.Id) AS FoodCount
+                (SELECT COUNT(1) FROM dbo.FoodProvinces fp WHERE fp.ProvinceId = p.Id) AS FoodCount,
+                (SELECT COUNT(1) FROM dbo.AdminProvinceScopes aps WHERE aps.ProvinceId = p.Id) AS AssignedAdminsCount
             FROM dbo.Provinces p
             LEFT JOIN dbo.Regions r ON p.RegionId = r.Id
             {whereSql}
@@ -334,6 +341,7 @@ public class AdminGeographyRepository : IAdminGeographyRepository
                 p.Status,
                 (SELECT COUNT(1) FROM dbo.Places pl WHERE pl.ProvinceId = p.Id AND pl.Status = 1 AND pl.IsDeleted = 0) AS PlaceCount,
                 (SELECT COUNT(1) FROM dbo.FoodProvinces fp WHERE fp.ProvinceId = p.Id) AS FoodCount,
+                (SELECT COUNT(1) FROM dbo.AdminProvinceScopes aps WHERE aps.ProvinceId = p.Id) AS AssignedAdminsCount,
                 (SELECT COUNT(1) FROM dbo.Proposals prop WHERE prop.ProvinceId = p.Id) AS ProposalCount,
                 (SELECT COUNT(1) FROM dbo.AdminProvinceScopes aps WHERE aps.ProvinceId = p.Id) AS AssignedAdminsCount
             FROM dbo.Provinces p

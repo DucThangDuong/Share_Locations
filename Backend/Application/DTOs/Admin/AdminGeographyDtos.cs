@@ -15,6 +15,9 @@ public class AdminRegionListItemDto
     public string StatusName => AdminDisplayNames.GetStatusName(Status);
     public int TotalProvinces { get; set; }
     public int ActiveProvinces { get; set; }
+    public int TotalPlaces { get; set; }
+    public int TotalFoods { get; set; }
+    public int TotalGuides { get; set; }
 }
 
 public class CreateAdminRegionRequest
@@ -61,6 +64,7 @@ public class AdminProvinceListItemDto
     public string StatusName => AdminDisplayNames.GetStatusName(Status);
     public int PlaceCount { get; set; }
     public int FoodCount { get; set; }
+    public int AssignedAdminsCount { get; set; }
 }
 
 public class AdminProvinceDetailDto

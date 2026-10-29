@@ -28,8 +28,9 @@ public class GetPlaceReviewsEndpoint : Endpoint<GetPlaceReviewsRequest, ApiSucce
     {
         var userId = this.GetUserId();
         var isAdmin = User.IsInRole("SystemAdmin") || User.IsInRole("CategoryAdmin");
+        var includeHidden = req.IncludeHidden && isAdmin;
         var result = await Mediator.Send(
-            new GetPlaceReviewsQuery(req.Id, req.Page, req.PageSize, req.Rating, userId, isAdmin),
+            new GetPlaceReviewsQuery(req.Id, req.Page, req.PageSize, req.Rating, userId, includeHidden),
             ct);
 
         await this.SendApiResponseAsync(result, ct);

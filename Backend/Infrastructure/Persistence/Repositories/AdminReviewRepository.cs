@@ -78,6 +78,10 @@ public class AdminReviewRepository : IAdminReviewRepository
             {
                 whereClauses.Add("r.Status = 2");
             }
+            else if (cleanStatus == "pending" || cleanStatus == "3")
+            {
+                whereClauses.Add("r.Status = 3");
+            }
         }
 
         if (!string.IsNullOrWhiteSpace(keyword))
@@ -129,10 +133,14 @@ public class AdminReviewRepository : IAdminReviewRepository
                 prof.AvatarUrl AS UserAvatar,
                 r.Rating,
                 r.Content,
+                r.HiddenReason,
+                r.HiddenBy,
+                r.HiddenAt,
                 r.CreatedAt,
                 CASE
                     WHEN r.Status = 0 THEN 'hidden'
                     WHEN r.Status = 2 THEN 'reported'
+                    WHEN r.Status = 3 THEN 'pending'
                     ELSE 'active'
                 END AS Status,
                 (SELECT COUNT(1) FROM dbo.ReviewReports rr WHERE rr.ReviewId = r.Id) AS ReportCount
@@ -152,7 +160,12 @@ public class AdminReviewRepository : IAdminReviewRepository
         {
             var reviewIds = items.Select(x => x.Id).ToList();
             const string mediaSql = "SELECT ReviewId, Url AS MediaUrl FROM dbo.ReviewMedia WHERE ReviewId IN @ReviewIds ORDER BY DisplayOrder, Id;";
-            var mediaRows = await connection.QueryAsync<(long ReviewId, string MediaUrl)>(mediaSql, new { ReviewIds = reviewIds });
+            var mediaRows = new List<(long ReviewId, string MediaUrl)>();
+            foreach (var chunk in reviewIds.Chunk(1000))
+            {
+                var chunkRows = await connection.QueryAsync<(long ReviewId, string MediaUrl)>(mediaSql, new { ReviewIds = chunk });
+                mediaRows.AddRange(chunkRows);
+            }
             var mediaLookup = mediaRows.ToLookup(x => x.ReviewId, x => x.MediaUrl);
 
             foreach (var item in items)
@@ -181,7 +194,7 @@ public class AdminReviewRepository : IAdminReviewRepository
             return false;
 
         var oldStatus = review.Status;
-        review.UpdateStatus(status);
+        review.UpdateStatus(status, hiddenBy: _currentUserService.UserId);
         await _dbContext.SaveChangesAsync(ct);
 
         await RecalculatePlaceRatingAsync(review.PlaceId);
@@ -282,11 +295,19 @@ public class AdminReviewRepository : IAdminReviewRepository
             {
                 whereClauses.Add("c.Status = 1");
             }
+            else if (cleanStatus == "reported" || cleanStatus == "2")
+            {
+                whereClauses.Add("c.Status = 2");
+            }
+            else if (cleanStatus == "pending" || cleanStatus == "3")
+            {
+                whereClauses.Add("c.Status = 3");
+            }
         }
 
         if (!string.IsNullOrWhiteSpace(keyword))
         {
-            whereClauses.Add("(c.Content LIKE @Keyword OR COALESCE(prof.FullName, u.Email) LIKE @Keyword)");
+            whereClauses.Add("(c.Content LIKE @Keyword OR p.Name LIKE @Keyword OR COALESCE(prof.FullName, u.Email) LIKE @Keyword)");
             parameters.Add("Keyword", $"%{keyword.Trim()}%");
         }
 
@@ -329,8 +350,16 @@ public class AdminReviewRepository : IAdminReviewRepository
                 COALESCE(prof.FullName, u.Email, N'Người dùng') AS UserName,
                 prof.AvatarUrl AS UserAvatar,
                 c.Content,
+                c.HiddenReason,
+                c.HiddenBy,
+                c.HiddenAt,
                 c.CreatedAt,
-                CASE WHEN c.Status = 1 THEN 'active' ELSE 'hidden' END AS Status,
+                CASE
+                    WHEN c.Status = 0 THEN 'hidden'
+                    WHEN c.Status = 2 THEN 'reported'
+                    WHEN c.Status = 3 THEN 'pending'
+                    ELSE 'active'
+                END AS Status,
                 (SELECT COUNT(1) FROM dbo.CommentReports cr WHERE cr.CommentId = c.Id) AS ReportCount
             FROM dbo.Comments c
             LEFT JOIN dbo.Reviews r ON c.ReviewId = r.Id
@@ -355,7 +384,7 @@ public class AdminReviewRepository : IAdminReviewRepository
             return false;
 
         var oldStatus = comment.Status;
-        comment.UpdateStatus(status);
+        comment.UpdateStatus(status, hiddenBy: _currentUserService.UserId);
         await _dbContext.SaveChangesAsync(ct);
 
         await _auditLogService.LogAsync(

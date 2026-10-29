@@ -802,11 +802,10 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
                     </h2>
                     {!isCreatingNew && (
                       <span
-                        className={`inline-flex items-center justify-center px-3 py-0.5 rounded-xl text-xs font-bold border transition-colors ${
-                          activeCollection.status === 1
-                            ? "bg-[#e6fcf5] text-[#087f5b] border-[#63e6be]"
-                            : "bg-slate-100 text-slate-700 border-slate-300"
-                        }`}
+                        className={`inline-flex items-center justify-center px-3 py-0.5 rounded-xl text-xs font-bold border transition-colors ${activeCollection.status === 1
+                          ? "bg-[#e6fcf5] text-[#087f5b] border-[#63e6be]"
+                          : "bg-slate-100 text-slate-700 border-slate-300"
+                          }`}
                       >
                         {activeCollection.status === 1 ? "Công khai" : "Tạm ẩn"}
                       </span>
@@ -944,11 +943,10 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
                 <button
                   type="button"
                   onClick={() => handleToggleCollectionStatus(activeCollection.id)}
-                  className={`flex items-center gap-1.5 px-3 py-2 font-semibold rounded-xl cursor-pointer transition-colors text-xs ${
-                    activeCollection.status === 1
-                      ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200"
-                      : "bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-xs"
-                  }`}
+                  className={`flex items-center gap-1.5 px-3 py-2 font-semibold rounded-xl cursor-pointer transition-colors text-xs ${activeCollection.status === 1
+                    ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200"
+                    : "bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-xs"
+                    }`}
                   title={activeCollection.status === 1 ? "Tạm ẩn bộ sưu tập khỏi trang người dùng" : "Công khai lại bộ sưu tập"}
                 >
                   {activeCollection.status === 1 ? <EyeOff size={14} /> : <Eye size={14} />}
@@ -1457,10 +1455,7 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
                             <span className="text-[11px] font-semibold text-slate-400">Chưa có hình ảnh</span>
                           </div>
 
-                          {/* Hover trắng mờ */}
                           <div className="absolute inset-0 bg-white/0 group-hover:bg-white/20 transition-colors duration-200 pointer-events-none" />
-
-                          {/* Badge khi đã thêm vào BST */}
                           {isInCollection && (
                             <div className="absolute top-2.5 right-2.5 bg-emerald-700 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-sm">
                               <Check size={12} strokeWidth={3} />
@@ -1534,7 +1529,6 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
                   })}
                 </div>
               ) : (
-                /* List Mode */
                 <div className="space-y-2.5">
                   {searchPlacesResult.map((place) => {
                     const isInCollection = collectionPlaceIds.has(Number(place.id));

@@ -226,8 +226,9 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({
       setMainTab("proposals");
     } else if (t === "reviews" || t === "review") {
       setRevComTab("reviews");
-      setRevReportFilter("reported");
+      setRevReportFilter("all");
       setMainTab("reviews_comments");
+      navigate("/admin/reviews?status=pending");
     } else {
       setMainTab("reports");
     }

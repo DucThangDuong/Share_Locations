@@ -248,7 +248,6 @@ export const FriendsUtility: React.FC<FriendsUtilityProps> = ({
                   </button>
                 </div>
               ) : isDrawer ? (
-                /* Drawer list */
                 <div className="space-y-2">
                   {filteredFriends.map((friend) => (
                     <div
@@ -292,7 +291,6 @@ export const FriendsUtility: React.FC<FriendsUtilityProps> = ({
                   ))}
                 </div>
               ) : (
-                /* Full page grid */
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {filteredFriends.map((friend) => (
                     <div

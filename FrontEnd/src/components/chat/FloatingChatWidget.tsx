@@ -682,7 +682,6 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                               </div>
                             </div>
                           ) : (
-                            /* MESSAGE BUBBLE */
                             m.content && (
                               <div
                                 onClick={() => {

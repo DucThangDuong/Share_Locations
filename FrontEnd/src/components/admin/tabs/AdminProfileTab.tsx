@@ -297,9 +297,6 @@ export const AdminProfileTab: React.FC<AdminProfileTabProps> = ({
               <span>Tỉnh thành quản lý</span>
             </h3>
           </div>
-          <span className="text-xs font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
-            {assignedProvinces.length} địa phương được kích hoạt
-          </span>
         </div>
 
         {isLoading ? (
@@ -316,7 +313,6 @@ export const AdminProfileTab: React.FC<AdminProfileTabProps> = ({
             </p>
           </div>
         ) : (
-          /* Lưới 3 Cột theo 3 Miền chuẩn hóa */
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-start">
             {provinceColumns.map((col) => (
               <div
@@ -370,9 +366,6 @@ export const AdminProfileTab: React.FC<AdminProfileTabProps> = ({
               <span>Danh mục dịch vụ</span>
             </h3>
           </div>
-          <span className="text-xs font-bold px-3 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
-            {assignedCategories.length} danh mục quản lý
-          </span>
         </div>
 
         {isLoading ? (

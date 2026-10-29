@@ -11,6 +11,7 @@ public class GetPlaceReviewsRequest
     public int Page { get; set; } = 1;
     public int PageSize { get; set; } = 10;
     public int? Rating { get; set; }
+    public bool IncludeHidden { get; set; } = false;
 }
 
 public class GetPlaceReviewsRequestValidator : Validator<GetPlaceReviewsRequest>

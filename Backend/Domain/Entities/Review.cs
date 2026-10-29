@@ -1,4 +1,4 @@
-﻿using Domain.Enums;
+using Domain.Enums;
 
 namespace Domain.Entities;
 
@@ -64,21 +64,58 @@ public class Review
         UpdatedAt = DateTime.UtcNow;
     }
 
-    public void Hide()
+    public void Hide(long? hiddenBy = null, string? reason = null)
     {
         Status = ReviewStatus.Hidden;
+        HiddenBy = hiddenBy;
+        if (!string.IsNullOrWhiteSpace(reason))
+        {
+            HiddenReason = reason;
+        }
+        HiddenAt = DateTime.UtcNow;
         UpdatedAt = DateTime.UtcNow;
     }
 
     public void Restore()
     {
         Status = ReviewStatus.Active;
+        HiddenReason = null;
+        HiddenBy = null;
+        HiddenAt = null;
         UpdatedAt = DateTime.UtcNow;
     }
 
-    public void UpdateStatus(ReviewStatus status)
+    public void FlagForPendingReview(string reason)
+    {
+        Status = ReviewStatus.PendingReview;
+        HiddenReason = reason;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void UpdateStatus(ReviewStatus status, string? reason = null, long? hiddenBy = null)
     {
         Status = status;
+        if (status == ReviewStatus.Active)
+        {
+            HiddenReason = null;
+            HiddenBy = null;
+            HiddenAt = null;
+        }
+        else
+        {
+            if (!string.IsNullOrWhiteSpace(reason))
+            {
+                HiddenReason = reason;
+            }
+            if (hiddenBy.HasValue)
+            {
+                HiddenBy = hiddenBy.Value;
+            }
+            if (status == ReviewStatus.Hidden)
+            {
+                HiddenAt = DateTime.UtcNow;
+            }
+        }
         UpdatedAt = DateTime.UtcNow;
     }
 

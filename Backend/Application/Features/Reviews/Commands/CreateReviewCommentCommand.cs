@@ -1,4 +1,4 @@
-﻿using Application.Common;
+using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
@@ -20,15 +20,18 @@ public class CreateReviewCommentCommandHandler : IRequestHandler<CreateReviewCom
     private readonly IUnitOfWork _unitOfWork;
     private readonly INotificationRepository _notificationRepository;
     private readonly INotificationNotifier _notifier;
+    private readonly IContentModerationService _moderationService;
 
     public CreateReviewCommentCommandHandler(
         IUnitOfWork unitOfWork,
         INotificationRepository notificationRepository,
-        INotificationNotifier notifier)
+        INotificationNotifier notifier,
+        IContentModerationService moderationService)
     {
         _unitOfWork = unitOfWork;
         _notificationRepository = notificationRepository;
         _notifier = notifier;
+        _moderationService = moderationService;
     }
 
     public async Task<Result<CommentDto>> Handle(CreateReviewCommentCommand request, CancellationToken ct)
@@ -41,6 +44,15 @@ public class CreateReviewCommentCommandHandler : IRequestHandler<CreateReviewCom
         if (request.Content.Length > 1000)
         {
             return Result<CommentDto>.Failure("Nội dung bình luận không được vượt quá 1000 ký tự.");
+        }
+
+        // =========================================================================
+        // KIỂM DUYỆT BÌNH LUẬN: Tiền xử lý -> Lọc vi phạm cứng & Spam
+        // =========================================================================
+        var moderation = await _moderationService.ModerateCommentAsync(request.Content, ct);
+        if (!moderation.IsPassed)
+        {
+            return Result<CommentDto>.Failure(moderation.BlockReason ?? "Nội dung bình luận vi phạm tiêu chuẩn cộng đồng.");
         }
 
         var review = await _unitOfWork.Reviews.GetByIdAsync(request.ReviewId, ct);
@@ -65,7 +77,11 @@ public class CreateReviewCommentCommandHandler : IRequestHandler<CreateReviewCom
             return Result<CommentDto>.NotFound("Người dùng không tồn tại.");
         }
 
-        var comment = new Comment(request.ReviewId, request.UserId, request.Content, request.ParentId);
+        var comment = new Comment(request.ReviewId, request.UserId, moderation.CleanedText, request.ParentId);
+        if (moderation.RecommendedStatus == ReviewStatus.PendingReview)
+        {
+            comment.FlagForPendingReview(moderation.ModerationReason ?? "Cần quản trị viên kiểm tra nội dung bình luận.");
+        }
 
         await _unitOfWork.Comments.AddAsync(comment, ct);
         await _unitOfWork.SaveChangesAsync(ct);
@@ -114,6 +130,10 @@ public class CreateReviewCommentCommandHandler : IRequestHandler<CreateReviewCom
             Content = comment.Content,
             ParentId = comment.ParentId,
             CreatedAt = comment.CreatedAt,
+            Status = comment.Status == CommentStatus.PendingReview ? "pending" : "active",
+            HiddenReason = comment.HiddenReason,
+            HiddenBy = comment.HiddenBy,
+            HiddenAt = comment.HiddenAt,
             Replies = []
         };
 

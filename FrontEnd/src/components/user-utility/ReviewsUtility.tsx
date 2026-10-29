@@ -147,7 +147,6 @@ export const ReviewsUtility: React.FC<ReviewsUtilityProps> = ({
             </Link>
           </div>
         ) : isDrawer ? (
-          /* Drawer Compact Layout */
           <div className="space-y-2.5">
             {filteredReviews.map((rev) => (
               <div
@@ -177,7 +176,6 @@ export const ReviewsUtility: React.FC<ReviewsUtilityProps> = ({
             ))}
           </div>
         ) : (
-          /* Full Page Grid Layout */
           <div className="space-y-4">
             {filteredReviews.map((rev) => (
               <div

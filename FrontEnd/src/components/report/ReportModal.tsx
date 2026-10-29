@@ -444,7 +444,6 @@ export const ReportModal: React.FC<ReportModalProps> = ({
             </button>
           </div>
         ) : modalView === "history" ? (
-          /* History View */
           <div className="p-5 sm:p-6 overflow-y-auto max-h-[65vh] space-y-3">
             <h5 className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
               Báo cáo bạn đã gửi gần đây ({myReports.length})

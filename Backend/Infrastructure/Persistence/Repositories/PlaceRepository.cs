@@ -206,7 +206,7 @@ public class PlaceRepository : IPlaceRepository
             SELECT rm.Url
             FROM dbo.ReviewMedia rm
             INNER JOIN dbo.Reviews r ON rm.ReviewId = r.Id
-            WHERE r.PlaceId = @Id AND r.Status = 1 AND rm.MediaType = 1
+            WHERE r.PlaceId = @Id AND r.Status <> 0 AND rm.MediaType = 1
             ORDER BY r.CreatedAt DESC, rm.Id ASC;
 
             SELECT f.Id, f.Name, f.Description, f.MinPrice, f.MaxPrice, f.CoverImageUrl AS ImageUrl
@@ -442,7 +442,7 @@ public class PlaceRepository : IPlaceRepository
 
             SELECT Rating, COUNT(1) AS TotalCount
             FROM dbo.Reviews
-            WHERE PlaceId = @PlaceId AND (@IncludeHidden = 1 OR Status = 1)
+            WHERE PlaceId = @PlaceId AND (@IncludeHidden = 1 OR Status <> 0)
             GROUP BY Rating;
 
             SELECT
@@ -454,11 +454,14 @@ public class PlaceRepository : IPlaceRepository
                 r.Content,
                 r.CreatedAt,
                 r.LikesCount,
-                CASE WHEN r.Status = 1 THEN 'active' ELSE 'hidden' END AS Status,
-                (SELECT COUNT(1) FROM dbo.Comments c WHERE c.ReviewId = r.Id AND (@IncludeHidden = 1 OR c.Status = 1)) AS CommentsCount
+                CASE WHEN r.Status = 0 THEN 'hidden' WHEN r.Status = 2 THEN 'reported' WHEN r.Status = 3 THEN 'pending' ELSE 'active' END AS Status,
+                r.HiddenReason,
+                r.HiddenBy,
+                r.HiddenAt,
+                (SELECT COUNT(1) FROM dbo.Comments c WHERE c.ReviewId = r.Id AND (@IncludeHidden = 1 OR c.Status <> 0)) AS CommentsCount
             FROM dbo.Reviews r
             LEFT JOIN dbo.UserProfiles up ON r.UserId = up.UserId
-            WHERE r.PlaceId = @PlaceId AND (@IncludeHidden = 1 OR r.Status = 1)
+            WHERE r.PlaceId = @PlaceId AND (@IncludeHidden = 1 OR r.Status <> 0)
               AND (@Rating IS NULL OR r.Rating = @Rating)
             ORDER BY r.CreatedAt DESC
             OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";

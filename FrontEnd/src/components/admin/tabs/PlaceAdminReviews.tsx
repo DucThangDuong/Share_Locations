@@ -66,9 +66,9 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
   const [searchKeyword, setSearchKeyword] = useState<string>('')
   const [selectedRatingFilter, setSelectedRatingFilter] = useState<string>('all')
   const [mediaOnlyFilter, setMediaOnlyFilter] = useState<boolean>(false)
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'hidden'>('all')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'hidden' | 'pending'>('all')
 
-  const [reviewStatusOverrides, setReviewStatusOverrides] = useState<Record<number, 'active' | 'hidden'>>({})
+  const [reviewStatusOverrides, setReviewStatusOverrides] = useState<Record<number, 'active' | 'hidden' | 'pending'>>({})
 
   const [openCommentsReviewId, setOpenCommentsReviewId] = useState<number | null>(null)
   const [commentsByReviewId, setCommentsByReviewId] = useState<Record<number, CommentDto[]>>({})
@@ -101,7 +101,7 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
     setIsLoading(true)
     setErrorMsg('')
     try {
-      const res = await placeService.getPlaceReviews(placeId, { page: 1, pageSize: 20 })
+      const res = await placeService.getPlaceReviews(placeId, { page: 1, pageSize: 20, includeHidden: true })
       if (res.success && res.data) {
         const data: PlaceReviewSummaryDto = res.data
         const items = data.items || []
@@ -192,17 +192,21 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
 
   const handleToggleReviewStatus = async (review: ReviewItemDto, e?: React.MouseEvent) => {
     e?.stopPropagation()
-    const currentStatus: 'active' | 'hidden' =
+    const currentStatus: 'active' | 'hidden' | 'pending' =
       reviewStatusOverrides[review.id] ||
-      (review.status === 'hidden' || review.status === 3 || review.status === 'inactive' || review.is_hidden
+      (review.status === 'hidden' || review.status === 0 || review.status === 'inactive' || review.is_hidden
         ? 'hidden'
-        : 'active')
+        : (review.status === 'pending' || review.status === 3 ? 'pending' : 'active'))
     const nextStatus: 'active' | 'hidden' = currentStatus === 'active' ? 'hidden' : 'active'
 
     setReviewStatusOverrides((prev) => ({
       ...prev,
       [review.id]: nextStatus
     }))
+    if (nextStatus === 'active') {
+      review.hiddenReason = undefined
+      review.status = 'active'
+    }
 
     try {
       await adminService.updateReviewStatus(review.id, nextStatus)
@@ -480,8 +484,10 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
           if (!hasImg && !hasVid) return false
         }
 
-        const st = reviewStatusOverrides[rev.id] || 'active'
-        if (statusFilter !== 'all' && st !== statusFilter) return false
+        const currentSt = reviewStatusOverrides[rev.id] ||
+          (rev.status === 'pending' || rev.status === 3 ? 'pending' :
+           (rev.status === 'hidden' || rev.status === 0 || (rev as any).is_hidden ? 'hidden' : 'active'))
+        if (statusFilter !== 'all' && currentSt !== statusFilter) return false
 
         return true
       })
@@ -682,6 +688,7 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
               options={[
                 { value: "all", label: "Tất cả trạng thái" },
                 { value: "active", label: "Đang hiển thị" },
+                { value: "pending", label: "Chờ duyệt / Nghi vấn" },
                 { value: "hidden", label: "Đang tạm ẩn" },
               ]}
               size="sm"
@@ -744,9 +751,11 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
       ) : (
         <div className="space-y-4">
           {filteredAndSortedReviews.map((rev) => {
-            const isHidden = reviewStatusOverrides[rev.id]
-              ? reviewStatusOverrides[rev.id] === 'hidden'
-              : (rev.status === 'hidden' || rev.status === 'inactive' || (rev as any).is_hidden)
+            const currentRevStatus = reviewStatusOverrides[rev.id] ||
+              (rev.status === 'pending' || rev.status === 3 ? 'pending' :
+               (rev.status === 'hidden' || rev.status === 0 || (rev as any).is_hidden ? 'hidden' : 'active'))
+            const isHidden = currentRevStatus === 'hidden'
+            const isPending = currentRevStatus === 'pending'
             const isCommentsOpen = openCommentsReviewId === rev.id
             const commentsList = commentsByReviewId[rev.id] || []
             const isLoadingComments = loadingCommentsReviewId === rev.id
@@ -782,13 +791,20 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
                             #{rev.id}
                           </span>
                           <span
-                            className={`inline-flex items-center justify-center px-3.5 py-1 rounded-xl text-xs font-bold border transition-colors ${isHidden
-                              ? 'bg-slate-100 text-slate-700 border-slate-300'
-                              : 'bg-[#e6fcf5] text-[#087f5b] border-[#63e6be]'
-                              }`}
+                            className={`inline-flex items-center justify-center px-3.5 py-1 rounded-xl text-xs font-bold border transition-colors ${
+                              isHidden
+                                ? 'bg-slate-100 text-slate-700 border-slate-300'
+                                : 'bg-[#e6fcf5] text-[#087f5b] border-[#63e6be]'
+                            }`}
                           >
                             {isHidden ? 'Tạm ẩn' : 'Công khai'}
                           </span>
+
+                          {isPending && !isHidden && (
+                            <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-xl text-xs font-bold border bg-amber-50 text-amber-800 border-amber-300 shadow-2xs">
+                              Nghi vấn
+                            </span>
+                          )}
                         </div>
 
                         <div className="flex items-center gap-2 text-[11px] text-slate-500 mt-0.5 flex-wrap">
@@ -818,14 +834,23 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
                       <button
                         type="button"
                         onClick={(e) => handleToggleReviewStatus(rev, e)}
-                        className={`px-2.5 py-1.5 rounded-xl border text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5 ${isHidden
-                          ? 'bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-xs border-emerald-600'
-                          : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
-                          }`}
-                        title={isHidden ? 'Bấm để công khai lại đánh giá này' : 'Bấm để tạm ẩn đánh giá này'}
+                        className={`px-2.5 py-1.5 rounded-xl border text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5 ${
+                          isPending
+                            ? 'bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-200 font-bold'
+                            : isHidden
+                            ? 'bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-xs border-emerald-600'
+                            : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+                        }`}
+                        title={
+                          isPending
+                            ? 'Bấm để duyệt công khai đánh giá nghi vấn này'
+                            : isHidden
+                            ? 'Bấm để công khai lại đánh giá này'
+                            : 'Bấm để tạm ẩn đánh giá này'
+                        }
                       >
-                        {isHidden ? <Eye size={14} /> : <EyeOff size={14} />}
-                        <span>{isHidden ? 'Công khai' : 'Tạm ẩn'}</span>
+                        {isPending ? <CheckCircle2 size={14} className="text-amber-600" /> : isHidden ? <Eye size={14} /> : <EyeOff size={14} />}
+                        <span>{isPending ? 'Duyệt' : isHidden ? 'Công khai' : 'Tạm ẩn'}</span>
                       </button>
 
                       <button
@@ -848,6 +873,12 @@ export const PlaceAdminReviews: React.FC<PlaceAdminReviewsProps> = ({
                   <div className="text-xs text-slate-800 leading-relaxed font-normal whitespace-pre-line pl-0.5">
                     {rev.content || <span className="italic text-slate-400">Người dùng không để lại lời bình luận.</span>}
                   </div>
+                  {isPending && !isHidden && rev.hiddenReason && (
+                    <div className="p-3 rounded-2xl bg-amber-50/90 border border-amber-200 text-amber-900 text-xs flex items-center gap-2">
+                      <AlertTriangle size={15} className="text-amber-600 shrink-0" />
+                      <span><strong>Cảnh báo nghi vấn:</strong> {rev.hiddenReason}</span>
+                    </div>
+                  )}
 
                   {((rev.images && rev.images.length > 0) || (rev.videos && rev.videos.length > 0)) && (
                     <div className="flex flex-wrap gap-2.5 pt-1">

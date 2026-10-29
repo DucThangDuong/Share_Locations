@@ -1,5 +1,7 @@
 using Application.Common;
+using Application.Common.Interfaces;
 using Application.DTOs;
+using Domain.Enums;
 using Domain.Interfaces;
 using MediatR;
 
@@ -14,10 +16,14 @@ public record UpdateReviewCommentCommand(
 public class UpdateReviewCommentCommandHandler : IRequestHandler<UpdateReviewCommentCommand, Result<CommentDto>>
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IContentModerationService _moderationService;
 
-    public UpdateReviewCommentCommandHandler(IUnitOfWork unitOfWork)
+    public UpdateReviewCommentCommandHandler(
+        IUnitOfWork unitOfWork,
+        IContentModerationService moderationService)
     {
         _unitOfWork = unitOfWork;
+        _moderationService = moderationService;
     }
 
     public async Task<Result<CommentDto>> Handle(UpdateReviewCommentCommand request, CancellationToken ct)
@@ -32,6 +38,15 @@ public class UpdateReviewCommentCommandHandler : IRequestHandler<UpdateReviewCom
             return Result<CommentDto>.Failure("Nội dung bình luận không được vượt quá 1000 ký tự.");
         }
 
+        // =========================================================================
+        // KIỂM DUYỆT BÌNH LUẬN: Tiền xử lý -> Lọc vi phạm cứng & Spam
+        // =========================================================================
+        var moderation = await _moderationService.ModerateCommentAsync(request.Content, ct);
+        if (!moderation.IsPassed)
+        {
+            return Result<CommentDto>.Failure(moderation.BlockReason ?? "Nội dung bình luận vi phạm tiêu chuẩn cộng đồng.");
+        }
+
         var comment = await _unitOfWork.Comments.GetByIdAsync(request.CommentId, ct);
         if (comment == null)
         {
@@ -43,7 +58,17 @@ public class UpdateReviewCommentCommandHandler : IRequestHandler<UpdateReviewCom
             return Result<CommentDto>.Forbidden("Bạn không có quyền chỉnh sửa bình luận này.");
         }
 
-        comment.UpdateContent(request.Content);
+        comment.UpdateContent(moderation.CleanedText);
+
+        if (moderation.RecommendedStatus == ReviewStatus.PendingReview)
+        {
+            comment.FlagForPendingReview(moderation.ModerationReason ?? "Cần quản trị viên kiểm tra nội dung bình luận.");
+        }
+        else if (comment.Status == CommentStatus.PendingReview)
+        {
+            comment.Restore();
+        }
+
         _unitOfWork.Comments.Update(comment);
         await _unitOfWork.SaveChangesAsync(ct);
 
@@ -57,6 +82,10 @@ public class UpdateReviewCommentCommandHandler : IRequestHandler<UpdateReviewCom
             Content = comment.Content,
             ParentId = comment.ParentId,
             CreatedAt = comment.CreatedAt,
+            Status = comment.Status == CommentStatus.PendingReview ? "pending" : (comment.Status == CommentStatus.Hidden ? "hidden" : "active"),
+            HiddenReason = comment.HiddenReason,
+            HiddenBy = comment.HiddenBy,
+            HiddenAt = comment.HiddenAt,
             Replies = []
         };
 

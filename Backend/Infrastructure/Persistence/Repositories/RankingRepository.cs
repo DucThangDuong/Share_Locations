@@ -221,6 +221,39 @@ public class RankingRepository : IRankingRepository
         item.Score = total;
     }
 
+    private static void ApplyPlaceBreakdownAndScore(RankingPlaceItemDto item, RankingGovernanceConfigDto config)
+    {
+        double ratingVal = (double)item.AvgRating;
+        double reviewVal = item.ReviewCount;
+        double viewVal = item.ViewCount;
+        double favVal = item.FavoritesCount;
+
+        double rawRating = ratingVal * config.RatingMultiplier * (config.RatingPct / 60.0);
+        double rawReview = reviewVal * config.ReviewMultiplier * (config.ReviewPct / 25.0);
+        double rawView = viewVal * config.ViewMultiplier * (config.ViewPct / 10.0);
+        double rawFav = Math.Max(1.0, favVal) * config.FavoriteMultiplier * (config.FavoritePct / 5.0);
+
+        if (config.IsCustomFormula)
+        {
+            item.RatingScore = Math.Round(rawRating, 1);
+            item.ReviewScore = Math.Round(rawReview, 1);
+            item.ViewScore = Math.Round(rawView, 1);
+            item.FavoriteScore = Math.Round(rawFav, 1);
+            item.Score = Math.Round(item.RatingScore + item.ReviewScore + item.ViewScore + item.FavoriteScore, 1);
+            return;
+        }
+
+        double total = Math.Round(item.Score, 1);
+        double rawSum = rawRating + rawReview + rawView + rawFav;
+        if (rawSum <= 0) rawSum = 1.0;
+
+        item.RatingScore = Math.Round(total * (rawRating / rawSum), 1);
+        item.ReviewScore = Math.Round(total * (rawReview / rawSum), 1);
+        item.ViewScore = Math.Round(total * (rawView / rawSum), 1);
+        item.FavoriteScore = Math.Round(Math.Max(0, total - item.RatingScore - item.ReviewScore - item.ViewScore), 1);
+        item.Score = total;
+    }
+
     public async Task<RankingOverviewDto> GetRankingOverviewAsync(CancellationToken ct = default)
     {
         var connection = _dbContext.Database.GetDbConnection();
@@ -436,15 +469,6 @@ public class RankingRepository : IRankingRepository
 
         if (isProvinceType && !provinceId.HasValue)
         {
-            const string provCountSql = @"
-                SELECT COUNT(1)
-                FROM dbo.Provinces prov
-                WHERE prov.Status = 1
-                  AND (@CategoryId IS NULL OR EXISTS (SELECT 1 FROM dbo.Places pl WHERE pl.ProvinceId = prov.Id AND pl.CategoryId = @CategoryId AND pl.Status = 1 AND pl.IsDeleted = 0));";
-
-            var totalProvincesCount = await connection.ExecuteScalarAsync<int>(
-                new CommandDefinition(provCountSql, new { CategoryId = categoryId }, cancellationToken: ct));
-
             const string provRankSql = @"
                 SELECT
                     prov.Id,
@@ -472,22 +496,38 @@ public class RankingRepository : IRankingRepository
                 WHERE prov.Status = 1
                   AND (@CategoryId IS NULL OR EXISTS (SELECT 1 FROM dbo.Places pl WHERE pl.ProvinceId = prov.Id AND pl.CategoryId = @CategoryId AND pl.Status = 1 AND pl.IsDeleted = 0))
                 GROUP BY prov.Id, prov.Name, prov.Slug, prov.Tagline, prov.Description, prov.ImageUrl, prov.RegionId, r.Name
-                ORDER BY Score DESC, TotalReviews DESC
-                OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+                HAVING COUNT(p.Id) > 0;";
 
-            var provinceItems = (await connection.QueryAsync<DestinationRankingItemDto>(
-                new CommandDefinition(provRankSql, new { Offset = offset, PageSize = safePageSize, CategoryId = categoryId }, cancellationToken: ct))).ToList();
+            var allProvinces = (await connection.QueryAsync<DestinationRankingItemDto>(
+                new CommandDefinition(provRankSql, new { CategoryId = categoryId }, cancellationToken: ct))).ToList();
 
-            if (config.ExcludedProvinceIds.Count > 0)
+            var activeProvinces = allProvinces
+                .Where(p => !config.ExcludedProvinceIds.Contains(p.Id))
+                .ToList();
+
+            var unpinnedProvinces = activeProvinces
+                .Where(p => !config.PinnedProvinces.ContainsKey(p.Id))
+                .OrderByDescending(p => p.Score)
+                .ThenByDescending(p => p.TotalReviews)
+                .ToList();
+
+            var pinnedProvinces = activeProvinces
+                .Where(p => config.PinnedProvinces.ContainsKey(p.Id))
+                .OrderBy(p => config.PinnedProvinces[p.Id])
+                .ToList();
+
+            var mergedProvinces = new List<DestinationRankingItemDto>(unpinnedProvinces);
+            foreach (var pinItem in pinnedProvinces)
             {
-                provinceItems = provinceItems.Where(p => !config.ExcludedProvinceIds.Contains(p.Id)).ToList();
+                int targetIdx = Math.Clamp(config.PinnedProvinces[pinItem.Id] - 1, 0, mergedProvinces.Count);
+                mergedProvinces.Insert(targetIdx, pinItem);
             }
 
-            for (int i = 0; i < provinceItems.Count; i++)
+            for (int i = 0; i < mergedProvinces.Count; i++)
             {
-                int currentRank = offset + i + 1;
-                provinceItems[i].Rank = currentRank;
-                provinceItems[i].Badge = currentRank switch
+                int currentRank = i + 1;
+                mergedProvinces[i].Rank = currentRank;
+                mergedProvinces[i].Badge = currentRank switch
                 {
                     1 => "TOP 1",
                     2 => "TOP 2",
@@ -495,6 +535,9 @@ public class RankingRepository : IRankingRepository
                     _ => null
                 };
             }
+
+            int totalProvincesCount = mergedProvinces.Count;
+            var provinceItems = mergedProvinces.Skip(offset).Take(safePageSize).ToList();
 
             foreach (var dest in provinceItems)
             {
@@ -538,24 +581,6 @@ public class RankingRepository : IRankingRepository
 
         int? effectivePlaceTypeId = isPlaceAllType || isProvinceType ? null : (placeTypeId ?? 1);
 
-        const string countSql = @"
-            SELECT COUNT(1)
-            FROM dbo.Places p
-            INNER JOIN dbo.Categories cat ON p.CategoryId = cat.Id
-            WHERE p.Status = 1 AND p.IsDeleted = 0
-              AND p.ReviewCount >= @MinReviews
-              AND (@PlaceTypeId IS NULL OR cat.PlaceTypeId = @PlaceTypeId)
-              AND (@CategoryId IS NULL OR p.CategoryId = @CategoryId)
-              AND (@ProvinceId IS NULL OR p.ProvinceId = @ProvinceId);";
-
-        var totalPlacesCountResult = await connection.ExecuteScalarAsync<int>(new CommandDefinition(countSql, new
-        {
-            MinReviews = config.MinReviews,
-            PlaceTypeId = effectivePlaceTypeId,
-            CategoryId = categoryId,
-            ProvinceId = provinceId
-        }, cancellationToken: ct));
-
         const string placesSql = @"
             SELECT
                 p.Id,
@@ -588,40 +613,63 @@ public class RankingRepository : IRankingRepository
             INNER JOIN dbo.Categories cat ON p.CategoryId = cat.Id
             INNER JOIN dbo.PlaceTypes pt ON cat.PlaceTypeId = pt.Id
             WHERE p.Status = 1 AND p.IsDeleted = 0
-              AND p.ReviewCount >= @MinReviews
               AND (@PlaceTypeId IS NULL OR cat.PlaceTypeId = @PlaceTypeId)
               AND (@CategoryId IS NULL OR p.CategoryId = @CategoryId)
-              AND (@ProvinceId IS NULL OR p.ProvinceId = @ProvinceId)
-            ORDER BY Score DESC, p.AvgRating DESC, p.ReviewCount DESC
-            OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+              AND (@ProvinceId IS NULL OR p.ProvinceId = @ProvinceId);";
 
-        var places = (await connection.QueryAsync<RankingPlaceItemDto>(new CommandDefinition(placesSql, new
+        var rawPlaces = (await connection.QueryAsync<RankingPlaceItemDto>(new CommandDefinition(placesSql, new
         {
-            MinReviews = config.MinReviews,
             PlaceTypeId = effectivePlaceTypeId,
             CategoryId = categoryId,
-            ProvinceId = provinceId,
-            Offset = offset,
-            PageSize = safePageSize
+            ProvinceId = provinceId
         }, cancellationToken: ct))).ToList();
 
-        if (config.ExcludedPlaceIds.Count > 0)
+        foreach (var item in rawPlaces)
         {
-            places = places.Where(p => !config.ExcludedPlaceIds.Contains(p.Id)).ToList();
+            ApplyPlaceBreakdownAndScore(item, config);
         }
 
-        for (int i = 0; i < places.Count; i++)
+        var activePlaces = rawPlaces
+            .Where(p => !config.ExcludedPlaceIds.Contains(p.Id) && (p.ReviewCount >= config.MinReviews || config.PinnedPlaces.ContainsKey(p.Id)))
+            .ToList();
+
+        var unpinnedPlaces = activePlaces
+            .Where(p => !config.PinnedPlaces.ContainsKey(p.Id))
+            .OrderByDescending(p => p.Score)
+            .ThenByDescending(p => p.AvgRating)
+            .ThenByDescending(p => p.ReviewCount)
+            .ToList();
+
+        var pinnedPlaces = activePlaces
+            .Where(p => config.PinnedPlaces.ContainsKey(p.Id))
+            .OrderBy(p => config.PinnedPlaces[p.Id])
+            .ToList();
+
+        var mergedPlaces = new List<RankingPlaceItemDto>(unpinnedPlaces);
+        foreach (var pinItem in pinnedPlaces)
         {
-            int currentRank = offset + i + 1;
-            places[i].Rank = currentRank;
-            places[i].Badge = currentRank switch
+            int targetIdx = Math.Clamp(config.PinnedPlaces[pinItem.Id] - 1, 0, mergedPlaces.Count);
+            mergedPlaces.Insert(targetIdx, pinItem);
+        }
+
+        for (int i = 0; i < mergedPlaces.Count; i++)
+        {
+            int currentRank = i + 1;
+            mergedPlaces[i].Rank = currentRank;
+            mergedPlaces[i].Badge = currentRank switch
             {
                 1 => "TOP 1",
                 2 => "TOP 2",
                 3 => "TOP 3",
                 _ => null
             };
+        }
 
+        int totalCount = mergedPlaces.Count;
+        var paginatedPlaces = mergedPlaces.Skip(offset).Take(safePageSize).ToList();
+
+        for (int i = 0; i < paginatedPlaces.Count; i++)
+        {
             const string reviewSql = @"
                 SELECT TOP 1
                     r.Id AS ReviewId,
@@ -638,9 +686,9 @@ public class RankingRepository : IRankingRepository
                 ORDER BY ISNULL(r.LikesCount, 0) DESC, r.Rating DESC, r.CreatedAt DESC;";
 
             var snippet = await connection.QueryFirstOrDefaultAsync<RankingReviewSnippetDto>(
-                new CommandDefinition(reviewSql, new { PlaceId = places[i].Id }, cancellationToken: ct));
+                new CommandDefinition(reviewSql, new { PlaceId = paginatedPlaces[i].Id }, cancellationToken: ct));
 
-            places[i].FeaturedReview = snippet;
+            paginatedPlaces[i].FeaturedReview = snippet;
         }
 
         return new RankingDetailViewDto
@@ -649,10 +697,10 @@ public class RankingRepository : IRankingRepository
             SubCategories = subCats,
             AvailableProvinces = availableProvinces,
             ProvinceItems = [],
-            Items = places,
+            Items = paginatedPlaces,
             Page = safePage,
             PageSize = safePageSize,
-            TotalCount = totalPlacesCountResult
+            TotalCount = totalCount
         };
     }
 

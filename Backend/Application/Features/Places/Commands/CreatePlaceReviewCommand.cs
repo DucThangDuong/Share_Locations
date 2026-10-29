@@ -23,16 +23,19 @@ public class CreatePlaceReviewCommandHandler : IRequestHandler<CreatePlaceReview
     private readonly IUnitOfWork _unitOfWork;
     private readonly IBlobService? _blobService;
     private readonly IRecommendationService _recommendationService;
+    private readonly IContentModerationService _moderationService;
     private readonly IReputationService? _reputationService;
 
     public CreatePlaceReviewCommandHandler(
         IUnitOfWork unitOfWork,
         IRecommendationService recommendationService,
+        IContentModerationService moderationService,
         IBlobService? blobService = null,
         IReputationService? reputationService = null)
     {
         _unitOfWork = unitOfWork;
         _recommendationService = recommendationService;
+        _moderationService = moderationService;
         _blobService = blobService;
         _reputationService = reputationService;
     }
@@ -42,6 +45,15 @@ public class CreatePlaceReviewCommandHandler : IRequestHandler<CreatePlaceReview
         if (request.Rating < 1 || request.Rating > 5)
         {
             return Result<ReviewItemDto>.Failure("Đánh giá sao phải nằm trong khoảng từ 1 đến 5 sao.");
+        }
+
+        // =========================================================================
+        // PIPELINE KIỂM DUYỆT 4 BƯỚC: Tiền xử lý -> Lọc cứng & Spam -> Cảm xúc -> Lệch sao
+        // =========================================================================
+        var moderation = await _moderationService.ModerateReviewAsync(request.Content, request.Rating, ct);
+        if (!moderation.IsPassed)
+        {
+            return Result<ReviewItemDto>.Failure(moderation.BlockReason ?? "Nội dung vi phạm tiêu chuẩn cộng đồng.");
         }
 
         var place = await _unitOfWork.Places.GetByIdAsync(request.PlaceId, ct);
@@ -62,7 +74,13 @@ public class CreatePlaceReviewCommandHandler : IRequestHandler<CreatePlaceReview
             return Result<ReviewItemDto>.Conflict("Bạn đã đánh giá địa điểm này rồi. Mỗi người dùng chỉ được đánh giá một địa điểm một lần.");
         }
 
-        var review = new Review(request.PlaceId, request.UserId, request.Rating, request.Content, request.VisitDate);
+        var review = new Review(request.PlaceId, request.UserId, request.Rating, moderation.CleanedText, request.VisitDate);
+
+        // Nếu phát hiện lệch sao hoặc châm biếm -> Gắn cờ đưa vào hàng chờ duyệt của Admin (PendingReview)
+        if (moderation.RecommendedStatus == ReviewStatus.PendingReview)
+        {
+            review.FlagForPendingReview(moderation.ModerationReason ?? "Cần quản trị viên kiểm tra nội dung/lệch sao.");
+        }
         var uploadedImages = new List<string>();
         var uploadedVideos = new List<string>();
 
@@ -115,29 +133,40 @@ public class CreatePlaceReviewCommandHandler : IRequestHandler<CreatePlaceReview
 
         await _unitOfWork.ExecuteInTransactionAsync(async () =>
         {
+            // Dọn dẹp bản ghi đánh giá cũ đã bị xóa của người dùng tại địa điểm này (nếu có)
+            await _unitOfWork.Reviews.DeleteHiddenReviewsByPlaceAndUserAsync(request.PlaceId, request.UserId, ct);
+
             await _unitOfWork.Reviews.AddAsync(review, ct);
             await _unitOfWork.SaveChangesAsync(ct);
 
-            var (avgRating, reviewCount) = await _unitOfWork.Reviews.GetPlaceStatsAsync(place.Id, ct);
-            place.UpdateRating(avgRating, reviewCount);
-            _unitOfWork.Places.Update(place);
-            await _unitOfWork.SaveChangesAsync(ct);
+            // Chỉ cập nhật điểm trung bình của quán nếu đánh giá được duyệt tự động (Active)
+            if (review.Status == ReviewStatus.Active)
+            {
+                var (avgRating, reviewCount) = await _unitOfWork.Reviews.GetPlaceStatsAsync(place.Id, ct);
+                place.UpdateRating(avgRating, reviewCount);
+                _unitOfWork.Places.Update(place);
+                await _unitOfWork.SaveChangesAsync(ct);
+            }
         }, ct);
 
-        await _recommendationService.InvalidateUserVectorCacheAsync(request.UserId, ct);
-
-        if (_reputationService != null)
+        if (review.Status == ReviewStatus.Active)
         {
-            var hasMedia = uploadedImages.Count > 0 || uploadedVideos.Count > 0;
-            var actionType = hasMedia ? ReputationActionType.ReviewWithMediaCreated : ReputationActionType.ReviewCreated;
-            await _reputationService.AwardPointsAsync(
-                request.UserId,
-                actionType,
-                review.Id,
-                $"Đánh giá địa điểm '{place.Name}'",
-                ct);
+            await _recommendationService.InvalidateUserVectorCacheAsync(request.UserId, ct);
+
+            if (_reputationService != null)
+            {
+                var hasMedia = uploadedImages.Count > 0 || uploadedVideos.Count > 0;
+                var actionType = hasMedia ? ReputationActionType.ReviewWithMediaCreated : ReputationActionType.ReviewCreated;
+                await _reputationService.AwardPointsAsync(
+                    request.UserId,
+                    actionType,
+                    review.Id,
+                    $"Đánh giá địa điểm '{place.Name}'",
+                    ct);
+            }
         }
 
+        var isPending = review.Status == ReviewStatus.PendingReview;
         var dto = new ReviewItemDto
         {
             Id = review.Id,
@@ -149,9 +178,17 @@ public class CreatePlaceReviewCommandHandler : IRequestHandler<CreatePlaceReview
             Images = uploadedImages,
             Videos = uploadedVideos,
             LikesCount = 0,
-            CreatedAt = review.CreatedAt
+            CreatedAt = review.CreatedAt,
+            Status = isPending ? "pending" : "active",
+            HiddenReason = review.HiddenReason,
+            HiddenBy = review.HiddenBy,
+            HiddenAt = review.HiddenAt
         };
 
-        return Result<ReviewItemDto>.Success(dto, "Đánh giá của bạn đã được đăng thành công.");
+        var responseMessage = isPending
+            ? "Đánh giá của bạn đã được tiếp nhận và đưa vào hàng chờ kiểm duyệt do phát hiện dấu hiệu nghi vấn (lệch sao / phản ánh đặc biệt). Quản trị viên sẽ sớm xử lý."
+            : "Đánh giá của bạn đã được đăng thành công.";
+
+        return Result<ReviewItemDto>.Success(dto, responseMessage);
     }
 }

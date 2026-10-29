@@ -74,6 +74,10 @@ public class RankingPlaceItemDto
     public int ViewCount { get; set; }
     public int FavoritesCount { get; set; }
     public double Score { get; set; }
+    public double RatingScore { get; set; }
+    public double ReviewScore { get; set; }
+    public double ViewScore { get; set; }
+    public double FavoriteScore { get; set; }
     public List<string> GreatThingsToDo { get; set; } = [];
     public RankingReviewSnippetDto? FeaturedReview { get; set; }
 }

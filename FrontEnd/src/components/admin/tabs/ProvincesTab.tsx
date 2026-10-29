@@ -17,6 +17,8 @@ import {
   ArrowLeft,
   Save,
   Upload,
+  RotateCcw,
+  BookOpen,
 } from "lucide-react";
 import { adminService, extractList } from "@/services/adminService";
 import { CustomSelect } from "@/components/common/CustomSelect";
@@ -67,6 +69,7 @@ export const ProvincesTab: React.FC<ProvincesTabProps> = ({ showToast }) => {
     totalPages: 1,
   });
 
+  const [provinceDetailData, setProvinceDetailData] = useState<AdminGeographyProvinceItem | null>(null);
   const [detailView, setDetailView] = useState<{
     type: "province" | "region";
     mode: "create" | "edit";
@@ -294,6 +297,24 @@ export const ProvincesTab: React.FC<ProvincesTabProps> = ({ showToast }) => {
     provinceFilters.featured,
   ]);
 
+  const hasActiveFilter = Boolean(
+    provinceFilters.keyword ||
+    provinceFilters.regionId !== undefined ||
+    provinceFilters.featured !== undefined ||
+    provinceFilters.status !== undefined
+  );
+
+  const handleResetFilters = () => {
+    setProvinceFilters({
+      regionId: undefined,
+      status: undefined,
+      featured: undefined,
+      keyword: "",
+      page: 1,
+      pageSize: 15,
+    });
+  };
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setProvinceFilters((prev) => ({ ...prev, page: 1 }));
@@ -314,6 +335,7 @@ export const ProvincesTab: React.FC<ProvincesTabProps> = ({ showToast }) => {
   const handleOpenProvinceDetail = (prov?: AdminGeographyProvinceItem) => {
     setProvinceImageFile(null);
     setProvincePreviewUrl("");
+    setProvinceDetailData(prov || null);
     if (prov) {
       setDetailView({ type: "province", mode: "edit", id: prov.id });
       setProvinceForm({
@@ -394,6 +416,7 @@ export const ProvincesTab: React.FC<ProvincesTabProps> = ({ showToast }) => {
 
   const handleBackToList = () => {
     setDetailView(null);
+    setProvinceDetailData(null);
     setProvinceImageFile(null);
     setProvincePreviewUrl("");
     setRegionImageFile(null);
@@ -504,7 +527,7 @@ export const ProvincesTab: React.FC<ProvincesTabProps> = ({ showToast }) => {
 
   if (detailView?.type === "province") {
     const isEdit = detailView.mode === "edit";
-    const currentProv = isEdit ? provinces.find((p) => p.id === detailView.id) : null;
+    const currentProv = isEdit ? (provinceDetailData || provinces.find((p) => p.id === detailView.id)) : null;
     const activeProvincePreview = provincePreviewUrl || provinceForm.imageUrl;
 
     return (
@@ -709,11 +732,14 @@ export const ProvincesTab: React.FC<ProvincesTabProps> = ({ showToast }) => {
                     <span className="font-bold text-slate-800">{currentProv.foodCount ?? 0}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-500 flex items-center gap-1.5">
+                    <span className="text-slate-500 flex items-center gap-1.5" title="Điều phối viên địa phương được phân công phụ trách">
                       <Users size={13} className="text-purple-500" />
-                      Admin phụ trách:
+                      Điều phối viên địa phương (Local Mod):
                     </span>
-                    <span className="font-bold text-slate-800">{currentProv.assignedAdminsCount ?? 0}</span>
+                    <div className="text-right">
+                      <span className="font-bold text-slate-800">{currentProv.assignedAdminsCount ?? 0}</span>
+                      <span className="text-[10px] text-slate-400 block">+1 Admin tổng phụ trách</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -892,11 +918,36 @@ export const ProvincesTab: React.FC<ProvincesTabProps> = ({ showToast }) => {
             {isEdit && currentReg && (
               <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
                 <h4 className="font-bold text-slate-900 text-xs border-b border-slate-100 pb-2">
-                  Tỉnh thành trực thuộc
+                  Dữ liệu số hóa toàn vùng
                 </h4>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-500">Số tỉnh/thành:</span>
-                  <span className="font-bold text-slate-800">{currentReg.totalProvinces ?? 0}</span>
+                <div className="space-y-2 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500">Tỉnh thành trực thuộc:</span>
+                    <span className="font-bold text-slate-800">
+                      {currentReg.activeProvinces ?? currentReg.totalProvinces ?? 0} / {currentReg.totalProvinces ?? 0}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500 flex items-center gap-1.5">
+                      <MapPin size={13} className="text-emerald-500" />
+                      Tổng địa điểm đã số hóa:
+                    </span>
+                    <span className="font-bold text-slate-800">{currentReg.totalPlaces ?? 0}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500 flex items-center gap-1.5">
+                      <Utensils size={13} className="text-amber-500" />
+                      Tổng món ăn đặc sản:
+                    </span>
+                    <span className="font-bold text-slate-800">{currentReg.totalFoods ?? 0}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500 flex items-center gap-1.5">
+                      <BookOpen size={13} className="text-sky-500" />
+                      Cẩm nang du lịch:
+                    </span>
+                    <span className="font-bold text-slate-800">{currentReg.totalGuides ?? 0}</span>
+                  </div>
                 </div>
               </div>
             )}
@@ -974,7 +1025,7 @@ export const ProvincesTab: React.FC<ProvincesTabProps> = ({ showToast }) => {
                   }))
                 }
                 options={[
-                  { value: "", label: "Tất cả phân loại" },
+                  { value: "", label: "Phân loại trọng điểm" },
                   { value: "true", label: "⭐ Trọng điểm du lịch" },
                   { value: "false", label: "Tỉnh thành thông thường" },
                 ]}
@@ -1000,12 +1051,17 @@ export const ProvincesTab: React.FC<ProvincesTabProps> = ({ showToast }) => {
                 className="min-w-[140px] shrink-0"
               />
 
-              <button
-                type="submit"
-                className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl transition-colors cursor-pointer shrink-0"
-              >
-                Lọc
-              </button>
+              {hasActiveFilter && (
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 hover:text-slate-900 font-semibold rounded-xl text-xs transition-colors cursor-pointer shrink-0"
+                  title="Đặt lại bộ lọc"
+                >
+                  <RotateCcw size={13} />
+                  <span>Đặt lại</span>
+                </button>
+              )}
             </form>
 
             <div className="flex items-center gap-2 w-full lg:w-auto justify-end">
@@ -1087,7 +1143,7 @@ export const ProvincesTab: React.FC<ProvincesTabProps> = ({ showToast }) => {
                               <Utensils size={12} className="text-amber-500" />
                               {prov.foodCount ?? 0}
                             </span>
-                            <span title="Admin phụ trách" className="flex items-center gap-1">
+                            <span title="Điều phối viên địa phương (Local Mod) - Mặc định có Admin tổng điều hành" className="flex items-center gap-1">
                               <Users size={12} className="text-purple-500" />
                               {prov.assignedAdminsCount ?? 0}
                             </span>
@@ -1209,6 +1265,7 @@ export const ProvincesTab: React.FC<ProvincesTabProps> = ({ showToast }) => {
                   <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-bold text-[11px] uppercase tracking-wider">
                     <th className="p-3.5 pl-4">Vùng / Miền</th>
                     <th className="p-3.5">Tỉnh / Thành trực thuộc</th>
+                    <th className="p-3.5 text-center">Tổng dữ liệu số hóa</th>
                     <th className="p-3.5">Trạng thái</th>
                     <th className="p-3.5 pr-4 text-center">Xem chi tiết</th>
                   </tr>
@@ -1248,6 +1305,22 @@ export const ProvincesTab: React.FC<ProvincesTabProps> = ({ showToast }) => {
                             {reg.activeProvinces ?? 0} / {reg.totalProvinces ?? 0} tỉnh thành
                           </span>
                         </td>
+                        <td className="p-3.5 text-center">
+                          <div className="inline-flex items-center gap-3 text-[11px] text-slate-600">
+                            <span title="Tổng địa điểm đã số hóa" className="flex items-center gap-1 font-bold text-slate-800">
+                              <MapPin size={12} className="text-emerald-500" />
+                              {reg.totalPlaces ?? 0}
+                            </span>
+                            <span title="Tổng món ăn đặc sản" className="flex items-center gap-1">
+                              <Utensils size={12} className="text-amber-500" />
+                              {reg.totalFoods ?? 0}
+                            </span>
+                            <span title="Tổng cẩm nang / bộ sưu tập du lịch" className="flex items-center gap-1">
+                              <BookOpen size={12} className="text-sky-500" />
+                              {reg.totalGuides ?? 0}
+                            </span>
+                          </div>
+                        </td>
                         <td className="p-3.5" onClick={(e) => e.stopPropagation()}>
                           <button
                             onClick={() =>
@@ -1284,14 +1357,14 @@ export const ProvincesTab: React.FC<ProvincesTabProps> = ({ showToast }) => {
                   })}
                   {regions.length === 0 && !isRegionsLoading && (
                     <tr>
-                      <td colSpan={4} className="p-10 text-center text-slate-400">
+                      <td colSpan={5} className="p-10 text-center text-slate-400">
                         Chưa có phân vùng địa lý nào được tạo.
                       </td>
                     </tr>
                   )}
                   {isRegionsLoading && (
                     <tr>
-                      <td colSpan={4} className="p-10 text-center text-slate-400">
+                      <td colSpan={5} className="p-10 text-center text-slate-400">
                         <RefreshCw size={20} className="animate-spin mx-auto text-emerald-600 mb-2" />
                         Đang tải danh sách vùng miền...
                       </td>

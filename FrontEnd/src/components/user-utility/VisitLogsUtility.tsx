@@ -284,7 +284,6 @@ export const VisitLogsUtility: React.FC<VisitLogsUtilityProps> = ({
             </button>
           </div>
         ) : isDrawer ? (
-          /* Drawer Compact Layout */
           <div className="space-y-2.5">
             {filteredLogs.map((log) => {
               const coverImg =
@@ -342,7 +341,6 @@ export const VisitLogsUtility: React.FC<VisitLogsUtilityProps> = ({
             })}
           </div>
         ) : (
-          /* Full Page Grid Layout */
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {filteredLogs.map((log) => {
               const coverImg =

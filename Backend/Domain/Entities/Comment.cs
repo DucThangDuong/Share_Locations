@@ -1,4 +1,4 @@
-﻿using Domain.Enums;
+using Domain.Enums;
 
 namespace Domain.Entities;
 
@@ -65,8 +65,35 @@ public class Comment
         HiddenAt = null;
     }
 
-    public void UpdateStatus(CommentStatus status)
+    public void FlagForPendingReview(string reason)
+    {
+        Status = CommentStatus.PendingReview;
+        HiddenReason = reason;
+    }
+
+    public void UpdateStatus(CommentStatus status, string? reason = null, long? hiddenBy = null)
     {
         Status = status;
+        if (status == CommentStatus.Active)
+        {
+            HiddenReason = null;
+            HiddenBy = null;
+            HiddenAt = null;
+        }
+        else
+        {
+            if (!string.IsNullOrWhiteSpace(reason))
+            {
+                HiddenReason = reason;
+            }
+            if (hiddenBy.HasValue)
+            {
+                HiddenBy = hiddenBy.Value;
+            }
+            if (status == CommentStatus.Hidden)
+            {
+                HiddenAt = DateTime.UtcNow;
+            }
+        }
     }
 }

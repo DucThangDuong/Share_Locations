@@ -1,4 +1,4 @@
-﻿using Application.Common;
+using Application.Common;
 using Application.Common.Interfaces;
 using Application.DTOs;
 using Domain.Entities;
@@ -23,10 +23,15 @@ public class UpdatePlaceReviewCommandHandler : IRequestHandler<UpdatePlaceReview
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IBlobService? _blobService;
+    private readonly IContentModerationService _moderationService;
 
-    public UpdatePlaceReviewCommandHandler(IUnitOfWork unitOfWork, IBlobService? blobService = null)
+    public UpdatePlaceReviewCommandHandler(
+        IUnitOfWork unitOfWork,
+        IContentModerationService moderationService,
+        IBlobService? blobService = null)
     {
         _unitOfWork = unitOfWork;
+        _moderationService = moderationService;
         _blobService = blobService;
     }
 
@@ -35,6 +40,12 @@ public class UpdatePlaceReviewCommandHandler : IRequestHandler<UpdatePlaceReview
         if (request.Rating < 1 || request.Rating > 5)
         {
             return Result<ReviewItemDto>.Failure("Đánh giá sao phải nằm trong khoảng từ 1 đến 5 sao.");
+        }
+
+        var moderation = await _moderationService.ModerateReviewAsync(request.Content, request.Rating, ct);
+        if (!moderation.IsPassed)
+        {
+            return Result<ReviewItemDto>.Failure(moderation.BlockReason ?? "Nội dung vi phạm tiêu chuẩn cộng đồng.");
         }
 
         var review = await _unitOfWork.Reviews.GetByIdWithMediaAsync(request.ReviewId, ct);
@@ -60,7 +71,16 @@ public class UpdatePlaceReviewCommandHandler : IRequestHandler<UpdatePlaceReview
             return Result<ReviewItemDto>.NotFound("Địa điểm không tồn tại.");
         }
 
-        review.Update(request.Rating, request.Content, request.VisitDate);
+        review.Update(request.Rating, moderation.CleanedText, request.VisitDate);
+
+        if (moderation.RecommendedStatus == ReviewStatus.PendingReview)
+        {
+            review.FlagForPendingReview(moderation.ModerationReason ?? "Cần quản trị viên kiểm tra nội dung/lệch sao.");
+        }
+        else if (review.Status == ReviewStatus.PendingReview && moderation.RecommendedStatus == ReviewStatus.Active)
+        {
+            review.Restore();
+        }
 
         var finalImages = new List<string>();
         var finalVideos = new List<string>();
@@ -154,8 +174,12 @@ public class UpdatePlaceReviewCommandHandler : IRequestHandler<UpdatePlaceReview
             Images = finalImages,
             Videos = finalVideos,
             LikesCount = 0,
-            CommentsCount = review.Comments.Count(c => c.Status == CommentStatus.Active),
-            CreatedAt = review.CreatedAt
+            CommentsCount = review.Comments.Count(c => c.Status != CommentStatus.Hidden),
+            CreatedAt = review.CreatedAt,
+            Status = review.Status == ReviewStatus.PendingReview ? "pending" : (review.Status == ReviewStatus.Hidden ? "hidden" : "active"),
+            HiddenReason = review.HiddenReason,
+            HiddenBy = review.HiddenBy,
+            HiddenAt = review.HiddenAt
         };
 
         return Result<ReviewItemDto>.Success(dto, "Bài đánh giá đã được cập nhật thành công.");

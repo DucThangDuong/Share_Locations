@@ -550,7 +550,6 @@ export const AddPlaceModal: React.FC<AddPlaceModalProps> = ({
     <div className="fixed inset-0 z-[100] bg-slate-950/60 backdrop-blur-xs flex justify-center overflow-y-auto animate-in fade-in duration-200">
       <div className="min-h-screen w-full bg-slate-50/95 pb-20 pt-4 sm:pt-6 font-sans text-slate-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-          {/* Header Bar */}
           <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in">
             <div className="flex items-center gap-3">
               <button
@@ -598,9 +597,7 @@ export const AddPlaceModal: React.FC<AddPlaceModalProps> = ({
 
           <form onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-              {/* Left Column: Form Fields */}
               <div className="lg:col-span-8 space-y-6">
-                {/* 1. Thông tin cơ bản */}
                 <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-5">
                   <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
                     <FileText className="w-4 h-4 text-emerald-700" />
@@ -761,7 +758,6 @@ export const AddPlaceModal: React.FC<AddPlaceModalProps> = ({
                   </div>
                 </div>
 
-                {/* 2. Thông tin vị trí */}
                 <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
                     <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
@@ -828,7 +824,6 @@ export const AddPlaceModal: React.FC<AddPlaceModalProps> = ({
                   </div>
                 </div>
 
-                {/* 3. Thời gian & Giá cả */}
                 <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-5">
                   <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
                     <Clock className="w-4 h-4 text-emerald-700" />
@@ -943,7 +938,6 @@ export const AddPlaceModal: React.FC<AddPlaceModalProps> = ({
                   </div>
                 </div>
 
-                {/* 4. Hình ảnh địa điểm */}
                 <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-xs space-y-4">
                   <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
                     <ImageIcon className="w-4 h-4 text-emerald-700" />
@@ -1036,7 +1030,6 @@ export const AddPlaceModal: React.FC<AddPlaceModalProps> = ({
                   </div>
                 </div>
 
-                {/* Bottom actions */}
                 <div className="p-6 bg-white rounded-3xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
                   <div className="text-xs text-slate-500">
                     Địa điểm sau khi thêm sẽ được công khai trực tiếp lên hệ thống bản đồ và danh mục địa điểm.
@@ -1071,9 +1064,7 @@ export const AddPlaceModal: React.FC<AddPlaceModalProps> = ({
                 </div>
               </div>
 
-              {/* Right Column: Live Preview & Guidelines */}
               <div className="lg:col-span-4 space-y-6 sticky top-6">
-                {/* Live Preview Card */}
                 <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-4">
                   <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
                     <Eye className="w-4 h-4 text-emerald-700" />
@@ -1168,7 +1159,6 @@ export const AddPlaceModal: React.FC<AddPlaceModalProps> = ({
                   </div>
                 </div>
 
-                {/* Guidelines */}
                 <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-3.5">
                   <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
                     <ShieldCheck className="w-4 h-4 text-emerald-700" />

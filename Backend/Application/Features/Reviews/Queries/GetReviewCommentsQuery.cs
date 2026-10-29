@@ -30,7 +30,10 @@ public class GetReviewCommentsQueryHandler : IRequestHandler<GetReviewCommentsQu
             Content = c.Content,
             ParentId = c.ParentId,
             CreatedAt = c.CreatedAt,
-            Status = c.Status == Domain.Enums.CommentStatus.Active ? "active" : "hidden",
+            Status = c.Status == Domain.Enums.CommentStatus.Hidden ? "hidden" : (c.Status == Domain.Enums.CommentStatus.PendingReview ? "pending" : "active"),
+            HiddenReason = c.HiddenReason,
+            HiddenBy = c.HiddenBy,
+            HiddenAt = c.HiddenAt,
             Replies = new List<CommentDto>()
         }).ToList();
 

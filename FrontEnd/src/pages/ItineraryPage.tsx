@@ -409,7 +409,7 @@ export const ItineraryPage: React.FC = () => {
           coverImageUrl: plannerTrip.coverImg,
           startDate: plannerTrip.startDate,
           endDate: plannerTrip.endDate,
-          privacy: plannerTrip.privacy,
+          privacy: isOwner ? plannerTrip.privacy : undefined,
           days: plannerTrip.days.map((day) => ({
             dayNumber: day.dayNumber,
             dayTitle: day.title,
@@ -442,7 +442,7 @@ export const ItineraryPage: React.FC = () => {
         coverImageUrl: plannerTrip.coverImg,
         startDate: plannerTrip.startDate,
         endDate: plannerTrip.endDate,
-        privacy: plannerTrip.privacy,
+        privacy: isOwner ? plannerTrip.privacy : undefined,
         budgetTarget: plannerTrip.budgetTarget
       })
 

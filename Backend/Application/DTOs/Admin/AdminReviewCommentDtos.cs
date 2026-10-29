@@ -1,4 +1,4 @@
-﻿namespace Application.DTOs.Admin;
+namespace Application.DTOs.Admin;
 
 public class AdminReviewItemDto
 {
@@ -16,6 +16,9 @@ public class AdminReviewItemDto
     public List<string> Images { get; set; } = new();
     public DateTime CreatedAt { get; set; }
     public string Status { get; set; } = "active";
+    public string? HiddenReason { get; set; }
+    public long? HiddenBy { get; set; }
+    public DateTime? HiddenAt { get; set; }
     public int ReportCount { get; set; }
 }
 
@@ -33,6 +36,9 @@ public class AdminCommentItemDto
     public string Content { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
     public string Status { get; set; } = "active";
+    public string? HiddenReason { get; set; }
+    public long? HiddenBy { get; set; }
+    public DateTime? HiddenAt { get; set; }
     public int ReportCount { get; set; }
 }
 

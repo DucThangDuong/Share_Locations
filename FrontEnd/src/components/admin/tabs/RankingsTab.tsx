@@ -507,7 +507,6 @@ export const RankingsTab: React.FC<RankingsTabProps> = ({ showToast }) => {
         </div>
       </div>
 
-      {/* KHỐI BẢNG XẾP HẠNG */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-visible">
         <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
           <div className="flex flex-wrap items-center gap-2">
@@ -638,7 +637,6 @@ export const RankingsTab: React.FC<RankingsTabProps> = ({ showToast }) => {
               <p className="text-xs text-slate-500 font-medium">Đang tải bảng xếp hạng từ hệ thống...</p>
             </div>
           ) : activeView === 'places' ? (
-            /* PLACES TABLE */
             displayedPlaces.length === 0 ? (
               <div className="py-16 text-center text-xs text-slate-400 space-y-2">
                 <p>
@@ -773,7 +771,6 @@ export const RankingsTab: React.FC<RankingsTabProps> = ({ showToast }) => {
                           {place.favoritesCount?.toLocaleString() || 0}
                         </td>
 
-                        {/* CỘT THUẬT TOÁN SCORE KÈM BREAKDOWN POPOVER */}
                         <td className="py-3 px-4 text-right relative">
                           <div className="inline-block relative group/score">
                             <button
@@ -823,7 +820,6 @@ export const RankingsTab: React.FC<RankingsTabProps> = ({ showToast }) => {
                           </div>
                         </td>
 
-                        {/* CỘT ĐIỀU KHIỂN / THAO TÁC */}
                         <td className="py-3 px-4 text-center relative">
                           <div className="inline-flex items-center justify-center gap-1">
                             <button
@@ -937,7 +933,6 @@ export const RankingsTab: React.FC<RankingsTabProps> = ({ showToast }) => {
               </table>
             )
           ) : (
-            /* PROVINCES TABLE */
             displayedProvinces.length === 0 ? (
               <div className="py-16 text-center text-xs text-slate-400">
                 {showExcludedOnly

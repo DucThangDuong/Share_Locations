@@ -549,8 +549,8 @@ public class AdminReportRepository : IAdminReportRepository
                 var placeReport = await _dbContext.PlaceReports.FirstOrDefaultAsync(r => r.Id == reportId, ct);
                 if (placeReport == null) return false;
                 if (!await IsTargetInScopeAsync("place", placeReport.PlaceId)) return false;
-                placeReport.Resolve(adminId, status);
-                if (status == ReportStatus.Resolved && actionTaken == "hide_target")
+                placeReport.Resolve(adminId, status, resolutionNote);
+                if (status == ReportStatus.Resolved && (actionTaken == "hide_target" || actionTaken == "mark_closed"))
                 {
                     var place = await _dbContext.Places.FirstOrDefaultAsync(p => p.Id == placeReport.PlaceId, ct);
                     if (place != null) place.UpdateStatus(PlaceStatus.Hidden);
@@ -561,14 +561,22 @@ public class AdminReportRepository : IAdminReportRepository
                 var reviewReport = await _dbContext.ReviewReports.FirstOrDefaultAsync(r => r.Id == reportId, ct);
                 if (reviewReport == null) return false;
                 if (!await IsTargetInScopeAsync("review", reviewReport.ReviewId)) return false;
-                reviewReport.Resolve(adminId, status);
-                if (status == ReportStatus.Resolved && (actionTaken == "hide_target" || actionTaken == "delete_permanently"))
+                reviewReport.Resolve(adminId, status, resolutionNote);
+                if (status == ReportStatus.Resolved)
                 {
                     var review = await _dbContext.Reviews.FirstOrDefaultAsync(r => r.Id == reviewReport.ReviewId, ct);
                     if (review != null)
                     {
-                        review.UpdateStatus(ReviewStatus.Hidden);
-                        await RecalculatePlaceRatingAsync(review.PlaceId, ct);
+                        if (actionTaken?.Contains("hide_target") == true || actionTaken?.Contains("delete_permanently") == true)
+                        {
+                            review.UpdateStatus(ReviewStatus.Hidden);
+                            await RecalculatePlaceRatingAsync(review.PlaceId, ct);
+                        }
+                        if (actionTaken?.Contains("ban_user") == true)
+                        {
+                            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == review.UserId, ct);
+                            if (user != null) user.SetStatus(UserStatus.Banned);
+                        }
                     }
                 }
                 break;
@@ -577,11 +585,22 @@ public class AdminReportRepository : IAdminReportRepository
                 var commentReport = await _dbContext.CommentReports.FirstOrDefaultAsync(r => r.Id == reportId, ct);
                 if (commentReport == null) return false;
                 if (!await IsTargetInScopeAsync("comment", commentReport.CommentId)) return false;
-                commentReport.Resolve(adminId, status);
-                if (status == ReportStatus.Resolved && actionTaken == "hide_target")
+                commentReport.Resolve(adminId, status, resolutionNote);
+                if (status == ReportStatus.Resolved)
                 {
                     var comment = await _dbContext.Comments.FirstOrDefaultAsync(c => c.Id == commentReport.CommentId, ct);
-                    if (comment != null) comment.UpdateStatus(CommentStatus.Hidden);
+                    if (comment != null)
+                    {
+                        if (actionTaken?.Contains("hide_target") == true || actionTaken?.Contains("delete_permanently") == true)
+                        {
+                            comment.UpdateStatus(CommentStatus.Hidden);
+                        }
+                        if (actionTaken?.Contains("ban_user") == true)
+                        {
+                            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == comment.UserId, ct);
+                            if (user != null) user.SetStatus(UserStatus.Banned);
+                        }
+                    }
                 }
                 break;
 
@@ -589,11 +608,22 @@ public class AdminReportRepository : IAdminReportRepository
                 var blogReport = await _dbContext.BlogReports.FirstOrDefaultAsync(r => r.Id == reportId, ct);
                 if (blogReport == null) return false;
                 if (!await IsTargetInScopeAsync("blog", blogReport.BlogId)) return false;
-                blogReport.Resolve(adminId, status);
-                if (status == ReportStatus.Resolved && actionTaken == "hide_target")
+                blogReport.Resolve(adminId, status, resolutionNote);
+                if (status == ReportStatus.Resolved)
                 {
                     var blog = await _dbContext.Blogs.FirstOrDefaultAsync(b => b.Id == blogReport.BlogId, ct);
-                    if (blog != null) blog.UpdateStatus(BlogStatus.Archived);
+                    if (blog != null)
+                    {
+                        if (actionTaken?.Contains("hide_target") == true || actionTaken?.Contains("delete_permanently") == true)
+                        {
+                            blog.UpdateStatus(BlogStatus.Archived);
+                        }
+                        if (actionTaken?.Contains("ban_user") == true)
+                        {
+                            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == blog.AuthorId, ct);
+                            if (user != null) user.SetStatus(UserStatus.Banned);
+                        }
+                    }
                 }
                 break;
 
@@ -640,8 +670,8 @@ public class AdminReportRepository : IAdminReportRepository
         {
             case "place":
                 var placeReports = await _dbContext.PlaceReports.Where(r => r.PlaceId == targetId && r.Status == ReportStatus.Pending).ToListAsync(ct);
-                foreach (var r in placeReports) r.Resolve(adminId, status);
-                if (status == ReportStatus.Resolved && actionTaken == "hide_target")
+                foreach (var r in placeReports) r.Resolve(adminId, status, resolutionNote);
+                if (status == ReportStatus.Resolved && (actionTaken == "hide_target" || actionTaken == "mark_closed"))
                 {
                     var place = await _dbContext.Places.FirstOrDefaultAsync(p => p.Id == targetId, ct);
                     if (place != null) place.UpdateStatus(PlaceStatus.Hidden);
@@ -650,14 +680,22 @@ public class AdminReportRepository : IAdminReportRepository
 
             case "review":
                 var reviewReports = await _dbContext.ReviewReports.Where(r => r.ReviewId == targetId && r.Status == ReportStatus.Pending).ToListAsync(ct);
-                foreach (var r in reviewReports) r.Resolve(adminId, status);
-                if (status == ReportStatus.Resolved && (actionTaken == "hide_target" || actionTaken == "delete_permanently"))
+                foreach (var r in reviewReports) r.Resolve(adminId, status, resolutionNote);
+                if (status == ReportStatus.Resolved)
                 {
                     var review = await _dbContext.Reviews.FirstOrDefaultAsync(r => r.Id == targetId, ct);
                     if (review != null)
                     {
-                        review.UpdateStatus(ReviewStatus.Hidden);
-                        await RecalculatePlaceRatingAsync(review.PlaceId, ct);
+                        if (actionTaken?.Contains("hide_target") == true || actionTaken?.Contains("delete_permanently") == true)
+                        {
+                            review.UpdateStatus(ReviewStatus.Hidden);
+                            await RecalculatePlaceRatingAsync(review.PlaceId, ct);
+                        }
+                        if (actionTaken?.Contains("ban_user") == true)
+                        {
+                            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == review.UserId, ct);
+                            if (user != null) user.SetStatus(UserStatus.Banned);
+                        }
                     }
                 }
                 break;

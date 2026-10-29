@@ -75,6 +75,19 @@ public static class DependencyInjection
         services.AddScoped<ITokenCacheService, TokenCacheService>();
         services.AddScoped<IBlobService, AzureBlobService>();
         services.AddScoped<IEmailService, EmailService>();
+        services.AddHttpClient("SentimentService", client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(3);
+        });
+        services.AddSingleton<IModerationKeywordStore, Infrastructure.Services.ContentModeration.RedisModerationKeywordStore>();
+        services.AddScoped<IContentModerationService, Infrastructure.Services.ContentModeration.ContentModerationService>();
+
+        services.AddHttpClient("SentimentService", client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(3);
+        });
+        services.AddSingleton<IModerationKeywordStore, Infrastructure.Services.ContentModeration.RedisModerationKeywordStore>();
+        services.AddScoped<IContentModerationService, Infrastructure.Services.ContentModeration.ContentModerationService>();
 
         // Tích hợp Enterprise Redis (Resilient Multiplexer, Striped Lock, Brotli, RateLimit, Distributed Lock, ACL)
         services.AddEnterpriseRedis(configuration);

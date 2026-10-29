@@ -663,8 +663,8 @@ export const FoodsTab: React.FC<FoodsTabProps> = ({
                     <td className="p-3.5">
                       <span
                         className={`inline-flex items-center justify-center px-3.5 py-1 rounded-xl text-xs font-bold border transition-colors ${isHidden
-                            ? "bg-slate-100 text-slate-700 border-slate-300"
-                            : "bg-[#e6fcf5] text-[#087f5b] border-[#63e6be]"
+                          ? "bg-slate-100 text-slate-700 border-slate-300"
+                          : "bg-[#e6fcf5] text-[#087f5b] border-[#63e6be]"
                           }`}
                       >
                         {isHidden ? "Tạm ẩn" : "Công khai"}
@@ -745,8 +745,8 @@ export const FoodsTab: React.FC<FoodsTabProps> = ({
                         disabled={isLoading}
                         onClick={() => handlePageChange(pNum)}
                         className={`w-7 h-7 rounded-xl font-bold text-xs transition-colors flex items-center justify-center cursor-pointer ${pagination.page === pNum
-                            ? "bg-emerald-700 text-white shadow-xs"
-                            : "bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200"
+                          ? "bg-emerald-700 text-white shadow-xs"
+                          : "bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200"
                           }`}
                       >
                         {pNum}
@@ -773,7 +773,6 @@ export const FoodsTab: React.FC<FoodsTabProps> = ({
   );
 };
 
-/* ── DETAIL & EDIT VIEW FOR FOOD (SUPPORTING AZURE BLOB FILE UPLOAD & CREATE MODE) ── */
 interface FoodDetailEditorProps {
   food?: AdminFoodItem;
   isCreateMode?: boolean;
@@ -1117,9 +1116,20 @@ const FoodDetailEditor: React.FC<FoodDetailEditorProps> = ({
   };
 
   const isHidden = status === "hidden";
-  const formattedPrice = `${(parseInt(minPrice, 10) || 0).toLocaleString("vi-VN")} đ – ${(
-    parseInt(maxPrice, 10) || 0
-  ).toLocaleString("vi-VN")} đ`;
+  const minVal = parseInt(minPrice, 10) || 0;
+  const maxVal = parseInt(maxPrice, 10) || 0;
+  const hasPrice = minVal > 0 || maxVal > 0;
+
+  const displayPriceText = useMemo(() => {
+    if (!hasPrice) return "Đang cập nhật giá";
+    if (minVal > 0 && maxVal > 0) {
+      return `${minVal.toLocaleString("vi-VN")} đ – ${maxVal.toLocaleString("vi-VN")} đ`;
+    }
+    if (minVal > 0) {
+      return `Từ ${minVal.toLocaleString("vi-VN")} đ`;
+    }
+    return `Đến ${maxVal.toLocaleString("vi-VN")} đ`;
+  }, [hasPrice, minVal, maxVal]);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200 text-xs font-sans pb-16">
@@ -1141,14 +1151,19 @@ const FoodDetailEditor: React.FC<FoodDetailEditorProps> = ({
                 {isCreateMode ? name || "Thêm món ăn / Đặc sản mới" : name || food?.name}
               </h2>
               <span
-                className={`inline-flex items-center justify-center px-3.5 py-1 rounded-xl text-xs font-bold border transition-colors ${isCreateMode
-                    ? "bg-emerald-100 text-emerald-800 border-emerald-300"
-                    : isHidden
-                      ? "bg-slate-100 text-slate-700 border-slate-300"
-                      : "bg-[#e6fcf5] text-[#087f5b] border-[#63e6be]"
-                  }`}
+                className={`inline-flex items-center justify-center px-3.5 py-1 rounded-xl text-xs font-bold border transition-colors ${
+                  status === "hidden"
+                    ? "bg-slate-100 text-slate-700 border-slate-300"
+                    : "bg-[#e6fcf5] text-[#087f5b] border-[#63e6be]"
+                }`}
               >
-                {isCreateMode ? "Món mới" : isHidden ? "Tạm ẩn" : "Công khai"}
+                {isCreateMode
+                  ? status === "active"
+                    ? "Món mới (Công khai)"
+                    : "Món mới (Tạm ẩn / Nháp)"
+                  : isHidden
+                    ? "Tạm ẩn"
+                    : "Công khai"}
               </span>
             </div>
             <p className="text-[11px] text-slate-400 mt-0.5">
@@ -1160,22 +1175,38 @@ const FoodDetailEditor: React.FC<FoodDetailEditorProps> = ({
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          {!isCreateMode && onToggleStatus && (
+          {isCreateMode ? (
             <button
               type="button"
-              onClick={() => {
-                onToggleStatus();
-                setStatus((prev: string) => (prev === "active" ? "hidden" : "active"));
-              }}
-              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl cursor-pointer transition-colors ${isHidden
+              onClick={() => setStatus((prev: string) => (prev === "active" ? "hidden" : "active"))}
+              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl cursor-pointer transition-colors border ${
+                status === "active"
+                  ? "bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200"
+                  : "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300"
+              }`}
+              title="Nhấp để chuyển đổi trạng thái khởi tạo món ăn"
+            >
+              {status === "active" ? <Eye size={14} className="text-emerald-600" /> : <EyeOff size={14} className="text-slate-500" />}
+              <span>Trạng thái: <b>{status === "active" ? "Công khai" : "Tạm ẩn / Nháp"}</b></span>
+            </button>
+          ) : (
+            onToggleStatus && (
+              <button
+                type="button"
+                onClick={() => {
+                  onToggleStatus();
+                  setStatus((prev: string) => (prev === "active" ? "hidden" : "active"));
+                }}
+                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl cursor-pointer transition-colors ${isHidden
                   ? "bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-xs"
                   : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200"
-                }`}
-              title={isHidden ? "Công khai món ăn lên hệ thống" : "Tạm ẩn món ăn khỏi hệ thống"}
-            >
-              {isHidden ? <Eye size={14} /> : <EyeOff size={14} />}
-              <span>{isHidden ? "Công khai món ăn" : "Tạm ẩn món ăn"}</span>
-            </button>
+                  }`}
+                title={isHidden ? "Công khai món ăn lên hệ thống" : "Tạm ẩn món ăn khỏi hệ thống"}
+              >
+                {isHidden ? <Eye size={14} /> : <EyeOff size={14} />}
+                <span>{isHidden ? "Công khai món ăn" : "Tạm ẩn món ăn"}</span>
+              </button>
+            )
           )}
 
           {!isCreateMode && onDelete && (
@@ -1191,6 +1222,14 @@ const FoodDetailEditor: React.FC<FoodDetailEditorProps> = ({
 
           <button
             type="button"
+            onClick={onBack}
+            className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold rounded-xl cursor-pointer transition-colors"
+          >
+            Hủy
+          </button>
+
+          <button
+            type="button"
             onClick={handleFormSubmit}
             disabled={isSaving}
             className="flex items-center gap-1.5 px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl cursor-pointer shadow-xs transition-colors disabled:opacity-50"
@@ -1200,7 +1239,15 @@ const FoodDetailEditor: React.FC<FoodDetailEditorProps> = ({
             ) : (
               <Save size={14} />
             )}
-            <span>{isSaving ? "Đang lưu..." : isCreateMode ? "Tạo món ăn mới" : "Lưu thay đổi"}</span>
+            <span>
+              {isSaving
+                ? "Đang lưu..."
+                : isCreateMode
+                  ? status === "active"
+                    ? "Tạo món ăn mới"
+                    : "Lưu nháp món ăn"
+                  : "Lưu thay đổi"}
+            </span>
           </button>
         </div>
       </div>
@@ -1444,9 +1491,15 @@ const FoodDetailEditor: React.FC<FoodDetailEditorProps> = ({
                     <h4 className="font-bold text-sm sm:text-base text-slate-900 line-clamp-1">
                       {name.trim() || "--"}
                     </h4>
-                    {formattedPrice && (
-                      <span className="font-bold text-emerald-800 text-xs shrink-0">{formattedPrice}</span>
-                    )}
+                    <span
+                      className={`text-xs shrink-0 ${
+                        hasPrice
+                          ? "font-bold text-emerald-800"
+                          : "font-medium text-slate-400 italic"
+                      }`}
+                    >
+                      {displayPriceText}
+                    </span>
                   </div>
 
                   <div className="flex items-center justify-between text-xs text-slate-500">
