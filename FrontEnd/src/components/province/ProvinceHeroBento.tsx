@@ -108,21 +108,30 @@ export const ProvinceHeroBento: React.FC<ProvinceHeroBentoProps> = ({ data }) =>
               <ChevronRight className="w-5 h-5" />
             </button>
 
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5">
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5 max-w-[50%] sm:max-w-[40%] overflow-x-auto no-scrollbar py-1">
               {images.map((_, dotIdx) => (
                 <button
                   key={dotIdx}
                   type="button"
                   onClick={() => setCurrentIdx(dotIdx)}
                   aria-label={`Chuyển đến ảnh ${dotIdx + 1}`}
-                  className={`h-2 rounded-full transition-all cursor-pointer ${
+                  className={`h-2 rounded-full shrink-0 transition-all cursor-pointer ${
                     dotIdx === currentIdx
-                      ? 'w-6 bg-white shadow-sm'
+                      ? 'w-5 bg-white shadow-sm'
                       : 'w-2 bg-white/50 hover:bg-white/80'
                   }`}
                 />
               ))}
             </div>
+
+            {currentImage?.title && (
+              <div className="absolute bottom-4 left-4 z-10 hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md text-white text-xs font-medium border border-white/15 max-w-[280px]">
+                <span className="truncate">{currentImage.title}</span>
+                {currentImage.tag && (
+                  <span className="text-white/60 text-[11px] shrink-0">• {currentImage.tag}</span>
+                )}
+              </div>
+            )}
 
             <div className="absolute bottom-4 right-4 z-10">
               <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md text-white text-xs font-bold border border-white/15">

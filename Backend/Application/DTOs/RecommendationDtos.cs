@@ -81,6 +81,9 @@ public class RecommendedPlaceDto
     public int ReviewCount { get; set; }
     public decimal? MinPrice { get; set; }
     public decimal? MaxPrice { get; set; }
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
+    public double? DistanceKm { get; set; }
 
     public double CosineSimilarity { get; set; }
     public double KnnDistance => Math.Round(1.0 - CosineSimilarity, 4);
@@ -135,3 +138,57 @@ public class UserReviewFeatureDto
     public long PlaceId { get; set; }
     public double Rating { get; set; }
 }
+
+public class AnonymousSessionProfileDto
+{
+    public string? CurrentGeohash { get; set; }
+    public int? LastIntentProvinceId { get; set; }
+    public string? LastIntentProvinceName { get; set; }
+    public List<int> IntentProvinceIds { get; set; } = new();
+    public List<int> TopCategoryIds { get; set; } = new();
+}
+
+public class NearbyPlaceItemDto : RecommendedPlaceDto
+{
+}
+
+public class IntentDestinationShelfGroupDto
+{
+    public int ProvinceId { get; set; }
+    public string ProvinceName { get; set; } = string.Empty;
+    public string IntentLabel { get; set; } = string.Empty;
+    public IReadOnlyList<RecommendedPlaceDto> Places { get; set; } = [];
+}
+
+public class SuggestedTripOrCollectionDto
+{
+    public long Id { get; set; }
+    public string ItemType { get; set; } = "collection"; // "collection" | "trip"
+    public string Title { get; set; } = string.Empty;
+    public string? Subtitle { get; set; }
+    public string? CoverImageUrl { get; set; }
+    public int? ProvinceId { get; set; }
+    public string? ProvinceName { get; set; }
+    public int PlaceCountOrDays { get; set; }
+    public string ContextSource { get; set; } = "intent"; // "intent" | "physical" | "featured"
+    public string ActionUrl { get; set; } = string.Empty;
+    public IReadOnlyList<PlaceCardDto> Places { get; set; } = [];
+}
+
+public class DualContextHomeFeedResponse
+{
+    public string? DeviceId { get; set; }
+    public int? PhysicalProvinceId { get; set; }
+    public string? PhysicalProvinceName { get; set; }
+    public string? GridKey { get; set; }
+    public int? IntentProvinceId { get; set; }
+    public string? IntentProvinceName { get; set; }
+    public string? IntentLabel { get; set; }
+    public IReadOnlyList<int> IntentProvinceIds { get; set; } = [];
+    public IReadOnlyList<int> TopCategoryIds { get; set; } = [];
+    public IReadOnlyList<NearbyPlaceItemDto> Shelf1NearbyPlaces { get; set; } = [];
+    public IReadOnlyList<RecommendedPlaceDto> Shelf2IntentPlaces { get; set; } = [];
+    public IReadOnlyList<IntentDestinationShelfGroupDto> Shelf2IntentGroups { get; set; } = [];
+    public IReadOnlyList<SuggestedTripOrCollectionDto> Shelf3MixedCollectionsAndTrips { get; set; } = [];
+}
+

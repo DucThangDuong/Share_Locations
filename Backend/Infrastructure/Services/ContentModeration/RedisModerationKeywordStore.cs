@@ -6,11 +6,6 @@ using StackExchange.Redis;
 
 namespace Infrastructure.Services.ContentModeration;
 
-/// <summary>
-/// Kho lưu trữ từ cấm và mẫu lọc spam động 100% trên Redis Cache
-/// Tuyệt đối KHÔNG hardcode bất kỳ từ ngữ nào trong code C#!
-/// Dữ liệu do Quản trị viên quản lý realtime qua Redis / API Admin.
-/// </summary>
 public class RedisModerationKeywordStore : IModerationKeywordStore
 {
     private readonly ILogger<RedisModerationKeywordStore> _logger;

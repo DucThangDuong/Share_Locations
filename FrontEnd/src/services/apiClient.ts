@@ -1,5 +1,6 @@
 import axios, { AxiosError } from 'axios'
 import type { ApiErrorResponse } from '@/types/auth'
+import { getOrCreateDeviceId } from '@/utils/deviceContext'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://localhost:7001'
 
@@ -30,6 +31,12 @@ export const apiClient = axios.create({
 
 apiClient.interceptors.request.use(
   (config) => {
+    if (config.headers) {
+      try {
+        config.headers['X-Device-Id'] = getOrCreateDeviceId()
+      } catch {
+      }
+    }
     const token = localStorage.getItem('access_token')
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`

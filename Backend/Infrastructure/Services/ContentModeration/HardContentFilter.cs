@@ -10,35 +10,23 @@ public class HardFilterViolationResult
     public string? ViolationCategory { get; set; }
 }
 
-/// <summary>
-/// Bộ lọc quy chuẩn cứng & Spam đa tầng:
-/// 1. Tầng đối sánh từ khóa động: Thuật toán Aho-Corasick Automaton lấy từ kho Redis Sets O(N+M)
-/// 2. Tầng nhận diện mẫu cấu trúc: Regex chuyên biệt phát hiện URL, Số điện thoại Việt Nam, Gõ phím bừa
-/// </summary>
 public static class HardContentFilter
 {
-    // 1. Regex phát hiện URL / liên kết web
     private static readonly Regex UrlRegex = new(
         @"(?i)(https?:\/\/[^\s]+|www\.[^\s]+|\b[\w\.-]+\.(?:com|vn|com\.vn|net|org|xyz|info|top|online|vip|shop|site|biz|club|cc|me|app)\b(?:\/[^\s]*)?)",
         RegexOptions.Compiled);
 
-    // 2. Regex phát hiện số điện thoại (Việt Nam 10-11 số, kể cả viết cách hay gạch nối)
     private static readonly Regex PhoneRegex = new(
         @"(?i)(?:\+?84|0)(?:3[2-9]|5[6|8|9]|7[0|6-9]|8[1-9]|9[0-9])[\s\.\-]*\d{3}[\s\.\-]*\d{3,4}\b",
         RegexOptions.Compiled);
 
-    // 3. Danh sách các mẫu gõ bàn phím bừa vô nghĩa (Keyboard mash)
     private static readonly string[] KeyboardMashes = new[]
     {
         "asdfgh", "qwerty", "zxcvbn", "hjkl;", "ghjkl", "123456", "abcdef"
     };
 
-    // Aho-Corasick Automaton rỗng dự phòng (khi chưa cấu hình Redis hoặc chưa nạp từ khóa)
     private static readonly AhoCorasick EmptyAutomaton = new(Enumerable.Empty<(string, string)>());
 
-    /// <summary>
-    /// Kiểm tra vi phạm cứng không đồng bộ với Redis Keyword Store qua Thuật toán Aho-Corasick
-    /// </summary>
     public static async Task<HardFilterViolationResult> CheckAsync(
         string text,
         IModerationKeywordStore? keywordStore = null,
@@ -54,7 +42,6 @@ public static class HardContentFilter
             };
         }
 
-        // 1. Quét từ cấm và từ khóa spam bằng Thuật toán Aho-Corasick Automaton từ Redis
         AhoCorasick automaton;
         if (keywordStore != null)
         {
@@ -79,7 +66,6 @@ public static class HardContentFilter
             };
         }
 
-        // 2. Kiểm tra Regex đường dẫn URL quảng cáo
         if (UrlRegex.IsMatch(text))
         {
             return new HardFilterViolationResult
@@ -90,7 +76,6 @@ public static class HardContentFilter
             };
         }
 
-        // 3. Kiểm tra Regex số điện thoại liên hệ / bán hàng
         if (PhoneRegex.IsMatch(text))
         {
             return new HardFilterViolationResult
@@ -101,7 +86,6 @@ public static class HardContentFilter
             };
         }
 
-        // 4. Kiểm tra gõ phím bừa (keyboard mash)
         var lower = text.ToLowerInvariant();
         foreach (var mash in KeyboardMashes)
         {
@@ -116,7 +100,6 @@ public static class HardContentFilter
             }
         }
 
-        // 5. Kiểm tra độ đa dạng ký tự (Character Diversity)
         if (text.Length >= 15)
         {
             var distinctCount = text.Where(char.IsLetterOrDigit).Distinct().Count();
@@ -134,9 +117,6 @@ public static class HardContentFilter
         return new HardFilterViolationResult { HasViolation = false };
     }
 
-    /// <summary>
-    /// Hàm kiểm tra đồng bộ hỗ trợ các vị trí chưa chuyển async
-    /// </summary>
     public static HardFilterViolationResult Check(string text)
     {
         return CheckAsync(text, null).GetAwaiter().GetResult();

@@ -51,11 +51,6 @@ export const blogService = {
     return response.data
   },
 
-  async getFeaturedBlog(): Promise<ApiSuccessResponse<BlogListItemDto>> {
-    const response = await apiClient.get<ApiSuccessResponse<BlogListItemDto>>('/api/blogs/featured')
-    return response.data
-  },
-
   async getBlogDetail(idOrSlug: string | number): Promise<ApiSuccessResponse<BlogDetailDto>> {
     const response = await apiClient.get<ApiSuccessResponse<BlogDetailDto>>(`/api/blogs/${idOrSlug}`)
     return response.data

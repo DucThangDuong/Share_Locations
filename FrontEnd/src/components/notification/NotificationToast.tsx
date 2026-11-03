@@ -2,6 +2,7 @@ import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { X, Bell } from 'lucide-react'
 import { useNotification } from '@/context/NotificationContext'
+import { normalizeNotificationUrl } from '@/types/notification.types'
 import { useSystemSettings } from '@/context/SystemSettingsContext'
 
 export const NotificationToast: React.FC = () => {
@@ -16,8 +17,9 @@ export const NotificationToast: React.FC = () => {
       markAsRead(activeToast.id)
     }
     dismissToast()
-    if (activeToast.targetUrl) {
-      navigate(activeToast.targetUrl)
+    const target = normalizeNotificationUrl(activeToast.targetUrl)
+    if (target) {
+      navigate(target)
     }
   }
 

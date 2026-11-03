@@ -31,17 +31,22 @@ public class CollectionRepository : ICollectionRepository
         var connection = _dbContext.Database.GetDbConnection();
 
         const string sql = @"
-            SELECT TOP (@Count) c.Id, c.ProvinceId, prov.Name AS ProvinceName, c.Title, c.IsFeatured, c.DisplayOrder,
+            SELECT TOP (@Count) c.Id, c.ProvinceId, prov.Name AS ProvinceName, c.Title, c.Description, c.IsFeatured, c.DisplayOrder,
                    (SELECT COUNT(1) FROM dbo.CollectionPlaces cp INNER JOIN dbo.Places p ON cp.PlaceId = p.Id WHERE cp.CollectionId = c.Id AND p.Status = 1 AND p.IsDeleted = 0) AS PlaceCount
             FROM dbo.Collections c
             LEFT JOIN dbo.Provinces prov ON c.ProvinceId = prov.Id
             WHERE c.Status = 1 AND c.IsFeatured = 1
             ORDER BY c.DisplayOrder;
 
-            SELECT cp.CollectionId, p.Id, p.Name, p.AvgRating, p.ReviewCount
+            SELECT cp.CollectionId, p.Id, p.Name, p.AvgRating, p.ReviewCount,
+                   p.CategoryId, cat.Name AS CategoryName,
+                   p.ProvinceId, prov.Name AS ProvinceName,
+                   p.Latitude, p.Longitude
             FROM dbo.CollectionPlaces cp
             INNER JOIN dbo.Places p ON cp.PlaceId = p.Id
             INNER JOIN dbo.Collections c ON cp.CollectionId = c.Id
+            LEFT JOIN dbo.Categories cat ON p.CategoryId = cat.Id
+            LEFT JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id
             WHERE c.Status = 1 AND c.IsFeatured = 1 AND p.Status = 1 AND p.IsDeleted = 0
             ORDER BY cp.CollectionId, cp.DisplayOrder;
 
@@ -67,6 +72,12 @@ public class CollectionRepository : ICollectionRepository
             {
                 Id = p.Id,
                 Name = p.Name,
+                CategoryId = p.CategoryId,
+                CategoryName = p.CategoryName,
+                ProvinceId = p.ProvinceId,
+                ProvinceName = p.ProvinceName,
+                Latitude = p.Latitude,
+                Longitude = p.Longitude,
                 AvgRating = p.AvgRating,
                 ReviewCount = p.ReviewCount,
                 MediaUrls = mediaByPlace[p.Id].ToList()

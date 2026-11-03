@@ -1,8 +1,9 @@
 import apiClient from './apiClient'
 import type { ApiSuccessResponse } from '@/types/responses/common.response'
 import type { RegionDto, ProvinceDto } from '@/types/models/geography.model'
-import type { RegionLandingData } from '@/types/models/region.model'
+import type { RegionLandingData, RegionHeroImage } from '@/types/models/region.model'
 import type { ProvinceLandingData } from '@/types/models/province.model'
+import type { PagedResultDto } from '@/types/models/userProfile.model'
 
 export type { RegionDto, ProvinceDto }
 
@@ -29,6 +30,29 @@ export const geographyService = {
       `/api/provinces/${encodeURIComponent(idOrSlug)}/landing`
     )
     return response.data
+  },
+
+  async getRegionPhotos(
+    regionSlug: string,
+    page = 1,
+    pageSize = 20
+  ): Promise<ApiSuccessResponse<PagedResultDto<RegionHeroImage>>> {
+    const response = await apiClient.get<ApiSuccessResponse<PagedResultDto<RegionHeroImage>>>(
+      `/api/regions/${encodeURIComponent(regionSlug)}/photos`,
+      { params: { page, pageSize } }
+    )
+    return response.data
+  },
+
+  async getProvincePhotos(
+    idOrSlug: string | number,
+    page = 1,
+    pageSize = 20
+  ): Promise<ApiSuccessResponse<PagedResultDto<RegionHeroImage>>> {
+    const response = await apiClient.get<ApiSuccessResponse<PagedResultDto<RegionHeroImage>>>(
+      `/api/provinces/${encodeURIComponent(idOrSlug)}/photos`,
+      { params: { page, pageSize } }
+    )
+    return response.data
   }
 }
-

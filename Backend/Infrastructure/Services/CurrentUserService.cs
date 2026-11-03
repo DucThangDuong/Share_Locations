@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using Application.Common.Interfaces;
 using Infrastructure.Persistence;
 using Microsoft.AspNetCore.Http;
@@ -28,6 +28,17 @@ public class CurrentUserService : ICurrentUserService
     }
 
     public string? Email => User?.FindFirst(ClaimTypes.Email)?.Value ?? User?.FindFirst("email")?.Value;
+
+    public string? DeviceId
+    {
+        get
+        {
+            var raw = _httpContextAccessor.HttpContext?.Request.Headers["X-Device-Id"].FirstOrDefault();
+            return !string.IsNullOrWhiteSpace(raw) && Guid.TryParse(raw.Trim(), out var guid)
+                ? guid.ToString("D")
+                : null;
+        }
+    }
 
     public bool IsAuthenticated => User?.Identity?.IsAuthenticated == true;
 

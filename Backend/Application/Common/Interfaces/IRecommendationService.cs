@@ -16,6 +16,18 @@ public interface IRecommendationService
     Task<List<RecommendedFoodDto>> GetRecommendedFoodsForUserAsync(
         long? userId, int topK = 8, CancellationToken ct = default);
 
+    Task<DualContextHomeFeedResponse> GetDualContextHomeFeedAsync(
+        string? deviceId,
+        double? lat,
+        double? lng,
+        int? intentProvinceId,
+        string? intentLabel,
+        IReadOnlyList<int>? topCategoryIds,
+        IReadOnlyList<long>? excludePlaceIds,
+        int topK = 12,
+        IReadOnlyList<int>? intentProvinceIds = null,
+        CancellationToken ct = default);
+
     Task<PlaceVectorCatalog> RefreshPlaceCatalogCacheAsync(CancellationToken ct = default);
     Task InvalidateUserVectorCacheAsync(long userId, CancellationToken ct = default);
 }

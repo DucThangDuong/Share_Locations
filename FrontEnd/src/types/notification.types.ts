@@ -43,3 +43,14 @@ export const NOTIFICATION_TYPE_MAP: Record<
   5: { name: 'Đề xuất địa điểm', iconColor: 'text-purple-600', bgColor: 'bg-purple-50' },
   6: { name: 'Kiểm duyệt & Báo cáo', iconColor: 'text-rose-600', bgColor: 'bg-rose-50' },
 };
+
+export function normalizeNotificationUrl(url?: string | null): string | null {
+  if (!url) return null;
+  if (url.startsWith('/trips/')) {
+    return url.replace('/trips/', '/itinerary/');
+  }
+  if (url.startsWith('/trip/')) {
+    return url.replace('/trip/', '/itinerary/');
+  }
+  return url;
+}

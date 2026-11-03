@@ -1,4 +1,4 @@
-﻿namespace Application.DTOs;
+namespace Application.DTOs;
 
 public class PlaceTypeDto
 {
@@ -12,7 +12,12 @@ public class PlaceCardDto
 {
     public long Id { get; set; }
     public string Name { get; set; } = string.Empty;
+    public int? CategoryId { get; set; }
     public string? CategoryName { get; set; }
+    public int? ProvinceId { get; set; }
+    public string? ProvinceName { get; set; }
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
     public decimal AvgRating { get; set; }
     public int ReviewCount { get; set; }
     public IReadOnlyList<string> MediaUrls { get; set; } = [];
@@ -24,9 +29,13 @@ public class CollectionDto
     public int? ProvinceId { get; set; }
     public string? ProvinceName { get; set; }
     public string Title { get; set; } = string.Empty;
+    public string? Description { get; set; }
     public bool IsFeatured { get; set; }
     public int DisplayOrder { get; set; }
     public int PlaceCount { get; set; }
+    public string? MatchReason { get; set; }
+    public string? MatchLabel { get; set; }
+    public double? DistanceKm { get; set; }
     public IReadOnlyList<PlaceCardDto> Places { get; set; } = [];
 }
 

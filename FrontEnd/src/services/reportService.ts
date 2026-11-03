@@ -92,16 +92,6 @@ class ReportService {
     }
   }
 
-  async getAdminReports(params?: {
-    targetType?: string;
-    status?: number;
-    priority?: string;
-    page?: number;
-    pageSize?: number;
-  }) {
-    const response = await apiClient.get("/api/admin/reports", { params });
-    return response.data;
-  }
   async resolveReport(reportId: number, data: {
     decision: "accept" | "dismiss";
     actionTaken?: string;

@@ -1,16 +1,21 @@
 import { apiClient } from './apiClient'
 import type { ApiSuccessResponse } from '@/types/responses/common.response'
 import type {
-  PersonalizedPlacesResponse,
   SimilarPlaceItem,
   RecommendedPlaceItem,
-  RecommendedFoodItem
+  RecommendedFoodItem,
+  DualContextHomeFeedResponse
 } from '@/types/recommendation.types'
 
-export interface GetPersonalizedPlacesParams {
+export interface GetDualContextHomeFeedParams {
+  lat?: number
+  lng?: number
+  intentProvinceId?: number
+  intentProvinceIds?: string
+  intentLabel?: string
+  topCategoryIds?: string
+  excludePlaceIds?: string
   topK?: number
-  provinceId?: number
-  categoryId?: number
 }
 
 export interface GetSimilarPlacesParams {
@@ -28,14 +33,6 @@ export interface GetRecommendedFoodsParams {
 }
 
 export const recommendationService = {
-  async getPersonalizedPlaces(params?: GetPersonalizedPlacesParams): Promise<ApiSuccessResponse<PersonalizedPlacesResponse>> {
-    const response = await apiClient.get<ApiSuccessResponse<PersonalizedPlacesResponse>>(
-      '/api/recommendations/places/for-you',
-      { params }
-    )
-    return response.data
-  },
-
   async getSimilarPlaces(
     placeId: number | string,
     params?: GetSimilarPlacesParams
@@ -61,6 +58,14 @@ export const recommendationService = {
   async getRecommendedFoods(params?: GetRecommendedFoodsParams): Promise<ApiSuccessResponse<RecommendedFoodItem[]>> {
     const response = await apiClient.get<ApiSuccessResponse<RecommendedFoodItem[]>>(
       '/api/recommendations/foods/for-you',
+      { params }
+    )
+    return response.data
+  },
+
+  async getDualContextHomeFeed(params?: GetDualContextHomeFeedParams): Promise<ApiSuccessResponse<DualContextHomeFeedResponse>> {
+    const response = await apiClient.get<ApiSuccessResponse<DualContextHomeFeedResponse>>(
+      '/api/recommendations/home-feed',
       { params }
     )
     return response.data

@@ -2,16 +2,8 @@ using System.Collections.Concurrent;
 
 namespace Infrastructure.Services.ContentModeration;
 
-/// <summary>
-/// Kết quả phát hiện từ khóa khớp từ thuật toán Aho-Corasick
-/// </summary>
 public record AhoCorasickMatch(string Keyword, string Category, int Index, int Length);
 
-/// <summary>
-/// Thuật toán Aho-Corasick Automaton (Multi-Pattern String Matching)
-/// Chuẩn công nghiệp được các hệ thống IDS/DFA (như Snort, Cloudflare, TikTok) sử dụng
-/// để quét đồng thời hàng chục ngàn từ khóa trong một lần duyệt O(N + M).
-/// </summary>
 public class AhoCorasick
 {
     private class Node
@@ -82,9 +74,6 @@ public class AhoCorasick
         }
     }
 
-    /// <summary>
-    /// Quét văn bản với độ phức tạp tuyến tính O(N + M)
-    /// </summary>
     public List<AhoCorasickMatch> SearchAll(string text)
     {
         var matches = new List<AhoCorasickMatch>();
@@ -117,8 +106,6 @@ public class AhoCorasick
                 {
                     var startIndex = i - kw.Length + 1;
 
-                    // Kiểm tra ranh giới từ (Word boundary) để không bắt nhầm các từ có chứa chuỗi con
-                    // Ví dụ: tránh bắt nhầm "lan can", "giao diện", "duyệt" khi quét từ cấm
                     if (IsWordBoundary(normalized, startIndex, kw.Length))
                     {
                         matches.Add(new AhoCorasickMatch(kw, cat, startIndex, kw.Length));

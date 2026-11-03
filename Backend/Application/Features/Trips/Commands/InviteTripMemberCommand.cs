@@ -84,7 +84,7 @@ public class InviteTripMemberCommandHandler : IRequestHandler<InviteTripMemberCo
                 Priority = 2,
                 EntityType = "TRIP",
                 EntityId = trip.Id,
-                TargetUrl = $"/trips/{trip.Id}",
+                TargetUrl = $"/itinerary/{trip.Id}",
                 GroupKey = $"TRIP_{trip.Id}"
             }, ct);
 

@@ -13,4 +13,6 @@ public interface IRecommendationRepository
     Task SaveUserPreferenceSnapshotAsync(UserPreferenceVector vector, string jsonPayload, CancellationToken ct = default);
     Task<List<PlaceRecommendationDto>> GetAllCandidatePlacesAsync(CancellationToken ct = default);
     Task<List<UserReviewFeatureDto>> GetAllReviewsAsync(CancellationToken ct = default);
+    Task<List<NearbyPlaceItemDto>> GetNearbyPlacesByBoundingBoxAsync(double roundedLat, double roundedLng, int topK = 20, CancellationToken ct = default);
+    Task<List<SuggestedTripOrCollectionDto>> GetCollectionsAndTripsByProvinceAsync(int? provinceId, int topK = 8, CancellationToken ct = default);
 }

@@ -5,6 +5,7 @@ import { placeService } from '@/services/placeService'
 import { geographyService } from '@/services/geographyService'
 import { useSystemSettings } from '@/context/SystemSettingsContext'
 import { CustomSelect } from '@/components/common/CustomSelect'
+import { recordSearchIntent } from '@/utils/deviceContext'
 import type { LookupItemDto } from '@/types/models/place.model'
 
 export const HeroBanner: React.FC = () => {
@@ -61,20 +62,29 @@ export const HeroBanner: React.FC = () => {
     e.preventDefault()
     const params = new URLSearchParams()
     if (keyword.trim()) params.set('q', keyword.trim())
+    let foundProvId: number | undefined
+    let foundProvName: string | undefined
     if (province) {
       params.set('province', province)
       const foundProv = provinces.find((p) => p.name === province)
       if (foundProv) {
         params.set('provinceId', String(foundProv.id))
+        foundProvId = foundProv.id
+        foundProvName = foundProv.name
       }
     }
+
+    let foundCatId: number | undefined
     if (category) {
       params.set('cat', category)
       const foundCat = categories.find((c) => c.name === category)
       if (foundCat) {
         params.set('catId', String(foundCat.id))
+        foundCatId = foundCat.id
       }
     }
+
+    recordSearchIntent(keyword, foundProvId, foundProvName || province, foundCatId)
 
     navigate(`/explore?${params.toString()}`)
   }

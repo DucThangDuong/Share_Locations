@@ -1,3 +1,4 @@
+using Application.Common;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using Application.Common.Interfaces.Repositories;
@@ -110,13 +111,30 @@ public class ProvinceRepository : IProvinceRepository
         };
 
         const string heroImgSql = @"
-            SELECT TOP 5 COALESCE(pl.CoverImageUrl, pm.Url) AS Url, pl.Name AS Title, @ProvName AS Location,
-                   CASE WHEN cat.Status = 1 THEN ISNULL(cat.Name, N'Địa danh nổi bật') ELSE N'Không khả dụng' END AS Tag
-            FROM dbo.Places pl
-            LEFT JOIN dbo.PlaceMedia pm ON pm.PlaceId = pl.Id
-            LEFT JOIN dbo.Categories cat ON pl.CategoryId = cat.Id
-            WHERE pl.ProvinceId = @ProvId AND pl.Status = 1 AND pl.IsDeleted = 0 AND (pl.CoverImageUrl IS NOT NULL OR pm.Url IS NOT NULL)
-            ORDER BY pl.AvgRating DESC, pl.ReviewCount DESC;";
+            WITH RankedPhotos AS (
+                SELECT 
+                    COALESCE(pl.CoverImageUrl, pm.Url) AS Url,
+                    pl.Name AS Title,
+                    @ProvName AS Location,
+                    CASE WHEN cat.Status = 1 THEN ISNULL(cat.Name, N'Địa danh nổi bật') ELSE N'Địa danh nổi bật' END AS Tag,
+                    pl.AvgRating,
+                    pl.ReviewCount,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY pl.Id 
+                        ORDER BY pm.DisplayOrder ASC, pm.Id ASC
+                    ) AS PlacePhotoRank
+                FROM dbo.Places pl
+                LEFT JOIN dbo.PlaceMedia pm ON pm.PlaceId = pl.Id AND (pm.MediaType = 1 OR pm.MediaType IS NULL)
+                LEFT JOIN dbo.Categories cat ON pl.CategoryId = cat.Id
+                WHERE pl.ProvinceId = @ProvId 
+                  AND pl.Status = 1 
+                  AND pl.IsDeleted = 0 
+                  AND (pl.CoverImageUrl IS NOT NULL OR pm.Url IS NOT NULL)
+            )
+            SELECT TOP 12 Url, Title, Location, Tag
+            FROM RankedPhotos
+            WHERE PlacePhotoRank = 1 AND Url IS NOT NULL AND Url != ''
+            ORDER BY AvgRating DESC, ReviewCount DESC;";
 
         var heroRows = (await connection.QueryAsync(heroImgSql, new { ProvId = provId, ProvName = provName })).ToList();
         var heroImages = new List<RegionHeroImageDto>();
@@ -145,6 +163,38 @@ public class ProvinceRepository : IProvinceRepository
                 });
             }
         }
+
+        if (heroImages.Count < 6)
+        {
+            const string extraMediaSql = @"
+                SELECT TOP 10 pm.Url, pl.Name AS Title, @ProvName AS Location, ISNULL(cat.Name, N'Địa danh nổi bật') AS Tag
+                FROM dbo.PlaceMedia pm
+                INNER JOIN dbo.Places pl ON pm.PlaceId = pl.Id
+                LEFT JOIN dbo.Categories cat ON pl.CategoryId = cat.Id
+                WHERE pl.ProvinceId = @ProvId 
+                  AND pl.Status = 1 
+                  AND pl.IsDeleted = 0 
+                  AND pm.Url IS NOT NULL 
+                  AND pm.Url != ''
+                  AND (pm.MediaType = 1 OR pm.MediaType IS NULL)
+                ORDER BY pl.AvgRating DESC, pm.DisplayOrder ASC;";
+            var extraRows = await connection.QueryAsync(extraMediaSql, new { ProvId = provId, ProvName = provName });
+            foreach (var em in extraRows)
+            {
+                if (em.Url != null && !heroImages.Any(x => x.Url == (string)em.Url))
+                {
+                    heroImages.Add(new RegionHeroImageDto
+                    {
+                        Url = (string)em.Url,
+                        Title = (string)em.Title,
+                        Location = (string)em.Location,
+                        Tag = (string)em.Tag
+                    });
+                    if (heroImages.Count >= 12) break;
+                }
+            }
+        }
+
         dto.HeroImages = heroImages;
 
         var provPattern = $"%{provName}%";
@@ -643,6 +693,85 @@ public class ProvinceRepository : IProvinceRepository
         }
 
         return dto;
+    }
+
+    public async Task<PagedResult<RegionHeroImageDto>> GetProvincePhotosAsync(string idOrSlug, int page, int pageSize, CancellationToken ct = default)
+    {
+        page = page < 1 ? 1 : page;
+        pageSize = pageSize < 1 ? 20 : (pageSize > 50 ? 50 : pageSize);
+        var offset = (page - 1) * pageSize;
+
+        var connection = _dbContext.Database.GetDbConnection();
+
+        const string allProvSql = @"
+            SELECT p.Id, p.Name
+            FROM dbo.Provinces p
+            WHERE p.Status = 1
+            ORDER BY p.DisplayOrder, p.Name;";
+
+        var allProvinces = (await connection.QueryAsync<(int Id, string Name)>(allProvSql)).ToList();
+        if (allProvinces.Count == 0)
+            return new PagedResult<RegionHeroImageDto>(Array.Empty<RegionHeroImageDto>(), 0, page, pageSize);
+
+        (int Id, string Name)? prov = null;
+        var input = (idOrSlug ?? string.Empty).Trim();
+
+        if (int.TryParse(input, out int pid))
+        {
+            prov = allProvinces.FirstOrDefault(p => p.Id == pid);
+        }
+
+        if (prov == null)
+        {
+            var cleanSlug = GenerateSlug(input);
+            var rawInputNoHyphen = cleanSlug.Replace("-", "");
+
+            prov = allProvinces.FirstOrDefault(p =>
+                p.Name.Equals(input, StringComparison.OrdinalIgnoreCase) ||
+                GenerateSlug(p.Name).Equals(cleanSlug, StringComparison.OrdinalIgnoreCase) ||
+                GenerateSlug(p.Name).Replace("-", "").Equals(rawInputNoHyphen, StringComparison.OrdinalIgnoreCase)
+            );
+
+            if (prov == null && !string.IsNullOrEmpty(rawInputNoHyphen))
+            {
+                prov = allProvinces.FirstOrDefault(p =>
+                    GenerateSlug(p.Name).Replace("-", "").Contains(rawInputNoHyphen, StringComparison.OrdinalIgnoreCase) ||
+                    rawInputNoHyphen.Contains(GenerateSlug(p.Name).Replace("-", ""), StringComparison.OrdinalIgnoreCase)
+                );
+            }
+        }
+
+        if (prov == null)
+            return new PagedResult<RegionHeroImageDto>(Array.Empty<RegionHeroImageDto>(), 0, page, pageSize);
+
+        int provId = prov.Value.Id;
+        string provName = prov.Value.Name;
+
+        const string countSql = @"
+            SELECT COUNT(1)
+            FROM dbo.PlaceMedia pm
+            INNER JOIN dbo.Places pl ON pm.PlaceId = pl.Id
+            WHERE pl.ProvinceId = @ProvId
+              AND pl.Status = 1 AND pl.IsDeleted = 0
+              AND pm.Url IS NOT NULL AND pm.Url != ''
+              AND (pm.MediaType = 1 OR pm.MediaType IS NULL);";
+
+        var total = await connection.ExecuteScalarAsync<long>(countSql, new { ProvId = provId });
+
+        const string dataSql = @"
+            SELECT pm.Url, pl.Name AS Title, @ProvName AS Location, ISNULL(cat.Name, N'Địa danh nổi bật') AS Tag
+            FROM dbo.PlaceMedia pm
+            INNER JOIN dbo.Places pl ON pm.PlaceId = pl.Id
+            LEFT JOIN dbo.Categories cat ON pl.CategoryId = cat.Id
+            WHERE pl.ProvinceId = @ProvId
+              AND pl.Status = 1 AND pl.IsDeleted = 0
+              AND pm.Url IS NOT NULL AND pm.Url != ''
+              AND (pm.MediaType = 1 OR pm.MediaType IS NULL)
+            ORDER BY pl.AvgRating DESC, pl.ReviewCount DESC, pm.DisplayOrder ASC
+            OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+
+        var rows = (await connection.QueryAsync<RegionHeroImageDto>(dataSql, new { ProvId = provId, ProvName = provName, Offset = offset, PageSize = pageSize })).ToList();
+        return new PagedResult<RegionHeroImageDto>(rows, total, page, pageSize);
     }
 
     private static string GenerateSlug(string text)

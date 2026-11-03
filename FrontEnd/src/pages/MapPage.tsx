@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Info, SlidersHorizontal, ChevronRight } from 'lucide-react'
+import { Info, SlidersHorizontal, ChevronRight, ArrowRight, X } from 'lucide-react'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { placeService } from '@/services/placeService'
 import { MapSidebar } from '@/components/map/MapSidebar'
 import type { PlaceMapItemDto, LookupItemDto, RegionLookupDto } from '@/types/models/place.model'
+import { getIntentContext } from '@/utils/deviceContext'
 
 export const MapPage = () => {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -27,6 +28,8 @@ export const MapPage = () => {
 
   const [activePlace, setActivePlace] = useState<PlaceMapItemDto | null>(null)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+  const [intentContext, setIntentContext] = useState(() => getIntentContext())
+  const [isPillDismissed, setIsPillDismissed] = useState(false)
 
   const mapContainerRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<mapboxgl.Map | null>(null)
@@ -164,6 +167,32 @@ export const MapPage = () => {
   }, [isSidebarOpen])
 
   useEffect(() => {
+    const handleStorage = () => {
+      setIntentContext(getIntentContext())
+    }
+    window.addEventListener('storage', handleStorage)
+    return () => window.removeEventListener('storage', handleStorage)
+  }, [])
+
+  useEffect(() => {
+    if (selectedProvinceId <= 0 && hasMapboxToken && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          if (mapInstanceRef.current && selectedProvinceId <= 0) {
+            mapInstanceRef.current.flyTo({
+              center: [pos.coords.longitude, pos.coords.latitude],
+              zoom: 11,
+              essential: true
+            })
+          }
+        },
+        () => { },
+        { timeout: 3000, maximumAge: 300000 }
+      )
+    }
+  }, [hasMapboxToken, selectedProvinceId])
+
+  useEffect(() => {
     const map = mapInstanceRef.current
     if (!map || !hasMapboxToken) return
 
@@ -253,6 +282,36 @@ export const MapPage = () => {
                 <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
               </button>
             )}
+
+            {intentContext &&
+              intentContext.provinceId !== selectedProvinceId &&
+              !isPillDismissed && (
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 bg-slate-900/90 hover:bg-slate-900 text-white backdrop-blur-md px-4 py-2 rounded-full shadow-xl border border-white/10 transition-all max-w-[90%] sm:max-w-none">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleProvinceChange(intentContext.provinceId)
+                    }}
+                    className="flex items-center gap-2 text-xs font-bold text-white hover:text-emerald-300 transition-colors cursor-pointer truncate"
+                  >
+                    <span className="truncate">
+                      Bạn vừa xem {intentContext.label}
+                    </span>
+                    <ArrowRight className="w-3.5 h-3.5 ml-0.5 text-emerald-400 shrink-0" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setIsPillDismissed(true)
+                    }}
+                    className="p-1 rounded-full hover:bg-white/20 text-slate-300 hover:text-white transition-colors cursor-pointer ml-1 shrink-0"
+                    title="Đóng thông báo"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
 
             <div ref={mapContainerRef} className="w-full h-full" />
 

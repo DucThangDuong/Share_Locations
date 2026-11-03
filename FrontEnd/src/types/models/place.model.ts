@@ -24,7 +24,12 @@ export interface PlaceFilterOptionsDto {
 export interface PlaceCardDto {
   id: number
   name: string
+  categoryId?: number | null
   categoryName?: string | null
+  provinceId?: number | null
+  provinceName?: string | null
+  latitude?: number | null
+  longitude?: number | null
   avgRating: number
   reviewCount: number
   mediaUrls: string[]
@@ -33,13 +38,19 @@ export interface PlaceCardDto {
 export interface CollectionDto {
   id: number
   provinceId?: number | null
+  provinceName?: string | null
   title: string
   description?: string | null
   coverUrl?: string | null
   isFeatured: boolean
   displayOrder: number
   placeCount: number
+  matchReason?: 'near' | 'intent' | 'category' | 'featured' | null
+  matchLabel?: string | null
+  distanceKm?: number | null
   places?: PlaceCardDto[] | null
+  contextBadge?: string | null
+  contextType?: 'physical' | 'intent' | 'category' | 'general'
 }
 
 export interface PlaceSummaryDto {

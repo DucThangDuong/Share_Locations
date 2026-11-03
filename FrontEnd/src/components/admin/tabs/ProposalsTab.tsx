@@ -181,6 +181,7 @@ export const ProposalsTab: React.FC<ProposalsTabProps> = ({
         onSave={handleSaveProposal}
         onApprove={handleApprove}
         onReject={handleReject}
+        showToast={showToast}
       />
     );
   }

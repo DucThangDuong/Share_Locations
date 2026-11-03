@@ -462,4 +462,146 @@ public class RecommendationRepository : IRecommendationRepository
         var reviews = await connection.QueryAsync<UserReviewFeatureDto>(command);
         return reviews.AsList();
     }
+
+    public async Task<List<NearbyPlaceItemDto>> GetNearbyPlacesByBoundingBoxAsync(double roundedLat, double roundedLng, int topK = 20, CancellationToken ct = default)
+    {
+        var connection = _dbContext.Database.GetDbConnection();
+        double minLat = roundedLat - 0.05;
+        double maxLat = roundedLat + 0.05;
+        double minLng = roundedLng - 0.05;
+        double maxLng = roundedLng + 0.05;
+
+        const string sql = @"
+            SELECT TOP (@TopK)
+                p.Id AS PlaceId,
+                p.Name,
+                p.Slug,
+                COALESCE(NULLIF(p.CoverImageUrl, ''), (SELECT TOP 1 pm.Url FROM dbo.PlaceMedia pm WHERE pm.PlaceId = p.Id ORDER BY pm.DisplayOrder)) AS CoverImageUrl,
+                p.Address,
+                p.CategoryId,
+                c.Name AS CategoryName,
+                p.ProvinceId,
+                pr.Name AS ProvinceName,
+                CAST(p.AvgRating AS DECIMAL(3,2)) AS AvgRating,
+                p.ReviewCount,
+                p.MinPrice,
+                p.MaxPrice,
+                CAST(p.Latitude AS FLOAT) AS Latitude,
+                CAST(p.Longitude AS FLOAT) AS Longitude
+            FROM dbo.Places p WITH (NOLOCK)
+            INNER JOIN dbo.Categories c WITH (NOLOCK) ON p.CategoryId = c.Id
+            INNER JOIN dbo.Provinces pr WITH (NOLOCK) ON p.ProvinceId = pr.Id
+            WHERE p.Status = 1 AND p.IsDeleted = 0
+              AND c.Status = 1 AND pr.Status = 1
+              AND p.Latitude IS NOT NULL AND p.Longitude IS NOT NULL
+              AND p.Latitude BETWEEN @MinLat AND @MaxLat
+              AND p.Longitude BETWEEN @MinLng AND @MaxLng
+            ORDER BY p.AvgRating DESC, p.ReviewCount DESC;";
+
+        var items = (await connection.QueryAsync<NearbyPlaceItemDto>(
+            new CommandDefinition(sql, new { TopK = topK, MinLat = minLat, MaxLat = maxLat, MinLng = minLng, MaxLng = maxLng }, cancellationToken: ct))).AsList();
+
+        return items;
+    }
+
+    public async Task<List<SuggestedTripOrCollectionDto>> GetCollectionsAndTripsByProvinceAsync(int? provinceId, int topK = 8, CancellationToken ct = default)
+    {
+        var connection = _dbContext.Database.GetDbConnection();
+        var result = new List<SuggestedTripOrCollectionDto>();
+
+        // 1. Get Collections
+        const string colSql = @"
+            SELECT TOP (@TopK)
+                c.Id,
+                'collection' AS ItemType,
+                c.Title,
+                c.Description AS Subtitle,
+                c.CoverImageUrl,
+                c.ProvinceId,
+                prov.Name AS ProvinceName,
+                (SELECT COUNT(1) FROM dbo.CollectionPlaces cp INNER JOIN dbo.Places p ON cp.PlaceId = p.Id WHERE cp.CollectionId = c.Id AND p.Status = 1 AND p.IsDeleted = 0) AS PlaceCountOrDays,
+                CONCAT('/explore?collection=', c.Id) AS ActionUrl
+            FROM dbo.Collections c WITH (NOLOCK)
+            LEFT JOIN dbo.Provinces prov WITH (NOLOCK) ON c.ProvinceId = prov.Id
+            WHERE c.Status = 1
+              AND (@ProvinceId IS NULL OR c.ProvinceId = @ProvinceId OR c.ProvinceId IS NULL)
+            ORDER BY (CASE WHEN @ProvinceId IS NOT NULL AND c.ProvinceId = @ProvinceId THEN 0 ELSE 1 END), c.DisplayOrder ASC;";
+
+        var collections = (await connection.QueryAsync<SuggestedTripOrCollectionDto>(
+            new CommandDefinition(colSql, new { TopK = topK, ProvinceId = provinceId }, cancellationToken: ct))).AsList();
+
+        if (collections.Count > 0)
+        {
+            var colIds = collections.Select(c => (int)c.Id).ToList();
+            const string colPlacesSql = @"
+                SELECT cp.CollectionId, p.Id, p.Name, p.AvgRating, p.ReviewCount
+                FROM dbo.CollectionPlaces cp WITH (NOLOCK)
+                INNER JOIN dbo.Places p WITH (NOLOCK) ON cp.PlaceId = p.Id
+                WHERE cp.CollectionId IN @ColIds AND p.Status = 1 AND p.IsDeleted = 0
+                ORDER BY cp.CollectionId, cp.DisplayOrder;";
+
+            var placesRaw = (await connection.QueryAsync<dynamic>(
+                new CommandDefinition(colPlacesSql, new { ColIds = colIds }, cancellationToken: ct))).ToList();
+
+            var placeIds = placesRaw.Select(p => (long)p.Id).Distinct().ToList();
+            var mediaLookup = new Dictionary<long, List<string>>();
+            if (placeIds.Count > 0)
+            {
+                const string mediaSql = "SELECT PlaceId, Url FROM dbo.PlaceMedia WITH (NOLOCK) WHERE PlaceId IN @PlaceIds ORDER BY PlaceId, DisplayOrder;";
+                var medias = await connection.QueryAsync<(long PlaceId, string Url)>(
+                    new CommandDefinition(mediaSql, new { PlaceIds = placeIds }, cancellationToken: ct));
+                mediaLookup = medias.GroupBy(m => m.PlaceId).ToDictionary(g => g.Key, g => g.Select(x => x.Url).ToList());
+            }
+
+            var placesGrouped = placesRaw.GroupBy(p => (int)p.CollectionId).ToDictionary(
+                g => g.Key,
+                g => g.Select(p => new PlaceCardDto
+                {
+                    Id = (long)p.Id,
+                    Name = (string)p.Name,
+                    AvgRating = Convert.ToDecimal(p.AvgRating ?? 0),
+                    ReviewCount = Convert.ToInt32(p.ReviewCount ?? 0),
+                    MediaUrls = mediaLookup.GetValueOrDefault((long)p.Id, new List<string>())
+                }).Take(4).ToList());
+
+            foreach (var col in collections)
+            {
+                if (placesGrouped.TryGetValue((int)col.Id, out var pList))
+                {
+                    col.Places = pList;
+                }
+            }
+
+            result.AddRange(collections);
+        }
+
+        // 2. Get Public Trips
+        const string tripSql = @"
+            SELECT TOP (@TopK)
+                t.Id,
+                'trip' AS ItemType,
+                t.Title,
+                t.Description AS Subtitle,
+                t.CoverImageUrl,
+                (SELECT COUNT(1) FROM dbo.TripDays td WHERE td.TripId = t.Id) AS PlaceCountOrDays,
+                (SELECT TOP 1 p.ProvinceId FROM dbo.TripDays td INNER JOIN dbo.TripPlaces tp ON td.Id = tp.TripDayId INNER JOIN dbo.Places p ON tp.PlaceId = p.Id WHERE td.TripId = t.Id AND p.IsDeleted = 0 GROUP BY p.ProvinceId ORDER BY COUNT(1) DESC) AS ProvinceId,
+                (SELECT TOP 1 prov.Name FROM dbo.TripDays td INNER JOIN dbo.TripPlaces tp ON td.Id = tp.TripDayId INNER JOIN dbo.Places p ON tp.PlaceId = p.Id INNER JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id WHERE td.TripId = t.Id AND p.IsDeleted = 0 GROUP BY prov.Name ORDER BY COUNT(1) DESC) AS ProvinceName,
+                CONCAT('/itinerary/', t.Id) AS ActionUrl
+            FROM dbo.Trips t WITH (NOLOCK)
+            WHERE t.Privacy = 0
+              AND (@ProvinceId IS NULL OR EXISTS (
+                  SELECT 1 FROM dbo.TripDays td 
+                  INNER JOIN dbo.TripPlaces tp ON td.Id = tp.TripDayId 
+                  INNER JOIN dbo.Places p ON tp.PlaceId = p.Id 
+                  WHERE td.TripId = t.Id AND p.ProvinceId = @ProvinceId AND p.IsDeleted = 0
+              ))
+            ORDER BY t.ViewCount DESC, t.UpdatedAt DESC;";
+
+        var trips = (await connection.QueryAsync<SuggestedTripOrCollectionDto>(
+            new CommandDefinition(tripSql, new { TopK = topK, ProvinceId = provinceId }, cancellationToken: ct))).AsList();
+
+        result.AddRange(trips);
+
+        return result;
+    }
 }

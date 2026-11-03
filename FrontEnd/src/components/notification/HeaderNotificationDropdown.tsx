@@ -15,7 +15,7 @@ import {
 } from 'lucide-react'
 import { useNotification } from '@/context/NotificationContext'
 import { useSystemSettings } from '@/context/SystemSettingsContext'
-import type { NotificationItem } from '@/types/notification.types'
+import { type NotificationItem, normalizeNotificationUrl } from '@/types/notification.types'
 
 interface HeaderNotificationDropdownProps {
   onClose: () => void
@@ -148,8 +148,9 @@ export const HeaderNotificationDropdown: React.FC<HeaderNotificationDropdownProp
       markAsRead(item.id)
     }
     onClose()
-    if (item.targetUrl) {
-      navigate(item.targetUrl)
+    const target = normalizeNotificationUrl(item.targetUrl)
+    if (target) {
+      navigate(target)
     }
   }
 

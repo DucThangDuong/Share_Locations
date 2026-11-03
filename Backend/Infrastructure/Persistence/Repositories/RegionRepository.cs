@@ -1,3 +1,4 @@
+using Application.Common;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using Application.Common.Interfaces.Repositories;
@@ -106,10 +107,36 @@ public class RegionRepository : IRegionRepository
         dto.Provinces = provinceNames;
 
         const string heroImagesSql = @"
-            SELECT TOP 4 p.ImageUrl AS Url, p.Name AS Title, p.Name AS Location, ISNULL(p.Tagline, N'Điểm đến hấp dẫn') AS Tag
-            FROM dbo.Provinces p
-            WHERE p.RegionId = @RegionId AND p.Status = 1 AND p.ImageUrl IS NOT NULL AND p.ImageUrl != ''
-            ORDER BY p.Featured DESC, p.DisplayOrder ASC;";
+            WITH RankedPhotos AS (
+                SELECT 
+                    COALESCE(pm.Url, pl.CoverImageUrl) AS Url,
+                    pl.Name AS Title,
+                    prov.Name AS Location,
+                    ISNULL(cat.Name, N'Danh lam thắng cảnh') AS Tag,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY prov.Id 
+                        ORDER BY pl.AvgRating DESC, pl.ReviewCount DESC, pm.DisplayOrder ASC
+                    ) AS ProvRank,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY pl.Id 
+                        ORDER BY pm.DisplayOrder ASC, pm.Id ASC
+                    ) AS PlacePhotoRank
+                FROM dbo.Places pl
+                INNER JOIN dbo.Provinces prov ON pl.ProvinceId = prov.Id
+                INNER JOIN dbo.PlaceMedia pm ON pm.PlaceId = pl.Id
+                LEFT JOIN dbo.Categories cat ON pl.CategoryId = cat.Id
+                WHERE prov.RegionId = @RegionId 
+                  AND pl.Status = 1 
+                  AND pl.IsDeleted = 0 
+                  AND prov.Status = 1
+                  AND pm.Url IS NOT NULL 
+                  AND pm.Url != ''
+                  AND (pm.MediaType = 1 OR pm.MediaType IS NULL)
+            )
+            SELECT TOP 12 Url, Title, Location, Tag
+            FROM RankedPhotos
+            WHERE PlacePhotoRank = 1
+            ORDER BY ProvRank ASC, Title ASC;";
 
         var heroRows = (await connection.QueryAsync(heroImagesSql, new { RegionId = regionId })).ToList();
         var heroImages = new List<RegionHeroImageDto>();
@@ -127,14 +154,41 @@ public class RegionRepository : IRegionRepository
 
         foreach (var h in heroRows)
         {
-            heroImages.Add(new RegionHeroImageDto
+            if (h.Url != null && !heroImages.Any(x => x.Url == (string)h.Url))
             {
-                Url = (string)h.Url,
-                Title = (string)h.Title,
-                Location = (string)h.Location,
-                Tag = (string)h.Tag
-            });
+                heroImages.Add(new RegionHeroImageDto
+                {
+                    Url = (string)h.Url,
+                    Title = (string)h.Title,
+                    Location = (string)h.Location,
+                    Tag = (string)h.Tag
+                });
+            }
         }
+
+        if (heroImages.Count < 5)
+        {
+            const string fallbackProvinceImgSql = @"
+                SELECT TOP 6 p.ImageUrl AS Url, p.Name AS Title, p.Name AS Location, ISNULL(p.Tagline, N'Điểm đến hấp dẫn') AS Tag
+                FROM dbo.Provinces p
+                WHERE p.RegionId = @RegionId AND p.Status = 1 AND p.ImageUrl IS NOT NULL AND p.ImageUrl != ''
+                ORDER BY p.Featured DESC, p.DisplayOrder ASC;";
+            var provImgs = await connection.QueryAsync(fallbackProvinceImgSql, new { RegionId = regionId });
+            foreach (var pi in provImgs)
+            {
+                if (pi.Url != null && !heroImages.Any(x => x.Url == (string)pi.Url))
+                {
+                    heroImages.Add(new RegionHeroImageDto
+                    {
+                        Url = (string)pi.Url,
+                        Title = (string)pi.Title,
+                        Location = (string)pi.Location,
+                        Tag = (string)pi.Tag
+                    });
+                }
+            }
+        }
+
         dto.HeroImages = heroImages;
 
         const string collectionsSql = @"
@@ -628,6 +682,71 @@ public class RegionRepository : IRegionRepository
         dto.Reviews = reviews;
 
         return dto;
+    }
+
+    public async Task<PagedResult<RegionHeroImageDto>> GetRegionPhotosAsync(string regionCode, int page, int pageSize, CancellationToken ct = default)
+    {
+        page = page < 1 ? 1 : page;
+        pageSize = pageSize < 1 ? 20 : (pageSize > 50 ? 50 : pageSize);
+        var offset = (page - 1) * pageSize;
+
+        var connection = _dbContext.Database.GetDbConnection();
+
+        var pattern = regionCode.ToLowerInvariant() switch
+        {
+            "north" => "%Bắc%",
+            "central" => "%Trung%",
+            "south" => "%Nam%",
+            _ => $"%{regionCode}%"
+        };
+
+        const string regionSql = @"
+            SELECT TOP 1 r.Id, r.Name
+            FROM dbo.Regions r
+            WHERE r.Status = 1
+              AND (
+                (@Code = 'north' AND (r.Name LIKE N'%Bắc%' OR r.Name LIKE '%North%')) OR
+                (@Code = 'central' AND (r.Name LIKE N'%Trung%' OR r.Name LIKE '%Central%')) OR
+                (@Code = 'south' AND (r.Name LIKE N'%Nam%' OR r.Name LIKE '%South%')) OR
+                r.Name LIKE @Pattern
+              )
+            ORDER BY r.OrderIndex;";
+
+        var regionRow = await connection.QueryFirstOrDefaultAsync(regionSql, new { Code = regionCode.ToLowerInvariant(), Pattern = pattern });
+        if (regionRow == null)
+        {
+            return new PagedResult<RegionHeroImageDto>(Array.Empty<RegionHeroImageDto>(), 0, page, pageSize);
+        }
+
+        int regionId = (int)regionRow.Id;
+
+        const string countSql = @"
+            SELECT COUNT(1)
+            FROM dbo.PlaceMedia pm
+            INNER JOIN dbo.Places pl ON pm.PlaceId = pl.Id
+            INNER JOIN dbo.Provinces prov ON pl.ProvinceId = prov.Id
+            WHERE prov.RegionId = @RegionId
+              AND pl.Status = 1 AND pl.IsDeleted = 0 AND prov.Status = 1
+              AND pm.Url IS NOT NULL AND pm.Url != ''
+              AND (pm.MediaType = 1 OR pm.MediaType IS NULL);";
+
+        var total = await connection.ExecuteScalarAsync<long>(countSql, new { RegionId = regionId });
+
+        const string dataSql = @"
+            SELECT pm.Url, pl.Name AS Title, prov.Name AS Location, ISNULL(cat.Name, N'Danh lam thắng cảnh') AS Tag
+            FROM dbo.PlaceMedia pm
+            INNER JOIN dbo.Places pl ON pm.PlaceId = pl.Id
+            INNER JOIN dbo.Provinces prov ON pl.ProvinceId = prov.Id
+            LEFT JOIN dbo.Categories cat ON pl.CategoryId = cat.Id
+            WHERE prov.RegionId = @RegionId
+              AND pl.Status = 1 AND pl.IsDeleted = 0 AND prov.Status = 1
+              AND pm.Url IS NOT NULL AND pm.Url != ''
+              AND (pm.MediaType = 1 OR pm.MediaType IS NULL)
+            ORDER BY pl.AvgRating DESC, pl.ReviewCount DESC, pm.DisplayOrder ASC
+            OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+
+        var rows = (await connection.QueryAsync<RegionHeroImageDto>(dataSql, new { RegionId = regionId, Offset = offset, PageSize = pageSize })).ToList();
+        return new PagedResult<RegionHeroImageDto>(rows, total, page, pageSize);
     }
 
     private static string GenerateSlug(string text)

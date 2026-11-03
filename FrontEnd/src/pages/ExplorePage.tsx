@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { SlidersHorizontal, Compass } from 'lucide-react'
 import { placeService } from '@/services/placeService'
+import { recordSearchIntent } from '@/utils/deviceContext'
 import type { PlaceSummaryDto, LookupItemDto, RegionLookupDto } from '@/types/models/place.model'
 import { PRICE_TIERS } from '@/components/explore/explore.types'
 import { ExploreSearchBar } from '@/components/explore/ExploreSearchBar'
@@ -170,6 +171,10 @@ export const ExplorePage: React.FC = () => {
 
       if (res.success && res.data) {
         setPlaces(res.data)
+        const selectedProvId = appliedFilters.provinceIds.length === 1 ? appliedFilters.provinceIds[0] : undefined
+        const selectedProvName = appliedFilters.provinceIds.length === 1 ? appliedFilters.provinces[0] : undefined
+        const selectedCatId = appliedFilters.categoryIds.length === 1 ? appliedFilters.categoryIds[0] : undefined
+        recordSearchIntent(appliedFilters.search.trim() || undefined, selectedProvId, selectedProvName, selectedCatId)
         if (res.meta) {
           setTotalElements(res.meta.totalElements)
           setTotalPages(res.meta.totalPages)

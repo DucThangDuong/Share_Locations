@@ -37,6 +37,7 @@ interface ProposalDetailEditorProps {
   onSave?: (updatedProposal: AdminProposalItem) => void;
   onApprove: (proposal: AdminProposalItem, adminNotes?: string) => void;
   onReject: (proposal: AdminProposalItem, reason: string) => void;
+  showToast?: (msg: string) => void;
 }
 
 export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
@@ -44,10 +45,12 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
   onBack,
   onApprove,
   onReject,
+  showToast,
 }) => {
   const [isApproving, setIsApproving] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [rejectInlineError, setRejectInlineError] = useState("");
 
   const [categories, setCategories] = useState<PlaceTypeDto[]>([]);
   const [provinces, setProvinces] = useState<ProvinceDto[]>([]);
@@ -420,18 +423,20 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
 
   const handleRejectSubmit = async () => {
     setErrorMsg("");
-    if (!rejectReasonInput.trim()) {
-      setErrorMsg("Vui lòng nhập hoặc chọn lý do từ chối trước khi xác nhận.");
-      return;
-    }
+    setRejectInlineError("");
+    const finalReason =
+      rejectReasonInput.trim() ||
+      "Chưa đáp ứng đầy đủ tiêu chuẩn thông tin địa điểm của nền tảng";
     setIsRejecting(true);
     try {
-      const finalReason = rejectReasonInput.trim();
       await onReject(proposal, finalReason);
       setRejectionReason(finalReason);
       setStatus(2);
     } catch (err: any) {
-      setErrorMsg(err?.message || "Không thể từ chối đề xuất. Vui lòng thử lại.");
+      const msg = err?.message || "Không thể từ chối đề xuất. Vui lòng thử lại.";
+      setErrorMsg(msg);
+      setRejectInlineError(msg);
+      showToast?.(msg);
     } finally {
       setIsRejecting(false);
     }
@@ -726,17 +731,57 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
                 </div>
 
                 <div className="space-y-2.5">
-                  <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                    <X size={14} className="text-rose-600" />
-                    <span>Lý do từ chối:</span>
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                      <X size={14} className="text-rose-600" />
+                      <span>Lý do từ chối:</span>
+                    </label>
+                    <span className="text-[10px] text-slate-400 font-normal">Gửi thông báo tới người đề xuất</span>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      "Thông tin chưa chính xác",
+                      "Địa điểm bị trùng lặp",
+                      "Hình ảnh không rõ ràng",
+                      "Không phù hợp tiêu chuẩn",
+                    ].map((reasonChip) => (
+                      <button
+                        key={reasonChip}
+                        type="button"
+                        onClick={() => {
+                          setRejectReasonInput(reasonChip);
+                          setRejectInlineError("");
+                        }}
+                        className={`text-[10px] px-2 py-0.5 rounded-full border transition-all cursor-pointer ${
+                          rejectReasonInput === reasonChip
+                            ? "bg-rose-100 text-rose-800 border-rose-300 font-semibold"
+                            : "bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200"
+                        }`}
+                      >
+                        + {reasonChip}
+                      </button>
+                    ))}
+                  </div>
+
                   <textarea
                     rows={3}
                     value={rejectReasonInput}
-                    onChange={(e) => setRejectReasonInput(e.target.value)}
-                    placeholder="Nhập lý do từ chối cụ thể..."
+                    onChange={(e) => {
+                      setRejectReasonInput(e.target.value);
+                      if (rejectInlineError) setRejectInlineError("");
+                    }}
+                    placeholder="Nhập lý do từ chối hoặc chọn nhanh gợi ý bên trên..."
                     className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 outline-none focus:border-rose-600 focus:bg-white transition-all font-medium"
                   />
+
+                  {rejectInlineError && (
+                    <div className="p-2 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-[11px] font-medium flex items-center gap-1.5">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                      <span>{rejectInlineError}</span>
+                    </div>
+                  )}
+
                   <button
                     type="button"
                     disabled={isApproving || isRejecting}

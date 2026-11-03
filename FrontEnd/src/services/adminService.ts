@@ -413,8 +413,6 @@ export const adminService = {
     }
     return get<AdminPage<Record<string, unknown>>>("/api/admin/reports", cleanParams);
   },
-  getGroupedReports: (params?: Record<string, unknown>) =>
-    get<Record<string, unknown>[]>("/api/admin/reports/grouped", params),
   resolveReport: (id: number, data: ResolveAdminReportRequest | unknown) =>
     write<boolean>("post", `/api/admin/reports/${id}/resolve`, data),
 
@@ -478,7 +476,6 @@ export const adminService = {
   ) => write<unknown>("put", `/api/admin/collections/${Number(collectionId)}/places`, data),
   createCollection: (data: CreateCollectionRequest | unknown) =>
     write<unknown>("post", "/api/admin/collections", data),
-  updateCollection: (id: number, data: unknown) => write<unknown>("put", `/api/admin/collections/${id}`, data),
   deleteCollection: (id: number) => write<unknown>("delete", `/api/admin/collections/${id}`),
   updateCollectionStatus: (id: number, status?: number | null, reason?: string | null) =>
     write<unknown>("patch", `/api/admin/collections/${id}/status`, { id, status, reason }),

@@ -27,7 +27,7 @@ public class GetProvinceLandingQueryHandler : IRequestHandler<GetProvinceLanding
         }
 
         var normalizedKey = request.IdOrSlug.Trim().ToLowerInvariant();
-        var cacheKey = $"geography:provinces:landing:v7:{normalizedKey}";
+        var cacheKey = $"geography:provinces:landing:v8:{normalizedKey}";
 
         var cached = await _cacheService.GetAsync<ProvinceLandingDto>(cacheKey, ct);
         if (cached != null)

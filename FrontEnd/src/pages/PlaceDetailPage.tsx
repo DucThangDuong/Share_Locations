@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { CheckCircle2, AlertCircle } from 'lucide-react'
 import { placeService } from '@/services/placeService'
 import { userService } from '@/services/userService'
+import { recordVisitedPlace } from '@/utils/deviceContext'
 import { ReportModal } from '@/components/common/ReportModal'
 import { SharePlaceModal } from '@/components/place/SharePlaceModal'
 import { useAuth } from '@/context/AuthContext'
@@ -54,20 +55,19 @@ export const PlaceDetailPage = () => {
             userService.recordAccessHistory(Number(id)).catch(() => {})
           }
           try {
-            const stored = JSON.parse(localStorage.getItem('langthang_recent_visited') || '[]')
-            const item = {
+            recordVisitedPlace({
               id: placeRes.data.id,
               name: placeRes.data.name,
+              provinceId: placeRes.data.provinceId,
               province: placeRes.data.provinceName,
+              categoryId: placeRes.data.categoryId,
               category: placeRes.data.categoryName,
               rating: placeRes.data.avgRating,
               coverUrl: placeRes.data.thumbnailUrl || placeRes.data.mediaUrls?.[0],
+              latitude: placeRes.data.latitude,
+              longitude: placeRes.data.longitude,
               visitedAt: 'Vừa xong'
-            }
-            const filtered = stored.filter((s: { id: number | string }) => String(s.id) !== String(item.id))
-            const updated = [item, ...filtered].slice(0, 10)
-            localStorage.setItem('langthang_recent_visited', JSON.stringify(updated))
-            window.dispatchEvent(new Event('storage'))
+            })
           } catch {
           }
         } else {

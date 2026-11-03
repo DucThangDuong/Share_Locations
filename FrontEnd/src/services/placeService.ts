@@ -9,8 +9,6 @@ import type {
   ReviewItemDto,
   CreateReviewRequest,
   UpdateReviewRequest,
-  ReportPlaceRequest,
-  ToggleSavePlaceDto,
   PlaceMapItemDto,
   PlaceMapFilterParams,
   CommentDto,
@@ -167,27 +165,6 @@ export const placeService = {
     return response.data
   },
 
-  async reportPlace(data: ReportPlaceRequest): Promise<ApiSuccessResponse<boolean>> {
-    const response = await apiClient.post<ApiSuccessResponse<boolean>>(`/api/places/${data.placeId}/reports`, {
-      reason: data.reason,
-      description: data.description,
-      contactEmail: data.contactEmail
-    })
-    return response.data
-  },
-
-  async savePlace(placeId: number | string): Promise<ApiSuccessResponse<ToggleSavePlaceDto>> {
-    const response = await apiClient.post<ApiSuccessResponse<ToggleSavePlaceDto>>('/api/users/me/favorites', {
-      targetType: 1,
-      targetId: Number(placeId)
-    })
-    return response.data
-  },
-
-  async unsavePlace(placeId: number | string): Promise<ApiSuccessResponse<ToggleSavePlaceDto>> {
-    const response = await apiClient.delete<ApiSuccessResponse<ToggleSavePlaceDto>>(`/api/users/me/favorites/1/${placeId}`)
-    return response.data
-  },
 
   async getPlacesMap(params?: PlaceMapFilterParams): Promise<ApiSuccessResponse<PlaceMapItemDto[]>> {
     const cleanParams: Record<string, unknown> = {}

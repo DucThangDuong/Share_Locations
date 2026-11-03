@@ -4,6 +4,7 @@ public interface ICurrentUserService
 {
     long? UserId { get; }
     string? Email { get; }
+    string? DeviceId { get; }
     bool IsAuthenticated { get; }
     bool IsSystemAdmin { get; }
     bool IsCategoryAdmin { get; }
