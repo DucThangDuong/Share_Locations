@@ -18,13 +18,16 @@ public class CreateVisitLogCommandHandler : IRequestHandler<CreateVisitLogComman
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IReputationService? _reputationService;
+    private readonly IRecommendationService? _recommendationService;
 
     public CreateVisitLogCommandHandler(
         IUnitOfWork unitOfWork,
-        IReputationService? reputationService = null)
+        IReputationService? reputationService = null,
+        IRecommendationService? recommendationService = null)
     {
         _unitOfWork = unitOfWork;
         _reputationService = reputationService;
+        _recommendationService = recommendationService;
     }
 
     public async Task<Result<UserVisitLogItemDto>> Handle(CreateVisitLogCommand request, CancellationToken ct)
@@ -52,6 +55,11 @@ public class CreateVisitLogCommandHandler : IRequestHandler<CreateVisitLogComman
         var visitLog = new VisitLog(request.UserId, request.PlaceId, date, privacy);
         await _unitOfWork.VisitLogs.AddAsync(visitLog, ct);
         await _unitOfWork.SaveChangesAsync(ct);
+
+        if (_recommendationService != null)
+        {
+            await _recommendationService.InvalidateUserVectorCacheAsync(request.UserId, ct);
+        }
 
         if (_reputationService != null)
         {

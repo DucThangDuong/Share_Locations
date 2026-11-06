@@ -79,6 +79,7 @@ public class GetDualContextHomeFeedEndpoint : Endpoint<GetDualContextHomeFeedReq
 
         int safeTopK = Math.Clamp(req.TopK, 1, 30);
         string? deviceId = CurrentUserService.DeviceId;
+        long? userId = CurrentUserService.UserId;
 
         var feed = await RecommendationService.GetDualContextHomeFeedAsync(
             deviceId,
@@ -90,6 +91,7 @@ public class GetDualContextHomeFeedEndpoint : Endpoint<GetDualContextHomeFeedReq
             excludeIds,
             safeTopK,
             intentProvIds,
+            userId,
             ct);
 
         await this.SendApiResponseAsync(

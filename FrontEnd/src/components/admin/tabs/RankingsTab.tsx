@@ -1228,7 +1228,7 @@ export const RankingsTab: React.FC<RankingsTabProps> = ({ showToast }) => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
                   <div className="flex items-center justify-between text-xs font-bold text-slate-800">
-                    <span>1. Điểm đánh giá (Rating)</span>
+                    <span>1. Điểm đánh giá</span>
                     <span className="text-emerald-700">{draftConfig.ratingPct}%</span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -1269,7 +1269,7 @@ export const RankingsTab: React.FC<RankingsTabProps> = ({ showToast }) => {
 
                 <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
                   <div className="flex items-center justify-between text-xs font-bold text-slate-800">
-                    <span>2. Lượt đánh giá (Reviews)</span>
+                    <span>2. Lượt đánh giá</span>
                     <span className="text-emerald-700">{draftConfig.reviewPct}%</span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -1310,7 +1310,7 @@ export const RankingsTab: React.FC<RankingsTabProps> = ({ showToast }) => {
 
                 <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
                   <div className="flex items-center justify-between text-xs font-bold text-slate-800">
-                    <span>3. Lượt xem (Views)</span>
+                    <span>3. Lượt xem</span>
                     <span className="text-emerald-700">{draftConfig.viewPct}%</span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -1351,7 +1351,7 @@ export const RankingsTab: React.FC<RankingsTabProps> = ({ showToast }) => {
 
                 <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
                   <div className="flex items-center justify-between text-xs font-bold text-slate-800">
-                    <span>4. Yêu thích (Favorites)</span>
+                    <span>4. Yêu thích</span>
                     <span className="text-emerald-700">{draftConfig.favoritePct}%</span>
                   </div>
                   <div className="flex items-center gap-2">

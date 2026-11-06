@@ -30,7 +30,7 @@ import { catalogService } from '@/services/catalogService'
 import { geographyService } from '@/services/geographyService'
 import { userService } from '@/services/userService'
 import { mapboxService, type AddressSuggestion } from '@/services/mapboxService'
-import type { PlaceTypeDto } from '@/types/models/place.model'
+import type { CategoryDto } from '@/types/models/place.model'
 import type { ProvinceDto } from '@/types/models/geography.model'
 import type { ProposalItem, PagedResultDto } from '@/types/models/userProfile.model'
 
@@ -57,7 +57,7 @@ export const ProposePlacePage: React.FC = () => {
   const [isSubmittedSuccess, setIsSubmittedSuccess] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
 
-  const [categories, setCategories] = useState<PlaceTypeDto[]>([])
+  const [categories, setCategories] = useState<CategoryDto[]>([])
   const [provinces, setProvinces] = useState<ProvinceDto[]>([])
 
   const [name, setName] = useState(passedProposal?.name || '')
@@ -109,7 +109,7 @@ export const ProposePlacePage: React.FC = () => {
   const mapboxToken = (import.meta.env.VITE_MAPBOX_ACCESS_TOKEN as string | undefined)?.trim() ||
     'pk.eyJ1IjoibGFuZ3RoYW5nLXZuIiwiYSI6ImNtODFhYmNkZTAxMzAya3B0eGZjcHB0ZmoifQ.placeholder'
 
-  const applyProposalToState = (p: ProposalItem, catList: PlaceTypeDto[], provList: ProvinceDto[]) => {
+  const applyProposalToState = (p: ProposalItem, catList: CategoryDto[], provList: ProvinceDto[]) => {
     setProposalData(p)
     setName(p.name || '')
     setAddress(p.address || '')
@@ -173,7 +173,7 @@ export const ProposePlacePage: React.FC = () => {
     const loadMetadata = async () => {
       try {
         const [catRes, provRes] = await Promise.all([
-          catalogService.getPlaceTypes(),
+          catalogService.getCategories(),
           geographyService.getProvinces()
         ])
         const catList = (catRes.success && catRes.data) ? catRes.data : []
@@ -621,13 +621,6 @@ export const ProposePlacePage: React.FC = () => {
               Cảm ơn bạn đã đóng góp địa điểm <strong>"{name}"</strong> cho cộng đồng LangThang. Ban kiểm duyệt sẽ xem xét và công khai địa điểm trong vòng 24 giờ.
             </p>
           </div>
-
-          <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200/80 text-left flex items-start gap-2.5 text-xs text-amber-900">
-            <div>
-              <span className="font-bold">+100 điểm cống hiến</span> sẽ được cộng vào hồ sơ cá nhân ngay khi đề xuất được duyệt.
-            </div>
-          </div>
-
           <div className="flex flex-col sm:flex-row gap-2.5 pt-2">
             <button
               type="button"

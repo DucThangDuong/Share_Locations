@@ -83,7 +83,6 @@ public class CreateAdminPlaceCommandHandler : IRequestHandler<CreateAdminPlaceCo
 
         var uploadCache = new Dictionary<string, string>(StringComparer.Ordinal);
 
-        // 1. Upload Cover Image File nếu có
         if (request.CoverImageFile != null && request.CoverImageFile.Content != null && request.CoverImageFile.Content.Length > 0)
         {
             try
@@ -102,7 +101,6 @@ public class CreateAdminPlaceCommandHandler : IRequestHandler<CreateAdminPlaceCo
                 return Result<long>.Failure($"Lỗi khi tải ảnh bìa lên Azure: {ex.Message}");
             }
         }
-        // Hoặc xử lý Base64 Cover Image
         else if (!string.IsNullOrWhiteSpace(input.PrimaryImageUrl))
         {
             if (input.PrimaryImageUrl.StartsWith("data:image/", StringComparison.OrdinalIgnoreCase) ||
@@ -121,7 +119,6 @@ public class CreateAdminPlaceCommandHandler : IRequestHandler<CreateAdminPlaceCo
             }
         }
 
-        // 2. Upload Media Files nếu có
         var finalPhotos = new List<string>();
         if (request.MediaFiles != null && request.MediaFiles.Count > 0)
         {
@@ -148,7 +145,6 @@ public class CreateAdminPlaceCommandHandler : IRequestHandler<CreateAdminPlaceCo
             }
         }
 
-        // 3. Xử lý ảnh trong input.Photos / input.Images (Base64 hoặc URL)
         var rawPhotos = new List<string>();
         if (input.Photos != null) rawPhotos.AddRange(input.Photos);
         if (input.Images != null) rawPhotos.AddRange(input.Images);
@@ -182,7 +178,6 @@ public class CreateAdminPlaceCommandHandler : IRequestHandler<CreateAdminPlaceCo
             }
         }
 
-        // Đồng bộ ảnh bìa và danh sách ảnh phụ
         if (string.IsNullOrWhiteSpace(input.PrimaryImageUrl) && finalPhotos.Count > 0)
         {
             input.PrimaryImageUrl = finalPhotos[0];

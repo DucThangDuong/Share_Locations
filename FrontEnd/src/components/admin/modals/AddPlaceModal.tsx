@@ -26,7 +26,7 @@ import { catalogService } from "@/services/catalogService";
 import { adminService, extractList } from "@/services/adminService";
 import { mapboxService, type AddressSuggestion } from "@/services/mapboxService";
 import type { ProvinceDto } from "@/types/models/geography.model";
-import type { PlaceTypeDto } from "@/types/models/place.model";
+import type { CategoryDto } from "@/types/models/place.model";
 
 interface ProposalImageItem {
   id: string;
@@ -52,7 +52,7 @@ export const AddPlaceModal: React.FC<AddPlaceModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  const [categories, setCategories] = useState<PlaceTypeDto[]>([]);
+  const [categories, setCategories] = useState<CategoryDto[]>([]);
   const [provinces, setProvinces] = useState<ProvinceDto[]>([]);
 
   const [name, setName] = useState("");
@@ -123,10 +123,10 @@ export const AddPlaceModal: React.FC<AddPlaceModalProps> = ({
     const loadMetadata = async () => {
       try {
         const [catRes, provRes] = await Promise.all([
-          catalogService.getPlaceTypes(),
+          catalogService.getCategories(),
           geographyService.getProvinces(),
         ]);
-        const catList = extractList<PlaceTypeDto>(catRes?.data || catRes);
+        const catList = extractList<CategoryDto>(catRes?.data || catRes);
         const provList = extractList<ProvinceDto>(provRes?.data || provRes);
 
         if (isMounted) {

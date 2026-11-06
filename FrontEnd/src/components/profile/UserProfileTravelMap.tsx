@@ -120,7 +120,6 @@ export const UserProfileTravelMap: React.FC<UserProfileTravelMapProps> = ({
     })
 
     proposals.forEach((p, idx) => {
-      // Chỉ lấy các địa điểm đề xuất thành công (Status = 1)
       if (p.status !== undefined && p.status !== 1) return
 
       const key = `proposal-${p.id}`
@@ -323,11 +322,10 @@ export const UserProfileTravelMap: React.FC<UserProfileTravelMapProps> = ({
           <button
             type="button"
             onClick={() => setActiveFilter('review')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 ${
-              activeFilter === 'review'
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 ${activeFilter === 'review'
                 ? 'bg-emerald-600 text-white shadow-xs'
                 : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
-            }`}
+              }`}
           >
             <span className="w-2 h-2 rounded-full bg-emerald-500" />
             Đánh giá ({reviewCount})
@@ -336,11 +334,10 @@ export const UserProfileTravelMap: React.FC<UserProfileTravelMapProps> = ({
           <button
             type="button"
             onClick={() => setActiveFilter('visit_log')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 ${
-              activeFilter === 'visit_log'
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 ${activeFilter === 'visit_log'
                 ? 'bg-amber-500 text-white shadow-xs'
                 : 'bg-amber-50 text-amber-800 hover:bg-amber-100'
-            }`}
+              }`}
           >
             <span className="w-2 h-2 rounded-full bg-amber-500" />
             Nhật ký ({visitLogCount})
@@ -349,11 +346,10 @@ export const UserProfileTravelMap: React.FC<UserProfileTravelMapProps> = ({
           <button
             type="button"
             onClick={() => setActiveFilter('proposal')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 ${
-              activeFilter === 'proposal'
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 ${activeFilter === 'proposal'
                 ? 'bg-blue-600 text-white shadow-xs'
                 : 'bg-blue-50 text-blue-800 hover:bg-blue-100'
-            }`}
+              }`}
           >
             <span className="w-2 h-2 rounded-full bg-blue-500" />
             Đề xuất ({proposalCount})

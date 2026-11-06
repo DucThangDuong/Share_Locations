@@ -1,3 +1,13 @@
+export interface CategoryDto {
+  id: number
+  placeTypeId?: number
+  name: string
+  slug?: string | null
+  iconUrl?: string | null
+  imageUrl?: string | null
+  displayOrder?: number
+}
+
 export interface PlaceTypeDto {
   id: number
   name: string

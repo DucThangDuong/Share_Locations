@@ -129,7 +129,6 @@ export const HomeFeaturedInterleaved: React.FC = () => {
     loadData()
   }, [loadData])
 
-  // Re-fetch when search intent or filter category changes
   useEffect(() => {
     const handleIntentChanged = () => {
       loadData()

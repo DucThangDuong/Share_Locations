@@ -16,8 +16,6 @@ public sealed class EnterpriseRedisService : IEnterpriseCacheService
     private readonly RedisOptions _options;
     private readonly ILogger<EnterpriseRedisService> _logger;
 
-    // Chống rò rỉ bộ nhớ (OOM): Sử dụng mảng Striped Locks 2048 phần tử cố định
-    // Đảm bảo mức tiêu thụ RAM luôn là hằng số O(1), không bị phình to vô hạn như ConcurrentDictionary
     private const int StripeCount = 2048;
     private static readonly SemaphoreSlim[] StripedLocks = Enumerable.Range(0, StripeCount)
         .Select(_ => new SemaphoreSlim(1, 1))
@@ -30,11 +28,9 @@ public sealed class EnterpriseRedisService : IEnterpriseCacheService
     private static readonly JsonSerializerOptions SafeJsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
-        MaxDepth = 32 // Chống tấn công JSON lồng nhau quá sâu (Deep Recursion DoS)
+        MaxDepth = 32
     };
 
-    // LUA SCRIPT 1: Mở khóa phân tán an toàn tuyệt đối (Chống Race Condition / TOCTOU khi hết hạn khóa)
-    // Chỉ xóa khóa bằng lệnh UNLINK nếu giá trị lưu trong Redis khớp chính xác với mã chủ sở hữu (lockToken)
     private const string SafeUnlockLuaScript = """
         if redis.call('GET', KEYS[1]) == ARGV[1] then
             return redis.call('UNLINK', KEYS[1])
@@ -43,7 +39,6 @@ public sealed class EnterpriseRedisService : IEnterpriseCacheService
         end
         """;
 
-    // LUA SCRIPT 2: Sliding Window Rate Limiter nguyên tử (Chống Brute-Force OTP, DDoS & BOLA)
     private const string SlidingWindowRateLimitLuaScript = """
         local key = KEYS[1]
         local now_ms = tonumber(ARGV[1])
@@ -87,25 +82,20 @@ public sealed class EnterpriseRedisService : IEnterpriseCacheService
     {
         string fullKey = BuildSafeKey(rawKey);
 
-        // 1. Thử đọc từ Redis trước
         var cachedResult = await TryGetInternalAsync<T>(fullKey, ct).ConfigureAwait(false);
         if (cachedResult.Found)
             return cachedResult.Value;
 
-        // 2. Chống Cache Stampede: Dùng Striped Lock cục bộ
         var stripeLock = GetStripeLock(fullKey);
         await stripeLock.WaitAsync(ct).ConfigureAwait(false);
         try
         {
-            // Kiểm tra lại lần 2 (Double-checked locking) sau khi giành được khóa
             cachedResult = await TryGetInternalAsync<T>(fullKey, ct).ConfigureAwait(false);
             if (cachedResult.Found)
                 return cachedResult.Value;
 
-            // 3. Gọi xuống Database lấy dữ liệu
             T? dbValue = await factory(ct).ConfigureAwait(false);
 
-            // 4. Chống Cache Penetration: Nếu Database trả về null, lưu giá trị đánh dấu trong 45 giây
             if (dbValue is null)
             {
                 await _connectionProvider.ExecuteWithResilienceAsync(
@@ -116,7 +106,6 @@ public sealed class EnterpriseRedisService : IEnterpriseCacheService
                 return default;
             }
 
-            // 5. Chống Cache Avalanche: Cộng thêm độ lệch ngẫu nhiên (Jitter +-10%) vào TTL
             TimeSpan jitteredTtl = ApplyTtlJitter(baseTtl);
             await SetSerializedValueAsync(fullKey, dbValue, jitteredTtl, ct).ConfigureAwait(false);
 
@@ -166,10 +155,6 @@ public sealed class EnterpriseRedisService : IEnterpriseCacheService
             ct: ct).ConfigureAwait(false);
     }
 
-    /// <summary>
-    /// Xóa cache theo mẫu mà KHÔNG BAO GIỜ gọi lệnh KEYS * làm treo Redis đơn luồng.
-    /// Sử dụng SCAN theo từng batch nhỏ và gọi UNLINK bất đồng bộ.
-    /// </summary>
     public async Task<long> RemoveByPatternAsync(string pattern, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(pattern))

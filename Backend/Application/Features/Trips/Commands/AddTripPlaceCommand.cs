@@ -1,5 +1,6 @@
 using System.Globalization;
 using Application.Common;
+using Application.Common.Interfaces;
 using Application.DTOs;
 using Domain.Entities;
 using Domain.Enums;
@@ -13,10 +14,12 @@ public record AddTripPlaceCommand(long TripId, int DayNumber, long UserId, AddTr
 public class AddTripPlaceCommandHandler : IRequestHandler<AddTripPlaceCommand, Result<TripPlaceDetailDto>>
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IRecommendationService? _recommendationService;
 
-    public AddTripPlaceCommandHandler(IUnitOfWork unitOfWork)
+    public AddTripPlaceCommandHandler(IUnitOfWork unitOfWork, IRecommendationService? recommendationService = null)
     {
         _unitOfWork = unitOfWork;
+        _recommendationService = recommendationService;
     }
 
     public async Task<Result<TripPlaceDetailDto>> Handle(AddTripPlaceCommand request, CancellationToken ct)
@@ -86,6 +89,11 @@ public class AddTripPlaceCommandHandler : IRequestHandler<AddTripPlaceCommand, R
 
         await _unitOfWork.Trips.AddPlaceAsync(tripPlace, ct);
         await _unitOfWork.SaveChangesAsync(ct);
+
+        if (_recommendationService != null)
+        {
+            await _recommendationService.InvalidateUserVectorCacheAsync(request.UserId, ct);
+        }
 
         var resultDto = new TripPlaceDetailDto
         {

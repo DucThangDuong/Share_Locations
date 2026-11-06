@@ -1,4 +1,5 @@
 using Application.Common;
+using Application.Common.Interfaces;
 using Domain.Enums;
 using Domain.Interfaces;
 using MediatR;
@@ -10,10 +11,12 @@ public record RemoveFavoriteCommand(long UserId, int TargetType, long TargetId) 
 public class RemoveFavoriteCommandHandler : IRequestHandler<RemoveFavoriteCommand, Result>
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IRecommendationService? _recommendationService;
 
-    public RemoveFavoriteCommandHandler(IUnitOfWork unitOfWork)
+    public RemoveFavoriteCommandHandler(IUnitOfWork unitOfWork, IRecommendationService? recommendationService = null)
     {
         _unitOfWork = unitOfWork;
+        _recommendationService = recommendationService;
     }
 
     public async Task<Result> Handle(RemoveFavoriteCommand request, CancellationToken ct)
@@ -28,6 +31,11 @@ public class RemoveFavoriteCommandHandler : IRequestHandler<RemoveFavoriteComman
         {
             _unitOfWork.Favorites.Remove(existing);
             await _unitOfWork.SaveChangesAsync(ct);
+
+            if (_recommendationService != null)
+            {
+                await _recommendationService.InvalidateUserVectorCacheAsync(request.UserId, ct);
+            }
         }
 
         return Result.Success("Đã bỏ lưu thành công.");

@@ -1,4 +1,5 @@
 using Application.Common;
+using Application.Common.Interfaces;
 using Application.DTOs;
 using Domain.Entities;
 using Domain.Enums;
@@ -12,10 +13,12 @@ public record AddFavoriteCommand(long UserId, int TargetType, long TargetId) : I
 public class AddFavoriteCommandHandler : IRequestHandler<AddFavoriteCommand, Result<AddFavoriteResponseDto>>
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IRecommendationService? _recommendationService;
 
-    public AddFavoriteCommandHandler(IUnitOfWork unitOfWork)
+    public AddFavoriteCommandHandler(IUnitOfWork unitOfWork, IRecommendationService? recommendationService = null)
     {
         _unitOfWork = unitOfWork;
+        _recommendationService = recommendationService;
     }
 
     public async Task<Result<AddFavoriteResponseDto>> Handle(AddFavoriteCommand request, CancellationToken ct)
@@ -39,6 +42,11 @@ public class AddFavoriteCommandHandler : IRequestHandler<AddFavoriteCommand, Res
             var favorite = new Favorite(request.UserId, request.TargetId, targetType);
             await _unitOfWork.Favorites.AddAsync(favorite, ct);
             await _unitOfWork.SaveChangesAsync(ct);
+        }
+
+        if (_recommendationService != null)
+        {
+            await _recommendationService.InvalidateUserVectorCacheAsync(request.UserId, ct);
         }
 
         var response = new AddFavoriteResponseDto

@@ -309,11 +309,7 @@ public class RecommendationService : IRecommendationService
         }
         else
         {
-            positiveInteractions = await _repo.GetPositiveReviewsStrictAsync(userId, ct);
-            if (positiveInteractions.Count < 3)
-            {
-                positiveInteractions = await _repo.GetHybridPositiveInteractionsAsync(userId, ct);
-            }
+            positiveInteractions = await _repo.GetHybridPositiveInteractionsAsync(userId, ct);
         }
 
         var excludedIds = await _repo.GetUserExcludedPlaceIdsAsync(userId, _options.StrictTheoryMode, ct);
@@ -401,11 +397,18 @@ public class RecommendationService : IRecommendationService
         IReadOnlyList<long>? excludePlaceIds,
         int topK = 12,
         IReadOnlyList<int>? intentProvinceIds = null,
+        long? userId = null,
         CancellationToken ct = default)
     {
         var catalog = await GetOrLoadPlaceCatalogAsync(ct);
 
-        // 1. Session Profile & Redis Hash
+        UserPreferenceVector? userVector = null;
+        if (userId.HasValue && userId.Value > 0)
+        {
+            userVector = await GetOrBuildUserPreferenceVectorAsync(userId.Value, catalog, ct);
+        }
+        bool isPersonalized = userVector is { IsColdStart: false };
+
         string? validDeviceId = null;
         if (!string.IsNullOrWhiteSpace(deviceId) && Guid.TryParse(deviceId.Trim(), out var parsedGuid))
         {
@@ -480,20 +483,57 @@ public class RecommendationService : IRecommendationService
             }
         }
 
-        // 2. Shelf 1: Nearby Places
         double userLat = lat ?? 10.76;
         double userLng = lng ?? 106.66;
         double roundedLat = Math.Round(userLat, 2);
         double roundedLng = Math.Round(userLng, 2);
         string gridKey = $"lat_{roundedLat.ToString("F2", CultureInfo.InvariantCulture)}_lng_{roundedLng.ToString("F2", CultureInfo.InvariantCulture)}";
 
-        // Determine Physical Province
         var closestPlace = catalog.PlacesById.Values
             .Where(p => p.Latitude.HasValue && p.Longitude.HasValue)
             .OrderBy(p => KnnMathEngine.ComputeDistanceKm(userLat, userLng, p.Latitude!.Value, p.Longitude!.Value))
             .FirstOrDefault();
-        int physicalProvinceId = closestPlace?.ProvinceId ?? 27; // Default TP.HCM
+        int physicalProvinceId = closestPlace?.ProvinceId ?? 27;
         string physicalProvinceName = closestPlace?.ProvinceName ?? "TP Hồ Chí Minh";
+
+        if (isPersonalized)
+        {
+            var mergedProvinces = new List<int>();
+
+            if (effectiveIntentProvinceIds.Count > 0)
+            {
+                mergedProvinces.Add(effectiveIntentProvinceIds[0]);
+            }
+            if (userVector!.RecentProvinceIds != null)
+            {
+                foreach (var recentProvId in userVector.RecentProvinceIds)
+                {
+                    if (recentProvId > 0 && recentProvId != physicalProvinceId && !mergedProvinces.Contains(recentProvId))
+                    {
+                        mergedProvinces.Add(recentProvId);
+                    }
+                }
+            }
+
+            foreach (var browserProvId in effectiveIntentProvinceIds)
+            {
+                if (browserProvId > 0 && !mergedProvinces.Contains(browserProvId))
+                {
+                    mergedProvinces.Add(browserProvId);
+                }
+            }
+
+            foreach (var histProvId in userVector.ProvinceWeights.OrderByDescending(kv => kv.Value).Select(kv => kv.Key))
+            {
+                if (histProvId > 0 && histProvId != physicalProvinceId && !mergedProvinces.Contains(histProvId))
+                {
+                    mergedProvinces.Add(histProvId);
+                }
+            }
+
+            effectiveIntentProvinceIds = mergedProvinces.Take(3).ToList();
+            effectiveIntentProvinceId = effectiveIntentProvinceIds.Count > 0 ? effectiveIntentProvinceIds[0] : null;
+        }
 
         string nearbyCacheKey = $"cache:nearby:{gridKey}";
         List<NearbyPlaceItemDto> nearbyCandidates;
@@ -510,51 +550,69 @@ public class RecommendationService : IRecommendationService
             nearbyCandidates = await _repo.GetNearbyPlacesByBoundingBoxAsync(roundedLat, roundedLng, 30, ct);
         }
 
-        // Clone and recompute distance on RAM from user's exact rawLat, rawLng
         var topCatSet = effectiveTopCategoryIds.ToHashSet();
 
-        var shelf1Pool = nearbyCandidates.Select(c => new NearbyPlaceItemDto
+        var shelf1Pool = nearbyCandidates.Select(c =>
         {
-            PlaceId = c.PlaceId,
-            Name = c.Name,
-            Slug = c.Slug,
-            CoverImageUrl = c.CoverImageUrl,
-            Address = c.Address,
-            CategoryId = c.CategoryId,
-            CategoryName = c.CategoryName,
-            ProvinceId = c.ProvinceId,
-            ProvinceName = c.ProvinceName,
-            AvgRating = c.AvgRating,
-            ReviewCount = c.ReviewCount,
-            MinPrice = c.MinPrice,
-            MaxPrice = c.MaxPrice,
-            Latitude = c.Latitude,
-            Longitude = c.Longitude,
-            DistanceKm = (c.Latitude.HasValue && c.Longitude.HasValue)
-                ? Math.Round(KnnMathEngine.ComputeDistanceKm(userLat, userLng, c.Latitude.Value, c.Longitude.Value), 1)
-                : null,
-            ExplainReason = $"Gần bạn tại {physicalProvinceName}"
+            double sim = 0.0;
+            string reason = $"Gần bạn tại {physicalProvinceName}";
+            if (isPersonalized && catalog.PlacesById.TryGetValue(c.PlaceId, out var catPlace))
+            {
+                var (knnSim, knnReason) = KnnMathEngine.ComputeCosineAndExplain(userVector!, catPlace);
+                sim = Math.Round(knnSim, 4);
+                if (knnSim >= 0.45)
+                {
+                    reason = knnReason;
+                }
+            }
+
+            return new NearbyPlaceItemDto
+            {
+                PlaceId = c.PlaceId,
+                Name = c.Name,
+                Slug = c.Slug,
+                CoverImageUrl = c.CoverImageUrl,
+                Address = c.Address,
+                CategoryId = c.CategoryId,
+                CategoryName = c.CategoryName,
+                ProvinceId = c.ProvinceId,
+                ProvinceName = c.ProvinceName,
+                AvgRating = c.AvgRating,
+                ReviewCount = c.ReviewCount,
+                MinPrice = c.MinPrice,
+                MaxPrice = c.MaxPrice,
+                Latitude = c.Latitude,
+                Longitude = c.Longitude,
+                DistanceKm = (c.Latitude.HasValue && c.Longitude.HasValue)
+                    ? Math.Round(KnnMathEngine.ComputeDistanceKm(userLat, userLng, c.Latitude.Value, c.Longitude.Value), 1)
+                    : null,
+                CosineSimilarity = sim,
+                ExplainReason = reason
+            };
         }).ToList();
 
-        // Ưu tiên sắp xếp theo Khoảng cách và Danh mục:
-        // Nếu địa điểm khớp với TopCategoryIds mà người dùng vừa tìm, giảm trừ 1.5km ảo để đẩy lên đầu
-        shelf1Pool = shelf1Pool.OrderBy(c =>
-        {
-            double dist = c.DistanceKm ?? 9999.0;
-            double catBonus = topCatSet.Contains(c.CategoryId) ? 1.5 : 0.0;
-            return dist - catBonus;
-        }).ThenByDescending(c => c.AvgRating).ToList();
+        shelf1Pool = shelf1Pool
+            .OrderBy(c => isPersonalized && userVector!.ExcludedPlaceIds.Contains(c.PlaceId) ? 1 : 0)
+            .ThenBy(c =>
+            {
+                double dist = c.DistanceKm ?? 9999.0;
+                double sessionCatBonus = topCatSet.Contains(c.CategoryId) ? 1.5 : 0.0;
+                double accountCatBonus = isPersonalized
+                    ? userVector!.CategoryWeights.GetValueOrDefault(c.CategoryId, 0.0) * 3.0
+                    : 0.0;
+                return dist - Math.Max(sessionCatBonus, accountCatBonus);
+            })
+            .ThenByDescending(c => c.CosineSimilarity)
+            .ThenByDescending(c => c.AvgRating)
+            .ToList();
 
-        // Tier 1: Distance <= 5.0 km
         var shelf1 = shelf1Pool.Where(c => c.DistanceKm.HasValue && c.DistanceKm.Value <= 5.0).Take(topK).ToList();
 
-        // Tier 2: If < 4 places in 5km, expand to whole Bounding Box pool (~11km)
         if (shelf1.Count < 4)
         {
             shelf1 = shelf1Pool.Take(topK).ToList();
         }
 
-        // Tier 3: If still < 8 places, top up from province cache
         if (shelf1.Count < 8)
         {
             var existingIds = shelf1.Select(s => s.PlaceId).ToHashSet();
@@ -565,6 +623,15 @@ public class RecommendationService : IRecommendationService
                 double? dist = (p.Latitude.HasValue && p.Longitude.HasValue)
                     ? Math.Round(KnnMathEngine.ComputeDistanceKm(userLat, userLng, p.Latitude.Value, p.Longitude.Value), 1)
                     : null;
+
+                double sim = 0.0;
+                string reason = $"Địa điểm nổi bật tại {physicalProvinceName}";
+                if (isPersonalized)
+                {
+                    var (knnSim, knnReason) = KnnMathEngine.ComputeCosineAndExplain(userVector!, p);
+                    sim = Math.Round(knnSim, 4);
+                    if (knnSim >= 0.45) reason = knnReason;
+                }
 
                 shelf1.Add(new NearbyPlaceItemDto
                 {
@@ -584,17 +651,16 @@ public class RecommendationService : IRecommendationService
                     Latitude = p.Latitude,
                     Longitude = p.Longitude,
                     DistanceKm = dist,
-                    ExplainReason = $"Địa điểm nổi bật tại {physicalProvinceName}"
+                    CosineSimilarity = sim,
+                    ExplainReason = reason
                 });
                 existingIds.Add(p.PlaceId);
                 if (shelf1.Count >= 8) break;
             }
         }
 
-        // 3. Shelf 2: Multi-Intent Places (Hỗ trợ 1-3 tỉnh thành kèm Tab Pills)
         var shelf2Groups = new List<IntentDestinationShelfGroupDto>();
         var excludeSet = excludePlaceIds?.ToHashSet() ?? new HashSet<long>();
-        // Loại trừ trùng lặp với Kệ 1
         foreach (var p in shelf1)
         {
             excludeSet.Add(p.PlaceId);
@@ -610,14 +676,30 @@ public class RecommendationService : IRecommendationService
 
             var groupPlaces = intentProvincePlaces
                 .Where(p => !excludeSet.Contains(p.PlaceId))
-                .OrderByDescending(p => topCatSet.Contains(p.CategoryId) ? 1 : 0)
-                .ThenByDescending(p => p.AvgRating)
-                .ThenByDescending(p => p.ReviewCount)
-                .Take(topK)
                 .Select(p =>
                 {
                     bool isTopCat = topCatSet.Contains(p.CategoryId);
-                    return new RecommendedPlaceDto
+                    bool isAlreadyVisited = isPersonalized && userVector!.ExcludedPlaceIds.Contains(p.PlaceId);
+                    double sim;
+                    string reason;
+
+                    if (isPersonalized)
+                    {
+                        var (knnSim, knnReason) = KnnMathEngine.ComputeCosineAndExplain(userVector!, p);
+                        sim = Math.Clamp(knnSim + (isTopCat ? 0.12 : 0.0), 0.0, 1.0);
+                        reason = isTopCat
+                            ? $"Hợp gu của bạn & khớp nhóm {p.CategoryName} vừa tìm tại {label}"
+                            : knnReason;
+                    }
+                    else
+                    {
+                        sim = isTopCat ? 0.95 : 0.85;
+                        reason = isTopCat
+                            ? $"Phù hợp với nhóm {p.CategoryName} bạn vừa xem tại {label}"
+                            : $"Điểm đến nổi bật tại {label}";
+                    }
+
+                    return (Dto: new RecommendedPlaceDto
                     {
                         PlaceId = p.PlaceId,
                         Name = p.Name,
@@ -634,12 +716,17 @@ public class RecommendationService : IRecommendationService
                         MaxPrice = p.MaxPrice,
                         Latitude = p.Latitude,
                         Longitude = p.Longitude,
-                        CosineSimilarity = isTopCat ? 0.95 : 0.85,
-                        ExplainReason = isTopCat
-                            ? $"Phù hợp với nhóm {p.CategoryName} bạn vừa xem tại {label}"
-                            : $"Điểm đến nổi bật tại {label}"
-                    };
+                        CosineSimilarity = Math.Round(sim, 4),
+                        IsColdStartFallback = !isPersonalized,
+                        ExplainReason = reason
+                    }, IsAlreadyVisited: isAlreadyVisited);
                 })
+                .OrderBy(x => x.IsAlreadyVisited ? 1 : 0)
+                .ThenByDescending(x => x.Dto.CosineSimilarity)
+                .ThenByDescending(x => x.Dto.AvgRating)
+                .ThenByDescending(x => x.Dto.ReviewCount)
+                .Take(topK)
+                .Select(x => x.Dto)
                 .ToList();
 
             shelf2Groups.Add(new IntentDestinationShelfGroupDto
@@ -653,11 +740,12 @@ public class RecommendationService : IRecommendationService
 
         var shelf2 = shelf2Groups.FirstOrDefault()?.Places?.ToList() ?? new List<RecommendedPlaceDto>();
 
-        // 4. Shelf 3: Không còn dùng tại home-feed (đã hợp nhất vào /api/collections/featured)
         var shelf3 = new List<SuggestedTripOrCollectionDto>();
 
         return new DualContextHomeFeedResponse
         {
+            UserId = userId,
+            IsPersonalized = isPersonalized,
             DeviceId = validDeviceId,
             PhysicalProvinceId = physicalProvinceId,
             PhysicalProvinceName = physicalProvinceName,
@@ -700,23 +788,5 @@ public class RecommendationService : IRecommendationService
             .OrderByDescending(p => p.AvgRating)
             .ThenByDescending(p => p.ReviewCount)
             .ToList();
-    }
-
-    private async Task<List<SuggestedTripOrCollectionDto>> GetCollectionsAndTripsCachedAsync(int? provinceId, CancellationToken ct)
-    {
-        string key = provinceId.HasValue
-            ? $"cache:collections:province_{provinceId.Value}"
-            : "cache:collections:featured_all";
-
-        if (_enterpriseCache != null)
-        {
-            return await _enterpriseCache.GetOrCreateAsync(
-                key,
-                async innerCt => await _repo.GetCollectionsAndTripsByProvinceAsync(provinceId, 8, innerCt),
-                TimeSpan.FromMinutes(30),
-                ct) ?? new List<SuggestedTripOrCollectionDto>();
-        }
-
-        return await _repo.GetCollectionsAndTripsByProvinceAsync(provinceId, 8, ct);
     }
 }

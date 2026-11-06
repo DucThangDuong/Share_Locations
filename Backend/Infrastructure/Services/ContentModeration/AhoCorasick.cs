@@ -41,14 +41,12 @@ public class AhoCorasick
     {
         var queue = new Queue<Node>();
 
-        // Thiết lập liên kết thất bại (Failure links) cho độ sâu 1
         foreach (var child in _root.Children.Values)
         {
             child.Failure = _root;
             queue.Enqueue(child);
         }
 
-        // BFS duyệt cây xây dựng failure link cho toàn bộ Automaton
         while (queue.Count > 0)
         {
             var current = queue.Dequeue();
@@ -63,7 +61,6 @@ public class AhoCorasick
 
                 child.Failure = failure?.Children.GetValueOrDefault(ch) ?? _root;
 
-                // Kế thừa các kết quả khớp từ failure node
                 if (child.Failure.Outputs.Count > 0)
                 {
                     child.Outputs.AddRange(child.Failure.Outputs);
@@ -119,14 +116,12 @@ public class AhoCorasick
 
     private static bool IsWordBoundary(string text, int startIndex, int length)
     {
-        // Ký tự trước từ
         if (startIndex > 0)
         {
             var prevChar = text[startIndex - 1];
             if (char.IsLetterOrDigit(prevChar)) return false;
         }
 
-        // Ký tự sau từ
         var endIndex = startIndex + length;
         if (endIndex < text.Length)
         {

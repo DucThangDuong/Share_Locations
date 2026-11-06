@@ -96,7 +96,6 @@ public class BlogRepository : IBlogRepository
 
         var whereClause = string.Join(" AND ", conditions);
 
-        // Count query
         var countSql = $"SELECT COUNT(1) FROM dbo.Blogs b LEFT JOIN dbo.Categories c ON b.CategoryId = c.Id WHERE {whereClause};";
         var totalCount = await connection.ExecuteScalarAsync<long>(countSql, parameters);
 

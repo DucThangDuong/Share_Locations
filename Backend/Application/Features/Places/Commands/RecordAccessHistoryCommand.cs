@@ -1,4 +1,5 @@
 using Application.Common;
+using Application.Common.Interfaces;
 using Domain.Entities;
 using Domain.Interfaces;
 using MediatR;
@@ -10,10 +11,12 @@ public record RecordAccessHistoryCommand(long PlaceId, long UserId) : IRequest<R
 public class RecordAccessHistoryCommandHandler : IRequestHandler<RecordAccessHistoryCommand, Result>
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IRecommendationService? _recommendationService;
 
-    public RecordAccessHistoryCommandHandler(IUnitOfWork unitOfWork)
+    public RecordAccessHistoryCommandHandler(IUnitOfWork unitOfWork, IRecommendationService? recommendationService = null)
     {
         _unitOfWork = unitOfWork;
+        _recommendationService = recommendationService;
     }
 
     public async Task<Result> Handle(RecordAccessHistoryCommand request, CancellationToken ct)
@@ -36,6 +39,12 @@ public class RecordAccessHistoryCommandHandler : IRequestHandler<RecordAccessHis
         }
 
         await _unitOfWork.SaveChangesAsync(ct);
+
+        if (_recommendationService != null)
+        {
+            await _recommendationService.InvalidateUserVectorCacheAsync(request.UserId, ct);
+        }
+
         return Result.Success("Đã ghi nhận lịch sử truy cập.");
     }
 }

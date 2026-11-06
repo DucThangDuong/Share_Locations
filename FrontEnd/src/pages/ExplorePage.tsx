@@ -171,9 +171,20 @@ export const ExplorePage: React.FC = () => {
 
       if (res.success && res.data) {
         setPlaces(res.data)
-        const selectedProvId = appliedFilters.provinceIds.length === 1 ? appliedFilters.provinceIds[0] : undefined
-        const selectedProvName = appliedFilters.provinceIds.length === 1 ? appliedFilters.provinces[0] : undefined
-        const selectedCatId = appliedFilters.categoryIds.length === 1 ? appliedFilters.categoryIds[0] : undefined
+        const selectedProvId =
+          appliedFilters.provinceIds.length >= 1
+            ? appliedFilters.provinceIds[0]
+            : appliedFilters.search.trim() && res.data.length > 0
+              ? res.data[0].provinceId
+              : undefined
+        const selectedProvName =
+          appliedFilters.provinces.length >= 1
+            ? appliedFilters.provinces[0]
+            : appliedFilters.search.trim() && res.data.length > 0
+              ? res.data[0].provinceName
+              : undefined
+        const selectedCatId =
+          appliedFilters.categoryIds.length >= 1 ? appliedFilters.categoryIds[0] : undefined
         recordSearchIntent(appliedFilters.search.trim() || undefined, selectedProvId, selectedProvName, selectedCatId)
         if (res.meta) {
           setTotalElements(res.meta.totalElements)

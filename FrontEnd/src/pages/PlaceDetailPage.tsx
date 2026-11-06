@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { CheckCircle2, AlertCircle } from 'lucide-react'
 import { placeService } from '@/services/placeService'
 import { userService } from '@/services/userService'
-import { recordVisitedPlace } from '@/utils/deviceContext'
+import { recordVisitedPlace, recordSearchIntent } from '@/utils/deviceContext'
 import { ReportModal } from '@/components/common/ReportModal'
 import { SharePlaceModal } from '@/components/place/SharePlaceModal'
 import { useAuth } from '@/context/AuthContext'
@@ -138,6 +138,13 @@ export const PlaceDetailPage = () => {
       } else {
         await userService.addFavorite(1, targetId)
         setIsSaved(true)
+        if (place) {
+          recordSearchIntent({
+            provinceId: place.provinceId,
+            provinceName: place.provinceName,
+            categoryId: place.categoryId
+          })
+        }
         setShareToastMsg('Đã thêm địa điểm vào danh sách yêu thích!')
         setTimeout(() => setShareToastMsg(null), 2500)
       }
@@ -161,6 +168,13 @@ export const PlaceDetailPage = () => {
       })
       if (res.success) {
         setIsVisited(true)
+        if (place) {
+          recordSearchIntent({
+            provinceId: place.provinceId,
+            provinceName: place.provinceName,
+            categoryId: place.categoryId
+          })
+        }
         setShareToastMsg('Đã ghi nhận điểm đến vào nhật ký hành trình!')
         setTimeout(() => setShareToastMsg(null), 3000)
       } else {
@@ -174,6 +188,13 @@ export const PlaceDetailPage = () => {
   }
 
   const handleReviewAdded = (newReview: ReviewItemDto) => {
+    if (place && newReview.rating >= 4) {
+      recordSearchIntent({
+        provinceId: place.provinceId,
+        provinceName: place.provinceName,
+        categoryId: place.categoryId
+      })
+    }
     setReviewsList((prev) => [newReview, ...prev])
     setTotalReviewsCount((prev) => prev + 1)
     setRatingBreakdown((prev) => {

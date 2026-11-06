@@ -28,6 +28,8 @@ export interface VisitedPlaceSignal {
 }
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const CACHE_KEY = 'langthang_home_feed_cache_v2'
+const STALE_TIME_MS = 4 * 60 * 1000
 
 export const getOrCreateDeviceId = (): string => {
   try {
@@ -74,18 +76,16 @@ export const getRecentVisitedPlaces = (): VisitedPlaceSignal[] => {
   }
 }
 
-// Multi-Destination Intent Queue (tối đa 3 tỉnh, kích hoạt khi score >= 2 hoặc trực tiếp search)
 export const getRecentIntentProvinces = (): RecentIntentProvinceItem[] => {
   try {
     const stored = localStorage.getItem('langthang_intent_provinces_v2')
     if (stored) {
       const parsed: RecentIntentProvinceItem[] = JSON.parse(stored)
       if (Array.isArray(parsed) && parsed.length > 0) {
-        // Lọc các tỉnh còn hạn 48h và có score >= 2 (hoặc score >= 1 nếu đã lưu)
         const now = Date.now()
         const valid = parsed
           .filter((p) => p.provinceId > 0 && now - p.updatedAt < 48 * 60 * 60 * 1000)
-          .sort((a, b) => b.score - a.score || b.updatedAt - a.updatedAt)
+          .sort((a, b) => b.updatedAt - a.updatedAt || b.score - a.score)
           .slice(0, 3)
         return valid
       }
@@ -93,7 +93,6 @@ export const getRecentIntentProvinces = (): RecentIntentProvinceItem[] => {
   } catch {
   }
 
-  // Fallback về legacy single intent nếu có
   const legacy = getIntentContext()
   if (legacy && legacy.provinceId > 0) {
     return [
@@ -110,7 +109,6 @@ export const getRecentIntentProvinces = (): RecentIntentProvinceItem[] => {
   return []
 }
 
-// Bảng điểm danh mục (Category Affinity)
 export const getTopCategoryIds = (): number[] => {
   try {
     const stored = localStorage.getItem('langthang_category_scores_v2')
@@ -124,7 +122,7 @@ export const getTopCategoryIds = (): number[] => {
           updatedAt: val.updatedAt
         }))
         .filter((c) => c.catId > 0 && now - c.updatedAt < 48 * 60 * 60 * 1000)
-        .sort((a, b) => b.score - a.score || b.updatedAt - a.updatedAt)
+        .sort((a, b) => b.updatedAt - a.updatedAt || b.score - a.score)
 
       if (entries.length > 0) {
         return entries.slice(0, 3).map((e) => e.catId)
@@ -133,7 +131,6 @@ export const getTopCategoryIds = (): number[] => {
   } catch {
   }
 
-  // Fallback từ các địa điểm vừa xem gần đây
   const recent = getRecentVisitedPlaces()
   const counts: Record<number, number> = {}
   recent.forEach((item) => {
@@ -148,7 +145,6 @@ export const getTopCategoryIds = (): number[] => {
     .slice(0, 3)
 }
 
-// Ghi nhận xem chi tiết địa điểm (+1 điểm Tỉnh, +1 điểm Danh mục)
 export const recordVisitedPlace = (place: VisitedPlaceSignal) => {
   try {
     const existing = getRecentVisitedPlaces()
@@ -157,7 +153,6 @@ export const recordVisitedPlace = (place: VisitedPlaceSignal) => {
 
     localStorage.setItem('langthang_recent_visited', JSON.stringify(updated))
 
-    // 1. Cập nhật điểm Tỉnh (+1 điểm)
     if (place.provinceId && place.provinceId > 0) {
       const pId = place.provinceId
       const pName = place.province || ''
@@ -172,25 +167,27 @@ export const recordVisitedPlace = (place: VisitedPlaceSignal) => {
 
       const existingIdx = provinces.findIndex((p) => p.provinceId === pId)
       if (existingIdx >= 0) {
-        provinces[existingIdx].score += 1
+        provinces[existingIdx].score += 2
         provinces[existingIdx].updatedAt = Date.now()
-        if (pName) provinces[existingIdx].provinceName = pName
+        if (pName) {
+          provinces[existingIdx].provinceName = pName
+          provinces[existingIdx].label = pLabel
+        }
       } else {
-        provinces.push({
+        provinces.unshift({
           provinceId: pId,
           provinceName: pName,
           label: pLabel,
-          score: 1,
+          score: 2,
           updatedAt: Date.now()
         })
       }
 
-      provinces.sort((a, b) => b.score - a.score || b.updatedAt - a.updatedAt)
+      provinces.sort((a, b) => b.updatedAt - a.updatedAt || b.score - a.score)
       localStorage.setItem('langthang_intent_provinces_v2', JSON.stringify(provinces.slice(0, 10)))
 
-      // Kích hoạt vào legacy intent nếu điểm >= 2
-      const activeTop = provinces.find((p) => p.score >= 2) || provinces[0]
-      if (activeTop && activeTop.score >= 2) {
+      const activeTop = provinces[0]
+      if (activeTop) {
         const legacyIntent: IntentContextData = {
           provinceId: activeTop.provinceId,
           provinceName: activeTop.provinceName,
@@ -201,7 +198,6 @@ export const recordVisitedPlace = (place: VisitedPlaceSignal) => {
       }
     }
 
-    // 2. Cập nhật điểm Danh mục (+1 điểm)
     if (place.categoryId && place.categoryId > 0) {
       const cId = place.categoryId
       let catScores: Record<number, { score: number; updatedAt: number }> = {}
@@ -212,14 +208,15 @@ export const recordVisitedPlace = (place: VisitedPlaceSignal) => {
       }
 
       if (!catScores[cId]) {
-        catScores[cId] = { score: 1, updatedAt: Date.now() }
+        catScores[cId] = { score: 2, updatedAt: Date.now() }
       } else {
-        catScores[cId].score += 1
+        catScores[cId].score += 2
         catScores[cId].updatedAt = Date.now()
       }
       localStorage.setItem('langthang_category_scores_v2', JSON.stringify(catScores))
     }
 
+    sessionStorage.removeItem(CACHE_KEY)
     window.dispatchEvent(new Event('storage'))
   } catch {
   }
@@ -232,7 +229,6 @@ export interface RecordSearchIntentOptions {
   categoryId?: number
 }
 
-// Ghi nhận tìm kiếm / chọn bộ lọc (+3 điểm Tỉnh, +3 điểm Danh mục)
 export const recordSearchIntent = (
   keywordOrOpts?: string | RecordSearchIntentOptions,
   selectedProvinceId?: number,
@@ -251,7 +247,7 @@ export const recordSearchIntent = (
       provinceName = keywordOrOpts.provinceName
       categoryId = keywordOrOpts.categoryId
     } else {
-      keyword = keywordOrOpts
+      keyword = typeof keywordOrOpts === 'string' ? keywordOrOpts : undefined
       provinceId = selectedProvinceId
       provinceName = selectedProvinceName
       categoryId = selectedCategoryId
@@ -260,16 +256,16 @@ export const recordSearchIntent = (
     let matchedProvince: { provinceId: number; provinceName: string; label: string } | null = null
 
     if (provinceId && provinceId > 0) {
+      const resolvedName = provinceName || getProvinceNameById(provinceId) || `Tỉnh ${provinceId}`
       matchedProvince = {
         provinceId,
-        provinceName: provinceName || '',
-        label: provinceName || 'Điểm đến tìm kiếm'
+        provinceName: resolvedName,
+        label: resolvedName
       }
     } else if (keyword && keyword.trim()) {
       matchedProvince = getMatchedProvinceFromKeyword(keyword.trim().toLowerCase())
     }
 
-    // 1. Nếu có tỉnh thành: cộng +3 điểm (kích hoạt ngay vào hàng đợi)
     if (matchedProvince) {
       let provinces: RecentIntentProvinceItem[] = []
       try {
@@ -294,7 +290,7 @@ export const recordSearchIntent = (
         })
       }
 
-      provinces.sort((a, b) => b.score - a.score || b.updatedAt - a.updatedAt)
+      provinces.sort((a, b) => b.updatedAt - a.updatedAt || b.score - a.score)
       localStorage.setItem('langthang_intent_provinces_v2', JSON.stringify(provinces.slice(0, 10)))
 
       const legacyIntent: IntentContextData = {
@@ -306,7 +302,6 @@ export const recordSearchIntent = (
       localStorage.setItem('langthang_intent_context', JSON.stringify(legacyIntent))
     }
 
-    // 2. Nếu có danh mục (từ khóa hoặc chọn filter): cộng +3 điểm
     let matchedCatId = categoryId
     if (!matchedCatId && keyword && keyword.trim()) {
       matchedCatId = getMatchedCategoryFromKeyword(keyword.trim().toLowerCase()) || undefined
@@ -329,6 +324,7 @@ export const recordSearchIntent = (
       localStorage.setItem('langthang_category_scores_v2', JSON.stringify(catScores))
     }
 
+    sessionStorage.removeItem(CACHE_KEY)
     window.dispatchEvent(new Event('storage'))
 
     if (matchedProvince) {
@@ -344,75 +340,86 @@ export const recordSearchIntent = (
   return null
 }
 
+const PROVINCE_CATALOG: Array<{ id: number; name: string; keywords: string[] }> = [
+  { id: 1, name: 'TP Hà Nội', keywords: ['hà nội', 'ha noi', 'thủ đô'] },
+  { id: 2, name: 'TP Hải Phòng', keywords: ['hải phòng', 'hai phong', 'cát bà', 'đồ sơn'] },
+  { id: 3, name: 'Tỉnh Lai Châu', keywords: ['lai châu', 'lai chau'] },
+  { id: 4, name: 'Tỉnh Điện Biên', keywords: ['điện biên', 'dien bien'] },
+  { id: 5, name: 'Tỉnh Sơn La', keywords: ['sơn la', 'son la', 'mộc châu', 'moc chau', 'tà xùa'] },
+  { id: 6, name: 'Tỉnh Lạng Sơn', keywords: ['lạng sơn', 'lang son', 'mẫu sơn'] },
+  { id: 7, name: 'Tỉnh Quảng Ninh', keywords: ['quảng ninh', 'quang ninh', 'hạ long', 'ha long', 'yên tử', 'cô tô'] },
+  { id: 8, name: 'Tỉnh Cao Bằng', keywords: ['cao bằng', 'cao bang', 'bản giốc'] },
+  { id: 9, name: 'Tỉnh Tuyên Quang', keywords: ['tuyên quang', 'tuyen quang', 'na hang', 'hà giang', 'ha giang', 'đồng văn'] },
+  { id: 10, name: 'Tỉnh Lào Cai', keywords: ['lào cai', 'lao cai', 'sa pa', 'sapa', 'fansipan', 'bắc hà'] },
+  { id: 11, name: 'Tỉnh Thái Nguyên', keywords: ['thái nguyên', 'thai nguyen', 'hồ núi cốc'] },
+  { id: 12, name: 'Tỉnh Phú Thọ', keywords: ['phú thọ', 'phu tho', 'đền hùng', 'việt trì'] },
+  { id: 13, name: 'Tỉnh Bắc Ninh', keywords: ['bắc ninh', 'bac ninh', 'kinh bắc'] },
+  { id: 14, name: 'Tỉnh Hưng Yên', keywords: ['hưng yên', 'hung yen', 'phố hiến', 'ecopark'] },
+  { id: 15, name: 'Tỉnh Ninh Bình', keywords: ['ninh bình', 'ninh binh', 'tràng an', 'trang an', 'tam cốc', 'bái đính'] },
+  { id: 16, name: 'TP Huế', keywords: ['huế', 'hue', 'thừa thiên', 'cố đô'] },
+  { id: 17, name: 'TP Đà Nẵng', keywords: ['đà nẵng', 'da nang', 'bà nà', 'sơn trà', 'hội an', 'hoi an'] },
+  { id: 18, name: 'Tỉnh Thanh Hóa', keywords: ['thanh hóa', 'thanh hoa', 'sầm sơn', 'pù luông'] },
+  { id: 19, name: 'Tỉnh Nghệ An', keywords: ['nghệ an', 'nghe an', 'cửa lò', 'vinh'] },
+  { id: 20, name: 'Tỉnh Hà Tĩnh', keywords: ['hà tĩnh', 'ha tinh', 'thiên cầm'] },
+  { id: 21, name: 'Tỉnh Quảng Trị', keywords: ['quảng trị', 'quang tri', 'quảng bình', 'phong nha'] },
+  { id: 22, name: 'Tỉnh Quảng Ngãi', keywords: ['quảng ngãi', 'quang ngai', 'lý sơn', 'ly son'] },
+  { id: 23, name: 'Tỉnh Gia Lai', keywords: ['gia lai', 'pleiku', 'quy nhơn', 'bình định'] },
+  { id: 24, name: 'Tỉnh Khánh Hòa', keywords: ['khánh hòa', 'khanh hoa', 'nha trang', 'cam ranh', 'ninh thuận'] },
+  { id: 25, name: 'Tỉnh Lâm Đồng', keywords: ['lâm đồng', 'lam dong', 'đà lạt', 'da lat', 'bảo lộc', 'phan thiết', 'mũi né'] },
+  { id: 26, name: 'Tỉnh Đắk Lắk', keywords: ['đắk lắk', 'dak lak', 'buôn ma thuột', 'phú yên', 'tuy hòa'] },
+  { id: 27, name: 'TP Hồ Chí Minh', keywords: ['hồ chí minh', 'sài gòn', 'sai gon', 'tphcm', 'vũng tàu', 'côn đảo'] },
+  { id: 28, name: 'TP Cần Thơ', keywords: ['cần thơ', 'can tho', 'ninh kiều', 'cái răng'] },
+  { id: 29, name: 'Tỉnh Đồng Nai', keywords: ['đồng nai', 'dong nai', 'biên hòa', 'trị an'] },
+  { id: 30, name: 'Tỉnh Tây Ninh', keywords: ['tây ninh', 'tay ninh', 'núi bà đen'] },
+  { id: 31, name: 'Tỉnh Vĩnh Long', keywords: ['vĩnh long', 'vinh long', 'bến tre', 'trà vinh'] },
+  { id: 32, name: 'Tỉnh Đồng Tháp', keywords: ['đồng tháp', 'dong thap', 'sa đéc', 'tiền giang', 'mỹ tho'] },
+  { id: 33, name: 'Tỉnh Cà Mau', keywords: ['cà mau', 'ca mau', 'đất mũi', 'bạc liêu'] },
+  { id: 34, name: 'Tỉnh An Giang', keywords: ['an giang', 'châu đốc', 'phú quốc', 'kiên giang', 'hà tiên'] }
+]
+
+const getProvinceNameById = (id: number): string | null => {
+  const found = PROVINCE_CATALOG.find((p) => p.id === id)
+  return found ? found.name : null
+}
+
 const getMatchedProvinceFromKeyword = (
   q: string
 ): { provinceId: number; provinceName: string; label: string } | null => {
-  if (q.includes('đà lạt') || q.includes('da lat') || q.includes('lâm đồng') || q.includes('lam dong')) {
-    return { provinceId: 25, provinceName: 'Tỉnh Lâm Đồng', label: 'Đà Lạt - Lâm Đồng' }
-  }
-  if (q.includes('hà nội') || q.includes('ha noi')) {
-    return { provinceId: 1, provinceName: 'TP Hà Nội', label: 'Hà Nội' }
-  }
-  if (q.includes('đà nẵng') || q.includes('da nang')) {
-    return { provinceId: 17, provinceName: 'TP Đà Nẵng', label: 'Đà Nẵng' }
-  }
-  if (q.includes('hồ chí minh') || q.includes('sài gòn') || q.includes('sai gon') || q.includes('tphcm')) {
-    return { provinceId: 27, provinceName: 'TP Hồ Chí Minh', label: 'TP. Hồ Chí Minh' }
-  }
-  if (q.includes('sa pa') || q.includes('sapa') || q.includes('lào cai')) {
-    return { provinceId: 10, provinceName: 'Tỉnh Lào Cai', label: 'Sa Pa - Lào Cai' }
-  }
-  if (q.includes('hội an') || q.includes('hoi an') || q.includes('quảng nam')) {
-    return { provinceId: 18, provinceName: 'Tỉnh Quảng Nam', label: 'Hội An - Quảng Nam' }
-  }
-  if (q.includes('nha trang') || q.includes('khánh hòa') || q.includes('khanh hoa')) {
-    return { provinceId: 24, provinceName: 'Tỉnh Khánh Hòa', label: 'Nha Trang - Khánh Hòa' }
-  }
-  if (q.includes('huế') || q.includes('hue') || q.includes('thừa thiên')) {
-    return { provinceId: 16, provinceName: 'TP Huế', label: 'Cố Đô Huế' }
-  }
-  if (q.includes('ninh bình') || q.includes('ninh binh') || q.includes('tràng an')) {
-    return { provinceId: 15, provinceName: 'Tỉnh Ninh Bình', label: 'Ninh Bình' }
-  }
-  if (q.includes('hạ long') || q.includes('quảng ninh') || q.includes('quang ninh')) {
-    return { provinceId: 7, provinceName: 'Tỉnh Quảng Ninh', label: 'Hạ Long - Quảng Ninh' }
-  }
-  if (q.includes('cần thơ') || q.includes('can tho')) {
-    return { provinceId: 28, provinceName: 'TP Cần Thơ', label: 'Cần Thơ' }
-  }
-  if (q.includes('an giang') || q.includes('châu đốc')) {
-    return { provinceId: 34, provinceName: 'Tỉnh An Giang', label: 'An Giang' }
+  for (const prov of PROVINCE_CATALOG) {
+    if (prov.keywords.some((kw) => q.includes(kw))) {
+      return { provinceId: prov.id, provinceName: prov.name, label: prov.name }
+    }
   }
   return null
 }
 
 const getMatchedCategoryFromKeyword = (q: string): number | null => {
   if (q.includes('cà phê') || q.includes('cafe') || q.includes('coffee') || q.includes('trà') || q.includes('tráng miệng')) {
-    return 2 // Cà phê & Tráng miệng
+    return 2
   }
   if (q.includes('nhà hàng') || q.includes('quán ăn') || q.includes('ăn uống') || q.includes('ẩm thực') || q.includes('phở') || q.includes('bún')) {
-    return 1 // Nhà hàng & Quán ăn
+    return 1
   }
   if (q.includes('bar') || q.includes('pub') || q.includes('club') || q.includes('lounge') || q.includes('acoustic')) {
-    return 3 // Bar / Pub / Club
+    return 3
   }
   if (q.includes('khách sạn') || q.includes('hotel') || q.includes('resort')) {
-    return 4 // Khách sạn & Resort
+    return 4
   }
   if (q.includes('homestay') || q.includes('farmstay')) {
-    return 5 // Homestay & Farmstay
+    return 5
   }
   if (q.includes('danh lam') || q.includes('thắng cảnh') || q.includes('biển') || q.includes('núi') || q.includes('thác') || q.includes('săn mây') || q.includes('đồi')) {
-    return 7 // Danh lam thắng cảnh
+    return 7
   }
   if (q.includes('chùa') || q.includes('đền') || q.includes('nhà thờ') || q.includes('di tích') || q.includes('lịch sử') || q.includes('tâm linh') || q.includes('bảo tàng')) {
-    return 8 // Di tích & Tâm linh
+    return 8
   }
   if (q.includes('vui chơi') || q.includes('công viên') || q.includes('giải trí') || q.includes('vinwonders')) {
-    return 10 // Khu vui chơi giải trí
+    return 10
   }
   if (q.includes('chợ') || q.includes('chợ đêm') || q.includes('phố đi bộ')) {
-    return 11 // Chợ & Phố đi bộ
+    return 11
   }
   return null
 }
@@ -422,7 +429,6 @@ export const getIntentContext = (): IntentContextData | null => {
     const raw = localStorage.getItem('langthang_intent_context')
     if (!raw) return null
     const parsed: IntentContextData = JSON.parse(raw)
-    // Expire after 48 hours
     if (Date.now() - parsed.timestamp > 48 * 60 * 60 * 1000) {
       localStorage.removeItem('langthang_intent_context')
       return null
@@ -438,18 +444,16 @@ export const clearIntentContext = () => {
     localStorage.removeItem('langthang_intent_context')
     localStorage.removeItem('langthang_intent_provinces_v2')
     localStorage.removeItem('langthang_category_scores_v2')
+    sessionStorage.removeItem(CACHE_KEY)
   } catch {
   }
 }
 
-// Client-side Caching (sessionStorage) with cacheSignature and staleTime = 4 minutes
-const CACHE_KEY = 'langthang_home_feed_cache_v2'
-const STALE_TIME_MS = 4 * 60 * 1000
-
 export const buildCacheSignature = (
   gridKey: string,
   intentProvinceIds?: number[] | number | null,
-  topCategoryIds?: number[]
+  topCategoryIds?: number[],
+  userId?: number | string | null
 ): string => {
   let provStr = '0'
   if (Array.isArray(intentProvinceIds)) {
@@ -458,7 +462,8 @@ export const buildCacheSignature = (
     provStr = String(intentProvinceIds)
   }
   const cats = (topCategoryIds || []).join(',')
-  return `${gridKey}|${provStr}|${cats}`
+  const userKey = userId ? `u_${userId}` : 'anon'
+  return `${userKey}|${gridKey}|${provStr}|${cats}`
 }
 
 export const getHomeFeedCache = <T = any>(signature: string): T | null => {

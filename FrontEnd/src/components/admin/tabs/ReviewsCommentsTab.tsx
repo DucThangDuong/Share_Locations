@@ -88,7 +88,6 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
 
   const [openActionMenuId, setOpenActionMenuId] = useState<number | null>(null);
 
-  // Tự động nhận diện tab Nghi vấn hoặc Trạng thái từ URL query (ví dụ ?status=pending)
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const statusParam = params.get("status")?.toLowerCase();
@@ -104,7 +103,6 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
     }
   }, [location.search]);
 
-  // Danh sách đã lọc theo từ khóa / số sao (trước khi lọc theo tab trạng thái)
   const baseFilteredReviews = useMemo(
     () =>
       reviewsList.filter((rev) => {
@@ -144,7 +142,6 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
     [commentsList, searchText]
   );
 
-  // Bộ đếm trạng thái đánh giá (cập nhật động theo bộ lọc tìm kiếm / số sao)
   const pendingReviewsCount = useMemo(
     () => baseFilteredReviews.filter((r) => r.status === "pending").length,
     [baseFilteredReviews]
@@ -162,7 +159,6 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
     [baseFilteredReviews]
   );
 
-  // Bộ đếm trạng thái bình luận (cập nhật động theo bộ lọc tìm kiếm)
   const activeCommentsCount = useMemo(
     () => baseFilteredComments.filter((c) => c.status === "active").length,
     [baseFilteredComments]
@@ -293,7 +289,6 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
     currentPage * itemsPerPage
   );
 
-  // Xử lý duyệt và công khai bài đánh giá
   const handleApproveReview = async (reviewId: number) => {
     try {
       await adminService.updateReviewStatus(reviewId, "active");
@@ -321,7 +316,6 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
     }
   };
 
-  // Xử lý tạm ẩn hoặc mở lại bài đánh giá
   const handleToggleHideReview = async (reviewId: number) => {
     const review = reviewsList.find((item) => item.id === reviewId);
     if (!review) return;
@@ -381,7 +375,6 @@ export const ReviewsCommentsTab: React.FC<ReviewsCommentsTabProps> = ({
     }
   };
 
-  // Xử lý tạm ẩn hoặc mở lại bình luận
   const handleToggleHideComment = async (commentId: number) => {
     const comment = commentsList.find((item) => item.id === commentId);
     if (!comment) return;

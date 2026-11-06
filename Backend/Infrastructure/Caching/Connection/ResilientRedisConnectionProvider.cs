@@ -192,7 +192,6 @@ public sealed class ResilientRedisConnectionProvider : IRedisConnectionProvider
         var previousTicks = Interlocked.Read(ref _lastReconnectTicks);
         var previousReconnectTime = new DateTimeOffset(previousTicks, TimeSpan.Zero);
 
-        // Chưa hết thời gian hồi chiêu (60s) giữa 2 lần ForceReconnect thì bỏ qua
         if (utcNow - previousReconnectTime < ReconnectMinInterval)
             return;
 
@@ -208,7 +207,6 @@ public sealed class ResilientRedisConnectionProvider : IRedisConnectionProvider
             }
             _previousErrorTime = utcNow;
 
-            // Chỉ tạo lại kết nối nếu lỗi mạng kéo dài liên tục vượt ngưỡng (30s) và đã qua thời gian hồi chiêu (60s)
             if (utcNow - _firstErrorTime >= ReconnectErrorThreshold &&
                 utcNow - previousReconnectTime >= ReconnectMinInterval)
             {
@@ -220,7 +218,6 @@ public sealed class ResilientRedisConnectionProvider : IRedisConnectionProvider
 
                 if (oldConnection.IsValueCreated)
                 {
-                    // Đóng kết nối cũ ở luồng nền sau 5 giây để các lệnh đang chạy dở kịp hoàn tất
                     _ = Task.Run(async () =>
                     {
                         await Task.Delay(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
@@ -231,7 +228,6 @@ public sealed class ResilientRedisConnectionProvider : IRedisConnectionProvider
                         }
                         catch
                         {
-                            // Bỏ qua lỗi khi đóng socket cũ
                         }
                     });
                 }

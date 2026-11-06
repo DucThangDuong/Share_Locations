@@ -26,6 +26,7 @@ public interface IRecommendationService
         IReadOnlyList<long>? excludePlaceIds,
         int topK = 12,
         IReadOnlyList<int>? intentProvinceIds = null,
+        long? userId = null,
         CancellationToken ct = default);
 
     Task<PlaceVectorCatalog> RefreshPlaceCatalogCacheAsync(CancellationToken ct = default);

@@ -1,6 +1,6 @@
 import apiClient from './apiClient'
 import type { ApiSuccessResponse } from '@/types/responses/common.response'
-import type { CollectionDto, PlaceTypeDto } from '@/types/models/place.model'
+import type { CategoryDto, CollectionDto, PlaceTypeDto } from '@/types/models/place.model'
 
 export interface GetFeaturedCollectionsParams {
   count?: number
@@ -11,6 +11,11 @@ export interface GetFeaturedCollectionsParams {
 }
 
 export const catalogService = {
+  async getCategories(): Promise<ApiSuccessResponse<CategoryDto[]>> {
+    const response = await apiClient.get<ApiSuccessResponse<CategoryDto[]>>('/api/categories')
+    return response.data
+  },
+
   async getPlaceTypes(): Promise<ApiSuccessResponse<PlaceTypeDto[]>> {
     const response = await apiClient.get<ApiSuccessResponse<PlaceTypeDto[]>>('/api/place-types')
     return response.data

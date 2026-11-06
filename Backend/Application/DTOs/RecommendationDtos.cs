@@ -59,6 +59,7 @@ public class UserPreferenceVector
     public int PositiveSampleCount { get; set; }
     public Dictionary<int, double> CategoryWeights { get; set; } = new();
     public Dictionary<int, double> ProvinceWeights { get; set; } = new();
+    public List<int> RecentProvinceIds { get; set; } = new();
     public double PreferredNormRating { get; set; }
     public double PreferredNormReviewCount { get; set; }
     public double VectorNorm { get; set; }
@@ -177,6 +178,8 @@ public class SuggestedTripOrCollectionDto
 
 public class DualContextHomeFeedResponse
 {
+    public long? UserId { get; set; }
+    public bool IsPersonalized { get; set; }
     public string? DeviceId { get; set; }
     public int? PhysicalProvinceId { get; set; }
     public string? PhysicalProvinceName { get; set; }

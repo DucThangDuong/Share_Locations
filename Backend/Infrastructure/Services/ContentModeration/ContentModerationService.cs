@@ -7,13 +7,6 @@ using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Services.ContentModeration;
 
-/// <summary>
-/// Dịch vụ Kiểm duyệt nội dung & Phân tích cảm xúc:
-/// - Tầng 1: Tiền xử lý văn bản tiếng Việt & Chuẩn hóa Unicode dựng sẵn (TextPreprocessor)
-/// - Tầng 2: Quét từ cấm & Spam động qua Redis kết hợp Thuật toán Aho-Corasick Automaton O(N+M) (HardContentFilter)
-/// - Tầng 3: Mô hình AI Học sâu cục bộ (PhoBERT Titan 1536-D Dual-Pooled + ViHSD Toxicity + Neural Sarcasm Head)
-/// - Tầng 4: Đối sánh Cảm xúc vs Số sao (Rating Inconsistency Check) & Cơ chế Hàng chờ thẩm định (PendingReview)
-/// </summary>
 public class ContentModerationService : IContentModerationService
 {
     private readonly ILogger<ContentModerationService> _logger;
@@ -49,9 +42,6 @@ public class ContentModerationService : IContentModerationService
     {
         var result = new TextModerationResult();
 
-        // -------------------------------------------------------------
-        // Bước 1: Tiền xử lý Text (Khử khoảng trắng thừa, chuẩn hóa ký tự, chống lách luật)
-        // -------------------------------------------------------------
         var cleanedText = TextPreprocessor.Preprocess(content);
         result.CleanedText = cleanedText;
 
@@ -63,9 +53,6 @@ public class ContentModerationService : IContentModerationService
             return result;
         }
 
-        // -------------------------------------------------------------
-        // Bước 2: Lọc vi phạm quy chuẩn cứng & Spam tốc độ cao (Aho-Corasick Automaton O(N+M) từ Redis)
-        // -------------------------------------------------------------
         var hardCheck = await HardContentFilter.CheckAsync(cleanedText, _keywordStore, ct);
         if (hardCheck.HasViolation)
         {
@@ -78,9 +65,6 @@ public class ContentModerationService : IContentModerationService
             return result;
         }
 
-        // -------------------------------------------------------------
-        // Bước 3: Mô hình AI Học sâu cục bộ (PhoBERT + ViHSD Toxicity + Neural Sarcasm Head)
-        // -------------------------------------------------------------
         var aiResult = await CallPhoBertServiceAsync(cleanedText, ct);
         var isSarcastic = false;
 
@@ -113,7 +97,6 @@ public class ContentModerationService : IContentModerationService
         }
         else
         {
-            // Circuit Breaker: Khi AI Service bận hoặc không kết nối được, chuyển vào hàng chờ kiểm duyệt an toàn
             result.SentimentScore = 0.0;
             result.NeedsAdminReview = true;
             result.RecommendedStatus = ReviewStatus.PendingReview;
@@ -122,10 +105,6 @@ public class ContentModerationService : IContentModerationService
             return result;
         }
 
-        // -------------------------------------------------------------
-        // Bước 4: So khớp Cảm xúc vs Số sao (Star Inconsistency Check)
-        // -------------------------------------------------------------
-        // TH1: Khen ngợi tích cực (Sentiment >= 0.45) nhưng vote sao quá thấp (<= 2 sao)
         if (result.SentimentScore >= 0.45 && rating <= 2)
         {
             result.IsInconsistent = true;
@@ -134,7 +113,6 @@ public class ContentModerationService : IContentModerationService
             result.ModerationReason = $"Nghi vấn lệch sao: Nội dung khen ngợi (+{result.SentimentScore:F2}) nhưng chỉ đánh giá {rating} sao.";
             _logger.LogInformation("Phát hiện đánh giá lệch sao (Khen nhưng {Rating} sao): Score={Score}", rating, result.SentimentScore);
         }
-        // TH2: Chê bai tiêu cực (Sentiment <= -0.35) nhưng vote sao cao (>= 4 sao)
         else if (result.SentimentScore <= -0.35 && rating >= 4)
         {
             result.IsInconsistent = true;
@@ -143,7 +121,6 @@ public class ContentModerationService : IContentModerationService
             result.ModerationReason = $"Nghi vấn lệch sao: Nội dung phản ánh chưa hài lòng ({result.SentimentScore:F2}) nhưng đánh giá {rating} sao.";
             _logger.LogInformation("Phát hiện đánh giá lệch sao (Chê nhưng {Rating} sao): Score={Score}", rating, result.SentimentScore);
         }
-        // TH3: Mỉa mai / châm biếm kết hợp số sao cao (>= 4 sao)
         else if (isSarcastic && rating >= 4)
         {
             result.IsInconsistent = true;
@@ -174,7 +151,6 @@ public class ContentModerationService : IContentModerationService
             return result;
         }
 
-        // Lọc vi phạm cứng & spam
         var hardCheck = await HardContentFilter.CheckAsync(cleanedText, _keywordStore, ct);
         if (hardCheck.HasViolation)
         {
@@ -184,7 +160,6 @@ public class ContentModerationService : IContentModerationService
             return result;
         }
 
-        // Kiểm tra độc hại & phân tích cảm xúc qua PhoBERT + ViHSD
         var aiResult = await CallPhoBertServiceAsync(cleanedText, ct);
         if (aiResult.Succeeded)
         {

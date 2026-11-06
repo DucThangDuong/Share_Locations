@@ -67,6 +67,13 @@ public static class KnnMathEngine
 
         userVector.IsColdStart = false;
         userVector.PositiveSampleCount = validInteractions.Count;
+        userVector.RecentProvinceIds = validInteractions
+            .OrderByDescending(x => x.InteractedAtUtc)
+            .Select(x => catalog.PlacesById[x.PlaceId].ProvinceId)
+            .Where(provId => provId > 0)
+            .Distinct()
+            .Take(5)
+            .ToList();
 
         double totalWeight = 0.0;
         DateTime now = DateTime.UtcNow;

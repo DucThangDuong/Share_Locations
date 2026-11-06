@@ -46,9 +46,6 @@ public class CreateReviewCommentCommandHandler : IRequestHandler<CreateReviewCom
             return Result<CommentDto>.Failure("Nội dung bình luận không được vượt quá 1000 ký tự.");
         }
 
-        // =========================================================================
-        // KIỂM DUYỆT BÌNH LUẬN: Tiền xử lý -> Lọc vi phạm cứng & Spam
-        // =========================================================================
         var moderation = await _moderationService.ModerateCommentAsync(request.Content, ct);
         if (!moderation.IsPassed)
         {

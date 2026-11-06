@@ -41,7 +41,7 @@ public class CollectionRepository : ICollectionRepository
             SELECT cp.CollectionId, p.Id, p.Name, p.AvgRating, p.ReviewCount,
                    p.CategoryId, cat.Name AS CategoryName,
                    p.ProvinceId, prov.Name AS ProvinceName,
-                   p.Latitude, p.Longitude
+                   p.Latitude, p.Longitude, p.CoverImageUrl
             FROM dbo.CollectionPlaces cp
             INNER JOIN dbo.Places p ON cp.PlaceId = p.Id
             INNER JOIN dbo.Collections c ON cp.CollectionId = c.Id
@@ -65,28 +65,90 @@ public class CollectionRepository : ICollectionRepository
 
         var mediaByPlace = medias.ToLookup(m => m.PlaceId, m => m.Url);
 
-        var placeCards = places.Select(p => new
+        var placeCards = places.Select(p =>
         {
-            p.CollectionId,
-            Card = new PlaceCardDto
+            var urls = mediaByPlace[p.Id].ToList();
+            if (urls.Count == 0 && !string.IsNullOrEmpty(p.CoverImageUrl))
             {
-                Id = p.Id,
-                Name = p.Name,
-                CategoryId = p.CategoryId,
-                CategoryName = p.CategoryName,
-                ProvinceId = p.ProvinceId,
-                ProvinceName = p.ProvinceName,
-                Latitude = p.Latitude,
-                Longitude = p.Longitude,
-                AvgRating = p.AvgRating,
-                ReviewCount = p.ReviewCount,
-                MediaUrls = mediaByPlace[p.Id].ToList()
+                urls.Add(p.CoverImageUrl);
             }
+            return new
+            {
+                p.CollectionId,
+                Card = new PlaceCardDto
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    CategoryId = p.CategoryId,
+                    CategoryName = p.CategoryName,
+                    ProvinceId = p.ProvinceId,
+                    ProvinceName = p.ProvinceName,
+                    Latitude = p.Latitude,
+                    Longitude = p.Longitude,
+                    AvgRating = p.AvgRating,
+                    ReviewCount = p.ReviewCount,
+                    MediaUrls = urls
+                }
+            };
         }).ToLookup(p => p.CollectionId, p => p.Card);
 
         foreach (var col in collections)
         {
-            col.Places = placeCards[col.Id].ToList();
+            var assignedPlaces = placeCards[col.Id].ToList();
+            if (assignedPlaces.Count == 0 && col.ProvinceId.HasValue)
+            {
+                const string fallbackSql = @"
+                    SELECT TOP 8 p.Id, p.Name, p.AvgRating, p.ReviewCount,
+                           p.CategoryId, cat.Name AS CategoryName,
+                           p.ProvinceId, prov.Name AS ProvinceName,
+                           p.Latitude, p.Longitude, p.CoverImageUrl
+                    FROM dbo.Places p
+                    LEFT JOIN dbo.Categories cat ON p.CategoryId = cat.Id
+                    LEFT JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id
+                    WHERE p.ProvinceId = @ProvId AND p.Status = 1 AND p.IsDeleted = 0
+                    ORDER BY p.AvgRating DESC, p.ReviewCount DESC;
+
+                    SELECT pm.PlaceId, pm.Url, pm.DisplayOrder
+                    FROM dbo.PlaceMedia pm
+                    INNER JOIN (
+                        SELECT TOP 8 p2.Id
+                        FROM dbo.Places p2
+                        WHERE p2.ProvinceId = @ProvId AND p2.Status = 1 AND p2.IsDeleted = 0
+                        ORDER BY p2.AvgRating DESC, p2.ReviewCount DESC
+                    ) tp ON pm.PlaceId = tp.Id
+                    ORDER BY pm.PlaceId, pm.DisplayOrder;";
+
+                using var fbMulti = await connection.QueryMultipleAsync(fallbackSql, new { ProvId = col.ProvinceId.Value });
+                var fbPlaces = (await fbMulti.ReadAsync<PlaceInCollectionRaw>()).ToList();
+                var fbMedias = (await fbMulti.ReadAsync<PlaceMediaRaw>()).ToList();
+                var fbMediaByPlace = fbMedias.ToLookup(m => m.PlaceId, m => m.Url);
+
+                assignedPlaces = fbPlaces.Select(fp =>
+                {
+                    var fbUrls = fbMediaByPlace[fp.Id].ToList();
+                    if (fbUrls.Count == 0 && !string.IsNullOrEmpty(fp.CoverImageUrl))
+                    {
+                        fbUrls.Add(fp.CoverImageUrl);
+                    }
+                    return new PlaceCardDto
+                    {
+                        Id = fp.Id,
+                        Name = fp.Name,
+                        CategoryId = fp.CategoryId,
+                        CategoryName = fp.CategoryName,
+                        ProvinceId = fp.ProvinceId,
+                        ProvinceName = fp.ProvinceName,
+                        Latitude = fp.Latitude,
+                        Longitude = fp.Longitude,
+                        AvgRating = fp.AvgRating,
+                        ReviewCount = fp.ReviewCount,
+                        MediaUrls = fbUrls
+                    };
+                }).ToList();
+            }
+
+            col.Places = assignedPlaces;
+            col.PlaceCount = assignedPlaces.Count;
         }
 
         return collections;

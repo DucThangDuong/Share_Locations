@@ -29,7 +29,7 @@ public class GetFeaturedCollectionsQueryHandler : IRequestHandler<GetFeaturedCol
     public async Task<Result<IReadOnlyList<CollectionDto>>> Handle(GetFeaturedCollectionsQuery request, CancellationToken ct)
     {
         const int candidatePoolSize = 20;
-        const string poolCacheKey = "catalog:collections:featured:pool:v3:20";
+        const string poolCacheKey = "catalog:collections:featured:pool:v4:20";
 
         var candidatePool = await _cacheService.GetAsync<IReadOnlyList<CollectionDto>>(poolCacheKey, ct);
         if (candidatePool == null || candidatePool.Count == 0)
@@ -74,7 +74,6 @@ public class GetFeaturedCollectionsQueryHandler : IRequestHandler<GetFeaturedCol
         {
             var places = col.Places ?? [];
 
-            // 1. Calculate Near Score (0.0 to 1.0)
             double nearScore = 0.0;
             double? minDistanceKm = null;
             if (hasGps && places.Count > 0)
@@ -87,12 +86,11 @@ public class GetFeaturedCollectionsQueryHandler : IRequestHandler<GetFeaturedCol
                 if (distances.Count > 0)
                 {
                     minDistanceKm = distances.Min();
-                    // Linear decay within 50km
+
                     nearScore = Math.Max(0.0, 1.0 - (minDistanceKm.Value / 50.0));
                 }
             }
 
-            // 2. Calculate Intent Score (0.0 to 1.0)
             double intentScore = 0.0;
             string? matchedIntentProvinceName = null;
             if (intentList.Count > 0 && places.Count > 0)
@@ -118,7 +116,6 @@ public class GetFeaturedCollectionsQueryHandler : IRequestHandler<GetFeaturedCol
                 }
             }
 
-            // 3. Calculate Category Score (0.0 to 1.0)
             double catScore = 0.0;
             string? matchedCategoryName = null;
             if (catSet.Count > 0 && places.Count > 0)
@@ -131,14 +128,12 @@ public class GetFeaturedCollectionsQueryHandler : IRequestHandler<GetFeaturedCol
                 }
             }
 
-            // 4. Calculate Quality Score (0.0 to 1.0)
             double qualityScore = 0.0;
             if (places.Count > 0)
             {
                 qualityScore = (double)places.Average(p => (double)p.AvgRating) / 5.0;
             }
 
-            // Formula: Score = 40*Near + 35*Intent + 20*Category + 5*Quality
             double nearContrib = 40.0 * nearScore;
             double intentContrib = 35.0 * intentScore;
             double catContrib = 20.0 * catScore;
@@ -146,7 +141,6 @@ public class GetFeaturedCollectionsQueryHandler : IRequestHandler<GetFeaturedCol
 
             double totalScore = nearContrib + intentContrib + catContrib + qualityContrib;
 
-            // Determine MatchReason & MatchLabel
             string matchReason = "featured";
             string matchLabel = "✨ Nổi bật";
             double? finalDistanceKm = null;
@@ -169,7 +163,6 @@ public class GetFeaturedCollectionsQueryHandler : IRequestHandler<GetFeaturedCol
                 matchLabel = $"Đúng gu {matchedCategoryName}";
             }
 
-            // Sort places inside collection: matching categories first, then original order
             IReadOnlyList<PlaceCardDto> sortedPlaces;
             if (catSet.Count > 0)
             {

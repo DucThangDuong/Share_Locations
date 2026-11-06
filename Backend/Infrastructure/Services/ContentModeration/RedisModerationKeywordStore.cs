@@ -17,7 +17,6 @@ public class RedisModerationKeywordStore : IModerationKeywordStore
     private DateTime _lastCacheTime = DateTime.MinValue;
     private static readonly TimeSpan CacheTtl = TimeSpan.FromMinutes(10);
 
-    // Tiền tố Redis Key
     public const string ProfanitySetKey = "moderation:keywords:profanity";
     public const string SpamSetKey = "moderation:keywords:spam";
 
@@ -54,7 +53,6 @@ public class RedisModerationKeywordStore : IModerationKeywordStore
     {
         var key = category.Equals("spam", StringComparison.OrdinalIgnoreCase) ? SpamSetKey : ProfanitySetKey;
 
-        // 1. Đọc từ Redis Cache
         var db = TryGetDatabase();
         if (db != null)
         {
@@ -79,7 +77,6 @@ public class RedisModerationKeywordStore : IModerationKeywordStore
             }
         }
 
-        // 2. Dự phòng an toàn: Đọc từ file JSON bên ngoài (nếu Redis chưa khởi tạo dữ liệu)
         return LoadSeedKeywordsFromFile(category);
     }
 
@@ -157,14 +154,12 @@ public class RedisModerationKeywordStore : IModerationKeywordStore
 
             var patterns = new List<(string Keyword, string Category)>();
 
-            // Đọc danh mục từ thô tục (Profanity) từ Redis
             var profanityWords = await GetKeywordsAsync("profanity", ct);
             foreach (var w in profanityWords)
             {
                 patterns.Add((w, "Profanity"));
             }
 
-            // Đọc danh mục spam thương mại / lừa đảo (Spam) từ Redis
             var spamWords = await GetKeywordsAsync("spam", ct);
             foreach (var w in spamWords)
             {

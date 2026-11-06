@@ -509,7 +509,6 @@ public class RecommendationRepository : IRecommendationRepository
         var connection = _dbContext.Database.GetDbConnection();
         var result = new List<SuggestedTripOrCollectionDto>();
 
-        // 1. Get Collections
         const string colSql = @"
             SELECT TOP (@TopK)
                 c.Id,
@@ -575,7 +574,6 @@ public class RecommendationRepository : IRecommendationRepository
             result.AddRange(collections);
         }
 
-        // 2. Get Public Trips
         const string tripSql = @"
             SELECT TOP (@TopK)
                 t.Id,

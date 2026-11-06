@@ -26,7 +26,7 @@ import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { catalogService } from "@/services/catalogService";
 import { geographyService } from "@/services/geographyService";
-import type { PlaceTypeDto } from "@/types/models/place.model";
+import type { CategoryDto } from "@/types/models/place.model";
 import type { ProvinceDto } from "@/types/models/geography.model";
 import type { AdminProposalItem } from "@/types/admin.types";
 import { adminService, extractList } from "@/services/adminService";
@@ -52,7 +52,7 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
   const [errorMsg, setErrorMsg] = useState("");
   const [rejectInlineError, setRejectInlineError] = useState("");
 
-  const [categories, setCategories] = useState<PlaceTypeDto[]>([]);
+  const [categories, setCategories] = useState<CategoryDto[]>([]);
   const [provinces, setProvinces] = useState<ProvinceDto[]>([]);
 
   const [proposer, setProposer] = useState<{
@@ -337,10 +337,10 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
     const loadMetadata = async () => {
       try {
         const [catRes, provRes] = await Promise.all([
-          catalogService.getPlaceTypes(),
+          catalogService.getCategories(),
           geographyService.getProvinces(),
         ]);
-        const catList = extractList<PlaceTypeDto>(catRes);
+        const catList = extractList<CategoryDto>(catRes);
         if (catList.length > 0) {
           setCategories(catList);
         } else if (catRes?.data && Array.isArray(catRes.data)) {
@@ -753,11 +753,10 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
                           setRejectReasonInput(reasonChip);
                           setRejectInlineError("");
                         }}
-                        className={`text-[10px] px-2 py-0.5 rounded-full border transition-all cursor-pointer ${
-                          rejectReasonInput === reasonChip
+                        className={`text-[10px] px-2 py-0.5 rounded-full border transition-all cursor-pointer ${rejectReasonInput === reasonChip
                             ? "bg-rose-100 text-rose-800 border-rose-300 font-semibold"
                             : "bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200"
-                        }`}
+                          }`}
                       >
                         + {reasonChip}
                       </button>
@@ -971,10 +970,6 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
                       ? "Cập nhật thông tin"
                       : "Sửa lỗi sai"}
                 </span>
-              </div>
-              <div className="flex items-center justify-between p-2.5 bg-slate-50/60 rounded-xl">
-                <span className="text-slate-500">Điểm thưởng dự kiến:</span>
-                <span className="font-bold text-emerald-700">+100 điểm cống hiến</span>
               </div>
             </div>
 

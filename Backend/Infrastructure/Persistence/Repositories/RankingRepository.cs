@@ -53,7 +53,6 @@ public class RankingRepository : IRankingRepository
             }
             catch
             {
-                // Fallback to default config if JSON is malformed
             }
         }
 
@@ -65,7 +64,6 @@ public class RankingRepository : IRankingRepository
         long adminId,
         CancellationToken ct = default)
     {
-        // Snapshot current ranks before applying new governance rules so RankDelta reflects the change
         await SnapshotCurrentRanksAsync(ct);
 
         config.UpdatedAt = DateTime.UtcNow;
@@ -329,7 +327,6 @@ public class RankingRepository : IRankingRepository
                 pt.Id,
                 pt.Name,
                 pt.Slug,
-                pt.EnglishName,
                 pt.ImageUrl
             FROM dbo.PlaceTypes pt
             WHERE pt.Status = 1 AND pt.Id IN (1, 2, 3, 4)
@@ -342,7 +339,6 @@ public class RankingRepository : IRankingRepository
             int ptId = (int)pt.Id;
             string ptName = (string)pt.Name;
             string? ptSlug = (string?)pt.Slug;
-            string? ptEnglishName = (string?)pt.EnglishName;
             string? ptImage = (string?)pt.ImageUrl;
 
             categories.Add(new RankingOverviewCategoryDto
@@ -350,7 +346,7 @@ public class RankingRepository : IRankingRepository
                 Key = !string.IsNullOrWhiteSpace(ptSlug) ? ptSlug : $"place-type-{ptId}",
                 Type = "place_type",
                 PlaceTypeId = ptId,
-                Title = ptEnglishName ?? ptName,
+                Title = ptName,
                 VietnameseTitle = ptName,
                 CoverImageUrl = ptImage
             });
@@ -428,13 +424,13 @@ public class RankingRepository : IRankingRepository
         else
         {
             int activePtId = placeTypeId ?? 1;
-            const string ptSql = "SELECT Id, Name, Slug, EnglishName, Tagline, Description, ImageUrl FROM dbo.PlaceTypes WHERE Id = @Id AND Status = 1;";
+            const string ptSql = "SELECT Id, Name, Slug, ImageUrl FROM dbo.PlaceTypes WHERE Id = @Id AND Status = 1;";
             var pt = await connection.QueryFirstOrDefaultAsync(new CommandDefinition(ptSql, new { Id = activePtId }, cancellationToken: ct));
 
             if (pt != null)
             {
-                header.Title = (string?)pt.EnglishName ?? (string)pt.Name;
-                header.Subtitle = (string?)pt.Description ?? (string?)pt.Tagline;
+                header.Title = (string)pt.Name;
+                header.Subtitle = $"Bảng xếp hạng {pt.Name} nổi bật";
                 header.CoverImageUrl = (string?)pt.ImageUrl;
                 header.TargetName = (string)pt.Name;
             }
@@ -786,7 +782,6 @@ public class RankingRepository : IRankingRepository
             ApplyPlaceBreakdownAndScore(item, config);
         }
 
-        // Separate active items (meeting minReviews or explicitly pinned) vs excluded items
         var activeItems = rawList
             .Where(p => !p.IsExcluded && (p.ReviewCount >= config.MinReviews || p.PinnedRank.HasValue))
             .ToList();

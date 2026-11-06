@@ -58,7 +58,6 @@ public class ReputationService : IReputationService
             await connection.OpenAsync(ct);
         }
 
-        // 1. Kiểm tra tính lũy kế trùng lặp (Idempotency)
         if (entityId.HasValue && entityId.Value > 0)
         {
             const string checkDuplicateSql = @"
@@ -81,7 +80,6 @@ public class ReputationService : IReputationService
             }
         }
 
-        // 2. Kiểm tra giới hạn điểm trong ngày (Daily Cap)
         var pointsToAward = basePoints;
         var isCapped = DailyCappedActions.Contains(actionTypeName);
 
@@ -118,7 +116,6 @@ public class ReputationService : IReputationService
             return ReputationAwardResult.Skipped("Số điểm cộng bằng 0 do đạt hạn mức ngày.");
         }
 
-        // 3. Thực hiện cập nhật số dư và ghi log nguyên tử (Atomic Transaction)
         using var transaction = await _dbContext.Database.BeginTransactionAsync(ct);
         try
         {

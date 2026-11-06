@@ -47,9 +47,6 @@ public class CreatePlaceReviewCommandHandler : IRequestHandler<CreatePlaceReview
             return Result<ReviewItemDto>.Failure("Đánh giá sao phải nằm trong khoảng từ 1 đến 5 sao.");
         }
 
-        // =========================================================================
-        // PIPELINE KIỂM DUYỆT 4 BƯỚC: Tiền xử lý -> Lọc cứng & Spam -> Cảm xúc -> Lệch sao
-        // =========================================================================
         var moderation = await _moderationService.ModerateReviewAsync(request.Content, request.Rating, ct);
         if (!moderation.IsPassed)
         {
@@ -76,7 +73,6 @@ public class CreatePlaceReviewCommandHandler : IRequestHandler<CreatePlaceReview
 
         var review = new Review(request.PlaceId, request.UserId, request.Rating, moderation.CleanedText, request.VisitDate);
 
-        // Nếu phát hiện lệch sao hoặc châm biếm -> Gắn cờ đưa vào hàng chờ duyệt của Admin (PendingReview)
         if (moderation.RecommendedStatus == ReviewStatus.PendingReview)
         {
             review.FlagForPendingReview(moderation.ModerationReason ?? "Cần quản trị viên kiểm tra nội dung/lệch sao.");
@@ -133,13 +129,11 @@ public class CreatePlaceReviewCommandHandler : IRequestHandler<CreatePlaceReview
 
         await _unitOfWork.ExecuteInTransactionAsync(async () =>
         {
-            // Dọn dẹp bản ghi đánh giá cũ đã bị xóa của người dùng tại địa điểm này (nếu có)
             await _unitOfWork.Reviews.DeleteHiddenReviewsByPlaceAndUserAsync(request.PlaceId, request.UserId, ct);
 
             await _unitOfWork.Reviews.AddAsync(review, ct);
             await _unitOfWork.SaveChangesAsync(ct);
 
-            // Chỉ cập nhật điểm trung bình của quán nếu đánh giá được duyệt tự động (Active)
             if (review.Status == ReviewStatus.Active)
             {
                 var (avgRating, reviewCount) = await _unitOfWork.Reviews.GetPlaceStatsAsync(place.Id, ct);

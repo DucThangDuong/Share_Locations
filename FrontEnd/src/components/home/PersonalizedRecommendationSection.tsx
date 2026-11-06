@@ -8,6 +8,7 @@ import {
   ArrowLeft,
   ArrowRight
 } from 'lucide-react'
+import { useAuth } from '@/context/AuthContext'
 import { recommendationService } from '@/services/recommendationService'
 import type {
   RecommendedPlaceItem,
@@ -202,6 +203,7 @@ const IntentPlaceCard: React.FC<{ place: RecommendedPlaceItem }> = ({ place }) =
 }
 
 export const PersonalizedRecommendationSection: React.FC = () => {
+  const { user } = useAuth()
   const shelf1ScrollRef = useRef<HTMLDivElement>(null)
   const shelf2ScrollRef = useRef<HTMLDivElement>(null)
 
@@ -256,7 +258,7 @@ export const PersonalizedRecommendationSection: React.FC = () => {
     const intentIds = intentProvinces.map((p) => p.provinceId)
     const primaryIntent = intentProvinces[0] || getIntentContext()
     const topCats = getTopCategoryIds()
-    const signature = buildCacheSignature(gridKey, intentIds, topCats)
+    const signature = buildCacheSignature(gridKey, intentIds, topCats, user?.id)
 
     if (!bypassCache) {
       const cached = getHomeFeedCache<DualContextHomeFeedResponse>(signature)
@@ -286,7 +288,7 @@ export const PersonalizedRecommendationSection: React.FC = () => {
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [user?.id])
 
   useEffect(() => {
     loadFeed()

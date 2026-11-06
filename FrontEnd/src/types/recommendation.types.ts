@@ -111,6 +111,8 @@ export interface SuggestedTripOrCollectionItem {
 }
 
 export interface DualContextHomeFeedResponse {
+  userId?: number | null
+  isPersonalized?: boolean
   deviceId?: string | null
   physicalProvinceId?: number | null
   physicalProvinceName?: string | null
