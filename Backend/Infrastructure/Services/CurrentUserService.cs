@@ -72,26 +72,34 @@ public class CurrentUserService : ICurrentUserService
         {
             if (User == null) return Array.Empty<int>();
 
+            var httpContext = _httpContextAccessor.HttpContext;
+            if (httpContext?.Items.TryGetValue("__AdminCategoryScopes", out var cached) == true && cached is IReadOnlyList<int> cachedList)
+            {
+                return cachedList;
+            }
+
+            if (!IsSystemAdmin && UserId.HasValue)
+            {
+                var dbContext = httpContext?.RequestServices.GetService<TravelReviewDbContext>();
+                if (dbContext != null)
+                {
+                    var dbScopes = dbContext.AdminCategoryScopes
+                        .Where(s => s.UserId == UserId.Value)
+                        .Select(s => s.CategoryId)
+                        .Distinct()
+                        .ToList();
+                    if (httpContext != null) httpContext.Items["__AdminCategoryScopes"] = dbScopes;
+                    return dbScopes;
+                }
+            }
+
             var scopes = User.FindAll("category_scope")
                              .Select(c => int.TryParse(c.Value, out var v) ? v : 0)
                              .Where(v => v > 0)
                              .Distinct()
                              .ToList();
 
-            if (scopes.Count > 0) return scopes;
-
-            if (IsCategoryAdmin && UserId.HasValue)
-            {
-                var dbContext = _httpContextAccessor.HttpContext?.RequestServices.GetService<TravelReviewDbContext>();
-                if (dbContext != null)
-                {
-                    scopes = dbContext.AdminCategoryScopes
-                        .Where(s => s.UserId == UserId.Value)
-                        .Select(s => s.CategoryId)
-                        .ToList();
-                }
-            }
-
+            if (httpContext != null) httpContext.Items["__AdminCategoryScopes"] = scopes;
             return scopes;
         }
     }
@@ -102,26 +110,34 @@ public class CurrentUserService : ICurrentUserService
         {
             if (User == null) return Array.Empty<int>();
 
+            var httpContext = _httpContextAccessor.HttpContext;
+            if (httpContext?.Items.TryGetValue("__AdminProvinceScopes", out var cached) == true && cached is IReadOnlyList<int> cachedList)
+            {
+                return cachedList;
+            }
+
+            if (!IsSystemAdmin && UserId.HasValue)
+            {
+                var dbContext = httpContext?.RequestServices.GetService<TravelReviewDbContext>();
+                if (dbContext != null)
+                {
+                    var dbScopes = dbContext.AdminProvinceScopes
+                        .Where(s => s.UserId == UserId.Value)
+                        .Select(s => s.ProvinceId)
+                        .Distinct()
+                        .ToList();
+                    if (httpContext != null) httpContext.Items["__AdminProvinceScopes"] = dbScopes;
+                    return dbScopes;
+                }
+            }
+
             var scopes = User.FindAll("province_scope")
                              .Select(c => int.TryParse(c.Value, out var v) ? v : 0)
                              .Where(v => v > 0)
                              .Distinct()
                              .ToList();
 
-            if (scopes.Count > 0) return scopes;
-
-            if (IsCategoryAdmin && UserId.HasValue)
-            {
-                var dbContext = _httpContextAccessor.HttpContext?.RequestServices.GetService<TravelReviewDbContext>();
-                if (dbContext != null)
-                {
-                    scopes = dbContext.AdminProvinceScopes
-                        .Where(s => s.UserId == UserId.Value)
-                        .Select(s => s.ProvinceId)
-                        .ToList();
-                }
-            }
-
+            if (httpContext != null) httpContext.Items["__AdminProvinceScopes"] = scopes;
             return scopes;
         }
     }
@@ -131,6 +147,28 @@ public class CurrentUserService : ICurrentUserService
         get
         {
             if (User == null) return Array.Empty<int>();
+            if (ProvinceScopes.Count > 0) return Array.Empty<int>();
+
+            var httpContext = _httpContextAccessor.HttpContext;
+            if (httpContext?.Items.TryGetValue("__AdminRegionScopes", out var cached) == true && cached is IReadOnlyList<int> cachedList)
+            {
+                return cachedList;
+            }
+
+            if (!IsSystemAdmin && UserId.HasValue)
+            {
+                var dbContext = httpContext?.RequestServices.GetService<TravelReviewDbContext>();
+                if (dbContext != null)
+                {
+                    var dbScopes = dbContext.AdminRegionScopes
+                        .Where(s => s.UserId == UserId.Value)
+                        .Select(s => s.RegionId)
+                        .Distinct()
+                        .ToList();
+                    if (httpContext != null) httpContext.Items["__AdminRegionScopes"] = dbScopes;
+                    return dbScopes;
+                }
+            }
 
             var scopes = User.FindAll("region_scope")
                              .Select(c => int.TryParse(c.Value, out var v) ? v : 0)
@@ -138,20 +176,7 @@ public class CurrentUserService : ICurrentUserService
                              .Distinct()
                              .ToList();
 
-            if (scopes.Count > 0) return scopes;
-
-            if (IsCategoryAdmin && UserId.HasValue)
-            {
-                var dbContext = _httpContextAccessor.HttpContext?.RequestServices.GetService<TravelReviewDbContext>();
-                if (dbContext != null)
-                {
-                    scopes = dbContext.AdminRegionScopes
-                        .Where(s => s.UserId == UserId.Value)
-                        .Select(s => s.RegionId)
-                        .ToList();
-                }
-            }
-
+            if (httpContext != null) httpContext.Items["__AdminRegionScopes"] = scopes;
             return scopes;
         }
     }

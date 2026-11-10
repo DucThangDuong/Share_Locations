@@ -37,7 +37,6 @@ import {
   type CreateCollectionRequest
 } from "@/services/adminService";
 import { placeService } from "@/services/placeService";
-import { geographyService } from "@/services/geographyService";
 import { CustomSelect } from "@/components/common/CustomSelect";
 import { getDayTheme } from "@/utils/itineraryStyles";
 import type { ProvinceDto } from "@/types/models/geography.model";
@@ -195,27 +194,44 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
   useEffect(() => {
     fetchCollections();
 
-    geographyService
-      .getProvinces()
-      .then((res) => {
-        const provList = extractList<ProvinceDto>(res);
-        if (provList.length > 0) {
-          setProvinces(provList);
-        } else if (res?.data && Array.isArray(res.data)) {
-          setProvinces(res.data);
+    Promise.allSettled([
+      adminService.getGeographyProvinces({ pageSize: 100 }),
+      adminService.getCatalogCategories({ pageSize: 100 }),
+      placeService.getFilterOptions(),
+    ]).then(([provRes, catRes, filterRes]) => {
+      let allowedProvs: ProvinceDto[] = [];
+      if (provRes.status === "fulfilled") {
+        allowedProvs = extractList<ProvinceDto>(provRes.value?.data || provRes.value);
+        if (allowedProvs.length > 0) {
+          setProvinces(allowedProvs);
         }
-      })
-      .catch(() => { });
+      }
 
-    placeService
-      .getFilterOptions()
-      .then((res) => {
-        if (res.success && res.data) {
-          setFilterCategories(res.data.categories || []);
-          setFilterRegions(res.data.regions || []);
+      if (catRes.status === "fulfilled") {
+        const allowedCats = extractList<any>(catRes.value?.data || catRes.value)
+          .filter((c: any) => c?.id && c?.name)
+          .map((c: any) => ({ id: Number(c.id), name: String(c.name), slug: c.slug || "" }));
+        if (allowedCats.length > 0) {
+          setFilterCategories(allowedCats);
         }
-      })
-      .catch(() => { });
+      }
+
+      if (filterRes.status === "fulfilled" && filterRes.value?.success && filterRes.value?.data) {
+        const rawRegions = filterRes.value.data.regions || [];
+        if (allowedProvs.length > 0) {
+          const allowedProvIdSet = new Set(allowedProvs.map((p) => Number(p.id)));
+          const scopedRegions = rawRegions
+            .map((r) => ({
+              ...r,
+              provinces: (r.provinces || []).filter((p) => allowedProvIdSet.has(Number(p.id))),
+            }))
+            .filter((r) => r.provinces.length > 0);
+          setFilterRegions(scopedRegions);
+        } else {
+          setFilterRegions(rawRegions);
+        }
+      }
+    });
   }, [fetchCollections]);
 
   const activeCollection = useMemo(() => {
@@ -318,10 +334,23 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
     if (activeCollectionId === null) return;
     setIsSearchingPlaces(true);
     try {
+      const effectiveCategoryIds =
+        selectedCategoryIds.length > 0
+          ? selectedCategoryIds
+          : filterCategories.length > 0
+            ? filterCategories.map((c) => Number(c.id))
+            : undefined;
+      const effectiveProvinceIds =
+        selectedProvinceIds.length > 0
+          ? selectedProvinceIds
+          : provinces.length > 0
+            ? provinces.map((p) => Number(p.id))
+            : undefined;
+
       const res = await placeService.searchPlaces({
         keyword: searchQuery.trim() || undefined,
-        categoryIds: selectedCategoryIds.length > 0 ? selectedCategoryIds : undefined,
-        provinceIds: selectedProvinceIds.length > 0 ? selectedProvinceIds : undefined,
+        categoryIds: effectiveCategoryIds,
+        provinceIds: effectiveProvinceIds,
         minRating: selectedMinRating > 0 ? selectedMinRating : undefined,
         page: searchCurrentPage,
         pageSize: 9
@@ -350,6 +379,8 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
     searchQuery,
     selectedCategoryIds,
     selectedProvinceIds,
+    filterCategories,
+    provinces,
     selectedMinRating,
     searchCurrentPage
   ]);

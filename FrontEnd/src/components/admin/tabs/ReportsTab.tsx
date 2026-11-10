@@ -171,10 +171,9 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
           }
         } catch { }
 
-        if (assignedProvIds.length > 0 || assignedRegIds.length > 0 || assignedProvNames.length > 0) {
+        if (assignedProvIds.length > 0 || assignedProvNames.length > 0) {
           const scoped = allProvinces.filter((p) => {
             if (assignedProvIds.includes(p.id)) return true;
-            if (assignedRegIds.includes(p.regionId)) return true;
             if (assignedProvNames.includes(p.name.toLowerCase().trim())) return true;
             return false;
           });
@@ -550,11 +549,10 @@ export const ReportsTab: React.FC<ReportsTabProps> = ({
                     <td className="p-3.5 text-right pr-4">
                       <button
                         onClick={() => handleOpenModerationDrawer(groupKey, r.id)}
-                        className={`px-3 py-1.5 rounded-xl font-bold text-xs cursor-pointer transition-colors shadow-2xs whitespace-nowrap ${
-                          r.status === 0
+                        className={`px-3 py-1.5 rounded-xl font-bold text-xs cursor-pointer transition-colors shadow-2xs whitespace-nowrap ${r.status === 0
                             ? "bg-slate-900 hover:bg-slate-800 text-white"
                             : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200"
-                        }`}
+                          }`}
                       >
                         {r.status === 0 ? "Thẩm định →" : "Xem chi tiết"}
                       </button>

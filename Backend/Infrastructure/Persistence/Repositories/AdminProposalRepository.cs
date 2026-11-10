@@ -48,36 +48,18 @@ public class AdminProposalRepository : IAdminProposalRepository
         {
             var catScopes = _currentUserService.CategoryScopes;
             var provScopes = _currentUserService.ProvinceScopes;
-            var regScopes = _currentUserService.RegionScopes;
 
-            if (catScopes.Count == 0 && provScopes.Count == 0 && regScopes.Count == 0)
+            if (catScopes.Count == 0 || provScopes.Count == 0)
             {
                 scopeWhereClauses.Add("1 = 0");
             }
             else
             {
-                if (catScopes.Count > 0)
-                {
-                    scopeWhereClauses.Add("COALESCE(p.CategoryId, targetP.CategoryId, TRY_CAST(JSON_VALUE(p.ProposedDataJSON, '$.categoryId') AS INT)) IN @ScopeCategoryIds");
-                    parameters.Add("ScopeCategoryIds", catScopes);
-                }
+                scopeWhereClauses.Add("COALESCE(p.CategoryId, targetP.CategoryId, TRY_CAST(JSON_VALUE(p.ProposedDataJSON, '$.categoryId') AS INT)) IN @ScopeCategoryIds");
+                parameters.Add("ScopeCategoryIds", catScopes);
 
-                if (provScopes.Count > 0 && regScopes.Count > 0)
-                {
-                    scopeWhereClauses.Add("(COALESCE(p.ProvinceId, targetP.ProvinceId, TRY_CAST(JSON_VALUE(p.ProposedDataJSON, '$.provinceId') AS INT)) IN @ScopeProvinceIds OR prov.RegionId IN @ScopeRegionIds)");
-                    parameters.Add("ScopeProvinceIds", provScopes);
-                    parameters.Add("ScopeRegionIds", regScopes);
-                }
-                else if (provScopes.Count > 0)
-                {
-                    scopeWhereClauses.Add("COALESCE(p.ProvinceId, targetP.ProvinceId, TRY_CAST(JSON_VALUE(p.ProposedDataJSON, '$.provinceId') AS INT)) IN @ScopeProvinceIds");
-                    parameters.Add("ScopeProvinceIds", provScopes);
-                }
-                else if (regScopes.Count > 0)
-                {
-                    scopeWhereClauses.Add("prov.RegionId IN @ScopeRegionIds");
-                    parameters.Add("ScopeRegionIds", regScopes);
-                }
+                scopeWhereClauses.Add("COALESCE(p.ProvinceId, targetP.ProvinceId, TRY_CAST(JSON_VALUE(p.ProposedDataJSON, '$.provinceId') AS INT)) IN @ScopeProvinceIds");
+                parameters.Add("ScopeProvinceIds", provScopes);
             }
         }
 
@@ -720,43 +702,22 @@ public class AdminProposalRepository : IAdminProposalRepository
     private async Task<bool> IsProposalInScopeAsync(long proposalId)
     {
         if (_currentUserService.IsSystemAdmin) return true;
-        var connection = _dbContext.Database.GetDbConnection();
-        const string sql = @"
-            SELECT COALESCE(p.CategoryId, targetP.CategoryId) AS CategoryId,
-                   COALESCE(p.ProvinceId, targetP.ProvinceId) AS ProvinceId,
-                   prov.RegionId
-            FROM dbo.Proposals p
-            LEFT JOIN dbo.Places targetP ON p.TargetPlaceId = targetP.Id
-            LEFT JOIN dbo.Provinces prov ON COALESCE(p.ProvinceId, targetP.ProvinceId) = prov.Id
-            WHERE p.Id = @Id;";
-
-        var row = await connection.QueryFirstOrDefaultAsync<(int? CategoryId, int? ProvinceId, int? RegionId)?>(sql, new { Id = proposalId });
-        if (row == null) return false;
 
         var catScopes = _currentUserService.CategoryScopes;
         var provScopes = _currentUserService.ProvinceScopes;
-        var regScopes = _currentUserService.RegionScopes;
+        if (catScopes.Count == 0 || provScopes.Count == 0) return false;
 
-        if (catScopes.Count == 0 && provScopes.Count == 0 && regScopes.Count == 0) return false;
+        var connection = _dbContext.Database.GetDbConnection();
+        const string sql = @"
+            SELECT COALESCE(p.CategoryId, targetP.CategoryId, TRY_CAST(JSON_VALUE(p.ProposedDataJSON, '$.categoryId') AS INT)) AS CategoryId,
+                   COALESCE(p.ProvinceId, targetP.ProvinceId, TRY_CAST(JSON_VALUE(p.ProposedDataJSON, '$.provinceId') AS INT)) AS ProvinceId
+            FROM dbo.Proposals p
+            LEFT JOIN dbo.Places targetP ON p.TargetPlaceId = targetP.Id
+            WHERE p.Id = @Id;";
 
-        if (catScopes.Count > 0 && (!row.Value.CategoryId.HasValue || !catScopes.Contains(row.Value.CategoryId.Value)))
-            return false;
+        var row = await connection.QueryFirstOrDefaultAsync<(int? CategoryId, int? ProvinceId)?>(sql, new { Id = proposalId });
+        if (row == null || !row.Value.CategoryId.HasValue || !row.Value.ProvinceId.HasValue) return false;
 
-        if (provScopes.Count > 0 && regScopes.Count > 0)
-        {
-            if ((!row.Value.ProvinceId.HasValue || !provScopes.Contains(row.Value.ProvinceId.Value)) &&
-                (!row.Value.RegionId.HasValue || !regScopes.Contains(row.Value.RegionId.Value)))
-                return false;
-        }
-        else if (provScopes.Count > 0 && (!row.Value.ProvinceId.HasValue || !provScopes.Contains(row.Value.ProvinceId.Value)))
-        {
-            return false;
-        }
-        else if (regScopes.Count > 0 && (!row.Value.RegionId.HasValue || !regScopes.Contains(row.Value.RegionId.Value)))
-        {
-            return false;
-        }
-
-        return true;
+        return catScopes.Contains(row.Value.CategoryId.Value) && provScopes.Contains(row.Value.ProvinceId.Value);
     }
 }

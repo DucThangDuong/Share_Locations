@@ -3,8 +3,6 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Search, Plus, Star, ChevronLeft, ChevronRight, Loader2, X, ImageIcon, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { PlaceDetailEditor } from "./PlaceDetailEditor";
 import { AddPlaceView } from "./AddPlaceView";
-import { geographyService } from "@/services/geographyService";
-import { placeService } from "@/services/placeService";
 import { adminService, extractList } from "@/services/adminService";
 import type { ProvinceDto } from "@/types/models/geography.model";
 import { CustomSelect } from "@/components/common/CustomSelect";
@@ -370,10 +368,9 @@ export const PlacesTab: React.FC<PlacesTabProps> = ({
     let mounted = true;
     const loadMetadata = async () => {
       try {
-        const [provRes, catRes, filterRes] = await Promise.allSettled([
-          geographyService.getProvinces(),
+        const [provRes, catRes] = await Promise.allSettled([
+          adminService.getGeographyProvinces({ pageSize: 100 }),
           adminService.getCatalogCategories({ pageSize: 100 }),
-          placeService.getFilterOptions(),
         ]);
         if (mounted) {
           if (provRes.status === "fulfilled") {
@@ -390,27 +387,6 @@ export const PlacesTab: React.FC<PlacesTabProps> = ({
             list.forEach((c: any) => {
               if (c?.id && c?.name) {
                 addUniqueCategory(catList, { id: c.id, name: c.name });
-              }
-            });
-          }
-
-          if (filterRes.status === "fulfilled") {
-            const fCats = filterRes.value?.data?.categories || (filterRes.value as any)?.categories || [];
-            if (Array.isArray(fCats)) {
-              fCats.forEach((c: any) => {
-                if (c?.id && c?.name) {
-                  addUniqueCategory(catList, { id: c.id, name: c.name });
-                }
-              });
-            }
-          }
-
-          if (placesList && placesList.length > 0) {
-            placesList.forEach((p) => {
-              const cName = p.categoryName || p.category;
-              const cId = p.categoryId;
-              if (cName) {
-                addUniqueCategory(catList, { id: cId || cName, name: cName });
               }
             });
           }

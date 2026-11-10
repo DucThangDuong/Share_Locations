@@ -55,7 +55,6 @@ export const AdminProfileTab: React.FC<AdminProfileTabProps> = ({
   const navigate = useNavigate();
   const isSystemAdmin =
     isUserSystemAdmin() ||
-    (typeof user?.role === "string" && (user.role.toUpperCase().includes("ADMIN") || user.role === "3")) ||
     (typeof window !== "undefined" && window.location.search.includes("dev=admin"));
 
   const [adminDetail, setAdminDetail] = useState<AdminUserDetail | null>(null);

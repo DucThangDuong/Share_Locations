@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 import type { AdminFoodItem } from "@/types/admin.types";
 import { adminService, extractList } from "@/services/adminService";
-import { geographyService, type ProvinceDto } from "@/services/geographyService";
+import { type ProvinceDto } from "@/services/geographyService";
 import apiClient from "@/services/apiClient";
 import { CustomSelect } from "@/components/common/CustomSelect";
 
@@ -287,8 +287,8 @@ export const FoodsTab: React.FC<FoodsTabProps> = ({
   };
 
   useEffect(() => {
-    geographyService
-      .getProvinces()
+    adminService
+      .getGeographyProvinces({ pageSize: 100 })
       .then((res: any) => {
         const list = extractList<ProvinceDto>(res?.data || res);
         if (list.length > 0) {

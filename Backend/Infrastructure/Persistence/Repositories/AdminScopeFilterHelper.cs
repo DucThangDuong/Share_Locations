@@ -17,36 +17,18 @@ public static class AdminScopeFilterHelper
 
         var catScopes = currentUser.CategoryScopes;
         var provScopes = currentUser.ProvinceScopes;
-        var regScopes = currentUser.RegionScopes;
 
-        if (catScopes.Count == 0 && provScopes.Count == 0 && regScopes.Count == 0)
+        if (catScopes.Count == 0 || provScopes.Count == 0)
         {
             whereClauses.Add("1 = 0");
             return;
         }
 
-        if (catScopes.Count > 0)
-        {
-            whereClauses.Add($"{placeAlias}.CategoryId IN @ScopeCategoryIds");
-            parameters.Add("ScopeCategoryIds", catScopes);
-        }
+        whereClauses.Add($"{placeAlias}.CategoryId IN @ScopeCategoryIds");
+        parameters.Add("ScopeCategoryIds", catScopes);
 
-        if (provScopes.Count > 0 && regScopes.Count > 0)
-        {
-            whereClauses.Add($"({placeAlias}.ProvinceId IN @ScopeProvinceIds OR {provinceAlias}.RegionId IN @ScopeRegionIds)");
-            parameters.Add("ScopeProvinceIds", provScopes);
-            parameters.Add("ScopeRegionIds", regScopes);
-        }
-        else if (provScopes.Count > 0)
-        {
-            whereClauses.Add($"{placeAlias}.ProvinceId IN @ScopeProvinceIds");
-            parameters.Add("ScopeProvinceIds", provScopes);
-        }
-        else if (regScopes.Count > 0)
-        {
-            whereClauses.Add($"{provinceAlias}.RegionId IN @ScopeRegionIds");
-            parameters.Add("ScopeRegionIds", regScopes);
-        }
+        whereClauses.Add($"{placeAlias}.ProvinceId IN @ScopeProvinceIds");
+        parameters.Add("ScopeProvinceIds", provScopes);
     }
 
     public static void ApplyBlogScope(
@@ -77,40 +59,15 @@ public static class AdminScopeFilterHelper
     {
         if (currentUser.IsSystemAdmin) return;
 
-        var catScopes = currentUser.CategoryScopes;
         var provScopes = currentUser.ProvinceScopes;
-        var regScopes = currentUser.RegionScopes;
-
-        if (catScopes.Count == 0 && provScopes.Count == 0 && regScopes.Count == 0)
+        if (provScopes.Count == 0)
         {
             whereClauses.Add("1 = 0");
             return;
         }
 
-        var conditions = new List<string>();
-
-        if (catScopes.Count > 0)
-        {
-            conditions.Add($"EXISTS (SELECT 1 FROM dbo.FoodPlaces fp_pl JOIN dbo.Places pl ON fp_pl.PlaceId = pl.Id WHERE fp_pl.FoodId = {foodAlias}.Id AND pl.CategoryId IN @ScopeCategoryIds)");
-            parameters.Add("ScopeCategoryIds", catScopes);
-        }
-
-        if (provScopes.Count > 0)
-        {
-            conditions.Add($"EXISTS (SELECT 1 FROM dbo.FoodProvinces fp_pr WHERE fp_pr.FoodId = {foodAlias}.Id AND fp_pr.ProvinceId IN @ScopeProvinceIds)");
-            parameters.Add("ScopeProvinceIds", provScopes);
-        }
-
-        if (regScopes.Count > 0)
-        {
-            conditions.Add($"EXISTS (SELECT 1 FROM dbo.FoodProvinces fp_r JOIN dbo.Provinces prov ON fp_r.ProvinceId = prov.Id WHERE fp_r.FoodId = {foodAlias}.Id AND prov.RegionId IN @ScopeRegionIds)");
-            parameters.Add("ScopeRegionIds", regScopes);
-        }
-
-        if (conditions.Count > 0)
-        {
-            whereClauses.Add("(" + string.Join(" OR ", conditions) + ")");
-        }
+        whereClauses.Add($"EXISTS (SELECT 1 FROM dbo.FoodProvinces fp_pr WHERE fp_pr.FoodId = {foodAlias}.Id AND fp_pr.ProvinceId IN @ScopeProvinceIds)");
+        parameters.Add("ScopeProvinceIds", provScopes);
     }
 
     public static async Task<bool> IsPlaceInScopeAsync(
@@ -120,39 +77,19 @@ public static class AdminScopeFilterHelper
     {
         if (currentUser.IsSystemAdmin) return true;
 
-        const string sql = @"
-            SELECT p.CategoryId, p.ProvinceId, prov.RegionId
-            FROM dbo.Places p
-            LEFT JOIN dbo.Provinces prov ON p.ProvinceId = prov.Id
-            WHERE p.Id = @Id AND p.IsDeleted = 0;";
-
-        var place = await connection.QueryFirstOrDefaultAsync<(int CategoryId, int ProvinceId, int? RegionId)?>(sql, new { Id = placeId });
-        if (place == null) return false;
-
         var catScopes = currentUser.CategoryScopes;
         var provScopes = currentUser.ProvinceScopes;
-        var regScopes = currentUser.RegionScopes;
+        if (catScopes.Count == 0 || provScopes.Count == 0) return false;
 
-        if (catScopes.Count == 0 && provScopes.Count == 0 && regScopes.Count == 0) return false;
+        const string sql = @"
+            SELECT p.CategoryId, p.ProvinceId
+            FROM dbo.Places p
+            WHERE p.Id = @Id AND p.IsDeleted = 0;";
 
-        if (catScopes.Count > 0 && !catScopes.Contains(place.Value.CategoryId)) return false;
+        var place = await connection.QueryFirstOrDefaultAsync<(int CategoryId, int ProvinceId)?>(sql, new { Id = placeId });
+        if (place == null) return false;
 
-        if (provScopes.Count > 0 && regScopes.Count > 0)
-        {
-            if (!provScopes.Contains(place.Value.ProvinceId) &&
-                (!place.Value.RegionId.HasValue || !regScopes.Contains(place.Value.RegionId.Value)))
-                return false;
-        }
-        else if (provScopes.Count > 0 && !provScopes.Contains(place.Value.ProvinceId))
-        {
-            return false;
-        }
-        else if (regScopes.Count > 0 && (!place.Value.RegionId.HasValue || !regScopes.Contains(place.Value.RegionId.Value)))
-        {
-            return false;
-        }
-
-        return true;
+        return catScopes.Contains(place.Value.CategoryId) && provScopes.Contains(place.Value.ProvinceId);
     }
 
     public static async Task<bool> IsBlogInScopeAsync(
@@ -196,12 +133,14 @@ public static class AdminScopeFilterHelper
     {
         if (currentUser.IsSystemAdmin) return true;
 
+        var provScopes = currentUser.ProvinceScopes;
+        if (provScopes.Count == 0) return false;
+
         const string sql = "SELECT ProvinceId FROM dbo.Collections WHERE Id = @Id;";
         var provinceId = await connection.QueryFirstOrDefaultAsync<int?>(sql, new { Id = collectionId });
         if (!provinceId.HasValue) return false;
 
-        var provScopes = currentUser.ProvinceScopes;
-        return provScopes.Count == 0 || provScopes.Contains(provinceId.Value);
+        return provScopes.Contains(provinceId.Value);
     }
 
     public static bool ValidatePlaceInputScope(
@@ -214,12 +153,9 @@ public static class AdminScopeFilterHelper
         var catScopes = currentUser.CategoryScopes;
         var provScopes = currentUser.ProvinceScopes;
 
-        if (catScopes.Count == 0 && provScopes.Count == 0) return false;
+        if (catScopes.Count == 0 || provScopes.Count == 0) return false;
 
-        if (catScopes.Count > 0 && !catScopes.Contains(categoryId)) return false;
-        if (provScopes.Count > 0 && !provScopes.Contains(provinceId)) return false;
-
-        return true;
+        return catScopes.Contains(categoryId) && provScopes.Contains(provinceId);
     }
 
     public static bool ValidateFoodInputScope(
@@ -228,14 +164,10 @@ public static class AdminScopeFilterHelper
     {
         if (currentUser.IsSystemAdmin) return true;
 
-        var catScopes = currentUser.CategoryScopes;
         var provScopes = currentUser.ProvinceScopes;
+        if (provScopes.Count == 0 || !provinceId.HasValue) return false;
 
-        if (catScopes.Count == 0 && provScopes.Count == 0) return false;
-
-        if (provinceId.HasValue && provScopes.Count > 0 && !provScopes.Contains(provinceId.Value)) return false;
-
-        return true;
+        return provScopes.Contains(provinceId.Value);
     }
 
     public static bool ValidateBlogInputScope(
@@ -245,11 +177,8 @@ public static class AdminScopeFilterHelper
         if (currentUser.IsSystemAdmin) return true;
 
         var catScopes = currentUser.CategoryScopes;
+        if (catScopes.Count == 0 || !categoryId.HasValue) return false;
 
-        if (catScopes.Count == 0) return false;
-
-        if (categoryId.HasValue && catScopes.Count > 0 && !catScopes.Contains(categoryId.Value)) return false;
-
-        return true;
+        return catScopes.Contains(categoryId.Value);
     }
 }

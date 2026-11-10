@@ -187,6 +187,15 @@ public class CollectionRepository : ICollectionRepository
 
         if (provinceId.HasValue)
         {
+            if (!_currentUserService.IsSystemAdmin)
+            {
+                var provScopes = _currentUserService.ProvinceScopes;
+                if (provScopes.Count == 0 || provinceId.Value <= 0 || !provScopes.Contains(provinceId.Value))
+                {
+                    return Result<UpdateCollectionPlacesResultDto>.Failure("Bạn không có quyền chuyển bộ sưu tập sang tỉnh thành ngoài phạm vi quản lý.", System.Net.HttpStatusCode.Forbidden);
+                }
+            }
+
             if (provinceId.Value > 0)
             {
                 var provExists = await _dbContext.Provinces.AnyAsync(p => p.Id == provinceId.Value, ct);
@@ -472,7 +481,7 @@ public class CollectionRepository : ICollectionRepository
         if (!_currentUserService.IsSystemAdmin)
         {
             var provScopes = _currentUserService.ProvinceScopes;
-            if (provScopes.Count > 0 && (!provinceId.HasValue || !provScopes.Contains(provinceId.Value)))
+            if (provScopes.Count == 0 || !provinceId.HasValue || !provScopes.Contains(provinceId.Value))
             {
                 return Result<AdminCollectionCreatedDto>.Failure("Bạn không có quyền tạo bộ sưu tập ngoài phạm vi tỉnh thành quản lý.", System.Net.HttpStatusCode.Forbidden);
             }

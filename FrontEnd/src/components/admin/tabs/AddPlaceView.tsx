@@ -21,8 +21,6 @@ import {
 } from "lucide-react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { geographyService } from "@/services/geographyService";
-import { placeService } from "@/services/placeService";
 import { adminService, extractList } from "@/services/adminService";
 import { mapboxService, type AddressSuggestion } from "@/services/mapboxService";
 import type { ProvinceDto } from "@/types/models/geography.model";
@@ -97,10 +95,9 @@ export const AddPlaceView: React.FC<AddPlaceViewProps> = ({
     let isMounted = true;
     const loadMetadata = async () => {
       try {
-        const [catRes, provRes, filterRes] = await Promise.allSettled([
+        const [catRes, provRes] = await Promise.allSettled([
           adminService.getCatalogCategories({ pageSize: 100 }),
-          geographyService.getProvinces(),
-          placeService.getFilterOptions(),
+          adminService.getGeographyProvinces({ pageSize: 100 }),
         ]);
 
         if (isMounted) {
@@ -115,28 +112,17 @@ export const AddPlaceView: React.FC<AddPlaceViewProps> = ({
             });
           }
 
-          if (filterRes.status === "fulfilled") {
-            const fCats = filterRes.value?.data?.categories || (filterRes.value as any)?.categories || [];
-            if (Array.isArray(fCats)) {
-              fCats.forEach((c: any) => {
-                if (c?.id && c?.name && !catMap.has(Number(c.id))) {
-                  catMap.set(Number(c.id), { id: Number(c.id), name: c.name });
-                }
-              });
-            }
-          }
-
           const catList = Array.from(catMap.values());
           if (catList.length > 0) {
             setCategories(catList);
-            setCategoryId((prev) => (prev ? prev : catList[0].id));
+            setCategoryId((prev) => (catList.some((c) => c.id === prev) ? prev : catList[0].id));
           }
 
           if (provRes.status === "fulfilled") {
             const provList = extractList<ProvinceDto>(provRes.value?.data || provRes.value);
             if (provList.length > 0) {
               setProvinces(provList);
-              setProvinceId((prev) => (prev ? prev : provList[0].id));
+              setProvinceId((prev) => (provList.some((p) => p.id === prev) ? prev : provList[0].id));
             }
           }
         }

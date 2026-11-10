@@ -65,57 +65,44 @@ public class AdminDashboardRepository : IAdminDashboardRepository
         {
             var catScopes = _currentUserService.CategoryScopes;
             var provScopes = _currentUserService.ProvinceScopes;
-            var regScopes = _currentUserService.RegionScopes;
 
             parameters.Add("ScopeCatIds", catScopes);
             parameters.Add("ScopeProvIds", provScopes);
-            parameters.Add("ScopeRegIds", regScopes);
 
             var placeConds = new List<string> { "p.IsDeleted = 0" };
-            if (catScopes.Count > 0) placeConds.Add("p.CategoryId IN @ScopeCatIds");
-            if (provScopes.Count > 0 && regScopes.Count > 0)
-                placeConds.Add("(p.ProvinceId IN @ScopeProvIds OR prov.RegionId IN @ScopeRegIds)");
-            else if (provScopes.Count > 0)
+            if (catScopes.Count > 0 && provScopes.Count > 0)
+            {
+                placeConds.Add("p.CategoryId IN @ScopeCatIds");
                 placeConds.Add("p.ProvinceId IN @ScopeProvIds");
-            else if (regScopes.Count > 0)
-                placeConds.Add("prov.RegionId IN @ScopeRegIds");
-            else if (catScopes.Count == 0)
+            }
+            else
+            {
                 placeConds.Add("1 = 0");
+            }
 
-            var placeWhere = placeConds.Count > 0 ? " WHERE " + string.Join(" AND ", placeConds) : "";
+            var placeWhere = " WHERE " + string.Join(" AND ", placeConds);
 
             var blogWhere = catScopes.Count > 0 ? " WHERE b.CategoryId IN @ScopeCatIds" : " WHERE 1 = 0";
 
-            var foodConds = new List<string>();
-            if (catScopes.Count > 0)
-                foodConds.Add("EXISTS (SELECT 1 FROM dbo.FoodPlaces fp_pl JOIN dbo.Places pl ON fp_pl.PlaceId = pl.Id WHERE fp_pl.FoodId = f.Id AND pl.IsDeleted = 0 AND pl.CategoryId IN @ScopeCatIds)");
-            if (provScopes.Count > 0)
-                foodConds.Add("EXISTS (SELECT 1 FROM dbo.FoodProvinces fp WHERE fp.FoodId = f.Id AND fp.ProvinceId IN @ScopeProvIds)");
-            if (regScopes.Count > 0)
-                foodConds.Add("EXISTS (SELECT 1 FROM dbo.FoodProvinces fp JOIN dbo.Provinces prov ON fp.ProvinceId = prov.Id WHERE fp.FoodId = f.Id AND prov.RegionId IN @ScopeRegIds)");
-            if (foodConds.Count == 0) foodConds.Add("1 = 0");
-            var foodWhere = " WHERE (" + string.Join(" OR ", foodConds) + ")";
+            var foodWhere = provScopes.Count > 0
+                ? " WHERE EXISTS (SELECT 1 FROM dbo.FoodProvinces fp WHERE fp.FoodId = f.Id AND fp.ProvinceId IN @ScopeProvIds)"
+                : " WHERE 1 = 0";
 
             var propConds = new List<string> { "prop.Status = 0" };
-            if (catScopes.Count > 0)
-                propConds.Add("COALESCE(prop.CategoryId, targetP.CategoryId) IN @ScopeCatIds");
-            if (provScopes.Count > 0 && regScopes.Count > 0)
-                propConds.Add("(COALESCE(prop.ProvinceId, targetP.ProvinceId) IN @ScopeProvIds OR prov.RegionId IN @ScopeRegIds)");
-            else if (provScopes.Count > 0)
-                propConds.Add("COALESCE(prop.ProvinceId, targetP.ProvinceId) IN @ScopeProvIds");
-            else if (regScopes.Count > 0)
-                propConds.Add("prov.RegionId IN @ScopeRegIds");
-            else if (catScopes.Count == 0)
+            if (catScopes.Count > 0 && provScopes.Count > 0)
+            {
+                propConds.Add("COALESCE(prop.CategoryId, targetP.CategoryId, TRY_CAST(JSON_VALUE(prop.ProposedDataJSON, '$.categoryId') AS INT)) IN @ScopeCatIds");
+                propConds.Add("COALESCE(prop.ProvinceId, targetP.ProvinceId, TRY_CAST(JSON_VALUE(prop.ProposedDataJSON, '$.provinceId') AS INT)) IN @ScopeProvIds");
+            }
+            else
+            {
                 propConds.Add("1 = 0");
+            }
             var propWhere = " WHERE " + string.Join(" AND ", propConds);
 
-            var provStatsWhere = "";
-            if (provScopes.Count > 0 && regScopes.Count > 0)
-                provStatsWhere = " WHERE prov.Id IN @ScopeProvIds OR prov.RegionId IN @ScopeRegIds";
-            else if (provScopes.Count > 0)
-                provStatsWhere = " WHERE prov.Id IN @ScopeProvIds";
-            else if (regScopes.Count > 0)
-                provStatsWhere = " WHERE prov.RegionId IN @ScopeRegIds";
+            var provStatsWhere = provScopes.Count > 0
+                ? " WHERE prov.Id IN @ScopeProvIds"
+                : " WHERE 1 = 0";
 
             combinedSql = $@"
             -- 1. Lấy dữ liệu tổng quan có phân quyền Scope
@@ -151,7 +138,7 @@ public class AdminDashboardRepository : IAdminDashboardRepository
                     ELSE 50
                 END AS Completeness
             FROM dbo.Provinces prov
-            LEFT JOIN dbo.Places p ON prov.Id = p.ProvinceId AND p.IsDeleted = 0 {(catScopes.Count > 0 ? "AND p.CategoryId IN @ScopeCatIds" : "")}
+            LEFT JOIN dbo.Places p ON prov.Id = p.ProvinceId AND p.IsDeleted = 0 {(catScopes.Count > 0 ? "AND p.CategoryId IN @ScopeCatIds" : "AND 1 = 0")}
             {provStatsWhere}
             GROUP BY prov.Id, prov.Name
             ORDER BY COUNT(p.Id) DESC;";
@@ -197,26 +184,30 @@ public class AdminDashboardRepository : IAdminDashboardRepository
     {
         var parameters = new DynamicParameters();
         var whereSql = "";
+        var joinCatSql = "";
 
         if (!_currentUserService.IsSystemAdmin)
         {
+            var catScopes = _currentUserService.CategoryScopes;
             var provScopes = _currentUserService.ProvinceScopes;
-            var regScopes = _currentUserService.RegionScopes;
-            if (provScopes.Count > 0 && regScopes.Count > 0)
-            {
-                whereSql = " WHERE prov.Id IN @ScopeProvIds OR prov.RegionId IN @ScopeRegIds";
-                parameters.Add("ScopeProvIds", provScopes);
-                parameters.Add("ScopeRegIds", regScopes);
-            }
-            else if (provScopes.Count > 0)
+            if (provScopes.Count > 0)
             {
                 whereSql = " WHERE prov.Id IN @ScopeProvIds";
                 parameters.Add("ScopeProvIds", provScopes);
             }
-            else if (regScopes.Count > 0)
+            else
             {
-                whereSql = " WHERE prov.RegionId IN @ScopeRegIds";
-                parameters.Add("ScopeRegIds", regScopes);
+                whereSql = " WHERE 1 = 0";
+            }
+
+            if (catScopes.Count > 0)
+            {
+                joinCatSql = " AND p.CategoryId IN @ScopeCatIds";
+                parameters.Add("ScopeCatIds", catScopes);
+            }
+            else
+            {
+                joinCatSql = " AND 1 = 0";
             }
         }
 
@@ -233,7 +224,7 @@ public class AdminDashboardRepository : IAdminDashboardRepository
                 ELSE 25
             END AS CompletenessPercent
         FROM dbo.Provinces prov
-        LEFT JOIN dbo.Places p ON prov.Id = p.ProvinceId AND p.IsDeleted = 0
+        LEFT JOIN dbo.Places p ON prov.Id = p.ProvinceId AND p.IsDeleted = 0 {joinCatSql}
         {whereSql}
         GROUP BY prov.Id, prov.Name
         ORDER BY COUNT(p.Id) DESC, prov.Name ASC;";
@@ -290,18 +281,17 @@ public class AdminDashboardRepository : IAdminDashboardRepository
         {
             var catScopes = _currentUserService.CategoryScopes;
             var provScopes = _currentUserService.ProvinceScopes;
-            var regScopes = _currentUserService.RegionScopes;
             parameters.Add("ScopeCatIds", catScopes);
             parameters.Add("ScopeProvIds", provScopes);
-            parameters.Add("ScopeRegIds", regScopes);
 
-            if (catScopes.Count > 0) scopeWhere += " AND p.CategoryId IN @ScopeCatIds";
-            if (provScopes.Count > 0 && regScopes.Count > 0)
-                scopeWhere += " AND (p.ProvinceId IN @ScopeProvIds OR prov.RegionId IN @ScopeRegIds)";
-            else if (provScopes.Count > 0)
-                scopeWhere += " AND p.ProvinceId IN @ScopeProvIds";
-            else if (regScopes.Count > 0)
-                scopeWhere += " AND prov.RegionId IN @ScopeRegIds";
+            if (catScopes.Count > 0 && provScopes.Count > 0)
+            {
+                scopeWhere = " AND p.CategoryId IN @ScopeCatIds AND p.ProvinceId IN @ScopeProvIds";
+            }
+            else
+            {
+                scopeWhere = " AND 1 = 0";
+            }
         }
 
         DateTime startDate;
@@ -437,30 +427,18 @@ public class AdminDashboardRepository : IAdminDashboardRepository
         {
             var catScopes = _currentUserService.CategoryScopes;
             var provScopes = _currentUserService.ProvinceScopes;
-            var regScopes = _currentUserService.RegionScopes;
             parameters.Add("ScopeCatIds", catScopes);
             parameters.Add("ScopeProvIds", provScopes);
-            parameters.Add("ScopeRegIds", regScopes);
 
-            if (catScopes.Count > 0)
+            if (catScopes.Count > 0 && provScopes.Count > 0)
             {
-                scopeWherePlaces += " AND p.CategoryId IN @ScopeCatIds";
-                scopeWhereProps += " AND COALESCE(prop.CategoryId, targetP.CategoryId) IN @ScopeCatIds";
+                scopeWherePlaces = " AND p.CategoryId IN @ScopeCatIds AND p.ProvinceId IN @ScopeProvIds";
+                scopeWhereProps = " AND COALESCE(prop.CategoryId, targetP.CategoryId, TRY_CAST(JSON_VALUE(prop.ProposedDataJSON, '$.categoryId') AS INT)) IN @ScopeCatIds AND COALESCE(prop.ProvinceId, targetP.ProvinceId, TRY_CAST(JSON_VALUE(prop.ProposedDataJSON, '$.provinceId') AS INT)) IN @ScopeProvIds";
             }
-            if (provScopes.Count > 0 && regScopes.Count > 0)
+            else
             {
-                scopeWherePlaces += " AND (p.ProvinceId IN @ScopeProvIds OR prov.RegionId IN @ScopeRegIds)";
-                scopeWhereProps += " AND (COALESCE(prop.ProvinceId, targetP.ProvinceId) IN @ScopeProvIds OR prov.RegionId IN @ScopeRegIds)";
-            }
-            else if (provScopes.Count > 0)
-            {
-                scopeWherePlaces += " AND p.ProvinceId IN @ScopeProvIds";
-                scopeWhereProps += " AND COALESCE(prop.ProvinceId, targetP.ProvinceId) IN @ScopeProvIds";
-            }
-            else if (regScopes.Count > 0)
-            {
-                scopeWherePlaces += " AND prov.RegionId IN @ScopeRegIds";
-                scopeWhereProps += " AND prov.RegionId IN @ScopeRegIds";
+                scopeWherePlaces = " AND 1 = 0";
+                scopeWhereProps = " AND 1 = 0";
             }
         }
 
@@ -560,30 +538,18 @@ public class AdminDashboardRepository : IAdminDashboardRepository
         {
             var catScopes = _currentUserService.CategoryScopes;
             var provScopes = _currentUserService.ProvinceScopes;
-            var regScopes = _currentUserService.RegionScopes;
             parameters.Add("ScopeCatIds", catScopes);
             parameters.Add("ScopeProvIds", provScopes);
-            parameters.Add("ScopeRegIds", regScopes);
 
-            if (catScopes.Count > 0)
+            if (catScopes.Count > 0 && provScopes.Count > 0)
             {
-                scopeWherePlaces += " AND p.CategoryId IN @ScopeCatIds";
-                scopeWhereProps += " AND COALESCE(prop.CategoryId, targetP.CategoryId) IN @ScopeCatIds";
+                scopeWherePlaces = " AND p.CategoryId IN @ScopeCatIds AND p.ProvinceId IN @ScopeProvIds";
+                scopeWhereProps = " AND COALESCE(prop.CategoryId, targetP.CategoryId, TRY_CAST(JSON_VALUE(prop.ProposedDataJSON, '$.categoryId') AS INT)) IN @ScopeCatIds AND COALESCE(prop.ProvinceId, targetP.ProvinceId, TRY_CAST(JSON_VALUE(prop.ProposedDataJSON, '$.provinceId') AS INT)) IN @ScopeProvIds";
             }
-            if (provScopes.Count > 0 && regScopes.Count > 0)
+            else
             {
-                scopeWherePlaces += " AND (p.ProvinceId IN @ScopeProvIds OR prov.RegionId IN @ScopeRegIds)";
-                scopeWhereProps += " AND (COALESCE(prop.ProvinceId, targetP.ProvinceId) IN @ScopeProvIds OR prov.RegionId IN @ScopeRegIds)";
-            }
-            else if (provScopes.Count > 0)
-            {
-                scopeWherePlaces += " AND p.ProvinceId IN @ScopeProvIds";
-                scopeWhereProps += " AND COALESCE(prop.ProvinceId, targetP.ProvinceId) IN @ScopeProvIds";
-            }
-            else if (regScopes.Count > 0)
-            {
-                scopeWherePlaces += " AND prov.RegionId IN @ScopeRegIds";
-                scopeWhereProps += " AND prov.RegionId IN @ScopeRegIds";
+                scopeWherePlaces = " AND 1 = 0";
+                scopeWhereProps = " AND 1 = 0";
             }
         }
 

@@ -24,8 +24,6 @@ import {
 } from "lucide-react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { placeService } from "@/services/placeService";
-import { geographyService } from "@/services/geographyService";
 import { adminService, extractList } from "@/services/adminService";
 import { PlaceAdminReviews } from "./PlaceAdminReviews";
 import { PlaceAdminFoods, type AdminPlaceFoodDto } from "./PlaceAdminFoods";
@@ -553,10 +551,9 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
     let mounted = true;
     const loadMetadata = async () => {
       try {
-        const [catRes, provRes, filterRes] = await Promise.allSettled([
+        const [catRes, provRes] = await Promise.allSettled([
           adminService.getCatalogCategories({ pageSize: 100 }),
-          geographyService.getProvinces(),
-          placeService.getFilterOptions(),
+          adminService.getGeographyProvinces({ pageSize: 100 }),
         ]);
         if (mounted) {
           const catMap = new Map<number, { id: number; name: string }>();
@@ -568,17 +565,6 @@ export const PlaceDetailEditor: React.FC<PlaceDetailEditorProps> = ({
                 catMap.set(Number(c.id), { id: Number(c.id), name: c.name });
               }
             });
-          }
-
-          if (filterRes.status === "fulfilled") {
-            const fCats = filterRes.value?.data?.categories || (filterRes.value as any)?.categories || [];
-            if (Array.isArray(fCats)) {
-              fCats.forEach((c: any) => {
-                if (c?.id && c?.name && !catMap.has(Number(c.id))) {
-                  catMap.set(Number(c.id), { id: Number(c.id), name: c.name });
-                }
-              });
-            }
           }
 
           if (place?.categoryId && (place?.category || place?.categoryName)) {

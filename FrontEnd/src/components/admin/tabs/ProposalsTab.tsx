@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Search, User, Image as ImageIcon, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import type { AdminProposalItem } from "@/types/admin.types";
 import { adminService, extractList } from "@/services/adminService";
-import { geographyService, type ProvinceDto } from "@/services/geographyService";
+import { type ProvinceDto } from "@/services/geographyService";
 import { ProposalDetailEditor } from "./ProposalDetailEditor";
 import { CustomSelect } from "@/components/common/CustomSelect";
 
@@ -80,7 +80,7 @@ export const ProposalsTab: React.FC<ProposalsTabProps> = ({
   };
 
   useEffect(() => {
-    geographyService.getProvinces().then((res: any) => {
+    adminService.getGeographyProvinces({ pageSize: 100 }).then((res: any) => {
       const items = extractList(res?.data || res);
       if (items.length > 0) setProvinces(items);
     }).catch(() => { });

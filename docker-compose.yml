@@ -27,7 +27,25 @@ services:
     networks:
       - travel_network
 
-  # 3. .NET 8 Backend Web API
+  # 3. AI Sentiment & Content Moderation Microservice (FastAPI + PhoBERT)
+  sentiment:
+    build:
+      context: ./Backend/SentimentService
+      dockerfile: Dockerfile
+    container_name: travel_review_sentiment
+    restart: unless-stopped
+    ports:
+      - "${SENTIMENT_PORT:-8000}:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PORT=8000
+    volumes:
+      - ./Backend/SentimentService:/app
+      - huggingface_cache:/root/.cache/huggingface
+    networks:
+      - travel_network
+
+  # 4. .NET 8 Backend Web API
   backend:
     build:
       context: ./Backend
@@ -45,6 +63,8 @@ services:
       - RabbitMq__Port=5672
       - RabbitMq__Username=${RABBITMQ_DEFAULT_USER:-guest}
       - RabbitMq__Password=${RABBITMQ_DEFAULT_PASS:-guest}
+      - SentimentService__Url=http://sentiment:8000/analyze
+      - SentimentService__Enabled=true
       - "Jwt__SecretKey=${JWT_SECRET_KEY:?CRITICAL: JWT_SECRET_KEY must be configured in .env}"
       - "Jwt__Issuer=${JWT_ISSUER:-TravelReviewBackend}"
       - "Jwt__Audience=${JWT_AUDIENCE:-TravelReviewClient}"
@@ -59,6 +79,8 @@ services:
       redis:
         condition: service_started
       rabbitmq:
+        condition: service_started
+      sentiment:
         condition: service_started
     networks:
       - travel_network
@@ -92,6 +114,8 @@ volumes:
   redis_data:
     driver: local
   rabbitmq_data:
+    driver: local
+  huggingface_cache:
     driver: local
 
 networks:

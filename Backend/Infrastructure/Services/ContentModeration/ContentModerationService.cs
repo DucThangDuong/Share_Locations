@@ -12,7 +12,7 @@ public class ContentModerationService : IContentModerationService
     private readonly ILogger<ContentModerationService> _logger;
     private readonly HttpClient _httpClient;
     private readonly IModerationKeywordStore _keywordStore;
-    private readonly string _sentimentServiceUrl;
+    private readonly IReadOnlyList<string> _sentimentServiceUrls;
     private readonly bool _sentimentServiceEnabled;
 
     public ContentModerationService(
@@ -24,7 +24,20 @@ public class ContentModerationService : IContentModerationService
         _logger = logger;
         _httpClient = httpClientFactory.CreateClient("SentimentService");
         _keywordStore = keywordStore;
-        _sentimentServiceUrl = configuration["SentimentService:Url"] ?? "http://127.0.0.1:5002/analyze";
+
+        var configuredUrl = configuration["SentimentService:Url"];
+        var urls = new List<string>();
+        if (!string.IsNullOrWhiteSpace(configuredUrl))
+        {
+            urls.Add(configuredUrl.Trim());
+        }
+
+        if (!urls.Contains("http://127.0.0.1:8000/analyze"))
+            urls.Add("http://127.0.0.1:8000/analyze");
+        if (!urls.Contains("http://127.0.0.1:5002/analyze"))
+            urls.Add("http://127.0.0.1:5002/analyze");
+
+        _sentimentServiceUrls = urls;
         _sentimentServiceEnabled = configuration.GetValue<bool>("SentimentService:Enabled", true);
     }
 
@@ -187,46 +200,51 @@ public class ContentModerationService : IContentModerationService
 
     private async Task<(double Score, string Label, double Confidence, bool IsToxic, string ToxicityLabel, double ToxicityScore, string? ToxicityReason, bool IsSarcastic, string? SarcasmReason, bool Succeeded)> CallPhoBertServiceAsync(string text, CancellationToken ct)
     {
-        if (!_sentimentServiceEnabled || string.IsNullOrWhiteSpace(_sentimentServiceUrl))
+        if (!_sentimentServiceEnabled || _sentimentServiceUrls.Count == 0)
         {
             return (0.0, "NEU", 0.0, false, "CLEAN", 0.0, null, false, null, false);
         }
 
-        try
+        var payload = JsonSerializer.Serialize(new { text });
+
+        foreach (var url in _sentimentServiceUrls)
         {
-            using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            cts.CancelAfter(TimeSpan.FromSeconds(7.5));
-
-            var payload = JsonSerializer.Serialize(new { text });
-            using var stringContent = new StringContent(payload, Encoding.UTF8, "application/json");
-
-            var response = await _httpClient.PostAsync(_sentimentServiceUrl, stringContent, cts.Token);
-            if (response.IsSuccessStatusCode)
+            try
             {
-                var json = await response.Content.ReadAsStringAsync(cts.Token);
-                using var doc = JsonDocument.Parse(json);
-                var root = doc.RootElement;
+                using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                cts.CancelAfter(TimeSpan.FromSeconds(3.5));
 
-                var score = root.GetProperty("score").GetDouble();
-                var label = root.GetProperty("label").GetString() ?? "NEU";
-                var confidence = root.GetProperty("confidence").GetDouble();
+                using var stringContent = new StringContent(payload, Encoding.UTF8, "application/json");
 
-                var isToxic = root.TryGetProperty("is_toxic", out var toxicProp) && toxicProp.GetBoolean();
-                var toxicityLabel = root.TryGetProperty("toxicity_label", out var toxLblProp) ? toxLblProp.GetString() ?? "CLEAN" : "CLEAN";
-                var toxicityScore = root.TryGetProperty("toxicity_score", out var toxScProp) ? toxScProp.GetDouble() : 0.0;
-                var toxicityReason = root.TryGetProperty("toxicity_reason", out var toxReaProp) && toxReaProp.ValueKind == JsonValueKind.String ? toxReaProp.GetString() : null;
+                var response = await _httpClient.PostAsync(url, stringContent, cts.Token);
+                if (response.IsSuccessStatusCode)
+                {
+                    var json = await response.Content.ReadAsStringAsync(cts.Token);
+                    using var doc = JsonDocument.Parse(json);
+                    var root = doc.RootElement;
 
-                var isSarcastic = root.TryGetProperty("is_sarcastic", out var sarcProp) && sarcProp.GetBoolean();
-                var sarcasmReason = root.TryGetProperty("sarcasm_reason", out var sarcReaProp) && sarcReaProp.ValueKind == JsonValueKind.String ? sarcReaProp.GetString() : null;
+                    var score = root.GetProperty("score").GetDouble();
+                    var label = root.GetProperty("label").GetString() ?? "NEU";
+                    var confidence = root.GetProperty("confidence").GetDouble();
 
-                return (score, label, confidence, isToxic, toxicityLabel, toxicityScore, toxicityReason, isSarcastic, sarcasmReason, true);
+                    var isToxic = root.TryGetProperty("is_toxic", out var toxicProp) && toxicProp.GetBoolean();
+                    var toxicityLabel = root.TryGetProperty("toxicity_label", out var toxLblProp) ? toxLblProp.GetString() ?? "CLEAN" : "CLEAN";
+                    var toxicityScore = root.TryGetProperty("toxicity_score", out var toxScProp) ? toxScProp.GetDouble() : 0.0;
+                    var toxicityReason = root.TryGetProperty("toxicity_reason", out var toxReaProp) && toxReaProp.ValueKind == JsonValueKind.String ? toxReaProp.GetString() : null;
+
+                    var isSarcastic = root.TryGetProperty("is_sarcastic", out var sarcProp) && sarcProp.GetBoolean();
+                    var sarcasmReason = root.TryGetProperty("sarcasm_reason", out var sarcReaProp) && sarcReaProp.ValueKind == JsonValueKind.String ? sarcReaProp.GetString() : null;
+
+                    return (score, label, confidence, isToxic, toxicityLabel, toxicityScore, toxicityReason, isSarcastic, sarcasmReason, true);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug("Không thể kết nối tới PhoBERT Dual-AI Service ({Url}): {Message}. Đang thử endpoint khác...", url, ex.Message);
             }
         }
-        catch (Exception ex)
-        {
-            _logger.LogWarning("Không thể kết nối tới PhoBERT Dual-AI Service ({Url}): {Message}. Chuyển trạng thái sang Hàng chờ kiểm duyệt bất đồng bộ.", _sentimentServiceUrl, ex.Message);
-        }
 
+        _logger.LogWarning("Không thể kết nối tới bất kỳ PhoBERT Dual-AI Service nào ({Urls}). Chuyển trạng thái sang Hàng chờ kiểm duyệt bất đồng bộ.", string.Join(", ", _sentimentServiceUrls));
         return (0.0, "NEU", 0.0, false, "CLEAN", 0.0, null, false, null, false);
     }
 }

@@ -11,13 +11,16 @@ public class AdminGeographyRepository : IAdminGeographyRepository
 {
     private readonly TravelReviewDbContext _dbContext;
     private readonly IAuditLogService _auditLogService;
+    private readonly ICurrentUserService _currentUserService;
 
     public AdminGeographyRepository(
         TravelReviewDbContext dbContext,
-        IAuditLogService auditLogService)
+        IAuditLogService auditLogService,
+        ICurrentUserService currentUserService)
     {
         _dbContext = dbContext;
         _auditLogService = auditLogService;
+        _currentUserService = currentUserService;
     }
 
     public async Task<IReadOnlyList<AdminRegionListItemDto>> GetRegionsAsync(bool? activeOnly = null, CancellationToken ct = default)
@@ -262,6 +265,20 @@ public class AdminGeographyRepository : IAdminGeographyRepository
         var whereClauses = new List<string> { "1=1" };
         var parameters = new DynamicParameters();
 
+        if (!_currentUserService.IsSystemAdmin)
+        {
+            var provScopes = _currentUserService.ProvinceScopes;
+            if (provScopes.Count > 0)
+            {
+                whereClauses.Add("p.Id IN @ScopeProvinceIds");
+                parameters.Add("ScopeProvinceIds", provScopes);
+            }
+            else
+            {
+                whereClauses.Add("1 = 0");
+            }
+        }
+
         if (regionId.HasValue && regionId.Value > 0)
         {
             whereClauses.Add("p.RegionId = @RegionId");
@@ -295,6 +312,21 @@ public class AdminGeographyRepository : IAdminGeographyRepository
         parameters.Add("Offset", offset);
         parameters.Add("PageSize", pageSize);
 
+        var placeScopeFilter = "";
+        if (!_currentUserService.IsSystemAdmin)
+        {
+            var catScopes = _currentUserService.CategoryScopes;
+            if (catScopes.Count > 0)
+            {
+                placeScopeFilter = " AND pl.CategoryId IN @ScopeCategoryIds";
+                parameters.Add("ScopeCategoryIds", catScopes);
+            }
+            else
+            {
+                placeScopeFilter = " AND 1 = 0";
+            }
+        }
+
         var dataSql = $@"
             SELECT
                 p.Id,
@@ -308,7 +340,7 @@ public class AdminGeographyRepository : IAdminGeographyRepository
                 p.Featured,
                 p.DisplayOrder,
                 p.Status,
-                (SELECT COUNT(1) FROM dbo.Places pl WHERE pl.ProvinceId = p.Id AND pl.Status = 1 AND pl.IsDeleted = 0) AS PlaceCount,
+                (SELECT COUNT(1) FROM dbo.Places pl WHERE pl.ProvinceId = p.Id AND pl.Status = 1 AND pl.IsDeleted = 0{placeScopeFilter}) AS PlaceCount,
                 (SELECT COUNT(1) FROM dbo.FoodProvinces fp WHERE fp.ProvinceId = p.Id) AS FoodCount,
                 (SELECT COUNT(1) FROM dbo.AdminProvinceScopes aps WHERE aps.ProvinceId = p.Id) AS AssignedAdminsCount
             FROM dbo.Provinces p

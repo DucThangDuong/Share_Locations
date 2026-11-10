@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import type { AdminBlogItem } from "@/types/admin.types";
 import { CustomSelect } from "@/components/common/CustomSelect";
-import { adminService } from "@/services/adminService";
+import { adminService, extractList } from "@/services/adminService";
 import { blogService } from "@/services/blogService";
 import { BlogTableOfContents } from "@/components/blog/BlogTableOfContents";
 import {
@@ -137,7 +137,21 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
   const [blogSearchText, setBlogSearchText] = useState("");
   const [blogFilterCategory, setBlogFilterCategory] = useState("all");
   const [blogFilterStatus, setBlogFilterStatus] = useState("all");
+  const [categoryOptions, setCategoryOptions] = useState<string[]>(CATEGORY_OPTIONS);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    adminService
+      .getCatalogCategories({ pageSize: 100 })
+      .then((res: any) => {
+        const list = extractList<any>(res?.data || res);
+        const names = list.map((c: any) => String(c.name || "").trim()).filter(Boolean);
+        if (names.length > 0) {
+          setCategoryOptions(names);
+        }
+      })
+      .catch(() => { });
+  }, []);
 
   type SortField = "title" | "views" | "updatedAt" | null;
   type SortOrder = "asc" | "desc";
@@ -351,6 +365,7 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
       return (
         <BlogDetailViewer
           blog={currentBlog}
+          categoryOptions={categoryOptions}
           onBack={() => {
             setSelectedBlogId(null);
             navigate(`/admin/blogs${location.search}`);
@@ -416,7 +431,7 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
               onChange={(val) => handleCategoryChange(val)}
               options={[
                 { value: "all", label: "Tất cả danh mục" },
-                ...CATEGORY_OPTIONS.map((cat) => ({ value: cat, label: cat })),
+                ...categoryOptions.map((cat) => ({ value: cat, label: cat })),
               ]}
               size="sm"
               className="min-w-[140px]"
@@ -708,6 +723,7 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
 
 interface BlogDetailViewerProps {
   blog: AdminBlogItem;
+  categoryOptions?: string[];
   onBack: () => void;
   onSave: (updatedBlog: AdminBlogItem) => void;
   onToggleStatus: () => void;
@@ -716,6 +732,7 @@ interface BlogDetailViewerProps {
 
 const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
   blog,
+  categoryOptions = CATEGORY_OPTIONS,
   onBack,
   onSave,
   onToggleStatus,
@@ -1117,7 +1134,7 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
                         label="Chủ đề / Danh mục cẩm nang *"
                         value={category}
                         onChange={(val) => setCategory(val)}
-                        options={CATEGORY_OPTIONS.map((cat) => ({ value: cat, label: cat }))}
+                        options={categoryOptions.map((cat) => ({ value: cat, label: cat }))}
                         size="md"
                       />
                     </div>

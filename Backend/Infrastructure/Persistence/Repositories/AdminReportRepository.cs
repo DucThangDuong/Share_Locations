@@ -414,36 +414,18 @@ public class AdminReportRepository : IAdminReportRepository
         {
             var catScopes = _currentUserService.CategoryScopes;
             var provScopes = _currentUserService.ProvinceScopes;
-            var regScopes = _currentUserService.RegionScopes;
 
-            if (catScopes.Count == 0 && provScopes.Count == 0 && regScopes.Count == 0)
+            if (catScopes.Count == 0 || provScopes.Count == 0)
             {
                 whereClauses.Add("1 = 0");
             }
             else
             {
-                if (catScopes.Count > 0)
-                {
-                    whereClauses.Add("ScopeCategoryId IN @ScopeCategoryIds");
-                    parameters.Add("ScopeCategoryIds", catScopes);
-                }
+                whereClauses.Add("ScopeCategoryId IN @ScopeCategoryIds");
+                parameters.Add("ScopeCategoryIds", catScopes);
 
-                if (provScopes.Count > 0 && regScopes.Count > 0)
-                {
-                    whereClauses.Add("(ScopeProvinceId IN @ScopeProvinceIds OR ScopeRegionId IN @ScopeRegionIds)");
-                    parameters.Add("ScopeProvinceIds", provScopes);
-                    parameters.Add("ScopeRegionIds", regScopes);
-                }
-                else if (provScopes.Count > 0)
-                {
-                    whereClauses.Add("ScopeProvinceId IN @ScopeProvinceIds");
-                    parameters.Add("ScopeProvinceIds", provScopes);
-                }
-                else if (regScopes.Count > 0)
-                {
-                    whereClauses.Add("ScopeRegionId IN @ScopeRegionIds");
-                    parameters.Add("ScopeRegionIds", regScopes);
-                }
+                whereClauses.Add("(TargetType = 'blog' OR ScopeProvinceId IN @ScopeProvinceIds)");
+                parameters.Add("ScopeProvinceIds", provScopes);
             }
         }
 

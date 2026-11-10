@@ -11,13 +11,16 @@ public class AdminCatalogTaxonomyRepository : IAdminCatalogTaxonomyRepository
 {
     private readonly TravelReviewDbContext _dbContext;
     private readonly IAuditLogService _auditLogService;
+    private readonly ICurrentUserService _currentUserService;
 
     public AdminCatalogTaxonomyRepository(
         TravelReviewDbContext dbContext,
-        IAuditLogService auditLogService)
+        IAuditLogService auditLogService,
+        ICurrentUserService currentUserService)
     {
         _dbContext = dbContext;
         _auditLogService = auditLogService;
+        _currentUserService = currentUserService;
     }
 
     public async Task<IReadOnlyList<AdminPlaceTypeListItemDto>> GetPlaceTypesAsync(bool? activeOnly = null, CancellationToken ct = default)
@@ -210,6 +213,20 @@ public class AdminCatalogTaxonomyRepository : IAdminCatalogTaxonomyRepository
         var whereClauses = new List<string> { "1=1" };
         var parameters = new DynamicParameters();
 
+        if (!_currentUserService.IsSystemAdmin)
+        {
+            var catScopes = _currentUserService.CategoryScopes;
+            if (catScopes.Count > 0)
+            {
+                whereClauses.Add("c.Id IN @ScopeCategoryIds");
+                parameters.Add("ScopeCategoryIds", catScopes);
+            }
+            else
+            {
+                whereClauses.Add("1 = 0");
+            }
+        }
+
         if (placeTypeId.HasValue && placeTypeId.Value > 0)
         {
             whereClauses.Add("c.PlaceTypeId = @PlaceTypeId");
@@ -237,6 +254,24 @@ public class AdminCatalogTaxonomyRepository : IAdminCatalogTaxonomyRepository
         parameters.Add("Offset", offset);
         parameters.Add("PageSize", pageSize);
 
+        var placeScopeFilter = "";
+        var propScopeFilter = "";
+        if (!_currentUserService.IsSystemAdmin)
+        {
+            var provScopes = _currentUserService.ProvinceScopes;
+            if (provScopes.Count > 0)
+            {
+                placeScopeFilter = " AND pl.ProvinceId IN @ScopeProvinceIds";
+                propScopeFilter = " AND prop.ProvinceId IN @ScopeProvinceIds";
+                parameters.Add("ScopeProvinceIds", provScopes);
+            }
+            else
+            {
+                placeScopeFilter = " AND 1 = 0";
+                propScopeFilter = " AND 1 = 0";
+            }
+        }
+
         var dataSql = $@"
             SELECT
                 c.Id,
@@ -246,9 +281,9 @@ public class AdminCatalogTaxonomyRepository : IAdminCatalogTaxonomyRepository
                 c.Slug,
                 c.ImageUrl,
                 c.Status,
-                (SELECT COUNT(1) FROM dbo.Places pl WHERE pl.CategoryId = c.Id AND pl.Status = 1 AND pl.IsDeleted = 0) AS PlaceCount,
+                (SELECT COUNT(1) FROM dbo.Places pl WHERE pl.CategoryId = c.Id AND pl.Status = 1 AND pl.IsDeleted = 0{placeScopeFilter}) AS PlaceCount,
                 (SELECT COUNT(1) FROM dbo.Blogs b WHERE b.CategoryId = c.Id AND b.Status = 1) AS BlogCount,
-                (SELECT COUNT(1) FROM dbo.Proposals prop WHERE prop.CategoryId = c.Id) AS ProposalCount,
+                (SELECT COUNT(1) FROM dbo.Proposals prop WHERE prop.CategoryId = c.Id{propScopeFilter}) AS ProposalCount,
                 (SELECT COUNT(1) FROM dbo.AdminCategoryScopes acs WHERE acs.CategoryId = c.Id) AS AssignedAdminsCount
             FROM dbo.Categories c
             LEFT JOIN dbo.PlaceTypes pt ON c.PlaceTypeId = pt.Id

@@ -133,17 +133,9 @@ public class AdminUserRepository : IAdminUserRepository
                       SELECT 1 FROM dbo.AdminCategoryScopes acs
                       WHERE acs.UserId = u.Id AND acs.CategoryId = pl.CategoryId
                   )
-                  AND (
-                      NOT EXISTS (SELECT 1 FROM dbo.AdminProvinceScopes aps WHERE aps.UserId = u.Id)
-                      OR EXISTS (SELECT 1 FROM dbo.AdminProvinceScopes aps WHERE aps.UserId = u.Id AND aps.ProvinceId = pl.ProvinceId)
-                  )
-                  AND (
-                      NOT EXISTS (SELECT 1 FROM dbo.AdminRegionScopes ars WHERE ars.UserId = u.Id)
-                      OR EXISTS (
-                          SELECT 1 FROM dbo.AdminRegionScopes ars
-                          JOIN dbo.Provinces prov ON ars.RegionId = prov.RegionId
-                          WHERE ars.UserId = u.Id AND prov.Id = pl.ProvinceId
-                      )
+                  AND EXISTS (
+                      SELECT 1 FROM dbo.AdminProvinceScopes aps
+                      WHERE aps.UserId = u.Id AND aps.ProvinceId = pl.ProvinceId
                   )
             )");
             parameters.Add("PlaceId", placeId.Value);
@@ -491,28 +483,25 @@ public class AdminUserRepository : IAdminUserRepository
                 await connection.ExecuteAsync(insertProvSql, provParams, transaction);
             }
 
-            if (regionIds != null)
+            await connection.ExecuteAsync(
+                "DELETE FROM dbo.AdminRegionScopes WHERE UserId = @UserId;",
+                new { UserId = targetUserId },
+                transaction);
+
+            if (regionIds != null && regionIds.Count > 0)
             {
-                await connection.ExecuteAsync(
-                    "DELETE FROM dbo.AdminRegionScopes WHERE UserId = @UserId;",
-                    new { UserId = targetUserId },
-                    transaction);
+                const string insertRegSql = @"
+                    INSERT INTO dbo.AdminRegionScopes (UserId, RegionId, AssignedBy, AssignedAt)
+                    VALUES (@UserId, @RegionId, @AssignedBy, SYSUTCDATETIME());";
 
-                if (regionIds.Count > 0)
+                var regParams = regionIds.Distinct().Select(id => new
                 {
-                    const string insertRegSql = @"
-                        INSERT INTO dbo.AdminRegionScopes (UserId, RegionId, AssignedBy, AssignedAt)
-                        VALUES (@UserId, @RegionId, @AssignedBy, SYSUTCDATETIME());";
+                    UserId = targetUserId,
+                    RegionId = id,
+                    AssignedBy = updatedBy
+                });
 
-                    var regParams = regionIds.Distinct().Select(id => new
-                    {
-                        UserId = targetUserId,
-                        RegionId = id,
-                        AssignedBy = updatedBy
-                    });
-
-                    await connection.ExecuteAsync(insertRegSql, regParams, transaction);
-                }
+                await connection.ExecuteAsync(insertRegSql, regParams, transaction);
             }
 
             transaction.Commit();

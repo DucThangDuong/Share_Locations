@@ -24,8 +24,6 @@ import {
 } from "lucide-react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { catalogService } from "@/services/catalogService";
-import { geographyService } from "@/services/geographyService";
 import type { CategoryDto } from "@/types/models/place.model";
 import type { ProvinceDto } from "@/types/models/geography.model";
 import type { AdminProposalItem } from "@/types/admin.types";
@@ -337,21 +335,17 @@ export const ProposalDetailEditor: React.FC<ProposalDetailEditorProps> = ({
     const loadMetadata = async () => {
       try {
         const [catRes, provRes] = await Promise.all([
-          catalogService.getCategories(),
-          geographyService.getProvinces(),
+          adminService.getCatalogCategories({ pageSize: 100 }),
+          adminService.getGeographyProvinces({ pageSize: 100 }),
         ]);
-        const catList = extractList<CategoryDto>(catRes);
+        const catList = extractList<CategoryDto>(catRes?.data || catRes);
         if (catList.length > 0) {
           setCategories(catList);
-        } else if (catRes?.data && Array.isArray(catRes.data)) {
-          setCategories(catRes.data);
         }
 
-        const provList = extractList<ProvinceDto>(provRes);
+        const provList = extractList<ProvinceDto>(provRes?.data || provRes);
         if (provList.length > 0) {
           setProvinces(provList);
-        } else if (provRes?.data && Array.isArray(provRes.data)) {
-          setProvinces(provRes.data);
         }
       } catch (err) {
         console.warn("Could not load categories or provinces:", err);
