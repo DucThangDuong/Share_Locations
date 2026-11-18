@@ -573,16 +573,9 @@ export const ProposePlacePage: React.FC = () => {
               Yêu cầu đăng nhập tài khoản
             </h2>
             <p className="text-xs text-slate-500 leading-relaxed">
-              Bạn cần đăng nhập vào tài khoản LangThang để có thể gửi đề xuất địa điểm và nhận điểm cống hiến uy tín.
+              Bạn cần đăng nhập vào tài khoản LangThang để có thể gửi đề xuất địa điểm.
             </p>
           </div>
-
-          <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200/70 text-left flex items-start gap-2.5 text-xs text-emerald-900">
-            <div>
-              <span className="font-bold">+100 điểm uy tín</span> sẽ được tự động cộng vào tài khoản khi địa điểm của bạn được duyệt.
-            </div>
-          </div>
-
           <div className="flex flex-col sm:flex-row gap-2.5 pt-2">
             <button
               type="button"

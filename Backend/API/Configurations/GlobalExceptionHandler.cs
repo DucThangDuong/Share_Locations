@@ -22,6 +22,28 @@ public class GlobalExceptionHandler : IExceptionHandler
         var requestId = httpContext.TraceIdentifier;
         var path = httpContext.Request.Path.Value ?? string.Empty;
 
+        if (exception is UnauthorizedAccessException)
+        {
+            _logger.LogWarning(exception, "Forbidden access on {Path}. RequestId: {RequestId}", path, requestId);
+
+            httpContext.Response.StatusCode = (int)HttpStatusCode.Forbidden;
+            httpContext.Response.ContentType = "application/json";
+
+            var forbiddenMessage = !string.IsNullOrWhiteSpace(exception.Message)
+                ? exception.Message
+                : "Bạn không có quyền thực hiện thao tác này.";
+
+            var forbiddenResponse = new ApiErrorResponse(
+                code: "FORBIDDEN",
+                message: forbiddenMessage,
+                path: path,
+                requestId: requestId
+            );
+
+            await httpContext.Response.WriteAsJsonAsync(forbiddenResponse, cancellationToken);
+            return true;
+        }
+
         _logger.LogError(exception, "Unhandled Exception occurred on {Path}. RequestId: {RequestId}", path, requestId);
 
         httpContext.Response.StatusCode = (int)HttpStatusCode.InternalServerError;

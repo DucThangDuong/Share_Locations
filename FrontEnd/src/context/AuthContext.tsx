@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react'
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import type { 
   UserDto, 
   UserProfileData, 
@@ -44,7 +44,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [token, setToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(true)
 
-  const syncProfileFromBackend = async () => {
+  const clearLocalAuth = useCallback(() => {
+    setUser(null)
+    setProfile(null)
+    setToken(null)
+    localStorage.removeItem('access_token')
+    localStorage.removeItem('user_info')
+    localStorage.removeItem('user_profile')
+  }, [])
+
+  const syncProfileFromBackend = useCallback(async () => {
     try {
       const res = await authService.getProfile()
       if (res.success && res.data) {
@@ -56,9 +65,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setProfile(mapped)
         localStorage.setItem('user_profile', JSON.stringify(mapped))
       }
-    } catch {
+    } catch (err: any) {
+      const status = err?.response?.status
+      if (status === 401 || status === 403 || !localStorage.getItem('access_token')) {
+        clearLocalAuth()
+      }
     }
-  }
+  }, [clearLocalAuth])
+
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      clearLocalAuth()
+    }
+    const handleTokenRefreshed = (e: Event) => {
+      const customEvent = e as CustomEvent<string>
+      if (customEvent.detail) {
+        setToken(customEvent.detail)
+      }
+    }
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'access_token' && !e.newValue) {
+        clearLocalAuth()
+      }
+    }
+
+    window.addEventListener('auth:session-expired', handleSessionExpired)
+    window.addEventListener('auth:token-refreshed', handleTokenRefreshed)
+    window.addEventListener('storage', handleStorageChange)
+    return () => {
+      window.removeEventListener('auth:session-expired', handleSessionExpired)
+      window.removeEventListener('auth:token-refreshed', handleTokenRefreshed)
+      window.removeEventListener('storage', handleStorageChange)
+    }
+  }, [clearLocalAuth])
 
   useEffect(() => {
     const initAuth = async () => {
@@ -78,18 +117,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           )
 
           await syncProfileFromBackend()
+        } else if (storedToken || storedUser || storedProfile) {
+          clearLocalAuth()
         }
       } catch {
-        localStorage.removeItem('access_token')
-        localStorage.removeItem('user_info')
-        localStorage.removeItem('user_profile')
+        clearLocalAuth()
       } finally {
         setIsLoading(false)
       }
     }
 
     initAuth()
-  }, [])
+  }, [clearLocalAuth, syncProfileFromBackend])
 
   const login = async (payload: LoginRequest) => {
     const res = await authService.login(payload)

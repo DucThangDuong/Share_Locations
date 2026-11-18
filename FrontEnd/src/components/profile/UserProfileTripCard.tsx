@@ -22,6 +22,7 @@ export const UserProfileTripCard: React.FC<UserProfileTripCardProps> = ({ trip }
   const { user: currentUser } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [previewTrip, setPreviewTrip] = useState<DetailedItineraryItem | null>(null)
+  const [canManagePreviewTrip, setCanManagePreviewTrip] = useState(false)
 
   const coverImage =
     trip.coverImageUrl ||
@@ -81,8 +82,15 @@ export const UserProfileTripCard: React.FC<UserProfileTripCardProps> = ({ trip }
           })),
           createdAt: detail.startDate || trip.createdAt || new Date().toISOString()
         }
+        const curUserId = Number(currentUser?.id || 0)
+        const isMember = Boolean(
+          detail.currentUserRole ||
+          (curUserId > 0 && detail.members?.some((m) => Number(m.userId) === curUserId))
+        )
+        setCanManagePreviewTrip(isMember)
         setPreviewTrip(detailed)
       } else {
+        setCanManagePreviewTrip(Boolean(trip.userRole))
         setPreviewTrip({
           id: trip.id,
           title: trip.title,
@@ -109,7 +117,31 @@ export const UserProfileTripCard: React.FC<UserProfileTripCardProps> = ({ trip }
         })
       }
     } catch {
-      navigate(`/itinerary/${trip.id}`)
+      setCanManagePreviewTrip(Boolean(trip.userRole))
+      setPreviewTrip({
+        id: trip.id,
+        title: trip.title,
+        slug: `trip-${trip.id}`,
+        province: trip.province || 'Việt Nam',
+        region: trip.region || 'Miền Bắc',
+        durationDays: trip.durationDays || 1,
+        nightsCount: trip.nightsCount ?? Math.max(0, (trip.durationDays || 1) - 1),
+        estimatedBudget: trip.estimatedBudget || 0,
+        privacy: ((trip.privacy ?? 1) as 0 | 1 | 2),
+        coverImg: trip.coverImageUrl || '',
+        authorName: currentUser?.fullName || 'Người dùng',
+        authorAvatar: currentUser?.avatarUrl,
+        description: trip.description || 'Lịch trình chuyến đi chi tiết.',
+        days: [
+          {
+            dayNumber: 1,
+            title: 'Ngày 1: Khám phá',
+            description: '',
+            stops: []
+          }
+        ],
+        createdAt: trip.createdAt || new Date().toISOString()
+      })
     } finally {
       setIsLoading(false)
     }
@@ -192,11 +224,32 @@ export const UserProfileTripCard: React.FC<UserProfileTripCardProps> = ({ trip }
       {previewTrip && (
         <ItineraryQuickPreviewModal
           itinerary={previewTrip}
-          actionLabel="Chỉnh sửa lịch trình"
+          actionLabel={canManagePreviewTrip ? 'Chỉnh sửa lịch trình' : 'Áp dụng lịch trình này'}
           onClose={() => setPreviewTrip(null)}
-          onApply={(item) => {
+          onApply={async (item) => {
             setPreviewTrip(null)
-            navigate(`/itinerary/${item.id}`)
+            if (canManagePreviewTrip) {
+              navigate(`/itinerary/${item.id}`)
+              return
+            }
+            if (!currentUser) {
+              navigate('/login')
+              return
+            }
+            try {
+              const res = await tripService.createTrip({
+                title: `[Chuyến đi] ${item.title}`,
+                description: item.description,
+                sourceTripId: item.id,
+                privacy: 1
+              })
+              if (res.success && res.data?.id) {
+                navigate(`/itinerary/${res.data.id}`)
+                return
+              }
+            } catch {
+            }
+            navigate('/itinerary')
           }}
         />
       )}

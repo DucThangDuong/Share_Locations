@@ -62,6 +62,15 @@ let failedQueue: Array<{
   reject: (error: unknown) => void
 }> = []
 
+const clearStoredAuthSession = () => {
+  localStorage.removeItem('access_token')
+  localStorage.removeItem('user_info')
+  localStorage.removeItem('user_profile')
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('auth:session-expired'))
+  }
+}
+
 const processQueue = (error: unknown, token: string | null = null) => {
   failedQueue.forEach((prom) => {
     if (error) {
@@ -76,9 +85,26 @@ const processQueue = (error: unknown, token: string | null = null) => {
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError<ApiErrorResponse>) => {
-    const originalRequest = error.config as { _retry?: boolean; headers?: Record<string, string> } | undefined
+    const originalRequest = error.config as {
+      _retry?: boolean
+      url?: string
+      headers?: Record<string, string>
+    } | undefined
 
-    if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+    const status = error.response?.status
+    const requestUrl = originalRequest?.url || ''
+
+    if (status === 403 && requestUrl.includes('/api/auth/profile')) {
+      clearStoredAuthSession()
+      return Promise.reject(error)
+    }
+
+    if (status === 401 && originalRequest?._retry) {
+      clearStoredAuthSession()
+      return Promise.reject(error)
+    }
+
+    if (status === 401 && originalRequest && !originalRequest._retry) {
       if (isRefreshing) {
         return new Promise<string>((resolve, reject) => {
           failedQueue.push({ resolve, reject })
@@ -109,6 +135,9 @@ apiClient.interceptors.response.use(
         if (refreshResponse.data?.data?.accessToken) {
           const newToken = refreshResponse.data.data.accessToken
           localStorage.setItem('access_token', newToken)
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('auth:token-refreshed', { detail: newToken }))
+          }
           if (originalRequest.headers) {
             originalRequest.headers.Authorization = `Bearer ${newToken}`
           }
@@ -116,11 +145,11 @@ apiClient.interceptors.response.use(
           return apiClient(originalRequest)
         } else {
           processQueue(new Error('Refresh token failed'), null)
+          clearStoredAuthSession()
         }
       } catch (refreshError) {
         processQueue(refreshError, null)
-        localStorage.removeItem('access_token')
-        localStorage.removeItem('user_info')
+        clearStoredAuthSession()
         return Promise.reject(refreshError)
       } finally {
         isRefreshing = false

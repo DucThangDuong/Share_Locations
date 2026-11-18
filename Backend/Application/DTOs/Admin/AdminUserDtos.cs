@@ -15,9 +15,9 @@ public class AdminUserListItemDto
     public byte Status { get; set; }
     public string StatusName => Status switch
     {
-        1 => "Active",
-        2 => "Inactive",
-        3 => "Banned",
+        (byte)Domain.Enums.UserStatus.Inactive => nameof(Domain.Enums.UserStatus.Inactive),
+        (byte)Domain.Enums.UserStatus.Active => nameof(Domain.Enums.UserStatus.Active),
+        (byte)Domain.Enums.UserStatus.Banned => nameof(Domain.Enums.UserStatus.Banned),
         _ => "Unknown"
     };
     public DateTime CreatedAt { get; set; }

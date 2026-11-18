@@ -1,11 +1,13 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using API.DTOs;
 using API.DTOs.Places;
 using API.Extensions;
+using Application.Common;
 using Application.Features.Places.Commands;
 using FastEndpoints;
 using MediatR;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace API.Endpoints.Places;
 
@@ -16,7 +18,8 @@ public class CreatePlaceReportEndpoint : Endpoint<CreatePlaceReportRequest, ApiS
     public override void Configure()
     {
         Post("/api/places/{id}/reports");
-        AllowAnonymous();
+        AuthSchemes(JwtBearerDefaults.AuthenticationScheme);
+        Roles("User", "CategoryAdmin", "SystemAdmin");
         Options(x => x.RequireRateLimiting("write_api"));
         Summary(s =>
         {
@@ -27,14 +30,14 @@ public class CreatePlaceReportEndpoint : Endpoint<CreatePlaceReportRequest, ApiS
 
     public override async Task HandleAsync(CreatePlaceReportRequest req, CancellationToken ct)
     {
-        long? reporterId = null;
         var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
             ?? User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
             ?? User.FindFirst("sub")?.Value;
 
-        if (long.TryParse(userIdStr, out var uid))
+        if (!long.TryParse(userIdStr, out var reporterId) || reporterId <= 0)
         {
-            reporterId = uid;
+            await this.SendApiResponseAsync(Result<bool>.Unauthorized("Bạn cần đăng nhập để gửi báo cáo vi phạm."), ct);
+            return;
         }
 
         var result = await Mediator.Send(

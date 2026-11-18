@@ -175,7 +175,7 @@ public class AdminProposalRepository : IAdminProposalRepository
 
     public async Task<AdminProposalDetailDto?> GetProposalDetailAsync(long id, CancellationToken ct = default)
     {
-        if (!await IsProposalInScopeAsync(id)) return null;
+        if (!await EnsureProposalInScopeAsync(id, "Bạn không có quyền xem đề xuất ngoài phạm vi danh mục hoặc tỉnh/thành phố quản lý.")) return null;
 
         var connection = _dbContext.Database.GetDbConnection();
 
@@ -469,7 +469,7 @@ public class AdminProposalRepository : IAdminProposalRepository
         string? adminNote = null,
         CancellationToken ct = default)
     {
-        if (!await IsProposalInScopeAsync(id)) return false;
+        if (!await EnsureProposalInScopeAsync(id, "Bạn không có quyền phê duyệt đề xuất ngoài phạm vi danh mục hoặc tỉnh/thành phố quản lý.")) return false;
 
         var proposal = await _dbContext.Proposals.FirstOrDefaultAsync(p => p.Id == id, ct);
         if (proposal == null) return false;
@@ -574,10 +574,11 @@ public class AdminProposalRepository : IAdminProposalRepository
 
         long? effectiveTargetPlaceId = targetPlaceId ?? proposal.TargetPlaceId;
 
-        if (!AdminScopeFilterHelper.ValidatePlaceInputScope(_currentUserService, categoryId, provinceId))
-        {
-            return false;
-        }
+        AdminScopeFilterHelper.EnsurePlaceInputScope(
+            _currentUserService,
+            categoryId,
+            provinceId,
+            "Bạn không có quyền phê duyệt đề xuất thuộc danh mục hoặc tỉnh/thành phố ngoài phạm vi quản lý.");
 
         if (effectiveTargetPlaceId.HasValue && effectiveTargetPlaceId.Value > 0)
         {
@@ -676,7 +677,7 @@ public class AdminProposalRepository : IAdminProposalRepository
 
     public async Task<bool> RejectProposalAsync(long id, long adminId, string reason, CancellationToken ct = default)
     {
-        if (!await IsProposalInScopeAsync(id)) return false;
+        if (!await EnsureProposalInScopeAsync(id, "Bạn không có quyền từ chối đề xuất ngoài phạm vi danh mục hoặc tỉnh/thành phố quản lý.")) return false;
 
         var proposal = await _dbContext.Proposals.FirstOrDefaultAsync(p => p.Id == id, ct);
         if (proposal == null) return false;
@@ -699,13 +700,9 @@ public class AdminProposalRepository : IAdminProposalRepository
         return true;
     }
 
-    private async Task<bool> IsProposalInScopeAsync(long proposalId)
+    private async Task<bool> EnsureProposalInScopeAsync(long proposalId, string errorMessage)
     {
         if (_currentUserService.IsSystemAdmin) return true;
-
-        var catScopes = _currentUserService.CategoryScopes;
-        var provScopes = _currentUserService.ProvinceScopes;
-        if (catScopes.Count == 0 || provScopes.Count == 0) return false;
 
         var connection = _dbContext.Database.GetDbConnection();
         const string sql = @"
@@ -716,8 +713,19 @@ public class AdminProposalRepository : IAdminProposalRepository
             WHERE p.Id = @Id;";
 
         var row = await connection.QueryFirstOrDefaultAsync<(int? CategoryId, int? ProvinceId)?>(sql, new { Id = proposalId });
-        if (row == null || !row.Value.CategoryId.HasValue || !row.Value.ProvinceId.HasValue) return false;
+        if (row == null) return false;
 
-        return catScopes.Contains(row.Value.CategoryId.Value) && provScopes.Contains(row.Value.ProvinceId.Value);
+        if (!row.Value.CategoryId.HasValue || !row.Value.ProvinceId.HasValue)
+        {
+            throw new UnauthorizedAccessException(errorMessage);
+        }
+
+        AdminScopeFilterHelper.EnsurePlaceInputScope(
+            _currentUserService,
+            row.Value.CategoryId.Value,
+            row.Value.ProvinceId.Value,
+            errorMessage);
+
+        return true;
     }
 }

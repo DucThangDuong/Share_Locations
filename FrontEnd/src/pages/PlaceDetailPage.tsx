@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom'
 import { CheckCircle2, AlertCircle } from 'lucide-react'
 import { placeService } from '@/services/placeService'
 import { userService } from '@/services/userService'
@@ -17,6 +17,8 @@ import type { PlaceDetailDto, ReviewItemDto } from '@/types/models/place.model'
 
 export const PlaceDetailPage = () => {
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
+  const location = useLocation()
   const { isAuthenticated } = useAuth()
   const [place, setPlace] = useState<PlaceDetailDto | null>(null)
   const [loading, setLoading] = useState(true)
@@ -293,7 +295,14 @@ export const PlaceDetailPage = () => {
               onToggleSave={handleToggleSave}
               onToggleVisit={handleToggleVisit}
               onShare={handleShare}
-              onOpenReport={() => setIsReportOpen(true)}
+              onOpenReport={() => {
+                if (!isAuthenticated) {
+                  alert('Vui lòng đăng nhập để gửi báo cáo vi phạm.')
+                  navigate('/login', { state: { from: `${location.pathname}${location.search}` } })
+                  return
+                }
+                setIsReportOpen(true)
+              }}
             />
 
             {place.foods && place.foods.length > 0 && (

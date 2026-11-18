@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Star, ThumbsUp, MessageSquare, Play, Pencil, Trash2, Flag } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { placeService } from '@/services/placeService'
@@ -23,6 +23,8 @@ export const ReviewItemCard: React.FC<ReviewItemCardProps> = ({
   onReviewDeleted
 }) => {
   const { user } = useAuth()
+  const navigate = useNavigate()
+  const location = useLocation()
   const [isCommentsOpen, setIsCommentsOpen] = useState(false)
   const [likesCount, setLikesCount] = useState(review.likesCount || 0)
   const [isLiked, setIsLiked] = useState(Boolean(review.isLiked))
@@ -282,7 +284,14 @@ export const ReviewItemCard: React.FC<ReviewItemCardProps> = ({
 
           {!isOwner && (
             <button type="button"
-              onClick={() => setIsReportModalOpen(true)}
+              onClick={() => {
+                if (!isAuthenticated) {
+                  alert('Vui lòng đăng nhập để gửi báo cáo vi phạm.')
+                  navigate('/login', { state: { from: `${location.pathname}${location.search}` } })
+                  return
+                }
+                setIsReportModalOpen(true)
+              }}
               className="inline-flex items-center gap-1 px-2.5 py-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
               title="Báo cáo đánh giá vi phạm"
             >

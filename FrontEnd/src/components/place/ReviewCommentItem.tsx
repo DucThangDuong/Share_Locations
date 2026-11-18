@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { Reply, Send, Loader2, Pencil, Trash2, Check, X, Flag } from 'lucide-react'
 import { ReportModal } from '@/components/report/ReportModal'
 import type { CommentDto } from '@/types/models/place.model'
@@ -43,6 +44,8 @@ export const ReviewCommentItem: React.FC<ReviewCommentItemProps> = ({
   onCommentUpdate,
   onCommentDelete
 }) => {
+  const navigate = useNavigate()
+  const location = useLocation()
   const [isReplying, setIsReplying] = useState(false)
   const [replyText, setReplyText] = useState('')
   const [isSubmittingReply, setIsSubmittingReply] = useState(false)
@@ -201,6 +204,11 @@ export const ReviewCommentItem: React.FC<ReviewCommentItemProps> = ({
                   <span>•</span>
                   <button type="button"
                     onClick={() => {
+                      if (!isAuthenticated) {
+                        alert('Vui lòng đăng nhập để gửi báo cáo vi phạm.')
+                        navigate('/login', { state: { from: `${location.pathname}${location.search}` } })
+                        return
+                      }
                       setReportTarget({
                         id: comment.id,
                         author: comment.userName,
@@ -380,6 +388,11 @@ export const ReviewCommentItem: React.FC<ReviewCommentItemProps> = ({
                           <span>•</span>
                           <button type="button"
                             onClick={() => {
+                              if (!isAuthenticated) {
+                                alert('Vui lòng đăng nhập để gửi báo cáo vi phạm.')
+                                navigate('/login', { state: { from: `${location.pathname}${location.search}` } })
+                                return
+                              }
                               setReportTarget({
                                 id: reply.id,
                                 author: reply.userName,

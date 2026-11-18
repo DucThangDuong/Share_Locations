@@ -231,7 +231,7 @@ export const AuditLogDetailModal: React.FC<AuditLogDetailModalProps> = ({
                 <div className="flex items-center justify-between text-slate-400 border-b border-slate-800 pb-1.5">
                   <span className="flex items-center gap-1.5 font-bold text-slate-300">
                     <Terminal size={12} className="text-emerald-400" />
-                    <span>Thông tin kỹ thuật (System Trace)</span>
+                    <span>Thông tin kỹ thuật</span>
                   </span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[10px]">
@@ -271,7 +271,7 @@ export const AuditLogDetailModal: React.FC<AuditLogDetailModalProps> = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="rounded-xl border border-rose-200 bg-rose-50/40 p-3.5 space-y-2">
                     <div className="flex items-center justify-between font-bold text-rose-800 text-xs border-b border-rose-200 pb-1.5">
-                      <span>Dữ liệu trước thay đổi (Old Data)</span>
+                      <span>Dữ liệu trước thay đổi</span>
                       {detailLog.oldDataJSON && (
                         <button
                           type="button"
@@ -300,7 +300,7 @@ export const AuditLogDetailModal: React.FC<AuditLogDetailModalProps> = ({
                   <div className="rounded-xl border border-emerald-200 bg-emerald-50/40 p-3.5 space-y-2">
                     <div className="flex items-center justify-between font-bold text-emerald-800 text-xs border-b border-emerald-200 pb-1.5">
                       <span className="flex items-center gap-1">
-                        <span>Dữ liệu sau thay đổi (New Data)</span>
+                        <span>Dữ liệu sau thay đổi</span>
                         <ArrowRight size={12} className="text-emerald-600" />
                       </span>
                       {detailLog.newDataJSON && (

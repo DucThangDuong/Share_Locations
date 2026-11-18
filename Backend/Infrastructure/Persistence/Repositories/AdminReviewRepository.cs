@@ -190,7 +190,11 @@ public class AdminReviewRepository : IAdminReviewRepository
         var review = await _dbContext.Reviews.FirstOrDefaultAsync(r => r.Id == id, ct);
         if (review == null) return false;
 
-        if (!await AdminScopeFilterHelper.IsPlaceInScopeAsync(_currentUserService, _dbContext.Database.GetDbConnection(), review.PlaceId))
+        if (!await AdminScopeFilterHelper.EnsurePlaceInScopeAsync(
+                _currentUserService,
+                _dbContext.Database.GetDbConnection(),
+                review.PlaceId,
+                "Bạn không có quyền xóa đánh giá của địa điểm ngoài phạm vi quản lý."))
             return false;
 
         var oldStatus = review.Status;
@@ -216,7 +220,11 @@ public class AdminReviewRepository : IAdminReviewRepository
         var review = await _dbContext.Reviews.FirstOrDefaultAsync(r => r.Id == id, ct);
         if (review == null) return false;
 
-        if (!await AdminScopeFilterHelper.IsPlaceInScopeAsync(_currentUserService, _dbContext.Database.GetDbConnection(), review.PlaceId))
+        if (!await AdminScopeFilterHelper.EnsurePlaceInScopeAsync(
+                _currentUserService,
+                _dbContext.Database.GetDbConnection(),
+                review.PlaceId,
+                "Bạn không có quyền xóa đánh giá của địa điểm ngoài phạm vi quản lý."))
             return false;
 
         var placeId = review.PlaceId;
@@ -380,7 +388,11 @@ public class AdminReviewRepository : IAdminReviewRepository
         var comment = await _dbContext.Comments.Include(c => c.Review).FirstOrDefaultAsync(c => c.Id == id, ct);
         if (comment == null) return false;
 
-        if (!await AdminScopeFilterHelper.IsPlaceInScopeAsync(_currentUserService, _dbContext.Database.GetDbConnection(), comment.Review.PlaceId))
+        if (!await AdminScopeFilterHelper.EnsurePlaceInScopeAsync(
+                _currentUserService,
+                _dbContext.Database.GetDbConnection(),
+                comment.Review.PlaceId,
+                "Bạn không có quyền thao tác với bình luận của địa điểm ngoài phạm vi quản lý."))
             return false;
 
         var oldStatus = comment.Status;
@@ -404,7 +416,11 @@ public class AdminReviewRepository : IAdminReviewRepository
         var comment = await _dbContext.Comments.Include(c => c.Review).FirstOrDefaultAsync(c => c.Id == id, ct);
         if (comment == null) return false;
 
-        if (!await AdminScopeFilterHelper.IsPlaceInScopeAsync(_currentUserService, _dbContext.Database.GetDbConnection(), comment.Review.PlaceId))
+        if (!await AdminScopeFilterHelper.EnsurePlaceInScopeAsync(
+                _currentUserService,
+                _dbContext.Database.GetDbConnection(),
+                comment.Review.PlaceId,
+                "Bạn không có quyền thao tác với bình luận của địa điểm ngoài phạm vi quản lý."))
             return false;
 
         var oldCommentData = new { Id = comment.Id, Content = comment.Content, ReviewId = comment.ReviewId, UserId = comment.UserId };

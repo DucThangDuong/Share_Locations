@@ -75,10 +75,18 @@ public class UploadAdminPlaceMediaCommandHandler : IRequestHandler<UploadAdminPl
                 {
                     await _blobService.DeleteImageAsync(url, "places", ct);
                 }
-                return Result<List<PlaceMediaItemDto>>.NotFound("Không tìm thấy địa điểm hoặc bạn không có quyền quản lý địa điểm này.");
+                return Result<List<PlaceMediaItemDto>>.NotFound("Không tìm thấy địa điểm yêu cầu tải ảnh.");
             }
 
             return Result<List<PlaceMediaItemDto>>.Success(items, "Tải ảnh lên bộ sưu tập địa điểm thành công.");
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            foreach (var url in uploadedUrls)
+            {
+                await _blobService.DeleteImageAsync(url, "places", ct);
+            }
+            return Result<List<PlaceMediaItemDto>>.Forbidden(ex.Message);
         }
         catch (Exception ex)
         {

@@ -56,11 +56,22 @@ public class UpdateAdminPlaceCoverImageCommandHandler : IRequestHandler<UpdateAd
             return Result<string>.Failure($"Lỗi khi tải ảnh lên máy chủ lưu trữ Azure: {ex.Message}");
         }
 
-        var (success, oldCoverUrl) = await _placeRepository.UpdateCoverImageAsync(request.PlaceId, newImageUrl, ct);
+        bool success;
+        string? oldCoverUrl;
+        try
+        {
+            (success, oldCoverUrl) = await _placeRepository.UpdateCoverImageAsync(request.PlaceId, newImageUrl, ct);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            await _blobService.DeleteImageAsync(newImageUrl, "places", ct);
+            return Result<string>.Forbidden(ex.Message);
+        }
+
         if (!success)
         {
             await _blobService.DeleteImageAsync(newImageUrl, "places", ct);
-            return Result<string>.NotFound("Không tìm thấy địa điểm hoặc bạn không có quyền quản lý địa điểm này.");
+            return Result<string>.NotFound("Không tìm thấy địa điểm yêu cầu cập nhật ảnh bìa.");
         }
 
         if (!string.IsNullOrWhiteSpace(oldCoverUrl) && oldCoverUrl.Contains(".blob.core.windows.net/"))

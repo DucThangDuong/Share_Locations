@@ -738,20 +738,36 @@ public class AdminReportRepository : IAdminReportRepository
         switch (targetType.Trim().ToLowerInvariant())
         {
             case "place":
-                return await AdminScopeFilterHelper.IsPlaceInScopeAsync(_currentUserService, connection, targetId);
+                return await AdminScopeFilterHelper.EnsurePlaceInScopeAsync(
+                    _currentUserService,
+                    connection,
+                    targetId,
+                    "Bạn không có quyền xử lý báo cáo của địa điểm ngoài phạm vi quản lý.");
 
             case "review":
                 const string revSql = "SELECT PlaceId FROM dbo.Reviews WHERE Id = @Id;";
                 var placeId = await connection.QueryFirstOrDefaultAsync<long?>(revSql, new { Id = targetId });
-                return placeId.HasValue && await AdminScopeFilterHelper.IsPlaceInScopeAsync(_currentUserService, connection, placeId.Value);
+                return placeId.HasValue && await AdminScopeFilterHelper.EnsurePlaceInScopeAsync(
+                    _currentUserService,
+                    connection,
+                    placeId.Value,
+                    "Bạn không có quyền xử lý báo cáo đánh giá của địa điểm ngoài phạm vi quản lý.");
 
             case "comment":
                 const string comSql = "SELECT r.PlaceId FROM dbo.Comments c JOIN dbo.Reviews r ON c.ReviewId = r.Id WHERE c.Id = @Id;";
                 var comPlaceId = await connection.QueryFirstOrDefaultAsync<long?>(comSql, new { Id = targetId });
-                return comPlaceId.HasValue && await AdminScopeFilterHelper.IsPlaceInScopeAsync(_currentUserService, connection, comPlaceId.Value);
+                return comPlaceId.HasValue && await AdminScopeFilterHelper.EnsurePlaceInScopeAsync(
+                    _currentUserService,
+                    connection,
+                    comPlaceId.Value,
+                    "Bạn không có quyền xử lý báo cáo bình luận của địa điểm ngoài phạm vi quản lý.");
 
             case "blog":
-                return await AdminScopeFilterHelper.IsBlogInScopeAsync(_currentUserService, connection, targetId);
+                return await AdminScopeFilterHelper.EnsureBlogInScopeAsync(
+                    _currentUserService,
+                    connection,
+                    targetId,
+                    "Bạn không có quyền xử lý báo cáo bài viết ngoài phạm vi danh mục quản lý.");
 
             default:
                 return false;

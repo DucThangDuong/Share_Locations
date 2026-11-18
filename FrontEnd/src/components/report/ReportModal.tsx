@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   X,
   CheckCircle2,
@@ -14,6 +15,7 @@ import {
 } from "lucide-react";
 import type { ReportTargetType, ReportTargetInfo } from "@/types/admin.types";
 import { reportService } from "@/services/reportService";
+import { useAuth } from "@/context/AuthContext";
 
 export type { ReportTargetType, ReportTargetInfo };
 
@@ -181,7 +183,16 @@ export const ReportModal: React.FC<ReportModalProps> = ({
   onSubmittedReport,
   defaultTab = "form",
 }) => {
-  if (isOpen === false) return null;
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (isOpen !== false && !authLoading && !isAuthenticated) {
+      onClose();
+      navigate("/login", { state: { from: `${location.pathname}${location.search}` } });
+    }
+  }, [isOpen, authLoading, isAuthenticated, onClose, navigate, location.pathname, location.search]);
 
   const [modalView, setModalView] = useState<"form" | "history">(defaultTab);
 
@@ -211,6 +222,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
   }, [onClose]);
 
   useEffect(() => {
+    if (isOpen === false || !isAuthenticated) return;
     void Promise.all([
       reportService.getReasons(targetType),
       defaultTab === "history" ? reportService.getMyReports() : Promise.resolve(null),
@@ -225,10 +237,10 @@ export const ReportModal: React.FC<ReportModalProps> = ({
         }
       })
       .catch(() => undefined);
-  }, [defaultTab, targetType]);
+  }, [isOpen, isAuthenticated, defaultTab, targetType]);
 
   useEffect(() => {
-    if (!isOpen) {
+    if (!isOpen || !isAuthenticated) {
       document.body.style.overflow = "";
       return;
     }
@@ -237,7 +249,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
     return () => {
       document.body.style.overflow = orig || "";
     };
-  }, [isOpen]);
+  }, [isOpen, isAuthenticated]);
 
   const processedReasons = useMemo<ReasonItem[]>(() => {
     const defaultList = DEFAULT_REASONS_BY_TARGET[targetType] || DEFAULT_REASONS_BY_TARGET.blog;
@@ -277,7 +289,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
   const getModalTitle = () => {
     switch (targetType) {
       case "place":
-        return "Báo cáo Quán ăn / Địa điểm";
+        return "Báo cáo Địa điểm";
       case "review":
         return "Báo cáo Đánh giá vi phạm";
       case "comment":
@@ -294,7 +306,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
   const getTargetTypeBadge = () => {
     switch (targetType) {
       case "place":
-        return { label: "Quán ăn / Địa điểm", icon: MapPin, bg: "bg-emerald-50", text: "text-emerald-800", border: "border-emerald-200" };
+        return { label: "Địa điểm", icon: MapPin, bg: "bg-emerald-50", text: "text-emerald-800", border: "border-emerald-200" };
       case "review":
         return { label: "Thẻ đánh giá", icon: MessageSquare, bg: "bg-amber-50", text: "text-amber-800", border: "border-amber-200" };
       case "comment":
@@ -440,7 +452,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
               onClick={onClose}
               className="px-6 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-white bg-slate-900 hover:bg-slate-800 transition-colors cursor-pointer mt-2 shadow-xs"
             >
-              Đã hiểu &amp; Đóng
+              Đóng
             </button>
           </div>
         ) : modalView === "history" ? (
@@ -650,6 +662,8 @@ export const ReportModal: React.FC<ReportModalProps> = ({
       </div>
     </div>
   );
+
+  if (isOpen === false || !isAuthenticated) return null;
 
   return typeof document !== "undefined" ? createPortal(modalContent, document.body) : modalContent;
 };

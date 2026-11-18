@@ -113,6 +113,7 @@ export const BlogPage: React.FC = () => {
   }, [fetchArticles])
 
   useEffect(() => {
+    let cancelled = false
     const mode = searchParams.get('mode')
     const editId = searchParams.get('edit')
     const viewId = params.id || searchParams.get('id')
@@ -145,49 +146,20 @@ export const BlogPage: React.FC = () => {
         navigate('/login', { state: { from: `/blog?edit=${editId}` } })
         return
       }
+
       const idNum = Number(editId)
-      const passedBlog = (location.state as any)?.editBlog
-      if (passedBlog && (passedBlog.id === idNum || !idNum)) {
-        const matched = categories.find((c) => c.name === passedBlog.categoryName || c.name === passedBlog.category || c.id === passedBlog.categoryId)
-        const catName = matched?.name || passedBlog.categoryName || passedBlog.category || categories[0]?.name || ''
-        const catId = matched?.id || passedBlog.categoryId || categories[0]?.id
-        setEditingArticleData({
-          id: passedBlog.id,
-          title: passedBlog.title || '',
-          summary: passedBlog.excerpt || '',
-          category: catName,
-          categoryId: catId,
-          coverImg: passedBlog.coverImageUrl || '',
-          content: passedBlog.contentJSON || passedBlog.content || passedBlog.excerpt || '',
-          status: passedBlog.status
-        })
-        setViewMode('editor')
-        setDetailedArticle(null)
-        window.scrollTo({ top: 0, behavior: 'smooth' })
+      if (!Number.isInteger(idNum) || idNum <= 0) {
+        setEditingArticleData(null)
+        setViewMode('feed')
+        showToast('Mã bài viết không hợp lệ.')
+        navigate('/blog', { replace: true })
         return
       }
 
-      const found = articles.find((a) => a.id === idNum)
-      if (found) {
-        const matched = categories.find((c) => c.name === found.category)
-        setEditingArticleData({
-          id: found.id,
-          title: found.title || '',
-          summary: found.excerpt || '',
-          category: matched?.name || found.category || categories[0]?.name || '',
-          categoryId: matched?.id || categories[0]?.id,
-          coverImg: found.coverUrl || '',
-          content: found.content || found.excerpt || '',
-          status: 1
-        })
-        setViewMode('editor')
-        setDetailedArticle(null)
-        window.scrollTo({ top: 0, behavior: 'smooth' })
-        return
-      }
-
-      blogService.getMyBlogForEdit(editId)
+      // Luôn xác thực quyền sở hữu từ Backend (/api/blogs/my-blogs/{id}), không fallback sang API công khai
+      blogService.getMyBlogForEdit(idNum)
         .then((res) => {
+          if (cancelled) return
           if (res.success && res.data) {
             const d = res.data
             const matched = categories.find((c) => c.name === d.categoryName || c.id === d.categoryId)
@@ -204,30 +176,26 @@ export const BlogPage: React.FC = () => {
             setViewMode('editor')
             setDetailedArticle(null)
             window.scrollTo({ top: 0, behavior: 'smooth' })
+          } else {
+            setEditingArticleData(null)
+            setViewMode('feed')
+            showToast(res.message || 'Bạn không có quyền chỉnh sửa bài viết này.')
+            navigate('/blog', { replace: true })
           }
         })
-        .catch(() => {
-          blogService.getBlogDetail(editId).then((res) => {
-            if (res.success && res.data) {
-              const d = res.data
-              const matched = categories.find((c) => c.name === d.category)
-              setEditingArticleData({
-                id: d.id,
-                title: d.title || '',
-                summary: d.excerpt || '',
-                category: matched?.name || d.category || categories[0]?.name || '',
-                categoryId: matched?.id || categories[0]?.id,
-                coverImg: d.coverUrl || '',
-                content: d.content || d.excerpt || '',
-                status: 1
-              })
-              setViewMode('editor')
-              setDetailedArticle(null)
-              window.scrollTo({ top: 0, behavior: 'smooth' })
-            }
-          }).catch(() => { })
+        .catch((err: any) => {
+          if (cancelled) return
+          setEditingArticleData(null)
+          setViewMode('feed')
+          showToast(
+            err?.response?.data?.message ||
+            'Bạn không có quyền chỉnh sửa bài viết này hoặc bài viết không tồn tại.'
+          )
+          navigate('/blog', { replace: true })
         })
-      return
+      return () => {
+        cancelled = true
+      }
     }
 
     if (viewId) {
@@ -237,6 +205,7 @@ export const BlogPage: React.FC = () => {
 
       blogService.getBlogDetail(viewId)
         .then((res) => {
+          if (cancelled) return
           if (res.success && res.data) {
             const idNum = Number(viewId)
             const fallbackItem = articles.find((a) => a.id === idNum || (a.slug && a.slug === viewId) || a.title === res.data.title)
@@ -249,21 +218,28 @@ export const BlogPage: React.FC = () => {
           }
         })
         .catch(() => {
+          if (cancelled) return
           const idNum = Number(viewId)
           const fallback = articles.find((a) => a.id === idNum || (a.slug && a.slug === viewId))
           if (fallback) setDetailedArticle(fallback)
         })
         .finally(() => {
-          setArticleLoading(false)
+          if (!cancelled) setArticleLoading(false)
         })
-      return
+      return () => {
+        cancelled = true
+      }
     }
 
     if (!mode && !editId && !viewId) {
       setViewMode('feed')
       setDetailedArticle(null)
     }
-  }, [searchParams, params.id, location.state, articles, categories, isAuthenticated, currentUser, authLoading])
+
+    return () => {
+      cancelled = true
+    }
+  }, [searchParams, params.id, articles, categories, isAuthenticated, currentUser, authLoading])
 
   const handleSearchChange = (q: string) => {
     const p = new URLSearchParams(searchParams)
@@ -380,8 +356,8 @@ export const BlogPage: React.FC = () => {
           showToast('Tạo bài viết thất bại. Vui lòng thử lại.')
         }
       }
-    } catch {
-      showToast('Có lỗi xảy ra khi lưu bài viết.')
+    } catch (err: any) {
+      showToast(err?.response?.data?.message || 'Có lỗi xảy ra khi lưu bài viết.')
     }
   }
 

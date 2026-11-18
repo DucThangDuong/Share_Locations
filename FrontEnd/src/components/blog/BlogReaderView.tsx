@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
+import { useAuth } from '@/context/AuthContext'
 import {
   Flag,
   Eye,
@@ -39,6 +40,8 @@ export const BlogReaderView: React.FC<BlogReaderViewProps> = ({
   onShare
 }) => {
   const navigate = useNavigate()
+  const location = useLocation()
+  const { isAuthenticated } = useAuth()
   const [readProgress, setReadProgress] = useState(0)
   const [isReportModalOpen, setIsReportModalOpen] = useState(false)
   const [shareCopied, setShareCopied] = useState(false)
@@ -180,7 +183,14 @@ export const BlogReaderView: React.FC<BlogReaderViewProps> = ({
 
                 <button
                   type="button"
-                  onClick={() => setIsReportModalOpen(true)}
+                  onClick={() => {
+                    if (!isAuthenticated) {
+                      alert('Vui lòng đăng nhập để gửi báo cáo vi phạm.')
+                      navigate('/login', { state: { from: `${location.pathname}${location.search}` } })
+                      return
+                    }
+                    setIsReportModalOpen(true)
+                  }}
                   className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-white border border-slate-200/90 text-slate-600 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50/60 transition-all cursor-pointer shadow-2xs"
                   title="Báo cáo bài viết"
                 >

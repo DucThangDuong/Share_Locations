@@ -23,6 +23,11 @@ public class CreatePlaceReportCommandHandler : IRequestHandler<CreatePlaceReport
 
     public async Task<Result<bool>> Handle(CreatePlaceReportCommand request, CancellationToken ct)
     {
+        if (!request.ReporterId.HasValue || request.ReporterId.Value <= 0)
+        {
+            return Result<bool>.Unauthorized("Bạn cần đăng nhập để gửi báo cáo vi phạm.");
+        }
+
         var place = await _unitOfWork.Places.GetByIdAsync(request.PlaceId, ct);
         if (place == null || place.IsDeleted)
         {
@@ -31,7 +36,7 @@ public class CreatePlaceReportCommandHandler : IRequestHandler<CreatePlaceReport
 
         var reportType = await _unitOfWork.ReportTypes.GetDefaultAsync(ct);
         var reportTypeId = reportType?.Id ?? 6;
-        var reporterId = request.ReporterId ?? 1;
+        var reporterId = request.ReporterId.Value;
 
         var fullReason = !string.IsNullOrWhiteSpace(request.Description)
             ? $"{request.Reason} - Chi tiết: {request.Description}"

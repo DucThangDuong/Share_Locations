@@ -26,7 +26,7 @@ export const ItineraryPage: React.FC = () => {
   const location = useLocation()
   const params = useParams<{ id?: string }>()
   const [searchParams, setSearchParams] = useSearchParams()
-  const { user: currentUser } = useAuth()
+  const { user: currentUser, isAuthenticated, isLoading: authLoading } = useAuth()
 
   const [catalogItineraries, setCatalogItineraries] = useState<ItineraryDto[]>([])
   const [isCatalogLoading, setIsCatalogLoading] = useState(false)
@@ -306,10 +306,12 @@ export const ItineraryPage: React.FC = () => {
   }, [hasUnsavedChanges])
 
   useEffect(() => {
+    let cancelled = false
     const mode = searchParams.get('mode')
 
     if (mode === 'create' || params.id === 'new') {
-      if (!currentUser) {
+      if (authLoading) return
+      if (!isAuthenticated || !currentUser) {
         showToast('Vui lòng đăng nhập để tạo chuyến đi mới.')
         navigate('/login', { state: { from: '/itinerary?mode=create' } })
         return
@@ -354,31 +356,71 @@ export const ItineraryPage: React.FC = () => {
     }
 
     if (params.id) {
-      const parsedId = Number(params.id)
-      if (parsedId) {
-        tripService.getTripDetail(parsedId)
-          .then((res) => {
-            if (res.success && res.data) {
-              const mapped = mapTripDetailDtoToDetailed(res.data)
-              setPlannerTrip(mapped)
-              let detectedRole: TripRole = (res.data.currentUserRole as TripRole) || 'Member'
-              if (!res.data.currentUserRole && currentUser?.id) {
-                const curUserId = Number(currentUser.id)
-                const myMember = res.data.members?.find((m) => Number(m.userId) === curUserId)
-                if (myMember?.role) {
-                  detectedRole = myMember.role as TripRole
-                }
-              }
-              setCurrentUserRole(detectedRole)
-              setExpandedDayIndices(new Set(mapped.days.map((_, idx) => idx)))
-              setIsWishlistExpanded(true)
-              setSelectedStopInfo(null)
-              setViewMode('planner')
-              setHasUnsavedChanges(false)
-            }
-          })
-          .catch(() => { })
+      if (authLoading) return
+      if (!isAuthenticated || !currentUser) {
+        showToast('Vui lòng đăng nhập để xem hoặc chỉnh sửa chuyến đi của bạn.')
+        navigate('/login', { state: { from: `/itinerary/${params.id}` } })
         return
+      }
+
+      const parsedId = Number(params.id)
+      if (!Number.isInteger(parsedId) || parsedId <= 0) {
+        setPlannerTrip(null)
+        setViewMode('catalog')
+        showToast('Mã chuyến đi không hợp lệ.')
+        navigate('/itinerary', { replace: true })
+        return
+      }
+
+      // Chuyến đi nháp tạm chưa lưu trên server (tạo từ client fallback)
+      if (parsedId > 1000000000000 && plannerTrip?.id === parsedId) {
+        return
+      }
+
+      tripService.getTripDetail(parsedId)
+        .then((res) => {
+          if (cancelled) return
+          if (res.success && res.data) {
+            const curUserId = Number(currentUser.id)
+            const myMember = res.data.members?.find((m) => Number(m.userId) === curUserId)
+            const detectedRole = (res.data.currentUserRole || myMember?.role) as TripRole | undefined
+
+            // Chặn mở giao diện planner nếu người dùng không thuộc chuyến đi này
+            if (!detectedRole) {
+              setPlannerTrip(null)
+              setViewMode('catalog')
+              showToast('Bạn không có quyền truy cập vào chuyến đi này.')
+              navigate('/itinerary', { replace: true })
+              return
+            }
+
+            const mapped = mapTripDetailDtoToDetailed(res.data)
+            setPlannerTrip(mapped)
+            setCurrentUserRole(detectedRole)
+            setExpandedDayIndices(new Set(mapped.days.map((_, idx) => idx)))
+            setIsWishlistExpanded(true)
+            setSelectedStopInfo(null)
+            setViewMode('planner')
+            setHasUnsavedChanges(false)
+          } else {
+            setPlannerTrip(null)
+            setViewMode('catalog')
+            showToast(res.message || 'Chuyến đi không tồn tại hoặc bạn không có quyền truy cập.')
+            navigate('/itinerary', { replace: true })
+          }
+        })
+        .catch((err: any) => {
+          if (cancelled) return
+          setPlannerTrip(null)
+          setViewMode('catalog')
+          showToast(
+            err?.response?.data?.message ||
+            'Chuyến đi không tồn tại hoặc bạn không có quyền truy cập.'
+          )
+          navigate('/itinerary', { replace: true })
+        })
+      return () => {
+        cancelled = true
       }
     }
 
@@ -390,7 +432,11 @@ export const ItineraryPage: React.FC = () => {
       setViewMode('catalog')
       fetchCatalog()
     }
-  }, [location.pathname, params.id, searchParams, fetchCatalog, currentUser?.id])
+
+    return () => {
+      cancelled = true
+    }
+  }, [location.pathname, params.id, searchParams, fetchCatalog, currentUser?.id, isAuthenticated, authLoading])
 
   const handleSaveTrip = async () => {
     if (!canEdit || !plannerTrip) {

@@ -2,6 +2,7 @@
 using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
+using Domain.Enums;
 using MediatR;
 
 namespace Application.Features.Admin.Users;
@@ -17,17 +18,20 @@ public class UpdateAdminUserStatusCommandHandler : IRequestHandler<UpdateAdminUs
     private readonly ICurrentUserService _currentUserService;
     private readonly INotificationRepository _notificationRepository;
     private readonly INotificationNotifier _notifier;
+    private readonly ITokenCacheService _tokenCacheService;
 
     public UpdateAdminUserStatusCommandHandler(
         IAdminUserRepository userRepository,
         ICurrentUserService currentUserService,
         INotificationRepository notificationRepository,
-        INotificationNotifier notifier)
+        INotificationNotifier notifier,
+        ITokenCacheService tokenCacheService)
     {
         _userRepository = userRepository;
         _currentUserService = currentUserService;
         _notificationRepository = notificationRepository;
         _notifier = notifier;
+        _tokenCacheService = tokenCacheService;
     }
 
     public async Task<Result<bool>> Handle(UpdateAdminUserStatusCommand request, CancellationToken ct)
@@ -64,12 +68,28 @@ public class UpdateAdminUserStatusCommandHandler : IRequestHandler<UpdateAdminUs
 
         if (success)
         {
+            var isLocked = request.Status != (byte)UserStatus.Active;
+            if (isLocked)
+            {
+                await _tokenCacheService.RemoveRefreshTokenAsync(request.UserId, ct);
+                await _tokenCacheService.SetUserRevokedAfterMsAsync(
+                    request.UserId,
+                    DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                    TimeSpan.FromHours(25),
+                    ct);
+            }
+
+            await _tokenCacheService.SetUserStatusAsync(
+                request.UserId,
+                request.Status.ToString(),
+                TimeSpan.FromMinutes(1),
+                ct);
+
             try
             {
-                var isBanned = request.Status == 2;
-                var title = isBanned ? "Cảnh báo: Tài khoản của bạn đã bị khóa" : "Tài khoản của bạn đã được mở khóa";
+                var title = isLocked ? "Cảnh báo: Tài khoản của bạn đã bị khóa" : "Tài khoản của bạn đã được mở khóa";
                 var reasonText = !string.IsNullOrWhiteSpace(request.Reason) ? $". Lý do: {request.Reason}" : "";
-                var content = isBanned
+                var content = isLocked
                     ? $"Tài khoản của bạn đã bị tạm dừng hoạt động do vi phạm tiêu chuẩn cộng đồng{reasonText}."
                     : "Tài khoản của bạn đã được kích hoạt lại. Chào mừng bạn quay trở lại!";
 
@@ -80,7 +100,7 @@ public class UpdateAdminUserStatusCommandHandler : IRequestHandler<UpdateAdminUs
                     Title = title,
                     Content = content,
                     Type = Domain.Enums.NotificationType.Moderation,
-                    Priority = isBanned ? (byte)1 : (byte)2,
+                    Priority = isLocked ? (byte)1 : (byte)2,
                     TargetUrl = "/account/status",
                     GroupKey = $"USER_STATUS_{request.UserId}"
                 }, ct);

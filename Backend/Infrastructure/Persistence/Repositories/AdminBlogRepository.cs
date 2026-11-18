@@ -186,7 +186,11 @@ public class AdminBlogRepository : IAdminBlogRepository
         return await strategy.ExecuteAsync(async () =>
         {
             var connection = _dbContext.Database.GetDbConnection();
-            if (!await AdminScopeFilterHelper.IsBlogInScopeAsync(_currentUserService, connection, id))
+            if (!await AdminScopeFilterHelper.EnsureBlogInScopeAsync(
+                    _currentUserService,
+                    connection,
+                    id,
+                    "Bạn không có quyền xem bài viết cẩm nang ngoài phạm vi danh mục quản lý."))
                 return null;
             var command=new CommandDefinition(sql,new {Id=id},cancellationToken: ct);
             return await connection.QueryFirstOrDefaultAsync<AdminBlogDetailDto>(command);
@@ -236,11 +240,17 @@ public class AdminBlogRepository : IAdminBlogRepository
 
     public async Task<bool> UpdateAdminBlogAsync(long id, UpdateAdminBlogInput input, CancellationToken ct = default)
     {
-        if (!await AdminScopeFilterHelper.IsBlogInScopeAsync(_currentUserService, _dbContext.Database.GetDbConnection(), id))
+        if (!await AdminScopeFilterHelper.EnsureBlogInScopeAsync(
+                _currentUserService,
+                _dbContext.Database.GetDbConnection(),
+                id,
+                "Bạn không có quyền chỉnh sửa bài viết cẩm nang ngoài phạm vi danh mục quản lý."))
             return false;
 
-        if (!AdminScopeFilterHelper.ValidateBlogInputScope(_currentUserService, input.CategoryId))
-            return false;
+        AdminScopeFilterHelper.EnsureBlogInputScope(
+            _currentUserService,
+            input.CategoryId,
+            "Bạn không có quyền chuyển bài viết cẩm nang sang danh mục ngoài phạm vi quản lý.");
 
         var blog = await _dbContext.Blogs.FirstOrDefaultAsync(b => b.Id == id, ct);
         if (blog == null) return false;
@@ -288,7 +298,11 @@ public class AdminBlogRepository : IAdminBlogRepository
 
     public async Task<bool> UpdateAdminBlogStatusAsync(long id, string status, CancellationToken ct = default)
     {
-        if (!await AdminScopeFilterHelper.IsBlogInScopeAsync(_currentUserService, _dbContext.Database.GetDbConnection(), id))
+        if (!await AdminScopeFilterHelper.EnsureBlogInScopeAsync(
+                _currentUserService,
+                _dbContext.Database.GetDbConnection(),
+                id,
+                "Bạn không có quyền thay đổi trạng thái bài viết cẩm nang ngoài phạm vi danh mục quản lý."))
             return false;
 
         var blog = await _dbContext.Blogs.FirstOrDefaultAsync(b => b.Id == id, ct);
@@ -316,7 +330,11 @@ public class AdminBlogRepository : IAdminBlogRepository
 
     public async Task<bool> DeleteAdminBlogAsync(long id, CancellationToken ct = default)
     {
-        if (!await AdminScopeFilterHelper.IsBlogInScopeAsync(_currentUserService, _dbContext.Database.GetDbConnection(), id))
+        if (!await AdminScopeFilterHelper.EnsureBlogInScopeAsync(
+                _currentUserService,
+                _dbContext.Database.GetDbConnection(),
+                id,
+                "Bạn không có quyền xóa bài viết cẩm nang ngoài phạm vi danh mục quản lý."))
             return false;
 
         var blog = await _dbContext.Blogs.FirstOrDefaultAsync(b => b.Id == id, ct);

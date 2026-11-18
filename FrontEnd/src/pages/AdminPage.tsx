@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 import { adminService, extractList, type AdminMetrics } from "@/services/adminService";
 import { isUserAdmin, isUserSystemAdmin } from "@/utils/authUtils";
 import type {
@@ -92,6 +93,7 @@ const SLUG_TO_TAB_MAP: Record<string, AdminMainTab> = {
 export const AdminPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { isAuthenticated, isLoading: authLoading, user: authUser } = useAuth();
 
   useEffect(() => {
     if (location.search.includes("dev=admin")) {
@@ -100,17 +102,18 @@ export const AdminPage: React.FC = () => {
       } catch { }
       return;
     }
-    if (!isUserAdmin()) {
+    if (authLoading) return;
+    if (!isAuthenticated || !isUserAdmin()) {
       navigate('/', { replace: true });
     }
-  }, [navigate, location.search]);
+  }, [navigate, location.search, isAuthenticated, authLoading]);
 
   const storedAdmin = (() => {
     try {
       if (typeof window !== "undefined" && window.location.search.includes("dev=admin")) {
         return { id: 1, fullName: "Quản trị viên", roleId: 3, role: "SYSTEM_ADMIN" };
       }
-      return JSON.parse(localStorage.getItem("user_info") || "{}");
+      return authUser || JSON.parse(localStorage.getItem("user_info") || "{}");
     } catch {
       return {};
     }

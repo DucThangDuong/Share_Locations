@@ -61,7 +61,8 @@ public class JwtTokenService : IJwtTokenService
             new(JwtRegisteredClaimNames.Email, user.Email),
             new(JwtRegisteredClaimNames.Jti, jti ?? Guid.NewGuid().ToString("N")),
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new(ClaimTypes.Email, user.Email)
+            new(ClaimTypes.Email, user.Email),
+            new("token_ts", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString())
         };
 
         var activeRoleCodes = user.UserRoles

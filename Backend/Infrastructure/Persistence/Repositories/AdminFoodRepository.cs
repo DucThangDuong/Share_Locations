@@ -234,10 +234,11 @@ public class AdminFoodRepository : IAdminFoodRepository
 
     public async Task<bool> UpdateAdminFoodAsync(long id, UpdateAdminFoodInput input, CancellationToken ct = default)
     {
-        if (!await IsFoodInScopeAsync(id)) return false;
-
         var food = await _dbContext.Foods.FirstOrDefaultAsync(f => f.Id == id, ct);
         if (food == null) return false;
+
+        if (!await IsFoodInScopeAsync(id))
+            throw new UnauthorizedAccessException("Bạn không có quyền chỉnh sửa món ăn ngoài phạm vi tỉnh/thành phố quản lý.");
 
         var oldProvinceId = await _dbContext.FoodProvinces
             .Where(fp => fp.FoodId == id)
@@ -270,10 +271,10 @@ public class AdminFoodRepository : IAdminFoodRepository
         var effectiveProvinceId = oldProvinceId;
         if (input.ProvinceId.HasValue && input.ProvinceId.Value > 0)
         {
-            if (!AdminScopeFilterHelper.ValidateFoodInputScope(_currentUserService, input.ProvinceId.Value))
-            {
-                return false;
-            }
+            AdminScopeFilterHelper.EnsureFoodInputScope(
+                _currentUserService,
+                input.ProvinceId.Value,
+                "Bạn không có quyền chuyển món ăn sang tỉnh/thành phố ngoài phạm vi quản lý.");
 
             var existing = await _dbContext.FoodProvinces.FirstOrDefaultAsync(fp => fp.FoodId == id, ct);
             if (existing == null)
@@ -330,10 +331,11 @@ public class AdminFoodRepository : IAdminFoodRepository
 
     public async Task<bool> UpdateAdminFoodStatusAsync(long id, string status, CancellationToken ct = default)
     {
-        if (!await IsFoodInScopeAsync(id)) return false;
-
         var food = await _dbContext.Foods.FirstOrDefaultAsync(f => f.Id == id, ct);
         if (food == null) return false;
+
+        if (!await IsFoodInScopeAsync(id))
+            throw new UnauthorizedAccessException("Bạn không có quyền thay đổi trạng thái món ăn ngoài phạm vi tỉnh/thành phố quản lý.");
 
         var recordStatus = status.Equals("hidden", StringComparison.OrdinalIgnoreCase)
             ? RecordStatus.Inactive
@@ -357,10 +359,11 @@ public class AdminFoodRepository : IAdminFoodRepository
 
     public async Task<bool> DeleteAdminFoodAsync(long id, CancellationToken ct = default)
     {
-        if (!await IsFoodInScopeAsync(id)) return false;
-
         var food = await _dbContext.Foods.FirstOrDefaultAsync(f => f.Id == id, ct);
         if (food == null) return false;
+
+        if (!await IsFoodInScopeAsync(id))
+            throw new UnauthorizedAccessException("Bạn không có quyền xóa món ăn ngoài phạm vi tỉnh/thành phố quản lý.");
 
         var oldData = new { Id = food.Id, Name = food.Name, Status = (int)food.Status };
         _dbContext.Foods.Remove(food);

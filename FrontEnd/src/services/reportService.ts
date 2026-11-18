@@ -55,6 +55,10 @@ class ReportService {
       const response = await apiClient.post("/api/reports", payload);
       return response.data;
     } catch (err: any) {
+      const status = err?.response?.status;
+      if (status === 401 || status === 403) {
+        throw err;
+      }
       if (rawTargetType === "blog" && targetNumId > 0) {
         try {
           const fallbackRes = await apiClient.post(`/api/blogs/${targetNumId}/reports`, {

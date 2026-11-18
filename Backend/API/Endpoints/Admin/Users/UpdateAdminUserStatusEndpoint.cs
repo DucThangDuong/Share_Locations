@@ -1,6 +1,9 @@
-﻿using API.DTOs;
+﻿using System.Net;
+using API.DTOs;
 using API.Extensions;
+using Application.Common;
 using Application.Features.Admin.Users;
+using Domain.Enums;
 using FastEndpoints;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -32,7 +35,13 @@ public class UpdateAdminUserStatusEndpoint : Endpoint<UpdateAdminUserStatusApiRe
 
     public override async Task HandleAsync(UpdateAdminUserStatusApiRequest req, CancellationToken ct)
     {
-        byte statusByte = req.Status == "1" || req.Status.Equals("ACTIVE", StringComparison.OrdinalIgnoreCase) ? (byte)1 : (byte)0;
+        if (!TryParseUserStatus(req.Status, out var statusByte))
+        {
+            await this.SendApiResponseAsync(
+                Result<bool>.Failure("Trạng thái tài khoản không hợp lệ. Chỉ chấp nhận Active (1), Inactive (0) hoặc Banned (2).", HttpStatusCode.BadRequest),
+                ct);
+            return;
+        }
 
         var result = await Mediator.Send(
             new UpdateAdminUserStatusCommand(
@@ -41,5 +50,30 @@ public class UpdateAdminUserStatusEndpoint : Endpoint<UpdateAdminUserStatusApiRe
                 req.Reason), ct);
 
         await this.SendApiResponseAsync(result, ct);
+    }
+
+    private static bool TryParseUserStatus(string? rawStatus, out byte statusByte)
+    {
+        switch (rawStatus?.Trim().ToUpperInvariant())
+        {
+            case "1":
+            case "ACTIVE":
+                statusByte = (byte)UserStatus.Active;
+                return true;
+            case "0":
+            case "INACTIVE":
+                statusByte = (byte)UserStatus.Inactive;
+                return true;
+            case "2":
+            case "BANNED":
+            case "BAN":
+            case "LOCK":
+            case "LOCKED":
+                statusByte = (byte)UserStatus.Banned;
+                return true;
+            default:
+                statusByte = 0;
+                return false;
+        }
     }
 }

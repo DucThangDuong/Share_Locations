@@ -193,10 +193,11 @@ public class AdminPlaceRepository : IAdminPlaceRepository
         var detail = await connection.QueryFirstOrDefaultAsync<AdminPlaceDetailDto>(sql, new { Id = id });
         if (detail == null) return null;
 
-        if (!await AdminScopeFilterHelper.IsPlaceInScopeAsync(_currentUserService, connection, id))
-        {
-            return null;
-        }
+        AdminScopeFilterHelper.EnsurePlaceInputScope(
+            _currentUserService,
+            detail.CategoryId,
+            detail.ProvinceId,
+            "Bạn không có quyền xem địa điểm ngoài phạm vi danh mục hoặc tỉnh/thành phố quản lý.");
 
         const string mediaSql = "SELECT Url FROM dbo.PlaceMedia WHERE PlaceId = @Id ORDER BY DisplayOrder, Id;";
         var photos = (await connection.QueryAsync<string>(mediaSql, new { Id = id })).ToList();
@@ -307,7 +308,11 @@ public class AdminPlaceRepository : IAdminPlaceRepository
 
     public async Task<bool> UpdateAdminPlaceAsync(long id, UpdateAdminPlaceInput input, CancellationToken ct = default)
     {
-        if (!await AdminScopeFilterHelper.IsPlaceInScopeAsync(_currentUserService, _dbContext.Database.GetDbConnection(), id))
+        if (!await AdminScopeFilterHelper.EnsurePlaceInScopeAsync(
+                _currentUserService,
+                _dbContext.Database.GetDbConnection(),
+                id,
+                "Bạn không có quyền chỉnh sửa địa điểm ngoài phạm vi danh mục hoặc tỉnh/thành phố quản lý."))
             return false;
 
         var place = await _dbContext.Places.FirstOrDefaultAsync(p => p.Id == id, ct);
@@ -337,10 +342,11 @@ public class AdminPlaceRepository : IAdminPlaceRepository
         var provinceId = (input.ProvinceId.HasValue && input.ProvinceId.Value > 0) ? input.ProvinceId.Value : place.ProvinceId;
         var categoryId = (input.CategoryId.HasValue && input.CategoryId.Value > 0) ? input.CategoryId.Value : place.CategoryId;
 
-        if (!AdminScopeFilterHelper.ValidatePlaceInputScope(_currentUserService, categoryId, provinceId))
-        {
-            return false;
-        }
+        AdminScopeFilterHelper.EnsurePlaceInputScope(
+            _currentUserService,
+            categoryId,
+            provinceId,
+            "Bạn không có quyền chuyển địa điểm sang danh mục hoặc tỉnh/thành phố ngoài phạm vi quản lý.");
 
         var description = input.Description ?? place.Description;
         var phone = input.Phone ?? place.Phone;
@@ -427,7 +433,11 @@ public class AdminPlaceRepository : IAdminPlaceRepository
 
     public async Task<bool> UpdateAdminPlaceStatusAsync(long id, PlaceStatus status, CancellationToken ct = default)
     {
-        if (!await AdminScopeFilterHelper.IsPlaceInScopeAsync(_currentUserService, _dbContext.Database.GetDbConnection(), id))
+        if (!await AdminScopeFilterHelper.EnsurePlaceInScopeAsync(
+                _currentUserService,
+                _dbContext.Database.GetDbConnection(),
+                id,
+                "Bạn không có quyền thay đổi trạng thái địa điểm ngoài phạm vi danh mục hoặc tỉnh/thành phố quản lý."))
             return false;
 
         var place = await _dbContext.Places.FirstOrDefaultAsync(p => p.Id == id, ct);
@@ -451,7 +461,11 @@ public class AdminPlaceRepository : IAdminPlaceRepository
 
     public async Task<bool> DeleteAdminPlaceAsync(long id, CancellationToken ct = default)
     {
-        if (!await AdminScopeFilterHelper.IsPlaceInScopeAsync(_currentUserService, _dbContext.Database.GetDbConnection(), id))
+        if (!await AdminScopeFilterHelper.EnsurePlaceInScopeAsync(
+                _currentUserService,
+                _dbContext.Database.GetDbConnection(),
+                id,
+                "Bạn không có quyền xóa địa điểm ngoài phạm vi danh mục hoặc tỉnh/thành phố quản lý."))
             return false;
 
         var place = await _dbContext.Places.FirstOrDefaultAsync(p => p.Id == id, ct);
@@ -475,7 +489,11 @@ public class AdminPlaceRepository : IAdminPlaceRepository
 
     public async Task<(bool Success, string? OldCoverUrl)> UpdateCoverImageAsync(long placeId, string newCoverImageUrl, CancellationToken ct = default)
     {
-        if (!await AdminScopeFilterHelper.IsPlaceInScopeAsync(_currentUserService, _dbContext.Database.GetDbConnection(), placeId))
+        if (!await AdminScopeFilterHelper.EnsurePlaceInScopeAsync(
+                _currentUserService,
+                _dbContext.Database.GetDbConnection(),
+                placeId,
+                "Bạn không có quyền cập nhật ảnh bìa địa điểm ngoài phạm vi danh mục hoặc tỉnh/thành phố quản lý."))
             return (false, null);
 
         var place = await _dbContext.Places.FirstOrDefaultAsync(p => p.Id == placeId, ct);
@@ -499,7 +517,11 @@ public class AdminPlaceRepository : IAdminPlaceRepository
 
     public async Task<List<PlaceMediaItemDto>> AddPlaceMediaAsync(long placeId, IEnumerable<string> mediaUrls, long? uploaderId, CancellationToken ct = default)
     {
-        if (!await AdminScopeFilterHelper.IsPlaceInScopeAsync(_currentUserService, _dbContext.Database.GetDbConnection(), placeId))
+        if (!await AdminScopeFilterHelper.EnsurePlaceInScopeAsync(
+                _currentUserService,
+                _dbContext.Database.GetDbConnection(),
+                placeId,
+                "Bạn không có quyền tải ảnh lên địa điểm ngoài phạm vi danh mục hoặc tỉnh/thành phố quản lý."))
             return new List<PlaceMediaItemDto>();
 
         var place = await _dbContext.Places.FirstOrDefaultAsync(p => p.Id == placeId, ct);
@@ -543,7 +565,11 @@ public class AdminPlaceRepository : IAdminPlaceRepository
 
     public async Task<(bool Success, string? MediaUrl)> DeletePlaceMediaAsync(long placeId, long mediaId, CancellationToken ct = default)
     {
-        if (!await AdminScopeFilterHelper.IsPlaceInScopeAsync(_currentUserService, _dbContext.Database.GetDbConnection(), placeId))
+        if (!await AdminScopeFilterHelper.EnsurePlaceInScopeAsync(
+                _currentUserService,
+                _dbContext.Database.GetDbConnection(),
+                placeId,
+                "Bạn không có quyền xóa ảnh của địa điểm ngoài phạm vi danh mục hoặc tỉnh/thành phố quản lý."))
             return (false, null);
 
         var media = await _dbContext.PlaceMedia.FirstOrDefaultAsync(pm => pm.Id == mediaId && pm.PlaceId == placeId, ct);
@@ -567,7 +593,11 @@ public class AdminPlaceRepository : IAdminPlaceRepository
     public async Task<List<PlaceMediaItemDto>> GetPlaceMediaListAsync(long placeId, CancellationToken ct = default)
     {
         var connection = _dbContext.Database.GetDbConnection();
-        if (!await AdminScopeFilterHelper.IsPlaceInScopeAsync(_currentUserService, connection, placeId))
+        if (!await AdminScopeFilterHelper.EnsurePlaceInScopeAsync(
+                _currentUserService,
+                connection,
+                placeId,
+                "Bạn không có quyền xem danh sách ảnh của địa điểm ngoài phạm vi danh mục hoặc tỉnh/thành phố quản lý."))
             return new List<PlaceMediaItemDto>();
 
         const string sql = @"

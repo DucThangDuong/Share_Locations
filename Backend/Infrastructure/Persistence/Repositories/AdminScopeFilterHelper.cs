@@ -77,19 +77,30 @@ public static class AdminScopeFilterHelper
     {
         if (currentUser.IsSystemAdmin) return true;
 
-        var catScopes = currentUser.CategoryScopes;
-        var provScopes = currentUser.ProvinceScopes;
-        if (catScopes.Count == 0 || provScopes.Count == 0) return false;
-
-        const string sql = @"
-            SELECT p.CategoryId, p.ProvinceId
-            FROM dbo.Places p
-            WHERE p.Id = @Id AND p.IsDeleted = 0;";
-
-        var place = await connection.QueryFirstOrDefaultAsync<(int CategoryId, int ProvinceId)?>(sql, new { Id = placeId });
+        var place = await GetPlaceScopeKeysAsync(connection, placeId);
         if (place == null) return false;
 
-        return catScopes.Contains(place.Value.CategoryId) && provScopes.Contains(place.Value.ProvinceId);
+        return ValidatePlaceInputScope(currentUser, place.Value.CategoryId, place.Value.ProvinceId);
+    }
+
+    public static async Task<bool> EnsurePlaceInScopeAsync(
+        ICurrentUserService currentUser,
+        IDbConnection connection,
+        long placeId,
+        string? errorMessage = null)
+    {
+        if (currentUser.IsSystemAdmin) return true;
+
+        var place = await GetPlaceScopeKeysAsync(connection, placeId);
+        if (place == null) return false;
+
+        EnsurePlaceInputScope(
+            currentUser,
+            place.Value.CategoryId,
+            place.Value.ProvinceId,
+            errorMessage ?? "Bạn không có quyền thao tác với địa điểm ngoài phạm vi danh mục hoặc tỉnh/thành phố quản lý.");
+
+        return true;
     }
 
     public static async Task<bool> IsBlogInScopeAsync(
@@ -99,12 +110,39 @@ public static class AdminScopeFilterHelper
     {
         if (currentUser.IsSystemAdmin) return true;
 
-        const string sql = "SELECT CategoryId FROM dbo.Blogs WHERE Id = @Id;";
-        var categoryId = await connection.QueryFirstOrDefaultAsync<int?>(sql, new { Id = blogId });
+        var categoryId = await connection.QueryFirstOrDefaultAsync<int?>("SELECT CategoryId FROM dbo.Blogs WHERE Id = @Id;", new { Id = blogId });
         if (!categoryId.HasValue) return false;
 
-        var catScopes = currentUser.CategoryScopes;
-        return catScopes.Contains(categoryId.Value);
+        return ValidateBlogInputScope(currentUser, categoryId);
+    }
+
+    public static async Task<bool> EnsureBlogInScopeAsync(
+        ICurrentUserService currentUser,
+        IDbConnection connection,
+        long blogId,
+        string? errorMessage = null)
+    {
+        if (currentUser.IsSystemAdmin) return true;
+
+        var categoryId = await connection.QueryFirstOrDefaultAsync<int?>("SELECT CategoryId FROM dbo.Blogs WHERE Id = @Id;", new { Id = blogId });
+        if (!categoryId.HasValue) return false;
+
+        EnsureBlogInputScope(
+            currentUser,
+            categoryId,
+            errorMessage ?? "Bạn không có quyền thao tác với bài viết ngoài phạm vi danh mục quản lý.");
+
+        return true;
+    }
+
+    private static async Task<(int CategoryId, int ProvinceId)?> GetPlaceScopeKeysAsync(IDbConnection connection, long placeId)
+    {
+        const string sql = @"
+            SELECT p.CategoryId, p.ProvinceId
+            FROM dbo.Places p
+            WHERE p.Id = @Id AND p.IsDeleted = 0;";
+
+        return await connection.QueryFirstOrDefaultAsync<(int CategoryId, int ProvinceId)?>(sql, new { Id = placeId });
     }
     public static void ApplyCollectionScope(
         ICurrentUserService currentUser,
@@ -180,5 +218,42 @@ public static class AdminScopeFilterHelper
         if (catScopes.Count == 0 || !categoryId.HasValue) return false;
 
         return catScopes.Contains(categoryId.Value);
+    }
+
+    public static void EnsurePlaceInputScope(
+        ICurrentUserService currentUser,
+        int categoryId,
+        int provinceId,
+        string? errorMessage = null)
+    {
+        if (!ValidatePlaceInputScope(currentUser, categoryId, provinceId))
+        {
+            throw new UnauthorizedAccessException(
+                errorMessage ?? "Bạn không có quyền thao tác với địa điểm ngoài phạm vi danh mục hoặc tỉnh/thành phố quản lý.");
+        }
+    }
+
+    public static void EnsureFoodInputScope(
+        ICurrentUserService currentUser,
+        int? provinceId,
+        string? errorMessage = null)
+    {
+        if (!ValidateFoodInputScope(currentUser, provinceId))
+        {
+            throw new UnauthorizedAccessException(
+                errorMessage ?? "Bạn không có quyền thao tác với món ăn ngoài phạm vi tỉnh/thành phố quản lý.");
+        }
+    }
+
+    public static void EnsureBlogInputScope(
+        ICurrentUserService currentUser,
+        int? categoryId,
+        string? errorMessage = null)
+    {
+        if (!ValidateBlogInputScope(currentUser, categoryId))
+        {
+            throw new UnauthorizedAccessException(
+                errorMessage ?? "Bạn không có quyền thao tác với bài viết ngoài phạm vi danh mục quản lý.");
+        }
     }
 }
