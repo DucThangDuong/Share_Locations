@@ -1,4 +1,4 @@
-﻿using Domain.Entities;
+using Domain.Entities;
 using Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -24,6 +24,7 @@ public class TripWriteRepository : ITripWriteRepository
         return await _dbContext.Trips
             .Include(t => t.Days)
                 .ThenInclude(d => d.Places)
+                    .ThenInclude(p => p.Place)
             .Include(t => t.Members)
             .FirstOrDefaultAsync(t => t.Id == id, ct);
     }

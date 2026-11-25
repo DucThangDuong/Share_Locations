@@ -109,7 +109,13 @@ export const ProvinceItinerarySection: React.FC<ProvinceItinerarySectionProps> =
         if (!isMounted) return
 
         if (res.success && Array.isArray(res.data)) {
-          const allDtos = res.data
+          const allDtos = res.data.filter((item) => {
+            const stopsCount = (item.days || []).reduce((sum, d) => sum + (d.stops?.length || 0), 0)
+            const hasCover = Boolean((item.coverUrl || item.coverImageUrl || '').trim())
+            const hasDesc = Boolean((item.overview || '').trim())
+            const hasTitle = Boolean((item.title || '').trim())
+            return stopsCount > 0 && hasCover && hasDesc && hasTitle
+          })
           const target = cleanName(provinceName)
 
           let matched = allDtos.filter((item) => {

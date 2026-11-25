@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { ShieldAlert, MessageCircle, Loader2, Lock } from 'lucide-react'
 import { useChat } from '@/context/ChatContext'
 import { useAuth } from '@/context/AuthContext'
 import { useSystemSettings } from '@/context/SystemSettingsContext'
@@ -15,6 +17,7 @@ import {
 
 interface ChatPageProps {
   initialConversationId?: string
+  onConversationChange?: (roomId: number | null) => void
   onBack?: () => void
   onSelectPlace?: (placeId: number) => void
   onViewTripDetail?: (tripId: number) => void
@@ -23,17 +26,23 @@ interface ChatPageProps {
 
 export default function ChatPage({
   initialConversationId,
+  onConversationChange,
   onBack,
   onSelectPlace,
   showToast = () => { },
 }: ChatPageProps) {
-  const { user } = useAuth()
+  const navigate = useNavigate()
+  const { user, isAuthenticated, isLoading: isAuthLoading } = useAuth()
   const { defaultUserAvatar, defaultGroupAvatar } = useSystemSettings()
   const {
     inbox,
     isLoadingInbox,
+    hasLoadedInbox,
     activeRoomId,
     activeRoom,
+    roomAccessError,
+    clearRoomAccessError,
+    clearActiveRoom,
     messages,
     isLoadingMessages,
     hasMoreMessages,
@@ -50,6 +59,8 @@ export default function ChatPage({
   const [inputText, setInputText] = useState('')
   const [replyingTo, setReplyingTo] = useState<{ id: number; senderName: string; text: string } | null>(null)
   const [isSending, setIsSending] = useState(false)
+  const [invalidConversationError, setInvalidConversationError] = useState<string | null>(null)
+  const [isCheckingUrlRoom, setIsCheckingUrlRoom] = useState(false)
 
   const [showRightDrawer, setShowRightDrawer] = useState(true)
   const [showPlacePicker, setShowPlacePicker] = useState(false)
@@ -59,27 +70,81 @@ export default function ChatPage({
   const fileInputRef = useRef<HTMLInputElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const initializedRoomIdRef = useRef<number | null>(null)
+  const activeRoomIdRef = useRef<number | null>(activeRoomId)
+  activeRoomIdRef.current = activeRoomId
+  const onConversationChangeRef = useRef(onConversationChange)
+  onConversationChangeRef.current = onConversationChange
 
   useEffect(() => {
+    if (!isAuthenticated || !hasLoadedInbox) return
+
+    let active = true
+
     if (initialConversationId) {
-      const parsedId = Number(initialConversationId)
-      if (!isNaN(parsedId) && activeRoomId !== parsedId && initializedRoomIdRef.current !== parsedId) {
-        initializedRoomIdRef.current = parsedId
-        selectRoom(parsedId)
+      const trimmed = initialConversationId.trim()
+      const parsedId = /^\d+$/.test(trimmed) ? Number(trimmed) : NaN
+
+      if (!Number.isSafeInteger(parsedId) || parsedId <= 0) {
+        clearActiveRoom()
+        clearRoomAccessError()
+        setInvalidConversationError('Cuộc trò chuyện không tồn tại hoặc mã phòng không hợp lệ.')
+        setIsCheckingUrlRoom(false)
+        return
       }
-    } else if (!activeRoomId && inbox.length > 0 && initializedRoomIdRef.current === null) {
+
+      setInvalidConversationError(null)
+
+      if (activeRoomIdRef.current !== null && Number(activeRoomIdRef.current) === parsedId) {
+        setIsCheckingUrlRoom(false)
+        return
+      }
+
+      setIsCheckingUrlRoom(true)
+      selectRoom(parsedId).finally(() => {
+        if (active) {
+          setIsCheckingUrlRoom(false)
+        }
+      })
+    } else {
+      setInvalidConversationError(null)
+      setIsCheckingUrlRoom(false)
+      clearRoomAccessError()
+    }
+
+    return () => {
+      active = false
+    }
+  }, [
+    initialConversationId,
+    isAuthenticated,
+    hasLoadedInbox,
+    selectRoom,
+    clearActiveRoom,
+    clearRoomAccessError,
+  ])
+
+  useEffect(() => {
+    if (
+      !initialConversationId &&
+      isAuthenticated &&
+      hasLoadedInbox &&
+      activeRoomId === null &&
+      inbox.length > 0
+    ) {
       const firstRoomId = inbox[0].roomId
-      initializedRoomIdRef.current = firstRoomId
+      onConversationChangeRef.current?.(firstRoomId)
       selectRoom(firstRoomId)
     }
-  }, [initialConversationId, activeRoomId, inbox.length, selectRoom])
+  }, [initialConversationId, isAuthenticated, hasLoadedInbox, activeRoomId, inbox, selectRoom])
 
   const handleSelectRoom = (roomId: number) => {
-    if (roomId === activeRoomId) return
-    initializedRoomIdRef.current = roomId
-    selectRoom(roomId)
-    window.history.replaceState(null, '', `/chat?conversation=${roomId}`)
+    const normalizedId = Number(roomId)
+    setInvalidConversationError(null)
+    clearRoomAccessError()
+    setReplyingTo(null)
+    onConversationChange?.(normalizedId)
+    if (activeRoomId !== null && Number(activeRoomId) === normalizedId) return
+    selectRoom(normalizedId)
   }
 
   useEffect(() => {
@@ -167,12 +232,48 @@ export default function ChatPage({
     return { allMediaAttachments: images, allFileAttachments: files }
   }, [messages])
 
-  const roomTitle = activeRoom?.name || 'Cuộc trò chuyện'
+  const roomTitle = activeRoom?.name || ''
   const roomAvatar =
     activeRoom?.avatarUrl ||
     (activeRoom?.isGroup
       ? defaultGroupAvatar
       : defaultUserAvatar)
+
+  const effectiveAccessError = invalidConversationError
+    ? { code: 404, message: invalidConversationError }
+    : roomAccessError
+
+  const isResolvingRoom =
+    isAuthLoading ||
+    !hasLoadedInbox ||
+    isLoadingInbox ||
+    isCheckingUrlRoom ||
+    (Boolean(initialConversationId) && !effectiveAccessError && !activeRoom && isLoadingMessages)
+
+  if (!isAuthLoading && !isAuthenticated) {
+    return (
+      <div className="h-full w-full bg-slate-50 flex items-center justify-center p-4">
+        <div className="max-w-sm w-full bg-white rounded-3xl p-8 border border-slate-200 shadow-sm text-center space-y-4">
+          <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto border border-amber-100">
+            <Lock className="w-7 h-7" />
+          </div>
+          <div className="space-y-1.5">
+            <h2 className="text-lg font-bold text-slate-900">Yêu cầu đăng nhập</h2>
+            <p className="text-xs text-slate-500">
+              Bạn cần đăng nhập để truy cập các cuộc trò chuyện của mình.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate('/login')}
+            className="w-full py-2.5 px-4 bg-[#0084FF] hover:bg-[#0073E6] text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
+          >
+            Đăng nhập ngay
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="h-full w-full bg-slate-50 overflow-hidden flex flex-col">
@@ -196,51 +297,105 @@ export default function ChatPage({
           <ChatSidebar
             inbox={inbox}
             isLoading={isLoadingInbox}
-            activeRoomId={activeRoomId}
+            activeRoomId={activeRoom ? activeRoom.roomId : null}
             onSelectRoom={handleSelectRoom}
             onBack={onBack}
           />
 
           <main className="flex-1 min-w-0 h-full flex flex-col bg-white relative overflow-hidden">
-            <ChatMessageFeed
-              roomTitle={roomTitle}
-              roomAvatar={roomAvatar}
-              isGroup={activeRoom?.isGroup}
-              partnerTyping={partnerTyping}
-              messages={messages}
-              isLoadingMessages={isLoadingMessages}
-              hasMoreMessages={hasMoreMessages}
-              isLoadingMoreMessages={isLoadingMoreMessages}
-              onLoadMoreMessages={() => loadMoreMessages(activeRoomId || undefined)}
-              currentUserId={currentUserId}
-              showRightDrawer={showRightDrawer}
-              onToggleRightDrawer={() => setShowRightDrawer((prev) => !prev)}
-              onReplyToMessage={(reply) => setReplyingTo(reply)}
-              onSelectPlace={onSelectPlace}
-              onPreviewImage={(url) => setLightboxImage(url)}
-              messagesEndRef={messagesEndRef}
-            />
+            {effectiveAccessError ? (
+              <div className="flex-1 flex items-center justify-center p-6 bg-slate-50/40">
+                <div className="max-w-md w-full bg-white rounded-3xl p-8 border border-slate-200/90 shadow-xs text-center space-y-5">
+                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mx-auto border ${effectiveAccessError.code === 403 ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
+                    <ShieldAlert className="w-7 h-7" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <h2 className="text-lg font-bold text-slate-900">
+                      {effectiveAccessError.code === 403
+                        ? 'Không có quyền truy cập cuộc trò chuyện'
+                        : 'Không tìm thấy cuộc trò chuyện'}
+                    </h2>
+                    <p className="text-xs text-slate-500 leading-relaxed">
+                      {effectiveAccessError.message}
+                    </p>
+                  </div>
+                  {inbox.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => handleSelectRoom(inbox[0].roomId)}
+                      className="px-5 py-2.5 bg-[#0084FF] hover:bg-[#0073E6] text-white text-xs font-bold rounded-xl transition-colors cursor-pointer shadow-xs"
+                    >
+                      Mở cuộc trò chuyện của tôi
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : isResolvingRoom ? (
+              <div className="flex-1 flex flex-col items-center justify-center gap-2.5 text-slate-400">
+                <Loader2 className="w-7 h-7 animate-spin text-[#0084FF]" />
+                <span className="text-xs font-medium">Đang tải cuộc trò chuyện...</span>
+              </div>
+            ) : !activeRoom ? (
+              <div className="flex-1 flex flex-col items-center justify-center p-6 text-center text-slate-500 space-y-3 bg-slate-50/40">
+                <div className="w-14 h-14 rounded-2xl bg-blue-50 text-[#0084FF] flex items-center justify-center">
+                  <MessageCircle className="w-7 h-7" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-bold text-slate-800">
+                    {inbox.length > 0 ? 'Chọn một cuộc trò chuyện' : 'Chưa có cuộc trò chuyện nào'}
+                  </p>
+                  <p className="text-xs text-slate-500 max-w-xs">
+                    {inbox.length > 0
+                      ? 'Hãy chọn một cuộc trò chuyện ở danh sách bên trái để xem tin nhắn.'
+                      : 'Kết nối với bạn bè hoặc tạo nhóm trò chuyện mới để bắt đầu nhắn tin.'}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <>
+                <ChatMessageFeed
+                  roomTitle={roomTitle}
+                  roomAvatar={roomAvatar}
+                  isGroup={activeRoom.isGroup}
+                  partnerTyping={partnerTyping}
+                  messages={messages}
+                  isLoadingMessages={isLoadingMessages}
+                  hasMoreMessages={hasMoreMessages}
+                  isLoadingMoreMessages={isLoadingMoreMessages}
+                  onLoadMoreMessages={() => loadMoreMessages(activeRoom.roomId)}
+                  currentUserId={currentUserId}
+                  showRightDrawer={showRightDrawer}
+                  onToggleRightDrawer={() => setShowRightDrawer((prev) => !prev)}
+                  onReplyToMessage={(reply) => setReplyingTo(reply)}
+                  onSelectPlace={onSelectPlace}
+                  onPreviewImage={(url) => setLightboxImage(url)}
+                  messagesEndRef={messagesEndRef}
+                />
 
-            <ChatInputBar
-              inputText={inputText}
-              onInputChange={handleInputChange}
-              onSendMessage={handleSendMessage}
-              isSending={isSending}
-              replyingTo={replyingTo}
-              onCancelReply={() => setReplyingTo(null)}
-              onTriggerImageUpload={() => imageInputRef.current?.click()}
-            />
+                <ChatInputBar
+                  inputText={inputText}
+                  onInputChange={handleInputChange}
+                  onSendMessage={handleSendMessage}
+                  isSending={isSending}
+                  replyingTo={replyingTo}
+                  onCancelReply={() => setReplyingTo(null)}
+                  onTriggerImageUpload={() => imageInputRef.current?.click()}
+                />
+              </>
+            )}
           </main>
 
-          <ChatDrawer
-            isOpen={showRightDrawer}
-            roomTitle={roomTitle}
-            roomAvatar={roomAvatar}
-            isGroup={activeRoom?.isGroup}
-            roomId={activeRoomId}
-            images={allMediaAttachments}
-            onPreviewImage={(url) => setLightboxImage(url)}
-          />
+          {activeRoom && !effectiveAccessError && (
+            <ChatDrawer
+              isOpen={showRightDrawer}
+              roomTitle={roomTitle}
+              roomAvatar={roomAvatar}
+              isGroup={activeRoom.isGroup}
+              roomId={activeRoom.roomId}
+              images={allMediaAttachments}
+              onPreviewImage={(url) => setLightboxImage(url)}
+            />
+          )}
         </div>
       </div>
 

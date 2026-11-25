@@ -76,6 +76,7 @@ export const AdminTopbar: React.FC<AdminTopbarProps> = ({
             {mainTab === "reports" && "Báo cáo vi phạm"}
             {mainTab === "foods" && "Món ăn"}
             {mainTab === "collections" && "Bộ sưu tập"}
+            {mainTab === "trips" && "Quản lý Lịch trình"}
             {mainTab === "blogs" && "Cẩm nang"}
             {mainTab === "provinces" && "Tỉnh thành"}
             {mainTab === "categories" && "Danh mục hệ thống"}

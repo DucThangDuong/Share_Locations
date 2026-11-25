@@ -28,6 +28,10 @@ public interface IUserPersonalizationRepository
         int pageSize,
         CancellationToken ct = default);
 
+    Task<(long OwnerUserId, UserProposalItemDto Proposal)?> GetProposalByIdAsync(
+        long proposalId,
+        CancellationToken ct = default);
+
     Task<IReadOnlyList<UserAccessHistoryItemDto>> GetAccessHistoriesAsync(
         long userId,
         int limit,

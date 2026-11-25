@@ -23,7 +23,15 @@ public class VisitLogRepository : IVisitLogRepository
     public async Task<VisitLog?> GetByUserAndPlaceAsync(long userId, long placeId, CancellationToken ct = default)
     {
         return await _dbContext.VisitLogs
+            .OrderByDescending(v => v.Id)
             .FirstOrDefaultAsync(v => v.UserId == userId && v.PlaceId == placeId, ct);
+    }
+
+    public async Task<IReadOnlyList<VisitLog>> GetAllByUserAndPlaceAsync(long userId, long placeId, CancellationToken ct = default)
+    {
+        return await _dbContext.VisitLogs
+            .Where(v => v.UserId == userId && v.PlaceId == placeId)
+            .ToListAsync(ct);
     }
 
     public async Task AddAsync(VisitLog visitLog, CancellationToken ct = default)
@@ -34,5 +42,10 @@ public class VisitLogRepository : IVisitLogRepository
     public void Remove(VisitLog visitLog)
     {
         _dbContext.VisitLogs.Remove(visitLog);
+    }
+
+    public void RemoveRange(IEnumerable<VisitLog> visitLogs)
+    {
+        _dbContext.VisitLogs.RemoveRange(visitLogs);
     }
 }

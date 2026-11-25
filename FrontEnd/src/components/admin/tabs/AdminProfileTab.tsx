@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   MapPin,
   Layers,
@@ -9,7 +8,6 @@ import {
   Utensils,
   Bed,
   Camera,
-  ArrowUpRight,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { adminService, extractList } from "@/services/adminService";
@@ -47,12 +45,8 @@ export interface AssignedCategory {
   placeTypeName?: string;
 }
 
-export const AdminProfileTab: React.FC<AdminProfileTabProps> = ({
-  onNavigateTab,
-  showToast,
-}) => {
+export const AdminProfileTab: React.FC<AdminProfileTabProps> = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const isSystemAdmin =
     isUserSystemAdmin() ||
     (typeof window !== "undefined" && window.location.search.includes("dev=admin"));
@@ -214,16 +208,13 @@ export const AdminProfileTab: React.FC<AdminProfileTabProps> = ({
         const lower = title.toLowerCase();
         let icon = Camera;
         let iconColor = "text-emerald-600 bg-emerald-50 border-emerald-200";
-        let chipHover = "hover:border-emerald-400 hover:bg-emerald-50/80 hover:text-emerald-950";
 
         if (lower.includes("ăn") || lower.includes("ẩm thực") || lower.includes("uống")) {
           icon = Utensils;
           iconColor = "text-amber-600 bg-amber-50 border-amber-200";
-          chipHover = "hover:border-amber-400 hover:bg-amber-50/80 hover:text-amber-950";
         } else if (lower.includes("lưu trú") || lower.includes("khách sạn") || lower.includes("nghỉ")) {
           icon = Bed;
           iconColor = "text-blue-600 bg-blue-50 border-blue-200";
-          chipHover = "hover:border-blue-400 hover:bg-blue-50/80 hover:text-blue-950";
         }
 
         return {
@@ -232,7 +223,6 @@ export const AdminProfileTab: React.FC<AdminProfileTabProps> = ({
           subtitle: `Các danh mục dịch vụ thuộc ${pt.name}`,
           icon,
           iconColor,
-          chipHover,
           categories: assignedCategories.filter(
             (c) => c.placeTypeId === pt.id || (c.placeTypeName && c.placeTypeName.toLowerCase() === pt.name.toLowerCase())
           ),
@@ -248,7 +238,6 @@ export const AdminProfileTab: React.FC<AdminProfileTabProps> = ({
           subtitle: "Các dịch vụ & điểm đến khác",
           icon: Layers,
           iconColor: "text-purple-600 bg-purple-50 border-purple-200",
-          chipHover: "hover:border-purple-400 hover:bg-purple-50/80 hover:text-purple-950",
           categories: remaining,
         });
       }
@@ -267,24 +256,9 @@ export const AdminProfileTab: React.FC<AdminProfileTabProps> = ({
       subtitle: `Các dịch vụ thuộc ${title}`,
       icon: Layers,
       iconColor: "text-purple-600 bg-purple-50 border-purple-200",
-      chipHover: "hover:border-purple-400 hover:bg-purple-50/80 hover:text-purple-950",
       categories,
     }));
   }, [allPlaceTypes, assignedCategories]);
-
-  const handleSelectProvince = (provinceName: string) => {
-    const clean = cleanProvinceName(provinceName);
-    navigate(`/admin/places?province=${encodeURIComponent(clean)}`);
-    onNavigateTab?.("places");
-    showToast?.(`Đã lọc danh sách địa điểm theo tỉnh/thành: ${clean}`);
-  };
-
-  const handleSelectCategory = (categoryName: string) => {
-    navigate(`/admin/places?category=${encodeURIComponent(categoryName)}`);
-    onNavigateTab?.("places");
-    showToast?.(`Đã lọc danh sách địa điểm theo danh mục: ${categoryName}`);
-  };
-
 
   return (
     <div className="space-y-6 pb-12 font-sans max-w-6xl mx-auto animate-in fade-in duration-150">
@@ -335,19 +309,15 @@ export const AdminProfileTab: React.FC<AdminProfileTabProps> = ({
                 ) : (
                   <div className="flex flex-wrap gap-2">
                     {col.provinces.map((prov) => (
-                      <button
+                      <div
                         key={`prov-${prov.id}`}
-                        type="button"
-                        onClick={() => handleSelectProvince(prov.name)}
-                        title={`Bấm để xem danh sách địa điểm tại ${prov.cleanName}`}
-                        className="inline-flex items-center justify-between gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200/90 text-slate-800 text-xs font-semibold shadow-2xs hover:border-emerald-500 hover:bg-emerald-50/70 hover:text-emerald-950 transition-all cursor-pointer group text-left"
+                        className="inline-flex items-center justify-between gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200/90 text-slate-800 text-xs font-semibold shadow-2xs select-none"
                       >
                         <span className="truncate max-w-[130px] font-medium">{prov.cleanName}</span>
-                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-slate-100 group-hover:bg-emerald-100 text-slate-600 group-hover:text-emerald-800 transition-colors shrink-0">
+                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-slate-100 text-slate-600 shrink-0">
                           {prov.placeCount ?? 0}
                         </span>
-                        <ArrowUpRight size={11} className="text-slate-300 group-hover:text-emerald-600 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-                      </button>
+                      </div>
                     ))}
                   </div>
                 )}
@@ -409,23 +379,17 @@ export const AdminProfileTab: React.FC<AdminProfileTabProps> = ({
 
                   <div className="space-y-2 pt-1">
                     {group.categories.map((cat) => (
-                      <button
+                      <div
                         key={`cat-${cat.id}`}
-                        type="button"
-                        onClick={() => handleSelectCategory(cat.name)}
-                        title={`Bấm để xem danh sách địa điểm thuộc ${cat.name}`}
-                        className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-white border border-slate-200/80 text-slate-800 text-xs font-semibold shadow-2xs ${group.chipHover} transition-all cursor-pointer group text-left`}
+                        className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-white border border-slate-200/80 text-slate-800 text-xs font-semibold shadow-2xs select-none"
                       >
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="truncate">{cat.name}</span>
                         </div>
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-slate-100 text-slate-600 group-hover:bg-purple-100 group-hover:text-purple-800 transition-colors">
-                            {cat.placeCount ?? 0}
-                          </span>
-                          <ArrowUpRight size={12} className="text-slate-300 group-hover:text-slate-700 transition-colors" />
-                        </div>
-                      </button>
+                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-slate-100 text-slate-600 shrink-0">
+                          {cat.placeCount ?? 0}
+                        </span>
+                      </div>
                     ))}
                   </div>
                 </div>

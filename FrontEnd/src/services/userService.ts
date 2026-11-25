@@ -138,6 +138,13 @@ export const userService = {
     return response.data
   },
 
+  async getMyProposalById(id: number): Promise<ApiSuccessResponse<ProposalItem>> {
+    const response = await apiClient.get<ApiSuccessResponse<ProposalItem>>(
+      `/api/proposals/${id}`
+    )
+    return response.data
+  },
+
   async createProposal(data: CreateProposalRequest | FormData): Promise<ApiSuccessResponse<ProposalItem>> {
     let payload: CreateProposalRequest | FormData = data
     if (!(data instanceof FormData)) {

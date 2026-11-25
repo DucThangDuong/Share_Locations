@@ -4,6 +4,6 @@ public enum BlogStatus : byte
 {
     Draft = 0,
     Published = 1,
-    Archived = 2,
-    Reported = 3
+    Pending = 2,
+    Hidden = 3
 }

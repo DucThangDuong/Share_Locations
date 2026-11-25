@@ -30,12 +30,19 @@ const ChatPage = lazy(() => import('@/pages/ChatPage'))
 
 const ChatRoute: React.FC = () => {
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
-  const conversationId = searchParams.get('conversation') || undefined
+  const [searchParams, setSearchParams] = useSearchParams()
+  const conversationId = searchParams.get('conversation') || searchParams.get('room') || undefined
 
   return (
     <ChatPage
       initialConversationId={conversationId}
+      onConversationChange={(roomId) => {
+        if (roomId) {
+          setSearchParams({ conversation: String(roomId) }, { replace: true })
+        } else {
+          setSearchParams({}, { replace: true })
+        }
+      }}
       onBack={() => navigate(-1)}
       onSelectPlace={(placeId) => navigate(`/places/${placeId}`)}
       onViewTripDetail={(tripId) => navigate(`/itinerary/${tripId}`)}

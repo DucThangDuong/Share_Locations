@@ -129,13 +129,14 @@ public class RankingRepository : IRankingRepository
             BEGIN
                 UPDATE dbo.SystemSettings
                 SET SettingValue = @Value,
+                    Description = N'Dữ liệu lưu vết thứ hạng kỳ trước phục vụ tính biến động thứ hạng',
                     UpdatedAt = SYSUTCDATETIME()
                 WHERE SettingKey = @Key;
             END
             ELSE
             BEGIN
                 INSERT INTO dbo.SystemSettings (SettingKey, SettingValue, Description, SettingGroup, UpdatedAt)
-                VALUES (@Key, @Value, N'Snapshot thứ hạng kỳ trước phục vụ tính biến động thứ hạng (Rank Delta)', @Group, SYSUTCDATETIME());
+                VALUES (@Key, @Value, N'Dữ liệu lưu vết thứ hạng kỳ trước phục vụ tính biến động thứ hạng', @Group, SYSUTCDATETIME());
             END";
 
         await connection.ExecuteAsync(new CommandDefinition(upsertSql, new

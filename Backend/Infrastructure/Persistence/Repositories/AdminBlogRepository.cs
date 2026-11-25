@@ -25,6 +25,19 @@ public class AdminBlogRepository : IAdminBlogRepository
         _auditLogService = auditLogService;
     }
 
+    private static BlogStatus ParseAdminBlogStatus(string? raw)
+    {
+        var normalized = (raw ?? string.Empty).Trim().ToLowerInvariant();
+        return normalized switch
+        {
+            "draft" or "0" => BlogStatus.Draft,
+            "published" or "1" => BlogStatus.Published,
+            "pending" or "2" => BlogStatus.Pending,
+            "hidden" or "archived" or "3" => BlogStatus.Hidden,
+            _ => BlogStatus.Published
+        };
+    }
+
     public async Task<PagedResult<AdminBlogListItemDto>> GetAdminBlogsAsync(
         int? categoryId,
         string? status,
@@ -48,12 +61,19 @@ public class AdminBlogRepository : IAdminBlogRepository
 
         if (!string.IsNullOrWhiteSpace(status) && !status.Equals("all", StringComparison.OrdinalIgnoreCase))
         {
-            if (status.Equals("published", StringComparison.OrdinalIgnoreCase))
+            var normalizedStatus = status.Trim().ToLowerInvariant();
+            if (normalizedStatus is "published" or "1")
                 whereClauses.Add("b.Status = 1");
-            else if (status.Equals("draft", StringComparison.OrdinalIgnoreCase))
-                whereClauses.Add("b.Status = 0");
-            else if (status.Equals("hidden", StringComparison.OrdinalIgnoreCase))
+            else if (normalizedStatus is "pending" or "2")
                 whereClauses.Add("b.Status = 2");
+            else if (normalizedStatus is "hidden" or "archived" or "3")
+                whereClauses.Add("b.Status = 3");
+            else
+                whereClauses.Add("1 = 0");
+        }
+        else
+        {
+            whereClauses.Add("b.Status IN (1, 2, 3)");
         }
 
         if (!string.IsNullOrWhiteSpace(keyword))
@@ -69,6 +89,7 @@ public class AdminBlogRepository : IAdminBlogRepository
 
         var sortColumn = (sortBy?.ToLower()) switch
         {
+            "title" => "b.Title",
             "views" => "b.ViewCount",
             "likes" => "(SELECT COUNT(1) FROM dbo.Favorites fav WHERE fav.TargetId = b.Id AND fav.TargetType = 4)",
             "publishedat" => "b.CreatedAt",
@@ -79,14 +100,12 @@ public class AdminBlogRepository : IAdminBlogRepository
         var orderSql = $"ORDER BY {sortColumn} {sortDirection}, b.Id {sortDirection}";
 
         var combinedSql = $@"
-        -- Query 1: Lấy tổng số dòng
         SELECT COUNT(1)
         FROM dbo.Blogs b
         LEFT JOIN dbo.Users u ON b.AuthorId = u.Id
         LEFT JOIN dbo.UserProfiles prof ON u.Id = prof.UserId
         {whereSql};
 
-        -- Query 2: Lấy dữ liệu phân trang
         SELECT
             b.Id,
             b.Title,
@@ -101,7 +120,7 @@ public class AdminBlogRepository : IAdminBlogRepository
             (SELECT COUNT(1) FROM dbo.Favorites fav WHERE fav.TargetId = b.Id AND fav.TargetType = 4) AS Likes,
             CASE
                 WHEN b.Status = 1 THEN 'published'
-                WHEN b.Status = 0 THEN 'draft'
+                WHEN b.Status = 2 THEN 'pending'
                 ELSE 'hidden'
             END AS Status,
             b.CoverImageUrl AS CoverImg,
@@ -153,8 +172,6 @@ public class AdminBlogRepository : IAdminBlogRepository
 
     public async Task<AdminBlogDetailDto?> GetAdminBlogDetailAsync(long id, CancellationToken ct = default)
     {
-        var connection = _dbContext.Database.GetDbConnection();
-
         const string sql = @"
             SELECT
                 b.Id,
@@ -165,9 +182,10 @@ public class AdminBlogRepository : IAdminBlogRepository
                 b.CategoryId,
                 b.CreatedAt AS PublishedAt,
                 b.ViewCount AS Views,
+                (SELECT COUNT(1) FROM dbo.Favorites fav WHERE fav.TargetId = b.Id AND fav.TargetType = 4) AS Likes,
                 CASE
                     WHEN b.Status = 1 THEN 'published'
-                    WHEN b.Status = 0 THEN 'draft'
+                    WHEN b.Status = 2 THEN 'pending'
                     ELSE 'hidden'
                 END AS Status,
                 b.CoverImageUrl AS CoverImg,
@@ -181,7 +199,8 @@ public class AdminBlogRepository : IAdminBlogRepository
             LEFT JOIN dbo.Categories cat ON b.CategoryId = cat.Id
             LEFT JOIN dbo.Users u ON b.AuthorId = u.Id
             LEFT JOIN dbo.UserProfiles prof ON u.Id = prof.UserId
-            WHERE b.Id = @Id;";
+            WHERE b.Id = @Id AND b.Status IN (1, 2, 3);";
+
         var strategy = _dbContext.Database.CreateExecutionStrategy();
         return await strategy.ExecuteAsync(async () =>
         {
@@ -192,7 +211,7 @@ public class AdminBlogRepository : IAdminBlogRepository
                     id,
                     "Bạn không có quyền xem bài viết cẩm nang ngoài phạm vi danh mục quản lý."))
                 return null;
-            var command=new CommandDefinition(sql,new {Id=id},cancellationToken: ct);
+            var command = new CommandDefinition(sql, new { Id = id }, cancellationToken: ct);
             return await connection.QueryFirstOrDefaultAsync<AdminBlogDetailDto>(command);
         });
     }
@@ -204,9 +223,7 @@ public class AdminBlogRepository : IAdminBlogRepository
             throw new UnauthorizedAccessException("Bạn không có quyền tạo cẩm nang ngoài danh mục quản lý.");
         }
 
-        var status = input.Status.Equals("draft", StringComparison.OrdinalIgnoreCase)
-            ? BlogStatus.Draft
-            : (input.Status.Equals("hidden", StringComparison.OrdinalIgnoreCase) ? BlogStatus.Archived : BlogStatus.Published);
+        var status = ParseAdminBlogStatus(input.Status);
 
         var blog = new Blog(
             authorId: authorId,
@@ -252,7 +269,7 @@ public class AdminBlogRepository : IAdminBlogRepository
             input.CategoryId,
             "Bạn không có quyền chuyển bài viết cẩm nang sang danh mục ngoài phạm vi quản lý.");
 
-        var blog = await _dbContext.Blogs.FirstOrDefaultAsync(b => b.Id == id, ct);
+        var blog = await _dbContext.Blogs.FirstOrDefaultAsync(b => b.Id == id && b.Status != BlogStatus.Draft, ct);
         if (blog == null) return false;
 
         var oldData = new
@@ -263,9 +280,7 @@ public class AdminBlogRepository : IAdminBlogRepository
             Summary = blog.Excerpt
         };
 
-        var status = input.Status.Equals("draft", StringComparison.OrdinalIgnoreCase)
-            ? BlogStatus.Draft
-            : (input.Status.Equals("hidden", StringComparison.OrdinalIgnoreCase) ? BlogStatus.Archived : BlogStatus.Published);
+        var status = ParseAdminBlogStatus(input.Status);
 
         blog.Update(
             title: input.Title,
@@ -305,12 +320,26 @@ public class AdminBlogRepository : IAdminBlogRepository
                 "Bạn không có quyền thay đổi trạng thái bài viết cẩm nang ngoài phạm vi danh mục quản lý."))
             return false;
 
-        var blog = await _dbContext.Blogs.FirstOrDefaultAsync(b => b.Id == id, ct);
+        var blog = await _dbContext.Blogs.FirstOrDefaultAsync(b => b.Id == id && b.Status != BlogStatus.Draft, ct);
         if (blog == null) return false;
 
-        var blogStatus = status.Equals("draft", StringComparison.OrdinalIgnoreCase)
-            ? BlogStatus.Draft
-            : (status.Equals("hidden", StringComparison.OrdinalIgnoreCase) ? BlogStatus.Archived : BlogStatus.Published);
+        var blogStatus = ParseAdminBlogStatus(status);
+
+        if (blogStatus == BlogStatus.Published)
+        {
+            var validationError = BlogContentValidator.ValidateSubmission(
+                blog.Title,
+                blog.Excerpt,
+                blog.CoverImageUrl,
+                blog.ContentJSON,
+                blog.CategoryId,
+                requireCategory: false);
+
+            if (validationError != null)
+            {
+                throw new ArgumentException(validationError);
+            }
+        }
 
         var oldStatus = blog.Status;
         blog.UpdateStatus(blogStatus);
@@ -320,7 +349,7 @@ public class AdminBlogRepository : IAdminBlogRepository
             actionType: "UPDATE_BLOG_STATUS",
             targetTable: "Blogs",
             targetId: id,
-            reason: $"Thay đổi trạng thái bài viết #{id} sang {status}",
+            reason: $"Thay đổi trạng thái bài viết #{id} sang {blogStatus}",
             oldData: new { Status = (int)oldStatus },
             newData: new { Status = (int)blogStatus },
             ct: ct);

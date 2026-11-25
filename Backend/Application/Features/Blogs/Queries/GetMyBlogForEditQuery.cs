@@ -29,6 +29,16 @@ public class GetMyBlogForEditQueryHandler : IRequestHandler<GetMyBlogForEditQuer
             return Result<BlogForEditDto>.Forbidden("Không tìm thấy bài viết hoặc bạn không có quyền truy cập bài viết này.");
         }
 
+        if (blog.Status == (int)Domain.Enums.BlogStatus.Published)
+        {
+            return Result<BlogForEditDto>.Forbidden("Bài viết đã được xuất bản nên không thể chỉnh sửa.");
+        }
+
+        if (blog.Status == (int)Domain.Enums.BlogStatus.Hidden)
+        {
+            return Result<BlogForEditDto>.Forbidden("Bài viết đang bị tạm ẩn nên không thể chỉnh sửa.");
+        }
+
         return Result<BlogForEditDto>.Success(blog);
     }
 }

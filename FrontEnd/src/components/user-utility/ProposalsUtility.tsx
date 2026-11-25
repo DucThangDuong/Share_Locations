@@ -82,7 +82,7 @@ export const ProposalsUtility: React.FC<ProposalsUtilityProps> = ({
 
   const handleSelectProposal = (p: ProposalItem) => {
     onClose?.()
-    navigate(`/propose-place?view=${p.id}`, { state: { proposal: p } })
+    navigate(`/propose-place?view=${p.id}`)
   }
 
   const filteredProposals = useMemo(() => {

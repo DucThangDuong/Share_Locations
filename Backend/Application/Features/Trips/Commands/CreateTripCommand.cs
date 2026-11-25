@@ -57,6 +57,39 @@ public class CreateTripCommandHandler : IRequestHandler<CreateTripCommand, Resul
             ? (TripPrivacy)dto.Privacy
             : TripPrivacy.Private;
 
+        if (privacy == TripPrivacy.Public)
+        {
+            var trimmedTitle = dto.Title.Trim();
+            if (trimmedTitle.Length < 3 ||
+                string.Equals(trimmedTitle, "Chuyến đi mới của tôi", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(trimmedTitle, "Chuyến đi của tôi", StringComparison.OrdinalIgnoreCase))
+            {
+                return Result<CreateTripResponseDto>.Failure("Vui lòng đặt tên cụ thể cho chuyến đi trước khi công bố.");
+            }
+
+            var trimmedDesc = dto.Description?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(trimmedDesc) || trimmedDesc.Length < 10)
+            {
+                return Result<CreateTripResponseDto>.Failure("Mô tả chuyến đi là bắt buộc (tối thiểu 10 ký tự) khi công bố.");
+            }
+
+            var effectiveCover = !string.IsNullOrWhiteSpace(dto.CoverImageUrl)
+                ? dto.CoverImageUrl.Trim()
+                : sourceTrip?.CoverImageUrl?.Trim();
+            if (string.IsNullOrWhiteSpace(effectiveCover))
+            {
+                return Result<CreateTripResponseDto>.Failure("Ảnh bìa chuyến đi là bắt buộc khi công bố.");
+            }
+
+            var totalStops = sourceTrip != null
+                ? sourceTrip.Days.SelectMany(d => d.Places).Count(p => p.Place != null && !p.Place.IsDeleted)
+                : (dto.Days?.Sum(d => d.Stops?.Count ?? 0) ?? 0);
+            if (totalStops == 0)
+            {
+                return Result<CreateTripResponseDto>.Failure("Chuyến đi phải có ít nhất 1 địa điểm tham quan trước khi công bố.");
+            }
+        }
+
         long newTripId = 0;
         string tripTitle = dto.Title.Trim();
         int calculatedDurationDays = 1;

@@ -25,8 +25,8 @@ import {
   setHomeFeedCache
 } from '@/utils/deviceContext'
 
-const DEFAULT_LAT = 10.762622
-const DEFAULT_LNG = 106.660172
+const DEFAULT_LAT = 21.0285
+const DEFAULT_LNG = 105.8542
 
 const NearbyPlaceCard: React.FC<{ place: NearbyPlaceItem }> = ({ place }) => {
   const navigate = useNavigate()

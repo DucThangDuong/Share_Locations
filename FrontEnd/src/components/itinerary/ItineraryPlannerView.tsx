@@ -114,13 +114,12 @@ export const ItineraryPlannerView: React.FC<ItineraryPlannerViewProps> = ({
   const effectiveUserRole: TripRole = isPublished ? 'Viewer' : currentUserRole
   const isAllExpanded = expandedDayIndices.size === itinerary.days.length
 
-  const allStops = useMemo(() => {
-    const fromDays = itinerary.days.flatMap((d) => d.stops)
-    const fromWishlist = itinerary.backlogStops || []
-    return [...fromDays, ...fromWishlist]
-  }, [itinerary])
+  const scheduledStopsCount = useMemo(
+    () => itinerary.days.reduce((sum, d) => sum + d.stops.length, 0),
+    [itinerary.days]
+  )
 
-  const totalStopsCount = allStops.length
+  const totalStopsCount = scheduledStopsCount
   const totalTripCost = itinerary.days.reduce(
     (sum, d) =>
       sum + d.stops.reduce((sSum, s) => sSum + (s.costEstimate || 0), 0),

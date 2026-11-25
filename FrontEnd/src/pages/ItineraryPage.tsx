@@ -17,6 +17,7 @@ import {
 } from '@/components/itinerary'
 import { itineraryService } from '@/services/itineraryService'
 import { tripService } from '@/services/tripService'
+import { placeService } from '@/services/placeService'
 import { useAuth } from '@/context/AuthContext'
 import type { TripDetailDto, PublishTripRequestDto } from '@/types/models/trip.model'
 import { sortStopsByStartTime, normalizeTimeToHHmm } from '@/utils/itineraryStyles'
@@ -130,6 +131,7 @@ export const ItineraryPage: React.FC = () => {
         const end = normalizeTimeToHHmm(s.endTime) || s.endTime || '09:30'
         return {
           id: String(s.id),
+          placeId: s.placeId,
           time: start,
           startTime: start,
           endTime: end,
@@ -331,7 +333,7 @@ export const ItineraryPage: React.FC = () => {
         authorName: 'Bạn',
         authorAvatar: '',
         tags: [],
-        description: 'Lên kế hoạch và lưu lại các địa điểm yêu thích.',
+        description: '',
         days: [
           {
             dayNumber: 1,
@@ -372,7 +374,6 @@ export const ItineraryPage: React.FC = () => {
         return
       }
 
-      // Chuyến đi nháp tạm chưa lưu trên server (tạo từ client fallback)
       if (parsedId > 1000000000000 && plannerTrip?.id === parsedId) {
         return
       }
@@ -385,7 +386,6 @@ export const ItineraryPage: React.FC = () => {
             const myMember = res.data.members?.find((m) => Number(m.userId) === curUserId)
             const detectedRole = (res.data.currentUserRole || myMember?.role) as TripRole | undefined
 
-            // Chặn mở giao diện planner nếu người dùng không thuộc chuyến đi này
             if (!detectedRole) {
               setPlannerTrip(null)
               setViewMode('catalog')
@@ -603,39 +603,139 @@ export const ItineraryPage: React.FC = () => {
       showToast('Chỉ có Trưởng đoàn (Owner) mới có quyền xuất bản chuyến đi.')
       return
     }
+    const scheduledStopsCount = plannerTrip.days.reduce(
+      (sum, d) => sum + d.stops.length,
+      0
+    )
+    if (scheduledStopsCount === 0) {
+      showToast('Chuyến đi chưa có địa điểm nào trong lịch trình. Vui lòng thêm ít nhất 1 địa điểm trước khi công bố!')
+      return
+    }
     setIsPublishModalOpen(true)
   }
 
-  const handleConfirmPublishTrip = async (data: PublishTripRequestDto) => {
-    if (!plannerTrip) return
-    try {
-      const res = await tripService.publishTrip(plannerTrip.id, data)
-      if (res.success) {
-        showToast(res.message || 'Chuyến đi đã được xuất bản công khai thành công!')
-        setPlannerTrip((prev) =>
-          prev
-            ? {
-              ...prev,
-              title: data.title || prev.title,
-              description: data.description || prev.description,
-              privacy: 0
-            }
-            : null
-        )
-        setHasUnsavedChanges(false)
-        setIsPublishModalOpen(false)
-      } else {
-        showToast(res.message || 'Không thể xuất bản chuyến đi lúc này.')
-      }
-    } catch (err: any) {
-      console.error('Failed to publish trip:', err)
-      const errorMsg =
-        err?.response?.data?.message ||
-        err?.response?.data?.errors?.Description?.[0] ||
-        err?.message ||
-        'Có lỗi xảy ra khi xuất bản chuyến đi.'
-      showToast(errorMsg)
+  const handleConfirmPublishTrip = async (data: PublishTripRequestDto): Promise<boolean> => {
+    if (!plannerTrip) return false
+
+    const scheduledStopsCount = plannerTrip.days.reduce(
+      (sum, d) => sum + d.stops.length,
+      0
+    )
+    if (scheduledStopsCount === 0) {
+      throw new Error('Chuyến đi phải có ít nhất 1 địa điểm tham quan trong lịch trình trước khi công bố.')
     }
+
+    const finalTitle = (data.title ?? '').trim()
+    if (
+      finalTitle.length < 3 ||
+      finalTitle.toLowerCase() === 'chuyến đi mới của tôi' ||
+      finalTitle.toLowerCase() === 'chuyến đi của tôi'
+    ) {
+      throw new Error('Vui lòng đặt tên cụ thể cho chuyến đi trước khi công bố.')
+    }
+
+    const finalDesc = (data.description ?? '').trim()
+    if (finalDesc.length < 10) {
+      throw new Error('Mô tả chuyến đi là bắt buộc (tối thiểu 10 ký tự).')
+    }
+
+    const hasCover = Boolean(data.coverImageFile || (plannerTrip.coverImg || '').trim())
+    if (!hasCover) {
+      throw new Error('Ảnh bìa chuyến đi là bắt buộc khi công bố.')
+    }
+
+    let targetTripId = plannerTrip.id
+    const isTemporaryId = !targetTripId || targetTripId > 1000000000000
+
+    if (isTemporaryId) {
+      const createRes = await tripService.createTrip({
+        title: finalTitle,
+        description: finalDesc,
+        coverImageUrl: plannerTrip.coverImg || undefined,
+        startDate: plannerTrip.startDate,
+        endDate: plannerTrip.endDate,
+        privacy: 1,
+        days: plannerTrip.days.map((day) => ({
+          dayNumber: day.dayNumber,
+          dayTitle: day.title,
+          date: day.date,
+          stops: day.stops.map((s, sIdx) => ({
+            placeId: s.placeId || Number(s.id.split('-')[1]) || 1,
+            visitOrder: sIdx + 1,
+            startTime: s.startTime,
+            endTime: s.endTime,
+            estimatedCost: s.costEstimate,
+            transportMode: s.transportMode,
+            note: s.note
+          }))
+        }))
+      })
+
+      if (!createRes.success || !createRes.data?.id) {
+        throw new Error(createRes.message || 'Không thể lưu chuyến đi trước khi xuất bản.')
+      }
+      targetTripId = createRes.data.id
+    } else if (hasUnsavedChanges) {
+      for (const day of plannerTrip.days) {
+        for (let idx = 0; idx < day.stops.length; idx++) {
+          const stop = day.stops[idx]
+          const stopNumId = Number(stop.id)
+          if (!stopNumId || isNaN(stopNumId) || stopNumId >= 1000000000000) {
+            const extractedPlaceId = stop.placeId || Number(stop.id.split('-')[1]) || 0
+            if (extractedPlaceId > 0) {
+              await tripService.addTripPlace(targetTripId, day.dayNumber, {
+                placeId: extractedPlaceId,
+                visitOrder: idx + 1,
+                startTime: stop.startTime,
+                endTime: stop.endTime,
+                estimatedCost: stop.costEstimate,
+                transportMode: stop.transportMode,
+                note: stop.note
+              })
+            }
+          }
+        }
+      }
+    }
+
+    const res = await tripService.publishTrip(targetTripId, {
+      ...data,
+      title: finalTitle,
+      description: finalDesc
+    })
+
+    if (!res.success) {
+      throw new Error(res.message || 'Không thể xuất bản chuyến đi lúc này.')
+    }
+
+    let refreshedCover = plannerTrip.coverImg
+    try {
+      const detailRes = await tripService.getTripDetail(targetTripId)
+      if (detailRes.success && detailRes.data) {
+        refreshedCover = detailRes.data.coverImageUrl || refreshedCover
+      }
+    } catch {
+    }
+
+    showToast(res.message || 'Chuyến đi đã được xuất bản công khai thành công!')
+    setPlannerTrip((prev) =>
+      prev
+        ? {
+            ...prev,
+            id: targetTripId,
+            title: finalTitle,
+            description: finalDesc,
+            coverImg: refreshedCover,
+            privacy: 0
+          }
+        : null
+    )
+    setHasUnsavedChanges(false)
+    setIsPublishModalOpen(false)
+    if (isTemporaryId) {
+      navigate(`/itinerary/${targetTripId}`, { replace: true })
+    }
+    return true
   }
 
   const handleUpdateTripTitle = async (title: string) => {
@@ -1480,7 +1580,31 @@ export const ItineraryPage: React.FC = () => {
     showToast(`Đã cài đặt ngân sách đề ra: ${newBudget.toLocaleString('vi-VN')} đ`)
   }
 
-  const handleViewPlaceDetails = (stop: ItineraryStop) => {
+  const handleViewPlaceDetails = async (stop: ItineraryStop) => {
+    const idFromStopId = /^place-(\d+)/.exec(stop.id)?.[1]
+    const directPlaceId = stop.placeId || (idFromStopId ? Number(idFromStopId) : 0)
+
+    if (directPlaceId > 0) {
+      navigate(`/places/${directPlaceId}`)
+      return
+    }
+
+    const keyword = stop.name?.trim()
+    if (keyword) {
+      try {
+        const res = await placeService.searchPlaces({ keyword, pageSize: 5 })
+        const items = res.data || []
+        const normalized = keyword.toLowerCase()
+        const matched =
+          items.find((p) => p.name.trim().toLowerCase() === normalized) ?? items[0]
+        if (matched?.id) {
+          navigate(`/places/${matched.id}`)
+          return
+        }
+      } catch {
+      }
+    }
+
     navigate(`/explore?q=${encodeURIComponent(stop.name)}`)
   }
 

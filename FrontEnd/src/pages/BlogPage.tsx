@@ -156,21 +156,30 @@ export const BlogPage: React.FC = () => {
         return
       }
 
-      // Luôn xác thực quyền sở hữu từ Backend (/api/blogs/my-blogs/{id}), không fallback sang API công khai
       blogService.getMyBlogForEdit(idNum)
         .then((res) => {
           if (cancelled) return
           if (res.success && res.data) {
             const d = res.data
+            if (d.status === 1) {
+              setEditingArticleData(null)
+              showToast('Bài viết đã xuất bản nên không thể chỉnh sửa.')
+              navigate(`/blog/${d.id}`, { replace: true })
+              return
+            }
             const matched = categories.find((c) => c.name === d.categoryName || c.id === d.categoryId)
+            const cleanDraftTitle =
+              d.title && d.title.trim().toLowerCase() === 'bản nháp chưa đặt tên'
+                ? ''
+                : (d.title || '')
             setEditingArticleData({
               id: d.id,
-              title: d.title || '',
+              title: cleanDraftTitle,
               summary: d.excerpt || '',
               category: matched?.name || d.categoryName || categories[0]?.name || '',
               categoryId: matched?.id || d.categoryId || categories[0]?.id,
               coverImg: d.coverImageUrl || '',
-              content: d.contentJSON || d.excerpt || '',
+              content: d.contentJSON || '',
               status: d.status
             })
             setViewMode('editor')
@@ -187,11 +196,15 @@ export const BlogPage: React.FC = () => {
           if (cancelled) return
           setEditingArticleData(null)
           setViewMode('feed')
-          showToast(
+          const errMsg =
             err?.response?.data?.message ||
             'Bạn không có quyền chỉnh sửa bài viết này hoặc bài viết không tồn tại.'
-          )
-          navigate('/blog', { replace: true })
+          showToast(errMsg)
+          if (errMsg.toLowerCase().includes('đã được xuất bản')) {
+            navigate(`/blog/${idNum}`, { replace: true })
+          } else {
+            navigate('/blog', { replace: true })
+          }
         })
       return () => {
         cancelled = true
@@ -319,19 +332,18 @@ export const BlogPage: React.FC = () => {
           readTimeMinutes: output.readTimeMinutes,
           status: output.status
         })
-        if (res.success) {
-          showToast(
-            output.status === 2
-              ? 'Đã gửi bài viết chờ duyệt!'
-              : output.status === 0
-                ? 'Đã lưu bản nháp thành công!'
-                : 'Cập nhật bài viết thành công!'
-          )
-          fetchArticles()
-          navigate('/blog')
-        } else {
-          showToast('Lưu thất bại. Vui lòng thử lại.')
+        if (!res.success) {
+          throw new Error(res.message || 'Lưu bài viết thất bại. Vui lòng thử lại.')
         }
+        showToast(
+          output.status === 2
+            ? 'Đã gửi bài viết chờ duyệt!'
+            : output.status === 0
+              ? 'Đã lưu bản nháp thành công!'
+              : 'Cập nhật bài viết thành công!'
+        )
+        fetchArticles()
+        navigate('/blog')
       } else {
         const res = await blogService.createBlog({
           title: output.title,
@@ -342,22 +354,22 @@ export const BlogPage: React.FC = () => {
           readTimeMinutes: output.readTimeMinutes,
           status: output.status
         })
-        if (res.success) {
-          showToast(
-            output.status === 2
-              ? 'Đã gửi bài viết chờ duyệt!'
-              : output.status === 0
-                ? 'Đã lưu bản nháp thành công!'
-                : 'Xuất bản bài viết thành công!'
-          )
-          fetchArticles()
-          navigate('/blog')
-        } else {
-          showToast('Tạo bài viết thất bại. Vui lòng thử lại.')
+        if (!res.success) {
+          throw new Error(res.message || 'Tạo bài viết thất bại. Vui lòng thử lại.')
         }
+        showToast(
+          output.status === 2
+            ? 'Đã gửi bài viết chờ duyệt!'
+            : output.status === 0
+              ? 'Đã lưu bản nháp thành công!'
+              : 'Xuất bản bài viết thành công!'
+        )
+        fetchArticles()
+        navigate('/blog')
       }
     } catch (err: any) {
-      showToast(err?.response?.data?.message || 'Có lỗi xảy ra khi lưu bài viết.')
+      showToast(err?.response?.data?.message || err?.message || 'Có lỗi xảy ra khi lưu bài viết.')
+      throw err
     }
   }
 
@@ -407,8 +419,8 @@ export const BlogPage: React.FC = () => {
   return (
     <div className="bg-slate-50 min-h-screen text-slate-900">
       {toastMsg && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 bg-emerald-900 text-white rounded-xl shadow-lg animate-bounce text-xs font-bold">
-          <CheckCircle2 size={16} className="text-emerald-400" />
+        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-2 px-4 py-3 bg-slate-900 text-white rounded-xl shadow-xl border border-slate-700 animate-in fade-in slide-in-from-top-3 text-xs font-bold max-w-xl">
+          <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
           <span>{toastMsg}</span>
         </div>
       )}

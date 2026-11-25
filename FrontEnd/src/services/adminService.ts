@@ -1,5 +1,10 @@
 import apiClient from "./apiClient";
 import type { ApiSuccessResponse } from "@/types/responses/common.response";
+import type {
+  AdminTripListItem,
+  AdminTripDetail,
+  SaveAdminTripRequest,
+} from "@/types/admin.types";
 
 export interface AdminPage<T> {
   items: T[];
@@ -476,9 +481,17 @@ export const adminService = {
   ) => write<unknown>("put", `/api/admin/collections/${Number(collectionId)}/places`, data),
   createCollection: (data: CreateCollectionRequest | unknown) =>
     write<unknown>("post", "/api/admin/collections", data),
-  deleteCollection: (id: number) => write<unknown>("delete", `/api/admin/collections/${id}`),
+  deleteCollection: (id: number) => write<boolean>("delete", `/api/admin/collections/${id}`),
   updateCollectionStatus: (id: number, status?: number | null, reason?: string | null) =>
     write<unknown>("patch", `/api/admin/collections/${id}/status`, { id, status, reason }),
+
+  getTrips: (params?: Record<string, unknown>) => get<AdminPage<AdminTripListItem>>("/api/admin/trips", params),
+  getTripDetail: (id: number) => get<AdminTripDetail>(`/api/admin/trips/${id}`),
+  createTrip: (data: SaveAdminTripRequest) => write<number>("post", "/api/admin/trips", data),
+  updateTrip: (id: number, data: SaveAdminTripRequest) => write<boolean>("put", `/api/admin/trips/${id}`, data),
+  updateTripPrivacy: (id: number, privacy: number, reason?: string) => write<boolean>("patch", `/api/admin/trips/${id}/privacy`, { privacy, reason }),
+  updateTripStatus: (id: number, status: number, reason?: string) => write<boolean>("patch", `/api/admin/trips/${id}/status`, { status, reason }),
+  deleteTrip: (id: number) => write<boolean>("delete", `/api/admin/trips/${id}`),
 
   getUsers: (params?: Record<string, unknown>) =>
     get<Record<string, unknown>[]>("/api/admin/users", params),

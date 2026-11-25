@@ -29,7 +29,6 @@ import {
 import type { AdminBlogItem } from "@/types/admin.types";
 import { CustomSelect } from "@/components/common/CustomSelect";
 import { adminService, extractList } from "@/services/adminService";
-import { blogService } from "@/services/blogService";
 import { BlogTableOfContents } from "@/components/blog/BlogTableOfContents";
 import {
   convertRawContentToHtml,
@@ -216,13 +215,20 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
   }, [urlBlogId, blogsList, detailBlog]);
 
   const filteredBlogs = blogsList.filter((b) => {
+    if (b.status === "draft") return false;
     if (blogFilterCategory !== "all" && b.category !== blogFilterCategory)
       return false;
     if (blogFilterStatus !== "all") {
       if (blogFilterStatus === "published" && b.status !== "published")
         return false;
-      if (blogFilterStatus === "hidden" && b.status !== "hidden") return false;
-      if (blogFilterStatus === "draft" && b.status !== "draft") return false;
+      if (blogFilterStatus === "pending" && b.status !== "pending")
+        return false;
+      if (
+        blogFilterStatus === "hidden" &&
+        b.status !== "hidden" &&
+        b.status !== "archived"
+      )
+        return false;
     }
     if (blogSearchText.trim()) {
       const q = blogSearchText.toLowerCase();
@@ -267,39 +273,76 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
     });
   }, [filteredBlogs, sortField, sortOrder]);
 
-  const handleToggleHideBlog = async (blogId: number) => {
-    if (!setBlogsList) return;
-    const blog = blogsList.find((item) => item.id === blogId);
-    if (!blog) return;
-    await adminService.updateBlogStatus(blogId, blog.status === "hidden" ? "published" : "hidden");
-    setBlogsList((prev) =>
-      prev.map((b) => {
-        if (b.id === blogId) {
-          const isHidden = b.status === "hidden";
-          const nextStatus = isHidden ? "published" : "hidden";
-          if (addAuditLog) {
-            addAuditLog(
-              isHidden ? "Khôi phục bài viết" : "Tạm ẩn bài viết",
-              b.title,
-              `Cập nhật trạng thái hiển thị cẩm nang: ${b.title}`,
-              "hide"
-            );
-          }
-          if (showToast) {
-            showToast(
-              `Đã ${isHidden ? "công khai lại" : "tạm ẩn"} bài viết "${b.title}".`
-            );
-          }
-          return { ...b, status: nextStatus };
+  const handleChangeBlogStatus = async (
+    blogId: number,
+    nextStatus: "published" | "hidden" | "draft"
+  ): Promise<boolean> => {
+    if (!setBlogsList) return false;
+    const blog = blogsList.find((item) => item.id === blogId) || detailBlog;
+    if (!blog) return false;
+    try {
+      const res: any = await adminService.updateBlogStatus(blogId, nextStatus);
+      if (res && res.success === false) {
+        throw new Error(res.message || "Không thể cập nhật trạng thái bài viết.");
+      }
+
+      if (nextStatus === "draft") {
+        setBlogsList((prev) => prev.filter((b) => b.id !== blogId));
+        if (addAuditLog) {
+          addAuditLog(
+            "Từ chối duyệt bài viết",
+            blog.title,
+            `Trả bài viết cẩm nang về bản nháp tác giả: ${blog.title}`,
+            "reject"
+          );
         }
-        return b;
-      })
-    );
-    setDetailBlog((prev) => {
-      if (!prev || prev.id !== blogId) return prev;
-      const isHidden = prev.status === "hidden";
-      return { ...prev, status: isHidden ? "published" : "hidden" };
-    });
+        if (showToast) {
+          showToast(`Đã từ chối duyệt và trả bài viết "${blog.title}" về bản nháp.`);
+        }
+        setSelectedBlogId(null);
+        setDetailBlog(null);
+        navigate(`/admin/blogs${location.search}`);
+        return true;
+      }
+
+      const wasPending = blog.status === "pending";
+      setBlogsList((prev) =>
+        prev.map((b) => (b.id === blogId ? { ...b, status: nextStatus } : b))
+      );
+      setDetailBlog((prev) =>
+        prev && prev.id === blogId ? { ...prev, status: nextStatus } : prev
+      );
+
+      if (addAuditLog) {
+        addAuditLog(
+          nextStatus === "published"
+            ? wasPending
+              ? "Duyệt công khai bài viết"
+              : "Khôi phục bài viết"
+            : "Tạm ẩn bài viết",
+          blog.title,
+          `Cập nhật trạng thái hiển thị cẩm nang: ${blog.title}`,
+          nextStatus === "published" && wasPending ? "approve" : "hide"
+        );
+      }
+      if (showToast) {
+        showToast(
+          nextStatus === "published"
+            ? wasPending
+              ? `Đã duyệt và xuất bản công khai bài viết "${blog.title}".`
+              : `Đã công khai lại bài viết "${blog.title}".`
+            : `Đã tạm ẩn bài viết "${blog.title}".`
+        );
+      }
+      return true;
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Không thể cập nhật trạng thái bài viết.";
+      if (showToast) showToast(msg);
+      return false;
+    }
   };
 
   const handleDeleteBlog = async (blogId: number) => {
@@ -371,7 +414,7 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
             navigate(`/admin/blogs${location.search}`);
           }}
           onSave={handleSaveBlog}
-          onToggleStatus={() => handleToggleHideBlog(currentBlog.id)}
+          onChangeStatus={(nextStatus) => handleChangeBlogStatus(currentBlog.id, nextStatus)}
           onDelete={() => handleDeleteBlog(currentBlog.id)}
         />
       );
@@ -443,11 +486,11 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
               options={[
                 { value: "all", label: "Tất cả trạng thái" },
                 { value: "published", label: "Đang công khai" },
+                { value: "pending", label: "Chờ duyệt" },
                 { value: "hidden", label: "Đang tạm ẩn" },
-                { value: "draft", label: "Bản nháp" },
               ]}
               size="sm"
-              className="min-w-[130px]"
+              className="min-w-[140px]"
             />
           </div>
         </div>
@@ -496,8 +539,8 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
             </thead>
             <tbody className="divide-y divide-slate-100">
               {sortedBlogs.map((blog) => {
-                const isHidden = blog.status === "hidden";
-                const isDraft = blog.status === "draft";
+                const isHidden = blog.status === "hidden" || blog.status === "archived";
+                const isPending = blog.status === "pending";
 
                 return (
                   <tr
@@ -598,12 +641,14 @@ export const BlogsTab: React.FC<BlogsTabProps> = ({
 
                     <td className="p-3.5">
                       <span
-                        className={`inline-flex items-center justify-center px-3.5 py-1 rounded-xl text-xs font-bold border transition-colors ${isHidden || isDraft
-                          ? "bg-slate-100 text-slate-700 border-slate-300"
-                          : "bg-[#e6fcf5] text-[#087f5b] border-[#63e6be]"
+                        className={`inline-flex items-center justify-center px-3.5 py-1 rounded-xl text-xs font-bold border transition-colors ${isPending
+                          ? "bg-amber-50 text-amber-800 border-amber-300"
+                          : isHidden
+                            ? "bg-slate-100 text-slate-700 border-slate-300"
+                            : "bg-[#e6fcf5] text-[#087f5b] border-[#63e6be]"
                           }`}
                       >
-                        {isHidden || isDraft ? "Tạm ẩn" : "Công khai"}
+                        {isPending ? "Chờ duyệt" : isHidden ? "Tạm ẩn" : "Công khai"}
                       </span>
                     </td>
 
@@ -726,7 +771,7 @@ interface BlogDetailViewerProps {
   categoryOptions?: string[];
   onBack: () => void;
   onSave: (updatedBlog: AdminBlogItem) => void;
-  onToggleStatus: () => void;
+  onChangeStatus: (nextStatus: "published" | "hidden" | "draft") => Promise<boolean> | boolean;
   onDelete: () => void;
 }
 
@@ -735,7 +780,7 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
   categoryOptions = CATEGORY_OPTIONS,
   onBack,
   onSave,
-  onToggleStatus,
+  onChangeStatus,
   onDelete,
 }) => {
   const [activeMode, setActiveMode] = useState<"reader" | "editor">("reader");
@@ -761,7 +806,7 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
   );
   const [summary, setSummary] = useState(blog.summary || "");
   const [content, setContent] = useState(blog.content || "");
-  const [status, setStatus] = useState<"published" | "draft" | "hidden" | "archived">(
+  const [status, setStatus] = useState<"published" | "pending" | "draft" | "hidden" | "archived">(
     blog.status || "published"
   );
 
@@ -773,9 +818,9 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
 
   useEffect(() => {
     if (blog.id) {
-      blogService.getBlogDetail(blog.id).then((res) => {
-        if (res.success && res.data) {
-          const d = res.data;
+      adminService.getBlog(blog.id).then((res: any) => {
+        const d = res?.data ?? res;
+        if (d) {
           if (d.title) setTitle(d.title);
           if (d.category) setCategory(d.category);
           if (d.summary) setSummary(d.summary);
@@ -791,6 +836,7 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
           else if (d.viewCount !== undefined) setViews(String(d.viewCount));
           if (d.likes !== undefined) setLikes(String(d.likes));
           else if (d.likesCount !== undefined) setLikes(String(d.likesCount));
+          if (d.status) setStatus(String(d.status).toLowerCase() as any);
         }
       }).catch(() => { });
     }
@@ -871,8 +917,8 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
     }, 400);
   };
 
-  const isHidden = status === "hidden";
-  const isDraft = status === "draft";
+  const isHidden = status === "hidden" || status === "archived";
+  const isPending = status === "pending";
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200 text-xs font-sans pb-16 relative">
@@ -899,12 +945,14 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
                 {title || blog.title}
               </h2>
               <span
-                className={`inline-flex items-center justify-center px-3.5 py-1 rounded-xl text-xs font-bold border transition-colors shrink-0 ${isHidden || isDraft
-                  ? "bg-slate-100 text-slate-700 border-slate-300"
-                  : "bg-[#e6fcf5] text-[#087f5b] border-[#63e6be]"
+                className={`inline-flex items-center justify-center px-3.5 py-1 rounded-xl text-xs font-bold border transition-colors shrink-0 ${isPending
+                  ? "bg-amber-50 text-amber-800 border-amber-300"
+                  : isHidden
+                    ? "bg-slate-100 text-slate-700 border-slate-300"
+                    : "bg-[#e6fcf5] text-[#087f5b] border-[#63e6be]"
                   }`}
               >
-                {isHidden || isDraft ? "Tạm ẩn" : "Công khai"}
+                {isPending ? "Chờ duyệt" : isHidden ? "Tạm ẩn" : "Công khai"}
               </span>
             </div>
             <p className="text-[11px] text-slate-400 mt-0.5 truncate">
@@ -914,22 +962,55 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
         </div>
 
         <div className="flex items-center gap-2 flex-wrap justify-end">
+          {isPending ? (
+            <>
+              <button
+                type="button"
+                onClick={async () => {
+                  const ok = await onChangeStatus("published");
+                  if (ok !== false) {
+                    setStatus("published");
+                  }
+                }}
+                className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-xl cursor-pointer transition-colors bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+                title="Duyệt và xuất bản công khai bài viết này"
+              >
+                <CheckCircle2 size={14} />
+                <span>Duyệt công khai</span>
+              </button>
 
-          <button
-            type="button"
-            onClick={() => {
-              onToggleStatus();
-              setStatus((prev: string) => (prev === "published" ? "hidden" : "published"));
-            }}
-            className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl cursor-pointer transition-colors ${isHidden
+              <button
+                type="button"
+                onClick={async () => {
+                  await onChangeStatus("draft");
+                }}
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl cursor-pointer transition-colors bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300"
+                title="Từ chối duyệt và trả về bản nháp của tác giả"
+              >
+                <X size={14} />
+                <span>Từ chối duyệt</span>
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={async () => {
+                const target = isHidden ? "published" : "hidden";
+                const ok = await onChangeStatus(target);
+                if (ok !== false) {
+                  setStatus(target);
+                }
+              }}
+              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl cursor-pointer transition-colors ${isHidden
                 ? "bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-xs"
                 : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200"
-              }`}
-            title={isHidden ? "Công khai bài viết lên hệ thống" : "Tạm ẩn bài viết khỏi hệ thống"}
-          >
-            {isHidden ? <Eye size={14} /> : <EyeOff size={14} />}
-            <span>{isHidden ? "Công khai bài viết" : "Tạm ẩn bài viết"}</span>
-          </button>
+                }`}
+              title={isHidden ? "Công khai lại bài viết lên hệ thống" : "Tạm ẩn bài viết khỏi hệ thống"}
+            >
+              {isHidden ? <Eye size={14} /> : <EyeOff size={14} />}
+              <span>{isHidden ? "Công khai lại" : "Tạm ẩn bài viết"}</span>
+            </button>
+          )}
 
           <button
             type="button"
@@ -1079,10 +1160,10 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
                     <p className="text-xs text-slate-600 pt-1">
                       Bài viết cẩm nang du lịch này đang ở trạng thái{" "}
                       <span className="font-bold text-emerald-800">
-                        {isHidden
-                          ? "Đang tạm ẩn"
-                          : isDraft
-                            ? "Bản nháp"
+                        {isPending
+                          ? "Đang chờ duyệt"
+                          : isHidden
+                            ? "Đang tạm ẩn"
                             : "Đang công khai"}
                       </span>
                       . Quản trị viên có thể chuyển đổi trạng thái hoặc biên tập lại nội dung bất kỳ lúc nào.
@@ -1438,7 +1519,7 @@ const BlogDetailViewer: React.FC<BlogDetailViewerProps> = ({
                     onChange={(val) => setStatus(val as any)}
                     options={[
                       { value: "published", label: "Đang công khai" },
-                      { value: "draft", label: "Bản nháp" },
+                      { value: "pending", label: "Chờ duyệt" },
                       { value: "hidden", label: "Đang tạm ẩn" },
                     ]}
                     size="sm"

@@ -106,7 +106,7 @@ export const TripsUtility: React.FC<TripsUtilityProps> = ({
     try {
       const res = await tripService.createTrip({
         title: 'Chuyến đi mới của tôi',
-        description: 'Lên kế hoạch chuyến đi mới',
+        description: '',
         privacy: 1,
         days: [
           {

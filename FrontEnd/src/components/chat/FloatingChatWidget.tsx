@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import {
   Minus,
   X,
@@ -68,6 +69,7 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
   const [editingText, setEditingText] = useState('')
   const [isSavingEdit, setIsSavingEdit] = useState(false)
   const [activeMenuMessageId, setActiveMenuMessageId] = useState<number | null>(null)
+  const [menuPosition, setMenuPosition] = useState<{ left: number; top?: number; bottom?: number } | null>(null)
   const [copiedMessageId, setCopiedMessageId] = useState<number | null>(null)
 
   const [activeCall, setActiveCall] = useState<{ type: 'voice' | 'video'; partnerName: string } | null>(null)
@@ -112,6 +114,10 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
   }, [floatingRoomIds, activeRoomId, inbox, activeRoom, incomingToast])
 
   const handleScroll = () => {
+    if (activeMenuMessageId !== null) {
+      setActiveMenuMessageId(null)
+      setMenuPosition(null)
+    }
     const container = scrollContainerRef.current
     if (!container || !hasMoreMessages || isLoadingMoreMessages || !activeRoomId) return
 
@@ -147,11 +153,21 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
   }, [incomingToast, dismissIncomingToast])
 
   useEffect(() => {
-    const handleClickOutside = () => {
+    const handleClose = () => {
       setActiveMenuMessageId(null)
+      setMenuPosition(null)
     }
-    window.addEventListener('click', handleClickOutside)
-    return () => window.removeEventListener('click', handleClickOutside)
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') handleClose()
+    }
+    window.addEventListener('click', handleClose)
+    window.addEventListener('resize', handleClose)
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('click', handleClose)
+      window.removeEventListener('resize', handleClose)
+      window.removeEventListener('keydown', handleKeyDown)
+    }
   }, [])
 
   if (!isFloatingChatOpen) {
@@ -454,7 +470,7 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
               <div
                 ref={scrollContainerRef}
                 onScroll={handleScroll}
-                className="flex-1 overflow-y-auto p-3 space-y-2.5 relative scroll-smooth bg-white"
+                className="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-2.5 relative scroll-smooth bg-white"
               >
                 {hasMoreMessages && (
                   <div className="py-1 flex justify-center sticky top-0 z-10">
@@ -507,7 +523,29 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation()
-                              setActiveMenuMessageId(isMenuOpen ? null : m.id)
+                              if (isMenuOpen) {
+                                setActiveMenuMessageId(null)
+                                setMenuPosition(null)
+                                return
+                              }
+                              const btnRect = e.currentTarget.getBoundingClientRect()
+                              const containerRect = scrollContainerRef.current?.getBoundingClientRect()
+                              const menuWidth = 148
+                              const estimatedHeight = isMe ? 156 : 84
+                              const minLeft = containerRect ? Math.max(8, containerRect.left + 8) : 8
+                              const maxLeft = containerRect
+                                ? Math.min(window.innerWidth - menuWidth - 8, containerRect.right - menuWidth - 8)
+                                : window.innerWidth - menuWidth - 8
+                              const preferredLeft = isMe ? btnRect.left : btnRect.right - menuWidth
+                              const clampedLeft = Math.max(minLeft, Math.min(preferredLeft, maxLeft))
+                              const spaceAbove = containerRect ? btnRect.top - containerRect.top : btnRect.top
+                              const openAbove = spaceAbove >= estimatedHeight + 8 || btnRect.bottom + estimatedHeight + 8 > window.innerHeight
+                              setMenuPosition(
+                                openAbove
+                                  ? { left: clampedLeft, bottom: window.innerHeight - btnRect.top + 6 }
+                                  : { left: clampedLeft, top: btnRect.bottom + 6 }
+                              )
+                              setActiveMenuMessageId(m.id)
                             }}
                             className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors cursor-pointer ${isMenuOpen
                               ? 'bg-slate-200 text-slate-900 shadow-2xs'
@@ -518,15 +556,22 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                             <MoreHorizontal size={13} />
                           </button>
 
-                          {isMenuOpen && (
+                          {isMenuOpen && menuPosition && createPortal(
                             <div
-                              className={`absolute bottom-full mb-1.5 w-36 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50 animate-in zoom-in-95 duration-150 ${isMe ? 'right-0' : 'left-0'
-                                }`}
+                              onClick={(e) => e.stopPropagation()}
+                              style={{
+                                position: 'fixed',
+                                left: menuPosition.left,
+                                top: menuPosition.top,
+                                bottom: menuPosition.bottom,
+                              }}
+                              className="w-36 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-[9999] animate-in zoom-in-95 duration-150"
                             >
                               <button
                                 type="button"
                                 onClick={() => {
                                   setActiveMenuMessageId(null)
+                                  setMenuPosition(null)
                                   setReplyingTo({
                                     id: m.id,
                                     senderName: isMe ? 'Chính bạn' : m.senderName,
@@ -542,7 +587,10 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                               {m.content && (
                                 <button
                                   type="button"
-                                  onClick={() => handleCopy(m.id, m.content || '')}
+                                  onClick={() => {
+                                    setMenuPosition(null)
+                                    handleCopy(m.id, m.content || '')
+                                  }}
                                   className="w-full px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 transition-colors cursor-pointer text-left"
                                 >
                                   {copiedMessageId === m.id ? (
@@ -566,6 +614,7 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                                     type="button"
                                     onClick={() => {
                                       setActiveMenuMessageId(null)
+                                      setMenuPosition(null)
                                       setEditingMessageId(m.id)
                                       setEditingText(m.content || '')
                                     }}
@@ -577,7 +626,10 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
 
                                   <button
                                     type="button"
-                                    onClick={() => handleDelete(m.id)}
+                                    onClick={() => {
+                                      setMenuPosition(null)
+                                      handleDelete(m.id)
+                                    }}
                                     className="w-full px-2.5 py-1.5 text-xs font-bold text-rose-600 hover:bg-rose-50 flex items-center gap-2 transition-colors cursor-pointer text-left"
                                   >
                                     <Trash2 size={13} className="text-rose-500" />
@@ -585,7 +637,8 @@ export const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
                                   </button>
                                 </>
                               )}
-                            </div>
+                            </div>,
+                            document.body
                           )}
                         </div>
 

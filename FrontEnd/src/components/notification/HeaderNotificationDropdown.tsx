@@ -148,7 +148,7 @@ export const HeaderNotificationDropdown: React.FC<HeaderNotificationDropdownProp
       markAsRead(item.id)
     }
     onClose()
-    const target = normalizeNotificationUrl(item.targetUrl)
+    const target = normalizeNotificationUrl(item.targetUrl, item)
     if (target) {
       navigate(target)
     }

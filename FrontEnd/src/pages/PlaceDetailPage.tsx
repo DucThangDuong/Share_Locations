@@ -25,6 +25,8 @@ export const PlaceDetailPage = () => {
   const [error, setError] = useState<string | null>(null)
   const [isSaved, setIsSaved] = useState(false)
   const [isVisited, setIsVisited] = useState(false)
+  const [visitLogId, setVisitLogId] = useState<number | null>(null)
+  const [isVisitLoading, setIsVisitLoading] = useState(false)
   const [isReportOpen, setIsReportOpen] = useState(false)
   const [isShareOpen, setIsShareOpen] = useState(false)
   const [shareToastMsg, setShareToastMsg] = useState<string | null>(null)
@@ -53,6 +55,7 @@ export const PlaceDetailPage = () => {
           setPlace(placeRes.data)
           setIsSaved(Boolean(placeRes.data.isSaved))
           setIsVisited(Boolean(placeRes.data.isVisited ?? placeRes.data.isCheckedIn))
+          setVisitLogId(placeRes.data.visitLogId ?? null)
           if (isAuthenticated) {
             userService.recordAccessHistory(Number(id)).catch(() => {})
           }
@@ -96,6 +99,14 @@ export const PlaceDetailPage = () => {
     }
     fetchPlaceData()
   }, [id, isAuthenticated])
+
+  useEffect(() => {
+    if (loading || !location.hash) return
+    const targetElement = document.getElementById(location.hash.slice(1))
+    if (targetElement) {
+      targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }, [loading, location.hash, reviewsList.length])
 
   const handleLoadMoreReviews = async () => {
     if (loadingMoreReviews || !id) return
@@ -160,8 +171,47 @@ export const PlaceDetailPage = () => {
       alert('Vui lòng đăng nhập để ghi nhận điểm đến.')
       return
     }
+    if (isVisitLoading) return
     const targetId = Number(id)
+    setIsVisitLoading(true)
     try {
+      if (isVisited) {
+        const idsToDelete = new Set<number>()
+        if (visitLogId && visitLogId > 0) {
+          idsToDelete.add(visitLogId)
+        }
+        try {
+          const logsRes = await userService.getMyVisitLogs({ pageSize: 100 })
+          if (logsRes.success && logsRes.data) {
+            const items = Array.isArray(logsRes.data)
+              ? logsRes.data
+              : Array.isArray(logsRes.data.items)
+                ? logsRes.data.items
+                : []
+            items.forEach((item) => {
+              if (Number(item.placeId) === targetId && item.id) {
+                idsToDelete.add(Number(item.id))
+              }
+            })
+          }
+        } catch {
+        }
+
+        if (idsToDelete.size > 0) {
+          await Promise.all(
+            Array.from(idsToDelete).map((logId) => userService.deleteVisitLog(logId))
+          )
+        } else {
+          await userService.deleteVisitLog(targetId)
+        }
+
+        setIsVisited(false)
+        setVisitLogId(null)
+        setShareToastMsg('Đã bỏ ghi nhận điểm đến khỏi nhật ký hành trình')
+        setTimeout(() => setShareToastMsg(null), 2500)
+        return
+      }
+
       const todayStr = new Date().toISOString().split('T')[0]
       const res = await userService.createVisitLog({
         placeId: targetId,
@@ -170,6 +220,7 @@ export const PlaceDetailPage = () => {
       })
       if (res.success) {
         setIsVisited(true)
+        setVisitLogId(res.data?.id ?? null)
         if (place) {
           recordSearchIntent({
             provinceId: place.provinceId,
@@ -184,8 +235,14 @@ export const PlaceDetailPage = () => {
         setTimeout(() => setShareToastMsg(null), 3000)
       }
     } catch {
-      setShareToastMsg('Có lỗi xảy ra khi ghi nhận điểm đến.')
+      setShareToastMsg(
+        isVisited
+          ? 'Có lỗi xảy ra khi bỏ ghi nhận điểm đến.'
+          : 'Có lỗi xảy ra khi ghi nhận điểm đến.'
+      )
       setTimeout(() => setShareToastMsg(null), 3000)
+    } finally {
+      setIsVisitLoading(false)
     }
   }
 

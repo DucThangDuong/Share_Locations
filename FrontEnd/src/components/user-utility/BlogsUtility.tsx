@@ -21,7 +21,7 @@ interface BlogsUtilityProps {
   onToast?: (msg: string) => void
 }
 
-type BlogStatusFilter = 'all' | 0 | 1 | 2
+type BlogStatusFilter = 'all' | 0 | 1 | 2 | 3
 
 export const BlogsUtility: React.FC<BlogsUtilityProps> = ({
   isDrawer = false,
@@ -85,11 +85,23 @@ export const BlogsUtility: React.FC<BlogsUtilityProps> = ({
   const handleEditBlog = (e: React.MouseEvent, blog: UserBlogItemDto) => {
     e.stopPropagation()
     e.preventDefault()
+    if (blog.status === 3) {
+      onToast?.('Bài viết này đang bị quản trị viên tạm ẩn.')
+      return
+    }
     onClose?.()
+    if (blog.status === 1) {
+      navigate(`/blog/${blog.id}`)
+      return
+    }
     navigate(`/blog?edit=${blog.id}`, { state: { editBlog: blog } })
   }
 
   const handleSelectBlog = (blog: UserBlogItemDto) => {
+    if (blog.status === 3) {
+      onToast?.('Bài viết này đang bị quản trị viên tạm ẩn.')
+      return
+    }
     onClose?.()
     if (blog.status === 0 || blog.status === 2) {
       navigate(`/blog?edit=${blog.id}`, { state: { editBlog: blog } })
@@ -112,6 +124,7 @@ export const BlogsUtility: React.FC<BlogsUtilityProps> = ({
     { id: 'all', label: 'Tất cả' },
     { id: 1, label: 'Đã xuất bản' },
     { id: 2, label: 'Chờ duyệt' },
+    { id: 3, label: 'Tạm ẩn' },
     { id: 0, label: 'Bản nháp' }
   ]
 
@@ -219,10 +232,12 @@ export const BlogsUtility: React.FC<BlogsUtilityProps> = ({
                         ? 'bg-emerald-50 text-emerald-900'
                         : b.status === 2
                           ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                          : 'bg-slate-100 text-slate-600'
+                          : b.status === 3
+                            ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                            : 'bg-slate-100 text-slate-600'
                         }`}
                     >
-                      {b.status === 1 ? 'Đã xuất bản' : b.status === 2 ? 'Chờ duyệt' : 'Bản nháp'}
+                      {b.status === 1 ? 'Đã xuất bản' : b.status === 2 ? 'Chờ duyệt' : b.status === 3 ? 'Tạm ẩn' : 'Bản nháp'}
                     </span>
                     {b.categoryName && (
                       <span className="text-[10px] text-slate-500 truncate">
@@ -245,14 +260,26 @@ export const BlogsUtility: React.FC<BlogsUtilityProps> = ({
                 </div>
 
                 <div className="absolute top-2.5 right-2.5 flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={(e) => handleEditBlog(e, b)}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-800 hover:bg-emerald-50 transition-colors cursor-pointer"
-                    title={b.status === 2 ? "Xem bài viết đang chờ duyệt" : "Chỉnh sửa bài viết"}
-                  >
-                    {b.status === 2 ? <Eye size={13} className="text-amber-700" /> : <Edit3 size={13} />}
-                  </button>
+                  {b.status === 0 && (
+                    <button
+                      type="button"
+                      onClick={(e) => handleEditBlog(e, b)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-800 hover:bg-emerald-50 transition-colors cursor-pointer"
+                      title="Chỉnh sửa bản nháp"
+                    >
+                      <Edit3 size={13} />
+                    </button>
+                  )}
+                  {b.status === 2 && (
+                    <button
+                      type="button"
+                      onClick={(e) => handleEditBlog(e, b)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-amber-800 hover:bg-amber-50 transition-colors cursor-pointer"
+                      title="Xem bài viết đang chờ duyệt"
+                    >
+                      <Eye size={13} className="text-amber-700" />
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={(e) => handleDeleteBlog(e, b.id)}
@@ -294,22 +321,36 @@ export const BlogsUtility: React.FC<BlogsUtilityProps> = ({
                         ? 'bg-emerald-700 text-white'
                         : b.status === 2
                           ? 'bg-amber-600 text-white'
-                          : 'bg-slate-700 text-white'
+                          : b.status === 3
+                            ? 'bg-rose-700 text-white'
+                            : 'bg-slate-700 text-white'
                         }`}
                     >
-                      {b.status === 1 ? 'Đã xuất bản' : b.status === 2 ? 'Chờ duyệt' : 'Bản nháp'}
+                      {b.status === 1 ? 'Đã xuất bản' : b.status === 2 ? 'Chờ duyệt' : b.status === 3 ? 'Tạm ẩn' : 'Bản nháp'}
                     </span>
                   </div>
 
                   <div className="absolute top-3 right-3 flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={(e) => handleEditBlog(e, b)}
-                      className="p-2 rounded-full bg-slate-900/60 hover:bg-emerald-700 text-white backdrop-blur-xs transition-colors cursor-pointer shadow-xs"
-                      title={b.status === 2 ? "Xem bài viết đang chờ duyệt" : "Chỉnh sửa bài viết"}
-                    >
-                      {b.status === 2 ? <Eye size={13} /> : <Edit3 size={13} />}
-                    </button>
+                    {b.status === 0 && (
+                      <button
+                        type="button"
+                        onClick={(e) => handleEditBlog(e, b)}
+                        className="p-2 rounded-full bg-slate-900/60 hover:bg-emerald-700 text-white backdrop-blur-xs transition-colors cursor-pointer shadow-xs"
+                        title="Chỉnh sửa bản nháp"
+                      >
+                        <Edit3 size={13} />
+                      </button>
+                    )}
+                    {b.status === 2 && (
+                      <button
+                        type="button"
+                        onClick={(e) => handleEditBlog(e, b)}
+                        className="p-2 rounded-full bg-slate-900/60 hover:bg-amber-600 text-white backdrop-blur-xs transition-colors cursor-pointer shadow-xs"
+                        title="Xem bài viết đang chờ duyệt"
+                      >
+                        <Eye size={13} />
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={(e) => handleDeleteBlog(e, b.id)}
@@ -353,7 +394,13 @@ export const BlogsUtility: React.FC<BlogsUtilityProps> = ({
                       )}
                     </div>
                     <span className="text-emerald-800 font-bold group-hover:underline text-[11px]">
-                      {b.status === 0 ? 'Sửa nháp →' : b.status === 2 ? 'Xem chờ duyệt →' : 'Xem bài →'}
+                      {b.status === 0
+                        ? 'Sửa nháp →'
+                        : b.status === 2
+                          ? 'Xem chờ duyệt →'
+                          : b.status === 3
+                            ? 'Đang tạm ẩn'
+                            : 'Xem bài →'}
                     </span>
                   </div>
                 </div>

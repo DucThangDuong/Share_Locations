@@ -289,17 +289,17 @@ export const ReportModal: React.FC<ReportModalProps> = ({
   const getModalTitle = () => {
     switch (targetType) {
       case "place":
-        return "Báo cáo Địa điểm";
+        return "Báo cáo địa điểm";
       case "review":
-        return "Báo cáo Đánh giá vi phạm";
+        return "Báo cáo đánh giá vi phạm";
       case "comment":
-        return "Báo cáo Bình luận vi phạm";
+        return "Báo cáo bình luận vi phạm";
       case "blog":
-        return "Báo cáo Bài viết vi phạm";
+        return "Báo cáo cẩm nang vi phạm";
       case "user":
-        return "Báo cáo Tài khoản vi phạm";
+        return "Báo cáo tài khoản vi phạm";
       default:
-        return "Báo cáo Vi phạm";
+        return "Báo cáo vi phạm";
     }
   };
 
@@ -312,7 +312,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
       case "comment":
         return { label: "Bình luận", icon: FileText, bg: "bg-blue-50", text: "text-blue-800", border: "border-blue-200" };
       case "blog":
-        return { label: "Bài viết cẩm nang", icon: FileText, bg: "bg-purple-50", text: "text-purple-800", border: "border-purple-200" };
+        return { label: "Cẩm nang", icon: FileText, bg: "bg-purple-50", text: "text-purple-800", border: "border-purple-200" };
       case "user":
         return { label: "Thành viên", icon: User, bg: "bg-slate-100", text: "text-slate-800", border: "border-slate-200" };
       default:

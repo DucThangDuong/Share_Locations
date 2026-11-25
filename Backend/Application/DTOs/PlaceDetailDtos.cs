@@ -65,6 +65,7 @@ public class PlaceDetailDto
     public DateTime CreatedAt { get; set; }
     public bool IsSaved { get; set; }
     public bool IsVisited { get; set; }
+    public long? VisitLogId { get; set; }
     public bool IsCheckedIn => IsVisited;
     public IReadOnlyList<PlaceFoodDto> Foods { get; set; } = [];
 }

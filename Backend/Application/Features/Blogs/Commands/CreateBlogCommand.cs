@@ -26,18 +26,32 @@ public class CreateBlogCommandHandler : IRequestHandler<CreateBlogCommand, Resul
     public async Task<Result<UserBlogItemDto>> Handle(CreateBlogCommand request, CancellationToken ct)
     {
         var dto = request.Dto;
-        if (string.IsNullOrWhiteSpace(dto.Title))
-        {
-            return Result<UserBlogItemDto>.Failure("Tiêu đề bài viết không được để trống.");
-        }
+        var status = dto.Status == (int)BlogStatus.Draft
+            ? BlogStatus.Draft
+            : BlogStatus.Pending;
 
-        var status = Enum.IsDefined(typeof(BlogStatus), (byte)dto.Status)
-            ? (BlogStatus)dto.Status
-            : BlogStatus.Published;
+        var effectiveTitle = string.IsNullOrWhiteSpace(dto.Title)
+            ? "Bản nháp chưa đặt tên"
+            : dto.Title.Trim();
+
+        if (status != BlogStatus.Draft)
+        {
+            var validationError = BlogContentValidator.ValidateSubmission(
+                dto.Title,
+                dto.Excerpt,
+                dto.CoverImageUrl,
+                dto.ContentJSON,
+                dto.CategoryId);
+
+            if (validationError != null)
+            {
+                return Result<UserBlogItemDto>.Failure(validationError);
+            }
+        }
 
         var blog = new Blog(
             request.UserId,
-            dto.Title,
+            effectiveTitle,
             dto.Excerpt,
             dto.ContentJSON,
             dto.CoverImageUrl,

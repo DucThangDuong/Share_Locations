@@ -454,8 +454,12 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
     notify(`Đang tạo "${defaultTitle}". Hãy đặt tên, thêm mô tả, chọn địa điểm và bấm "Tạo & Lưu bộ sưu tập".`);
   };
 
+  const [isDeletingCollection, setIsDeletingCollection] = useState(false);
+
   const handleDeleteCollection = async (e: React.MouseEvent, id: number, title: string) => {
     e.stopPropagation();
+    if (isDeletingCollection) return;
+
     if (activeCollectionId === "new" || id === 0) {
       setActiveCollectionId(null);
       setCollectionPlaces([]);
@@ -464,16 +468,35 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
       return;
     }
 
-    try {
-      await adminService.deleteCollection(id);
-    } catch {
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa vĩnh viễn bộ sưu tập "${title}" không?`)) {
+      return;
     }
 
-    setCollections((prev) => prev.filter((c) => c.id !== id));
-    if (activeCollectionId === id) {
-      setActiveCollectionId(null);
+    setIsDeletingCollection(true);
+    try {
+      const res: any = await adminService.deleteCollection(id);
+      if (res && res.success === false) {
+        throw new Error(res.message || "Không thể xóa bộ sưu tập.");
+      }
+
+      setCollections((prev) => prev.filter((c) => c.id !== id));
+      if (activeCollectionId === id) {
+        setActiveCollectionId(null);
+        setCollectionPlaces([]);
+        setHasUnsavedChanges(false);
+      }
+      notify(`Đã xóa bộ sưu tập "${title}".`);
+      await fetchCollections();
+    } catch (err: any) {
+      const errMsg =
+        err?.response?.data?.message ||
+        err?.response?.data?.title ||
+        err?.message ||
+        "Không thể xóa bộ sưu tập. Vui lòng thử lại.";
+      notify(errMsg);
+    } finally {
+      setIsDeletingCollection(false);
     }
-    notify(`Đã xóa bộ sưu tập "${title}".`);
   };
 
   const handleAddPlaceToCollection = (place: PlaceSummaryDto) => {
@@ -1044,11 +1067,12 @@ export const CollectionsTab: React.FC<CollectionsTabProps> = ({ showToast }) => 
 
               <button
                 type="button"
+                disabled={isDeletingCollection}
                 onClick={(e) => handleDeleteCollection(e, activeCollection.id, activeCollection.title)}
-                className="p-2.5 text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer border border-rose-200"
+                className="p-2.5 text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer border border-rose-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 title={isCreatingNew ? "Hủy tạo bộ sưu tập" : "Xóa bộ sưu tập này"}
               >
-                <Trash2 size={16} />
+                {isDeletingCollection ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
               </button>
             </div>
           </div>

@@ -30,18 +30,47 @@ public class UpdateBlogCommandHandler : IRequestHandler<UpdateBlogCommand, Resul
             return Result.Forbidden("Bạn không có quyền chỉnh sửa bài viết này.");
         }
 
-        var dto = request.Dto;
-        if (string.IsNullOrWhiteSpace(dto.Title))
+        if (blog.Status == BlogStatus.Published)
         {
-            return Result.Failure("Tiêu đề bài viết không được để trống.");
+            return Result.Failure("Bài viết đã được xuất bản nên không thể chỉnh sửa.");
         }
 
-        var status = Enum.IsDefined(typeof(BlogStatus), (byte)dto.Status)
-            ? (BlogStatus)dto.Status
-            : blog.Status;
+        if (blog.Status == BlogStatus.Pending)
+        {
+            return Result.Failure("Bài viết đang chờ duyệt nên tạm thời không thể chỉnh sửa.");
+        }
+
+        if (blog.Status == BlogStatus.Hidden)
+        {
+            return Result.Failure("Bài viết đang bị tạm ẩn nên không thể chỉnh sửa.");
+        }
+
+        var dto = request.Dto;
+        var status = dto.Status == (int)BlogStatus.Draft
+            ? BlogStatus.Draft
+            : BlogStatus.Pending;
+
+        var effectiveTitle = string.IsNullOrWhiteSpace(dto.Title)
+            ? "Bản nháp chưa đặt tên"
+            : dto.Title.Trim();
+
+        if (status != BlogStatus.Draft)
+        {
+            var validationError = BlogContentValidator.ValidateSubmission(
+                dto.Title,
+                dto.Excerpt,
+                dto.CoverImageUrl,
+                dto.ContentJSON,
+                dto.CategoryId);
+
+            if (validationError != null)
+            {
+                return Result.Failure(validationError);
+            }
+        }
 
         blog.Update(
-            dto.Title,
+            effectiveTitle,
             dto.Excerpt,
             dto.ContentJSON,
             dto.CoverImageUrl,

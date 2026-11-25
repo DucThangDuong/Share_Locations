@@ -1,4 +1,5 @@
-﻿using Application.Common.Interfaces;
+using System.Text.RegularExpressions;
+using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
 using Dapper;
@@ -9,6 +10,12 @@ namespace Infrastructure.Persistence.Repositories;
 
 public class NotificationRepository : INotificationRepository
 {
+    private static readonly Regex ReviewUrlRegex = new(@"^/reviews?/(\d+)(?:[/?#].*)?$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex ChatRoomQueryRegex = new(@"^/chat\?room=(\d+)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex ValidRouteRegex = new(
+        @"^(/|/(explore|diadiem)|/(places|dia-diem)/[^/]+|/map|/(itinerary|my-trips|itineraries|hanh-trinh|trips|trip|chuyen-di)(/[^/]+)?|/(blog|cam-nang)(/[^/]+)?|/(regions|mien)(/[^/]+)?|/(provinces|province|tinh-thanh)(/[^/]+)?|/tinh/[^/]+|/(rankings|bang-xep-hang|bxh|leaderboard)|/(propose-place|de-xuat|de-xuat-dia-diem)|/(profile|trang-ca-nhan)(/[^/]+)?|/(user|users|u)/[^/]+|/(settings|cai-dat)|/chat|/(directions|chi-duong)|/admin(/.*)?)$",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
     private readonly TravelReviewDbContext _dbContext;
     private readonly ICacheService _cacheService;
 
@@ -19,6 +26,125 @@ public class NotificationRepository : INotificationRepository
     }
 
     private static string UnreadCountCacheKey(long userId) => $"notif_unread:{userId}";
+
+    private static long? TryExtractReviewId(string? url, string? entityType, long? entityId, long? referenceId)
+    {
+        if (!string.IsNullOrWhiteSpace(url))
+        {
+            var match = ReviewUrlRegex.Match(url.Trim());
+            if (match.Success && long.TryParse(match.Groups[1].Value, out var parsedId))
+            {
+                return parsedId;
+            }
+        }
+
+        if (string.Equals(entityType, "REVIEW", StringComparison.OrdinalIgnoreCase))
+        {
+            return entityId ?? referenceId;
+        }
+
+        return null;
+    }
+
+    private static string? FallbackUrlByType(NotificationType type, long? actorUserId, long? entityId)
+    {
+        return type switch
+        {
+            NotificationType.System => "/explore",
+            NotificationType.Social => actorUserId.HasValue ? $"/profile/{actorUserId.Value}" : "/profile",
+            NotificationType.Review => "/profile?tab=reviews",
+            NotificationType.Trip => entityId.HasValue ? $"/itinerary/{entityId.Value}" : "/itinerary",
+            NotificationType.Proposal => "/profile?tab=proposals",
+            NotificationType.Moderation => "/settings",
+            _ => null
+        };
+    }
+
+    private static string? NormalizeTargetUrl(
+        string? rawUrl,
+        NotificationType type,
+        long? actorUserId,
+        string? entityType,
+        long? entityId,
+        long? referenceId,
+        IReadOnlyDictionary<long, long>? reviewPlaceMap)
+    {
+        var trimmed = rawUrl?.Trim();
+        if (string.IsNullOrWhiteSpace(trimmed))
+        {
+            return FallbackUrlByType(type, actorUserId, entityId);
+        }
+
+        var normalized = trimmed;
+
+        var reviewMatch = ReviewUrlRegex.Match(normalized);
+        if (reviewMatch.Success)
+        {
+            var reviewId = TryExtractReviewId(normalized, entityType, entityId, referenceId);
+            if (reviewId.HasValue && reviewPlaceMap != null && reviewPlaceMap.TryGetValue(reviewId.Value, out var placeId))
+            {
+                return $"/places/{placeId}#review-{reviewId.Value}";
+            }
+            return "/profile?tab=reviews";
+        }
+
+        if (normalized.StartsWith("/account", StringComparison.OrdinalIgnoreCase))
+        {
+            return "/settings";
+        }
+
+        var chatRoomMatch = ChatRoomQueryRegex.Match(normalized);
+        if (chatRoomMatch.Success)
+        {
+            return $"/chat?conversation={chatRoomMatch.Groups[1].Value}";
+        }
+
+        if (normalized.StartsWith("/trips/", StringComparison.OrdinalIgnoreCase))
+        {
+            normalized = "/itinerary/" + normalized[7..];
+        }
+        else if (normalized.StartsWith("/trip/", StringComparison.OrdinalIgnoreCase))
+        {
+            normalized = "/itinerary/" + normalized[6..];
+        }
+        else if (normalized.StartsWith("/blogs/", StringComparison.OrdinalIgnoreCase))
+        {
+            normalized = "/blog/" + normalized[7..];
+        }
+        else if (string.Equals(normalized, "/blogs", StringComparison.OrdinalIgnoreCase))
+        {
+            normalized = "/blog";
+        }
+        else if (normalized.StartsWith("/proposals", StringComparison.OrdinalIgnoreCase))
+        {
+            normalized = "/profile?tab=proposals";
+        }
+        else if (normalized.StartsWith("/friends", StringComparison.OrdinalIgnoreCase))
+        {
+            normalized = actorUserId.HasValue ? $"/profile/{actorUserId.Value}" : "/profile";
+        }
+        else if (normalized.StartsWith("/place/", StringComparison.OrdinalIgnoreCase))
+        {
+            normalized = "/places/" + normalized[7..];
+        }
+        else if (string.Equals(normalized, "/places", StringComparison.OrdinalIgnoreCase))
+        {
+            normalized = "/explore";
+        }
+
+        var pathOnly = normalized.Split('?', '#')[0];
+        if (pathOnly.Length > 1 && pathOnly.EndsWith('/'))
+        {
+            pathOnly = pathOnly.TrimEnd('/');
+        }
+
+        if (ValidRouteRegex.IsMatch(pathOnly))
+        {
+            return normalized;
+        }
+
+        return FallbackUrlByType(type, actorUserId, entityId);
+    }
 
     public async Task<NotificationPagedResultDto> GetPagedNotificationsAsync(
         long userId,
@@ -31,7 +157,6 @@ public class NotificationRepository : INotificationRepository
         var offset = (page - 1) * pageSize;
 
         const string sql = @"
-            -- 1. Lấy danh sách thông báo
             SELECT
                 n.Id,
                 n.UserId,
@@ -61,14 +186,12 @@ public class NotificationRepository : INotificationRepository
             ORDER BY n.CreatedAt DESC
             OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;
 
-            -- 2. Đếm tổng số lượng bản ghi thỏa mãn điều kiện lọc
             SELECT COUNT(*)
             FROM dbo.Notifications n
             WHERE n.UserId = @UserId
               AND n.ArchivedAt IS NULL
               AND (@UnreadOnly IS NULL OR @UnreadOnly = 0 OR n.IsRead = 0);
 
-            -- 3. Đếm số lượng chưa đọc toàn bộ
             SELECT COUNT(*)
             FROM dbo.Notifications n
             WHERE n.UserId = @UserId
@@ -84,6 +207,37 @@ public class NotificationRepository : INotificationRepository
         var items = (await multi.ReadAsync<NotificationDto>()).ToList();
         var totalCount = await multi.ReadFirstAsync<int>();
         var unreadCount = await multi.ReadFirstAsync<int>();
+
+        var reviewIdsToResolve = items
+            .Where(i => !string.IsNullOrWhiteSpace(i.TargetUrl) && ReviewUrlRegex.IsMatch(i.TargetUrl.Trim()))
+            .Select(i => TryExtractReviewId(i.TargetUrl, i.EntityType, i.EntityId, i.ReferenceId))
+            .Where(id => id.HasValue)
+            .Select(id => id!.Value)
+            .Distinct()
+            .ToList();
+
+        Dictionary<long, long>? reviewPlaceMap = null;
+        if (reviewIdsToResolve.Count > 0)
+        {
+            const string reviewLookupSql = "SELECT Id, PlaceId FROM dbo.Reviews WHERE Id IN @Ids;";
+            var rows = await connection.QueryAsync<(long Id, long PlaceId)>(new CommandDefinition(
+                reviewLookupSql,
+                new { Ids = reviewIdsToResolve },
+                cancellationToken: ct));
+            reviewPlaceMap = rows.ToDictionary(r => r.Id, r => r.PlaceId);
+        }
+
+        foreach (var item in items)
+        {
+            item.TargetUrl = NormalizeTargetUrl(
+                item.TargetUrl,
+                item.Type,
+                item.ActorUserId,
+                item.EntityType,
+                item.EntityId,
+                item.ReferenceId,
+                reviewPlaceMap);
+        }
 
         await _cacheService.SetAsync(UnreadCountCacheKey(userId), unreadCount, TimeSpan.FromSeconds(60), ct);
 
@@ -183,6 +337,30 @@ public class NotificationRepository : INotificationRepository
     {
         var connection = _dbContext.Database.GetDbConnection();
 
+        Dictionary<long, long>? reviewPlaceMap = null;
+        var reviewId = TryExtractReviewId(input.TargetUrl, input.EntityType, input.EntityId, input.ReferenceId);
+        if (reviewId.HasValue && !string.IsNullOrWhiteSpace(input.TargetUrl) && ReviewUrlRegex.IsMatch(input.TargetUrl.Trim()))
+        {
+            const string reviewSql = "SELECT TOP 1 PlaceId FROM dbo.Reviews WHERE Id = @Id;";
+            var placeId = await connection.ExecuteScalarAsync<long?>(new CommandDefinition(
+                reviewSql,
+                new { Id = reviewId.Value },
+                cancellationToken: ct));
+            if (placeId.HasValue)
+            {
+                reviewPlaceMap = new Dictionary<long, long> { [reviewId.Value] = placeId.Value };
+            }
+        }
+
+        input.TargetUrl = NormalizeTargetUrl(
+            input.TargetUrl,
+            input.Type,
+            input.ActorUserId,
+            input.EntityType,
+            input.EntityId,
+            input.ReferenceId,
+            reviewPlaceMap);
+
         if (!string.IsNullOrWhiteSpace(input.DeduplicationKey))
         {
             const string dedupSql = @"
@@ -204,6 +382,14 @@ public class NotificationRepository : INotificationRepository
 
             if (existingDedup != null)
             {
+                existingDedup.TargetUrl = NormalizeTargetUrl(
+                    existingDedup.TargetUrl,
+                    existingDedup.Type,
+                    existingDedup.ActorUserId,
+                    existingDedup.EntityType,
+                    existingDedup.EntityId,
+                    existingDedup.ReferenceId,
+                    reviewPlaceMap);
                 return existingDedup;
             }
         }
@@ -232,6 +418,7 @@ public class NotificationRepository : INotificationRepository
                     SET Title = @Title,
                         Content = @Content,
                         ActorUserId = @ActorUserId,
+                        TargetUrl = COALESCE(@TargetUrl, TargetUrl),
                         DataJSON = COALESCE(@DataJSON, DataJSON),
                         UpdatedAt = SYSUTCDATETIME()
                     WHERE Id = @Id;
@@ -247,8 +434,17 @@ public class NotificationRepository : INotificationRepository
 
                 var updated = await connection.QueryFirstAsync<NotificationDto>(new CommandDefinition(
                     updateGroupSql,
-                    new { Id = existingId.Value, input.Title, input.Content, input.ActorUserId, input.DataJSON },
+                    new { Id = existingId.Value, input.Title, input.Content, input.ActorUserId, input.TargetUrl, input.DataJSON },
                     cancellationToken: ct));
+
+                updated.TargetUrl = NormalizeTargetUrl(
+                    updated.TargetUrl,
+                    updated.Type,
+                    updated.ActorUserId,
+                    updated.EntityType,
+                    updated.EntityId,
+                    updated.ReferenceId,
+                    reviewPlaceMap);
 
                 await _cacheService.RemoveAsync(UnreadCountCacheKey(input.UserId), ct);
                 return updated;

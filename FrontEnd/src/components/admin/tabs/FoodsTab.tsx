@@ -1151,16 +1151,15 @@ const FoodDetailEditor: React.FC<FoodDetailEditorProps> = ({
                 {isCreateMode ? name || "Thêm món ăn / Đặc sản mới" : name || food?.name}
               </h2>
               <span
-                className={`inline-flex items-center justify-center px-3.5 py-1 rounded-xl text-xs font-bold border transition-colors ${
-                  status === "hidden"
-                    ? "bg-slate-100 text-slate-700 border-slate-300"
-                    : "bg-[#e6fcf5] text-[#087f5b] border-[#63e6be]"
-                }`}
+                className={`inline-flex items-center justify-center px-3.5 py-1 rounded-xl text-xs font-bold border transition-colors ${status === "hidden"
+                  ? "bg-slate-100 text-slate-700 border-slate-300"
+                  : "bg-[#e6fcf5] text-[#087f5b] border-[#63e6be]"
+                  }`}
               >
                 {isCreateMode
                   ? status === "active"
                     ? "Món mới (Công khai)"
-                    : "Món mới (Tạm ẩn / Nháp)"
+                    : "Món mới (Tạm ẩn)"
                   : isHidden
                     ? "Tạm ẩn"
                     : "Công khai"}
@@ -1169,7 +1168,7 @@ const FoodDetailEditor: React.FC<FoodDetailEditorProps> = ({
             <p className="text-[11px] text-slate-400 mt-0.5">
               {isCreateMode
                 ? "Nhập thông tin chi tiết và tải ảnh đại diện để thêm món ăn đặc sản vào hệ thống"
-                : `Mã đặc sản #${food?.id} • Tỉnh thành: ${province} • Có tại ${placesCount} địa điểm`}
+                : `Mã đặc sản #${food?.id}`}
             </p>
           </div>
         </div>
@@ -1179,11 +1178,10 @@ const FoodDetailEditor: React.FC<FoodDetailEditorProps> = ({
             <button
               type="button"
               onClick={() => setStatus((prev: string) => (prev === "active" ? "hidden" : "active"))}
-              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl cursor-pointer transition-colors border ${
-                status === "active"
-                  ? "bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200"
-                  : "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300"
-              }`}
+              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl cursor-pointer transition-colors border ${status === "active"
+                ? "bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200"
+                : "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300"
+                }`}
               title="Nhấp để chuyển đổi trạng thái khởi tạo món ăn"
             >
               {status === "active" ? <Eye size={14} className="text-emerald-600" /> : <EyeOff size={14} className="text-slate-500" />}
@@ -1492,11 +1490,10 @@ const FoodDetailEditor: React.FC<FoodDetailEditorProps> = ({
                       {name.trim() || "--"}
                     </h4>
                     <span
-                      className={`text-xs shrink-0 ${
-                        hasPrice
-                          ? "font-bold text-emerald-800"
-                          : "font-medium text-slate-400 italic"
-                      }`}
+                      className={`text-xs shrink-0 ${hasPrice
+                        ? "font-bold text-emerald-800"
+                        : "font-medium text-slate-400 italic"
+                        }`}
                     >
                       {displayPriceText}
                     </span>

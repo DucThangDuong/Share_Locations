@@ -138,7 +138,10 @@ export const ReviewItemCard: React.FC<ReviewItemCardProps> = ({
   const hasVideos = review.videos && review.videos.length > 0
 
   return (
-    <div className="p-4 sm:p-5 rounded-xl border border-slate-200/80 bg-white hover:border-slate-300/80 transition-all space-y-3.5 shadow-2xs">
+    <div
+      id={`review-${review.id}`}
+      className="p-4 sm:p-5 rounded-xl border border-slate-200/80 bg-white hover:border-slate-300/80 transition-all space-y-3.5 shadow-2xs scroll-mt-24"
+    >
       <div className="flex items-center justify-between">
         <Link
           to={`/user/${review.userId}`}

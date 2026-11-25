@@ -401,10 +401,14 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
 
   const handleToggleBlogStatus = async (e: React.MouseEvent, blogId: number, currentStatus?: string | number) => {
     e.stopPropagation()
-    const isPub = String(currentStatus) === '1' || String(currentStatus).toLowerCase() === 'published' || String(currentStatus).toLowerCase() === 'active' || String(currentStatus) === 'Đã xuất bản'
-    const nextStatus = isPub ? '0' : '1'
+    const norm = String(currentStatus ?? '').toLowerCase()
+    const isPub = norm === '1' || norm === 'published' || norm === 'active' || String(currentStatus) === 'Đã xuất bản'
+    const nextStatus = isPub ? 'hidden' : 'published'
     try {
-      await adminService.updateBlogStatus(blogId, nextStatus)
+      const res: any = await adminService.updateBlogStatus(blogId, nextStatus)
+      if (res && res.success === false) {
+        throw new Error(res.message || 'Không thể đổi trạng thái bài viết')
+      }
       setUserActivities((prev) => {
         if (!prev) return prev
         return {
@@ -414,9 +418,9 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
           ),
         }
       })
-      showToast?.(nextStatus === '1' ? 'Đã xuất bản bài viết' : 'Đã ẩn bài viết')
+      showToast?.(nextStatus === 'published' ? 'Đã công khai bài viết' : 'Đã tạm ẩn bài viết')
     } catch (err: any) {
-      showToast?.(err?.message || 'Không thể đổi trạng thái bài viết')
+      showToast?.(err?.response?.data?.message || err?.message || 'Không thể đổi trạng thái bài viết')
     }
   }
 
@@ -1332,7 +1336,9 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
                     (b.category || '').toLowerCase().includes(searchQuery.toLowerCase())
                 )
                 .map((blog) => {
-                  const isBlogPub = String(blog.status) === '1' || String(blog.status).toLowerCase() === 'published' || String(blog.status).toLowerCase() === 'active' || String(blog.status) === 'Đã xuất bản'
+                  const normStatus = String(blog.status ?? '').toLowerCase()
+                  const isBlogPub = normStatus === '1' || normStatus === 'published' || normStatus === 'active' || String(blog.status) === 'Đã xuất bản'
+                  const isBlogPending = normStatus === '2' || normStatus === 'pending' || String(blog.status) === 'Chờ duyệt'
                   return (
                     <div
                       key={blog.id}
@@ -1361,10 +1367,12 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
                         <span
                           className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold border ${isBlogPub
                             ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                            : 'bg-slate-100 text-slate-600 border-slate-200'
+                            : isBlogPending
+                              ? 'bg-amber-50 text-amber-800 border-amber-300'
+                              : 'bg-slate-100 text-slate-600 border-slate-200'
                             }`}
                         >
-                          {isBlogPub ? 'Đã xuất bản' : 'Đang ẩn'}
+                          {isBlogPub ? 'Đã xuất bản' : isBlogPending ? 'Chờ duyệt' : 'Tạm ẩn'}
                         </span>
 
                         <button
@@ -1374,10 +1382,10 @@ export const UserDetailDashboardView: React.FC<UserDetailDashboardViewProps> = (
                             ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
                             : 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600 shadow-xs'
                             }`}
-                          title={isBlogPub ? 'Tạm ẩn bài viết này' : 'Công khai bài viết này'}
+                          title={isBlogPub ? 'Tạm ẩn bài viết này' : isBlogPending ? 'Duyệt công khai bài viết' : 'Công khai lại bài viết'}
                         >
                           {isBlogPub ? <EyeOff size={11} /> : <Eye size={11} />}
-                          <span>{isBlogPub ? 'Tạm ẩn' : 'Công khai'}</span>
+                          <span>{isBlogPub ? 'Tạm ẩn' : isBlogPending ? 'Duyệt' : 'Công khai'}</span>
                         </button>
 
                         <button

@@ -41,7 +41,19 @@ public class TripRepository : ITripRepository
     {
         var connection = _dbContext.Database.GetDbConnection();
 
-        var conditions = new List<string> { "t.Privacy = 0" };
+        var conditions = new List<string>
+        {
+            "t.Privacy = 0",
+            "NULLIF(LTRIM(RTRIM(t.Title)), '') IS NOT NULL",
+            "NULLIF(LTRIM(RTRIM(t.Description)), '') IS NOT NULL",
+            "NULLIF(LTRIM(RTRIM(t.CoverImageUrl)), '') IS NOT NULL",
+            @"EXISTS (
+                SELECT 1 FROM dbo.TripDays td
+                INNER JOIN dbo.TripPlaces tp ON td.Id = tp.TripDayId
+                INNER JOIN dbo.Places pl ON tp.PlaceId = pl.Id
+                WHERE td.TripId = t.Id AND pl.IsDeleted = 0
+            )"
+        };
         var parameters = new DynamicParameters();
 
         if (!string.IsNullOrWhiteSpace(p.Keyword))
@@ -147,7 +159,7 @@ public class TripRepository : ITripRepository
             const string costExpression = @"COALESCE(
                 NULLIF(t.EstimatedBudget, 0),
                 NULLIF((SELECT SUM(tp.EstimatedCost) FROM dbo.TripDays td INNER JOIN dbo.TripPlaces tp ON td.Id = tp.TripDayId WHERE td.TripId = t.Id), 0),
-                (CASE WHEN (SELECT COUNT(1) FROM dbo.TripDays td WHERE td.TripId = t.Id) = 0 THEN 1 ELSE (SELECT COUNT(1) FROM dbo.TripDays td WHERE td.TripId = t.Id) END) * 1200000
+                0
             )";
 
             if (budgetTrimmed == "under1m" || budgetTrimmed == "<1m" || budgetTrimmed == "under-1m")
@@ -320,12 +332,10 @@ public class TripRepository : ITripRepository
             {
                 finalCost = totalStopsCost;
             }
-            else
-            {
-                finalCost = calculatedDays * 1200000m;
-            }
 
-            string formattedEstimatedCost = $"{finalCost.ToString("#,##0", viCulture)}đ";
+            string formattedEstimatedCost = finalCost > 0
+                ? $"{finalCost.ToString("#,##0", viCulture)}đ"
+                : "Chưa dự kiến";
 
             string destination = !string.IsNullOrWhiteSpace(trip.PrimaryProvinceName)
                 ? trip.PrimaryProvinceName
@@ -640,7 +650,15 @@ public class TripRepository : ITripRepository
     {
         var trips = await _dbContext.Trips
             .AsNoTracking()
-            .Where(t => t.UserId == userId && t.Privacy == TripPrivacy.Public)
+            .Where(t =>
+                t.UserId == userId &&
+                t.Privacy == TripPrivacy.Public &&
+                t.Title != string.Empty &&
+                t.Description != null &&
+                t.Description != string.Empty &&
+                t.CoverImageUrl != null &&
+                t.CoverImageUrl != string.Empty &&
+                t.Days.Any(d => d.Places.Any(p => p.Place != null && !p.Place.IsDeleted)))
             .OrderByDescending(t => t.CreatedAt)
             .ToListAsync(ct);
 

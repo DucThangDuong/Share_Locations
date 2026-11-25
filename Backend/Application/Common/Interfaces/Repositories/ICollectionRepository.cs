@@ -35,4 +35,8 @@ public interface ICollectionRepository
         int id,
         int status,
         CancellationToken ct = default);
+
+    Task<Result<bool>> DeleteCollectionAsync(
+        int id,
+        CancellationToken ct = default);
 }

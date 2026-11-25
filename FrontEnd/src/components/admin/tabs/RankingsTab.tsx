@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import {
   RefreshCw,
   Search,
@@ -75,8 +76,76 @@ export const RankingsTab: React.FC<RankingsTabProps> = ({ showToast }) => {
   const [governanceConfig, setGovernanceConfig] = useState<RankingGovernanceConfig>(DEFAULT_GOVERNANCE_CONFIG);
   const [draftConfig, setDraftConfig] = useState<RankingGovernanceConfig>(DEFAULT_GOVERNANCE_CONFIG);
 
-  const [activeScorePopoverId, setActiveScorePopoverId] = useState<string | null>(null);
+  const [activeScorePopover, setActiveScorePopover] = useState<{
+    key: string;
+    title: string;
+    totalScore: string;
+    rows: { label: string; value: string }[];
+    formula: string;
+    top: number;
+    left: number;
+    placement: 'top' | 'bottom';
+  } | null>(null);
   const [activePinMenuId, setActivePinMenuId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!activeScorePopover) return;
+    const handleOutsideClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target?.closest('[data-score-popover="true"]') || target?.closest('[data-score-trigger="true"]')) {
+        return;
+      }
+      setActiveScorePopover(null);
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setActiveScorePopover(null);
+    };
+    const handleScroll = () => setActiveScorePopover(null);
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    document.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('scroll', handleScroll, true);
+    window.addEventListener('resize', handleScroll);
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('resize', handleScroll);
+    };
+  }, [activeScorePopover]);
+
+  const handleToggleScorePopover = (
+    e: React.MouseEvent<HTMLButtonElement>,
+    payload: {
+      key: string;
+      title: string;
+      totalScore: string;
+      rows: { label: string; value: string }[];
+      formula: string;
+    }
+  ) => {
+    e.stopPropagation();
+    if (activeScorePopover?.key === payload.key) {
+      setActiveScorePopover(null);
+      return;
+    }
+    const rect = e.currentTarget.getBoundingClientRect();
+    const popoverWidth = 272;
+    const estimatedHeight = 195;
+    const showAbove = rect.top >= estimatedHeight + 16;
+    const left = Math.max(
+      12,
+      Math.min(window.innerWidth - popoverWidth - 12, rect.right - popoverWidth)
+    );
+    const top = showAbove ? rect.top - 8 : rect.bottom + 8;
+
+    setActiveScorePopover({
+      ...payload,
+      top,
+      left,
+      placement: showAbove ? 'top' : 'bottom',
+    });
+  };
 
   const notify = (msg: string) => {
     if (showToast) showToast(msg);
@@ -673,7 +742,7 @@ export const RankingsTab: React.FC<RankingsTabProps> = ({ showToast }) => {
                   {displayedPlaces.map((place) => {
                     const scoreKey = `place-score-${place.id}`;
                     const pinKey = `place-pin-${place.id}`;
-                    const isScoreOpen = activeScorePopoverId === scoreKey;
+                    const isScoreOpen = activeScorePopover?.key === scoreKey;
                     const isPinOpen = activePinMenuId === pinKey;
 
                     const ratingPts = Number(place.ratingScore ?? 0).toFixed(1);
@@ -681,6 +750,18 @@ export const RankingsTab: React.FC<RankingsTabProps> = ({ showToast }) => {
                     const viewPts = Number(place.viewScore ?? 0).toFixed(1);
                     const favPts = Number(place.favoriteScore ?? 0).toFixed(1);
                     const totalScore = Number(place.score ?? 0).toFixed(1);
+                    const placeScorePayload = {
+                      key: scoreKey,
+                      title: 'Chi tiết cấu thành điểm',
+                      totalScore,
+                      rows: [
+                        { label: `• Điểm sao (${Number(place.avgRating).toFixed(1)}★):`, value: `+${ratingPts}đ` },
+                        { label: `• Lượt đánh giá (${place.reviewCount}):`, value: `+${reviewPts}đ` },
+                        { label: `• Lượt xem (${place.viewCount?.toLocaleString() || 0}):`, value: `+${viewPts}đ` },
+                        { label: `• Yêu thích (${place.favoritesCount || 0}):`, value: `+${favPts}đ` },
+                      ],
+                      formula: `${ratingPts}đ + ${reviewPts}đ + ${viewPts}đ + ${favPts}đ = ${totalScore} pts`,
+                    };
 
                     return (
                       <tr
@@ -772,63 +853,29 @@ export const RankingsTab: React.FC<RankingsTabProps> = ({ showToast }) => {
                         </td>
 
                         <td className="py-3 px-4 text-right relative">
-                          <div className="inline-block relative group/score">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setActiveScorePopoverId(isScoreOpen ? null : scoreKey)
-                              }
-                              title={`Điểm sao: ${ratingPts}đ + Đánh giá: ${reviewPts}đ + Lượt xem: ${viewPts}đ + Yêu thích: ${favPts}đ = ${totalScore} pts`}
-                              className="inline-flex items-center gap-1 font-mono font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-200/80 transition-colors cursor-pointer"
-                            >
-                              <span>{totalScore} pts</span>
-                              <Info className="w-3 h-3 text-emerald-600/80" />
-                            </button>
-
-                            <div
-                              className={`z-30 w-64 p-3 rounded-xl bg-slate-900 text-white text-[11px] shadow-xl border border-slate-700 text-left right-0 bottom-full mb-2 transition-all ${isScoreOpen
-                                ? 'block absolute'
-                                : 'hidden group-hover/score:block absolute pointer-events-none'
-                                }`}
-                            >
-                              <div className="font-bold text-emerald-400 pb-1.5 mb-1.5 border-b border-slate-700/80 flex items-center justify-between">
-                                <span>Chi tiết cấu thành điểm</span>
-                                <span>{totalScore} pts</span>
-                              </div>
-                              <div className="space-y-1 text-slate-300 font-sans">
-                                <div className="flex justify-between">
-                                  <span>• Điểm sao ({Number(place.avgRating).toFixed(1)}★):</span>
-                                  <strong className="text-white font-mono">+{ratingPts}đ</strong>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span>• Lượt đánh giá ({place.reviewCount}):</span>
-                                  <strong className="text-white font-mono">+{reviewPts}đ</strong>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span>• Lượt xem ({place.viewCount?.toLocaleString()}):</span>
-                                  <strong className="text-white font-mono">+{viewPts}đ</strong>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span>• Yêu thích ({place.favoritesCount}):</span>
-                                  <strong className="text-white font-mono">+{favPts}đ</strong>
-                                </div>
-                              </div>
-                              <div className="mt-2 pt-1.5 border-t border-slate-700/80 text-[10px] text-emerald-300 font-mono">
-                                {ratingPts}đ + {reviewPts}đ + {viewPts}đ + {favPts}đ = {totalScore} pts
-                              </div>
-                            </div>
-                          </div>
+                          <button
+                            type="button"
+                            data-score-trigger="true"
+                            onClick={(e) => handleToggleScorePopover(e, placeScorePayload)}
+                            title={`Điểm sao: ${ratingPts}đ + Đánh giá: ${reviewPts}đ + Lượt xem: ${viewPts}đ + Yêu thích: ${favPts}đ = ${totalScore} pts`}
+                            className={`inline-flex items-center gap-1 font-mono font-bold px-2.5 py-1 rounded-lg border transition-colors cursor-pointer ${isScoreOpen
+                              ? 'bg-emerald-100 text-emerald-800 border-emerald-400 ring-1 ring-emerald-400/50'
+                              : 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border-emerald-200/80'
+                              }`}
+                          >
+                            <span>{totalScore} pts</span>
+                            <Info className="w-3 h-3 text-emerald-600/80" />
+                          </button>
                         </td>
 
                         <td className="py-3 px-4 text-center relative">
                           <div className="inline-flex items-center justify-center gap-1">
                             <button
                               type="button"
-                              onClick={() =>
-                                setActiveScorePopoverId(isScoreOpen ? null : scoreKey)
-                              }
+                              data-score-trigger="true"
+                              onClick={(e) => handleToggleScorePopover(e, placeScorePayload)}
                               className={`p-1.5 rounded-lg transition-colors cursor-pointer ${isScoreOpen
-                                ? 'bg-emerald-100 text-emerald-800'
+                                ? 'bg-emerald-100 text-emerald-800 ring-1 ring-emerald-500/60'
                                 : 'text-slate-400 hover:text-emerald-700 hover:bg-emerald-50'
                                 }`}
                               title="Xem chi tiết công thức điểm"
@@ -959,13 +1006,24 @@ export const RankingsTab: React.FC<RankingsTabProps> = ({ showToast }) => {
                   {displayedProvinces.map((prov) => {
                     const scoreKey = `prov-score-${prov.id}`;
                     const pinKey = `prov-pin-${prov.id}`;
-                    const isScoreOpen = activeScorePopoverId === scoreKey;
+                    const isScoreOpen = activeScorePopover?.key === scoreKey;
                     const isPinOpen = activePinMenuId === pinKey;
 
                     const ratingPts = Number(prov.ratingScore ?? 0).toFixed(1);
                     const reviewPts = Number(prov.reviewScore ?? 0).toFixed(1);
                     const placePts = Number(prov.placeCoverageScore ?? 0).toFixed(1);
                     const totalScore = Number(prov.score ?? 0).toFixed(1);
+                    const provScorePayload = {
+                      key: scoreKey,
+                      title: 'Chi tiết điểm Tỉnh/Thành',
+                      totalScore,
+                      rows: [
+                        { label: `• Điểm TB (${Number(prov.avgRating).toFixed(1)}★):`, value: `+${ratingPts}đ` },
+                        { label: `• Tổng đánh giá (${prov.totalReviews}):`, value: `+${reviewPts}đ` },
+                        { label: `• Độ phủ địa điểm (${prov.totalPlaces}):`, value: `+${placePts}đ` },
+                      ],
+                      formula: `${ratingPts}đ + ${reviewPts}đ + ${placePts}đ = ${totalScore} pts`,
+                    };
 
                     return (
                       <tr
@@ -1048,59 +1106,29 @@ export const RankingsTab: React.FC<RankingsTabProps> = ({ showToast }) => {
                         </td>
 
                         <td className="py-3 px-4 text-right relative">
-                          <div className="inline-block relative group/score">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setActiveScorePopoverId(isScoreOpen ? null : scoreKey)
-                              }
-                              title={`Điểm sao: ${ratingPts}đ + Đánh giá: ${reviewPts}đ + Độ phủ địa điểm: ${placePts}đ = ${totalScore} pts`}
-                              className="inline-flex items-center gap-1 font-mono font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-200/80 transition-colors cursor-pointer"
-                            >
-                              <span>{totalScore} pts</span>
-                              <Info className="w-3 h-3 text-emerald-600/80" />
-                            </button>
-
-                            <div
-                              className={`z-30 w-64 p-3 rounded-xl bg-slate-900 text-white text-[11px] shadow-xl border border-slate-700 text-left right-0 bottom-full mb-2 transition-all ${isScoreOpen
-                                ? 'block absolute'
-                                : 'hidden group-hover/score:block absolute pointer-events-none'
-                                }`}
-                            >
-                              <div className="font-bold text-emerald-400 pb-1.5 mb-1.5 border-b border-slate-700/80 flex items-center justify-between">
-                                <span>Chi tiết điểm Tỉnh/Thành</span>
-                                <span>{totalScore} pts</span>
-                              </div>
-                              <div className="space-y-1 text-slate-300 font-sans">
-                                <div className="flex justify-between">
-                                  <span>• Điểm TB ({Number(prov.avgRating).toFixed(1)}★):</span>
-                                  <strong className="text-white font-mono">+{ratingPts}đ</strong>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span>• Tổng đánh giá ({prov.totalReviews}):</span>
-                                  <strong className="text-white font-mono">+{reviewPts}đ</strong>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span>• Độ phủ địa điểm ({prov.totalPlaces}):</span>
-                                  <strong className="text-white font-mono">+{placePts}đ</strong>
-                                </div>
-                              </div>
-                              <div className="mt-2 pt-1.5 border-t border-slate-700/80 text-[10px] text-emerald-300 font-mono">
-                                {ratingPts}đ + {reviewPts}đ + {placePts}đ = {totalScore} pts
-                              </div>
-                            </div>
-                          </div>
+                          <button
+                            type="button"
+                            data-score-trigger="true"
+                            onClick={(e) => handleToggleScorePopover(e, provScorePayload)}
+                            title={`Điểm sao: ${ratingPts}đ + Đánh giá: ${reviewPts}đ + Độ phủ địa điểm: ${placePts}đ = ${totalScore} pts`}
+                            className={`inline-flex items-center gap-1 font-mono font-bold px-2.5 py-1 rounded-lg border transition-colors cursor-pointer ${isScoreOpen
+                              ? 'bg-emerald-100 text-emerald-800 border-emerald-400 ring-1 ring-emerald-400/50'
+                              : 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border-emerald-200/80'
+                              }`}
+                          >
+                            <span>{totalScore} pts</span>
+                            <Info className="w-3 h-3 text-emerald-600/80" />
+                          </button>
                         </td>
 
                         <td className="py-3 px-4 text-center relative">
                           <div className="inline-flex items-center justify-center gap-1">
                             <button
                               type="button"
-                              onClick={() =>
-                                setActiveScorePopoverId(isScoreOpen ? null : scoreKey)
-                              }
+                              data-score-trigger="true"
+                              onClick={(e) => handleToggleScorePopover(e, provScorePayload)}
                               className={`p-1.5 rounded-lg transition-colors cursor-pointer ${isScoreOpen
-                                ? 'bg-emerald-100 text-emerald-800'
+                                ? 'bg-emerald-100 text-emerald-800 ring-1 ring-emerald-500/60'
                                 : 'text-slate-400 hover:text-emerald-700 hover:bg-emerald-50'
                                 }`}
                               title="Xem chi tiết công thức điểm"
@@ -1465,16 +1493,13 @@ export const RankingsTab: React.FC<RankingsTabProps> = ({ showToast }) => {
               </span>
               <div>
                 <h3 className="font-bold text-base text-slate-900">
-                  Đồng bộ & Tính toán lại Bảng Xếp Hạng?
+                  Tính toán lại Bảng Xếp Hạng
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Lưu Snapshot kỳ hiện tại, giải phóng Redis cache & tính lại điểm số mới nhất
-                </p>
               </div>
             </div>
 
             <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-3.5 rounded-xl border border-slate-200/60">
-              Hệ thống sẽ lưu lại thứ hạng hiện tại vào cơ sở dữ liệu để đối chiếu biến động thứ hạng (Rank Trend), xóa bộ nhớ đệm và tính toán lại toàn bộ điểm số xếp hạng của các Địa điểm và Tỉnh thành.
+              Hệ thống sẽ lưu lại thứ hạng hiện tại vào cơ sở dữ liệu để đối chiếu biến động thứ hạng, xóa bộ nhớ đệm và tính toán lại toàn bộ điểm số xếp hạng của các địa điểm và tỉnh thành.
             </p>
 
             <div className="flex items-center justify-end gap-2.5 pt-2">
@@ -1500,7 +1525,7 @@ export const RankingsTab: React.FC<RankingsTabProps> = ({ showToast }) => {
                 ) : (
                   <>
                     <Zap className="w-3.5 h-3.5" />
-                    <span>Xác nhận Tính toán lại</span>
+                    <span>Xác nhận tính toán lại</span>
                   </>
                 )}
               </button>
@@ -1508,6 +1533,45 @@ export const RankingsTab: React.FC<RankingsTabProps> = ({ showToast }) => {
           </div>
         </div>
       )}
+      {activeScorePopover &&
+        createPortal(
+          <div
+            data-score-popover="true"
+            style={{
+              top: `${activeScorePopover.top}px`,
+              left: `${activeScorePopover.left}px`,
+              transform: activeScorePopover.placement === 'top' ? 'translateY(-100%)' : 'none',
+            }}
+            className="fixed z-[9999] w-[272px] p-3.5 rounded-xl bg-slate-900 text-white text-[11px] shadow-2xl border border-slate-700 text-left"
+          >
+            <div className="font-bold text-emerald-400 pb-1.5 mb-2 border-b border-slate-700/80 flex items-center justify-between gap-2">
+              <span>{activeScorePopover.title}</span>
+              <div className="flex items-center gap-2 shrink-0">
+                <span>{activeScorePopover.totalScore} pts</span>
+                <button
+                  type="button"
+                  onClick={() => setActiveScorePopover(null)}
+                  className="text-slate-400 hover:text-white transition-colors cursor-pointer"
+                  aria-label="Đóng"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+            <div className="space-y-1.5 text-slate-300 font-sans">
+              {activeScorePopover.rows.map((row) => (
+                <div key={row.label} className="flex justify-between gap-2">
+                  <span>{row.label}</span>
+                  <strong className="text-white font-mono shrink-0">{row.value}</strong>
+                </div>
+              ))}
+            </div>
+            <div className="mt-2.5 pt-2 border-t border-slate-700/80 text-[10px] text-emerald-300 font-mono">
+              {activeScorePopover.formula}
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 };

@@ -4,6 +4,7 @@ import { SystemSettingsTab } from "./SystemSettingsTab";
 
 export { FoodsTab } from "./FoodsTab";
 export { CollectionsTab } from "./CollectionsTab";
+export { TripsTab } from "./TripsTab";
 export { BlogsTab } from "./BlogsTab";
 export { AuditLogsTab } from "./AuditLogsTab";
 export { CategoriesTab } from "./CategoriesTab";

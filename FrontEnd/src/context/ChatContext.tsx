@@ -26,11 +26,21 @@ export interface IncomingMessageToast {
   createdAt: string
 }
 
+export interface RoomAccessError {
+  roomId: number
+  code: number
+  message: string
+}
+
 interface ChatContextType {
   inbox: InboxItemDto[]
   isLoadingInbox: boolean
+  hasLoadedInbox: boolean
   activeRoomId: number | null
   activeRoom: InboxItemDto | null
+  roomAccessError: RoomAccessError | null
+  clearRoomAccessError: () => void
+  clearActiveRoom: () => void
   messages: ChatMessageDto[]
   isLoadingMessages: boolean
   hasMoreMessages: boolean
@@ -56,7 +66,7 @@ interface ChatContextType {
   closeChatHead: (roomId: number) => void
 
   fetchInbox: () => Promise<void>
-  selectRoom: (roomId: number) => Promise<void>
+  selectRoom: (roomId: number) => Promise<boolean>
   openDirectChatWithUser: (targetUserId: number) => Promise<number | null>
   createGroupChat: (name: string, memberIds: number[]) => Promise<number | null>
   addMembersToGroup: (roomId: number, userIds: number[]) => Promise<void>
@@ -78,8 +88,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [inbox, setInbox] = useState<InboxItemDto[]>([])
   const [isLoadingInbox, setIsLoadingInbox] = useState(false)
+  const [hasLoadedInbox, setHasLoadedInbox] = useState(false)
 
   const [activeRoomId, setActiveRoomId] = useState<number | null>(null)
+  const [roomAccessError, setRoomAccessError] = useState<RoomAccessError | null>(null)
   const [messagesMap, setMessagesMap] = useState<Record<number, ChatMessageDto[]>>({})
   const [isLoadingMessages, setIsLoadingMessages] = useState(false)
   const [paginationMap, setPaginationMap] = useState<
@@ -96,7 +108,14 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [incomingToast, setIncomingToast] = useState<IncomingMessageToast | null>(null)
   const dismissIncomingToast = useCallback(() => setIncomingToast(null), [])
+  const clearRoomAccessError = useCallback(() => setRoomAccessError(null), [])
+  const clearActiveRoom = useCallback(() => {
+    setActiveRoomId(null)
+    activeRoomIdRef.current = null
+  }, [])
 
+  const inboxRef = useRef<InboxItemDto[]>(inbox)
+  inboxRef.current = inbox
   const activeRoomIdRef = useRef<number | null>(activeRoomId)
   activeRoomIdRef.current = activeRoomId
   const isFloatingChatOpenRef = useRef(isFloatingChatOpen)
@@ -105,7 +124,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   isFloatingChatMinimizedRef.current = isFloatingChatMinimized
   const floatingRoomIdsRef = useRef(floatingRoomIds)
   floatingRoomIdsRef.current = floatingRoomIds
-  const fetchingRoomsRef = useRef<Record<number, boolean>>({})
+  const inFlightMessagesRef = useRef<Record<number, Promise<{ ok: boolean; status?: number; message?: string }> | undefined>>({})
+  const selectRequestSeqRef = useRef(0)
 
   const fetchInbox = useCallback(async () => {
     if (!isAuthenticated) return
@@ -113,6 +133,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const items = await chatService.getInbox()
       setInbox(items)
+      inboxRef.current = items
 
       if (chatSignalR.isConnected() && items.length > 0) {
         await chatSignalR.joinRooms(items.map((i) => i.roomId))
@@ -121,44 +142,57 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('[ChatContext] Error fetching inbox:', err)
     } finally {
       setIsLoadingInbox(false)
+      setHasLoadedInbox(true)
     }
   }, [isAuthenticated])
 
-  const fetchMessages = useCallback(async (roomId: number) => {
-    if (fetchingRoomsRef.current[roomId]) return
-    fetchingRoomsRef.current[roomId] = true
-    setIsLoadingMessages(true)
-    try {
-      const msgs = await chatService.getRoomMessages(roomId, 1, 50)
-      setPaginationMap((prev) => ({
-        ...prev,
-        [roomId]: {
-          page: 1,
-          hasMore: msgs.length >= 50,
-          isLoadingMore: false,
-        },
-      }))
-
-      setMessagesMap((prev) => {
-        const existing = prev[roomId] || []
-        const map = new Map<number, ChatMessageDto>()
-        msgs.forEach((m) => map.set(m.id, m))
-        existing.forEach((m) => map.set(m.id, m))
-
-        const sorted = Array.from(map.values()).sort(
-          (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-        )
-        return {
-          ...prev,
-          [roomId]: sorted,
-        }
-      })
-    } catch (err) {
-      console.error(`[ChatContext] Error fetching messages for room ${roomId}:`, err)
-    } finally {
-      fetchingRoomsRef.current[roomId] = false
-      setIsLoadingMessages(false)
+  const fetchMessages = useCallback(async (roomId: number): Promise<{ ok: boolean; status?: number; message?: string }> => {
+    const existingPromise = inFlightMessagesRef.current[roomId]
+    if (existingPromise) {
+      return existingPromise
     }
+
+    const requestPromise = (async () => {
+      setIsLoadingMessages(true)
+      try {
+        const msgs = await chatService.getRoomMessages(roomId, 1, 50)
+        setPaginationMap((prev) => ({
+          ...prev,
+          [roomId]: {
+            page: 1,
+            hasMore: msgs.length >= 50,
+            isLoadingMore: false,
+          },
+        }))
+
+        setMessagesMap((prev) => {
+          const existing = prev[roomId] || []
+          const map = new Map<number, ChatMessageDto>()
+          msgs.forEach((m) => map.set(m.id, m))
+          existing.forEach((m) => map.set(m.id, m))
+
+          const sorted = Array.from(map.values()).sort(
+            (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          )
+          return {
+            ...prev,
+            [roomId]: sorted,
+          }
+        })
+        return { ok: true }
+      } catch (err: any) {
+        const status = err?.response?.status as number | undefined
+        const serverMsg = err?.response?.data?.message as string | undefined
+        console.error(`[ChatContext] Error fetching messages for room ${roomId}:`, err)
+        return { ok: false, status, message: serverMsg }
+      } finally {
+        delete inFlightMessagesRef.current[roomId]
+        setIsLoadingMessages(false)
+      }
+    })()
+
+    inFlightMessagesRef.current[roomId] = requestPromise
+    return requestPromise
   }, [])
 
   const loadMoreMessages = useCallback(
@@ -232,8 +266,13 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!isAuthenticated) {
       chatSignalR.stopConnection()
       setInbox([])
+      inboxRef.current = []
+      setHasLoadedInbox(false)
+      setIsLoadingInbox(false)
       setMessagesMap({})
       setActiveRoomId(null)
+      activeRoomIdRef.current = null
+      setRoomAccessError(null)
       setIncomingToast(null)
       return
     }
@@ -241,18 +280,25 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let isSubscribed = true
 
     const setupSignalR = async () => {
-      await chatSignalR.startConnection()
-      if (!isSubscribed) return
-
+      setIsLoadingInbox(true)
       try {
+        await chatSignalR.startConnection()
+        if (!isSubscribed) return
+
         const items = await chatService.getInbox()
         if (!isSubscribed) return
         setInbox(items)
+        inboxRef.current = items
         if (items.length > 0) {
           await chatSignalR.joinRooms(items.map((i) => i.roomId))
         }
       } catch (err) {
         console.error('[ChatContext] Initial inbox load failed:', err)
+      } finally {
+        if (isSubscribed) {
+          setIsLoadingInbox(false)
+          setHasLoadedInbox(true)
+        }
       }
     }
 
@@ -457,36 +503,87 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [isAuthenticated, user?.id, fetchInbox])
 
   const selectRoom = useCallback(
-    async (roomId: number) => {
-      setActiveRoomId(roomId)
-      activeRoomIdRef.current = roomId
+    async (roomId: number): Promise<boolean> => {
+      const normalizedRoomId = Number(roomId)
+      if (!Number.isSafeInteger(normalizedRoomId) || normalizedRoomId <= 0) {
+        setActiveRoomId(null)
+        activeRoomIdRef.current = null
+        setRoomAccessError({
+          roomId: normalizedRoomId,
+          code: 404,
+          message: 'Cuộc trò chuyện không tồn tại hoặc mã phòng không hợp lệ.',
+        })
+        return false
+      }
 
-      try {
-        await chatSignalR.joinRoom(roomId)
-      } catch (err) {
-        console.warn(`[ChatContext] joinRoom failed for ${roomId}:`, err)
+      const requestSeq = ++selectRequestSeqRef.current
+      const isKnownInInbox = inboxRef.current.some((item) => Number(item.roomId) === normalizedRoomId)
+
+      setRoomAccessError(null)
+      if (isKnownInInbox) {
+        setActiveRoomId(normalizedRoomId)
+        activeRoomIdRef.current = normalizedRoomId
+      } else {
+        setActiveRoomId(null)
+        activeRoomIdRef.current = null
+      }
+
+      const result = await fetchMessages(normalizedRoomId)
+      if (requestSeq !== selectRequestSeqRef.current) {
+        return false
+      }
+
+      if (!result.ok) {
+        const errorCode = result.status || 403
+        setActiveRoomId(null)
+        activeRoomIdRef.current = null
+        setRoomAccessError({
+          roomId: normalizedRoomId,
+          code: errorCode,
+          message:
+            result.message ||
+            (errorCode === 404
+              ? 'Không tìm thấy cuộc trò chuyện yêu cầu.'
+              : 'Bạn không có quyền truy cập vào cuộc trò chuyện này.'),
+        })
+        if (errorCode === 403 || errorCode === 404) {
+          setInbox((prev) => prev.filter((item) => Number(item.roomId) !== normalizedRoomId))
+        }
+        return false
+      }
+
+      setActiveRoomId(normalizedRoomId)
+      activeRoomIdRef.current = normalizedRoomId
+      setRoomAccessError(null)
+
+      if (!isKnownInInbox) {
+        fetchInbox()
       }
 
       try {
-        await fetchMessages(roomId)
+        await chatSignalR.joinRoom(normalizedRoomId)
       } catch (err) {
-        console.warn(`[ChatContext] fetchMessages failed for ${roomId}:`, err)
+        console.warn(`[ChatContext] joinRoom failed for ${normalizedRoomId}:`, err)
       }
 
       try {
-        await chatService.markRoomAsRead(roomId)
+        await chatService.markRoomAsRead(normalizedRoomId)
         setInbox((prev) => {
-          const target = prev.find((item) => item.roomId === roomId)
+          const target = prev.find((item) => Number(item.roomId) === normalizedRoomId)
           if (target && (target.unreadCount || 0) > 0) {
-            return prev.map((item) => (item.roomId === roomId ? { ...item, unreadCount: 0 } : item))
+            return prev.map((item) =>
+              Number(item.roomId) === normalizedRoomId ? { ...item, unreadCount: 0 } : item
+            )
           }
           return prev
         })
       } catch (err) {
-        console.warn(`[ChatContext] Mark read failed for room ${roomId}:`, err)
+        console.warn(`[ChatContext] Mark read failed for room ${normalizedRoomId}:`, err)
       }
+
+      return true
     },
-    [fetchMessages]
+    [fetchMessages, fetchInbox]
   )
 
   const openDirectChatWithUser = useCallback(
@@ -811,7 +908,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const activeRoom = useMemo(() => {
     if (!activeRoomId) return null
-    return inbox.find((item) => item.roomId === activeRoomId) || null
+    return inbox.find((item) => Number(item.roomId) === Number(activeRoomId)) || null
   }, [inbox, activeRoomId])
 
   const messages = useMemo(() => {
@@ -844,8 +941,12 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         inbox,
         isLoadingInbox,
+        hasLoadedInbox,
         activeRoomId,
         activeRoom,
+        roomAccessError,
+        clearRoomAccessError,
+        clearActiveRoom,
         messages,
         isLoadingMessages,
         hasMoreMessages,

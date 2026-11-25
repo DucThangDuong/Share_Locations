@@ -23,6 +23,23 @@ public class UpdateAdminBlogCommandHandler : IRequestHandler<UpdateAdminBlogComm
             return Result<bool>.Failure("Tiêu đề bài viết không được để trống.");
         }
 
+        if (!request.Input.Status.Equals("draft", StringComparison.OrdinalIgnoreCase) &&
+            !request.Input.Status.Equals("hidden", StringComparison.OrdinalIgnoreCase))
+        {
+            var validationError = BlogContentValidator.ValidateSubmission(
+                request.Input.Title,
+                request.Input.Summary,
+                request.Input.CoverImg,
+                request.Input.Content,
+                request.Input.CategoryId,
+                requireCategory: false);
+
+            if (validationError != null)
+            {
+                return Result<bool>.Failure(validationError);
+            }
+        }
+
         var success = await _blogRepository.UpdateAdminBlogAsync(request.Id, request.Input, ct);
         if (!success)
         {

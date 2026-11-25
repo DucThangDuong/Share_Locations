@@ -31,19 +31,19 @@ public static class AppServiceExtensions
             opt.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
             opt.AddFixedWindowLimiter("auth_strict", o =>
             {
-                o.PermitLimit = 15;
+                o.PermitLimit = 150;
                 o.Window = TimeSpan.FromMinutes(1);
                 o.QueueLimit = 0;
             });
             opt.AddFixedWindowLimiter("write_api", o =>
             {
-                o.PermitLimit = 30;
+                o.PermitLimit = 300;
                 o.Window = TimeSpan.FromMinutes(1);
                 o.QueueLimit = 0;
             });
             opt.AddFixedWindowLimiter("general_api", o =>
             {
-                o.PermitLimit = 100;
+                o.PermitLimit = 1000;
                 o.Window = TimeSpan.FromMinutes(1);
                 o.QueueLimit = 0;
             });

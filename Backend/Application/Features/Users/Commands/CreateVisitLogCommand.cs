@@ -52,6 +52,27 @@ public class CreateVisitLogCommandHandler : IRequestHandler<CreateVisitLogComman
             ? (VisitPrivacy)request.Privacy
             : VisitPrivacy.Public;
 
+        var existingLog = await _unitOfWork.VisitLogs.GetByUserAndPlaceAsync(request.UserId, request.PlaceId, ct);
+        if (existingLog != null)
+        {
+            var existingDto = new UserVisitLogItemDto
+            {
+                Id = existingLog.Id,
+                PlaceId = place.Id,
+                PlaceName = place.Name,
+                Province = place.Province?.Name,
+                Category = place.Category?.Name,
+                VisitedDate = existingLog.VisitedDate.ToString("yyyy-MM-dd"),
+                Privacy = (int)existingLog.Privacy,
+                CoverImg = place.CoverImageUrl,
+                Lat = place.Latitude != null ? (double)place.Latitude : null,
+                Lng = place.Longitude != null ? (double)place.Longitude : null,
+                CreatedAt = existingLog.CreatedAt.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
+            };
+
+            return Result<UserVisitLogItemDto>.Success(existingDto, "Địa điểm này đã có trong nhật ký hành trình.");
+        }
+
         var visitLog = new VisitLog(request.UserId, request.PlaceId, date, privacy);
         await _unitOfWork.VisitLogs.AddAsync(visitLog, ct);
         await _unitOfWork.SaveChangesAsync(ct);

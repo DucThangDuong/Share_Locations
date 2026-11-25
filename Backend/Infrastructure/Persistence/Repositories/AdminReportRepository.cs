@@ -598,7 +598,7 @@ public class AdminReportRepository : IAdminReportRepository
                     {
                         if (actionTaken?.Contains("hide_target") == true || actionTaken?.Contains("delete_permanently") == true)
                         {
-                            blog.UpdateStatus(BlogStatus.Archived);
+                            blog.UpdateStatus(BlogStatus.Hidden);
                         }
                         if (actionTaken?.Contains("ban_user") == true)
                         {
@@ -698,7 +698,7 @@ public class AdminReportRepository : IAdminReportRepository
                 if (status == ReportStatus.Resolved && actionTaken == "hide_target")
                 {
                     var blog = await _dbContext.Blogs.FirstOrDefaultAsync(b => b.Id == targetId, ct);
-                    if (blog != null) blog.UpdateStatus(BlogStatus.Archived);
+                    if (blog != null) blog.UpdateStatus(BlogStatus.Hidden);
                 }
                 break;
 

@@ -625,4 +625,50 @@ public class CollectionRepository : ICollectionRepository
 
         return Result<UpdateCollectionStatusResultDto>.Success(resultDto, $"Đã cập nhật trạng thái bộ sưu tập sang '{resultDto.StatusText}'.");
     }
+
+    public async Task<Result<bool>> DeleteCollectionAsync(int id, CancellationToken ct = default)
+    {
+        var connection = _dbContext.Database.GetDbConnection();
+        if (!await AdminScopeFilterHelper.IsCollectionInScopeAsync(_currentUserService, connection, id))
+        {
+            return Result<bool>.Failure("Bạn không có quyền xóa bộ sưu tập này.", System.Net.HttpStatusCode.Forbidden);
+        }
+
+        var collection = await _dbContext.Collections.FirstOrDefaultAsync(c => c.Id == id, ct);
+        if (collection == null)
+        {
+            return Result<bool>.NotFound($"Không tìm thấy bộ sưu tập với ID {id}.");
+        }
+
+        var collectionPlaces = await _dbContext.CollectionPlaces
+            .Where(cp => cp.CollectionId == id)
+            .ToListAsync(ct);
+
+        var oldData = new
+        {
+            collection.Id,
+            collection.Title,
+            collection.ProvinceId,
+            Status = (int)collection.Status,
+            PlaceCount = collectionPlaces.Count
+        };
+
+        if (collectionPlaces.Count > 0)
+        {
+            _dbContext.CollectionPlaces.RemoveRange(collectionPlaces);
+        }
+
+        _dbContext.Collections.Remove(collection);
+        await _dbContext.SaveChangesAsync(ct);
+
+        await _auditLogService.LogAsync(
+            actionType: "DELETE_COLLECTION",
+            targetTable: "Collections",
+            targetId: id,
+            reason: $"Xóa bộ sưu tập: {collection.Title}",
+            oldData: oldData,
+            ct: ct);
+
+        return Result<bool>.Success(true, $"Đã xóa bộ sưu tập '{collection.Title}' thành công.");
+    }
 }

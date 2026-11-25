@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   ChevronDown,
   ChevronUp,
@@ -70,9 +70,24 @@ export const ItineraryDayTimelineSection: React.FC<ItineraryDayTimelineSectionPr
   onDropOnDay
 }) => {
   const [activeMenuStopId, setActiveMenuStopId] = useState<string | null>(null)
+  const [menuPlacement, setMenuPlacement] = useState<'bottom' | 'top'>('bottom')
   const [isEditingInfo, setIsEditingInfo] = useState(false)
   const [tempTitle, setTempTitle] = useState(day.title || `Ngày ${day.dayNumber}`)
   const [tempDate, setTempDate] = useState(day.date || '')
+
+  useEffect(() => {
+    if (!activeMenuStopId) return
+    const handleClose = () => setActiveMenuStopId(null)
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setActiveMenuStopId(null)
+    }
+    document.addEventListener('click', handleClose)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('click', handleClose)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [activeMenuStopId])
 
   const roleLower = (currentUserRole || '').toLowerCase()
   const isOwner = roleLower === 'owner'
@@ -101,14 +116,16 @@ export const ItineraryDayTimelineSection: React.FC<ItineraryDayTimelineSectionPr
       onDragOver={canEdit ? (e) => onDragOverDay(e, dayIndex) : undefined}
       onDragLeave={canEdit ? onDragLeaveDay : undefined}
       onDrop={canEdit ? (e) => onDropOnDay(e, dayIndex) : undefined}
-      className={`bg-white rounded-2xl border transition-all overflow-hidden shadow-2xs ${isDropTarget
+      className={`relative bg-white rounded-2xl border transition-all overflow-visible shadow-2xs ${activeMenuStopId ? 'z-40' : 'z-0'} ${isDropTarget
           ? 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/20'
           : 'border-slate-200'
         }`}
     >
       <div
         onClick={() => onToggleExpand(dayIndex)}
-        className={`p-4 sm:p-5 transition-colors flex items-center justify-between gap-3 cursor-pointer border-b border-slate-200 ${isExpanded ? 'bg-slate-50/90 hover:bg-slate-100/90' : 'bg-white hover:bg-slate-50/80'
+        className={`p-4 sm:p-5 transition-colors flex items-center justify-between gap-3 cursor-pointer ${isExpanded
+            ? 'rounded-t-2xl border-b border-slate-200 bg-slate-50/90 hover:bg-slate-100/90'
+            : 'rounded-2xl bg-white hover:bg-slate-50/80'
           }`}
       >
         <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -247,7 +264,7 @@ export const ItineraryDayTimelineSection: React.FC<ItineraryDayTimelineSectionPr
                 draggable={canEdit}
                 onDragStart={(e) => onDragStartStop(e, dayIndex, stop)}
                 onClick={() => onSelectStop(dayIndex, stop)}
-                className={`group p-3 sm:p-3.5 rounded-xl border transition-all flex items-center justify-between gap-3 text-xs cursor-pointer ${isBatchSelected
+                className={`relative group p-3 sm:p-3.5 rounded-xl border transition-all flex items-center justify-between gap-3 text-xs cursor-pointer ${activeMenuStopId === stop.id ? 'z-30' : ''} ${isBatchSelected
                     ? 'bg-emerald-50/90 border-emerald-600 ring-2 ring-emerald-600/30'
                     : isSelected
                       ? 'bg-emerald-50/50 border-emerald-600 ring-2 ring-emerald-600/30 shadow-xs'
@@ -342,9 +359,14 @@ export const ItineraryDayTimelineSection: React.FC<ItineraryDayTimelineSectionPr
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation()
-                          setActiveMenuStopId(
-                            activeMenuStopId === stop.id ? null : stop.id
-                          )
+                          if (activeMenuStopId === stop.id) {
+                            setActiveMenuStopId(null)
+                            return
+                          }
+                          const rect = e.currentTarget.getBoundingClientRect()
+                          const shouldOpenUp = window.innerHeight - rect.bottom < 220 && rect.top > 220
+                          setMenuPlacement(shouldOpenUp ? 'top' : 'bottom')
+                          setActiveMenuStopId(stop.id)
                         }}
                         className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg cursor-pointer transition-colors"
                       >
@@ -354,7 +376,8 @@ export const ItineraryDayTimelineSection: React.FC<ItineraryDayTimelineSectionPr
                       {activeMenuStopId === stop.id && (
                         <div
                           onClick={(e) => e.stopPropagation()}
-                          className="absolute right-0 top-8 w-48 bg-white border border-slate-200 rounded-xl shadow-lg py-1.5 z-30 text-xs"
+                          className={`absolute right-0 w-48 bg-white border border-slate-200 rounded-xl shadow-xl py-1.5 z-50 text-xs ${menuPlacement === 'top' ? 'bottom-full mb-1.5' : 'top-full mt-1.5'
+                            }`}
                         >
                           <button
                             type="button"
@@ -414,9 +437,11 @@ export const ItineraryDayTimelineSection: React.FC<ItineraryDayTimelineSectionPr
               <p className="text-xs text-slate-600 font-bold">
                 Chưa có điểm dừng nào cho Ngày {day.dayNumber}.
               </p>
-              <p className="text-[11px] text-slate-500">
-                Kéo thả địa điểm từ Kho lưu trữ vào đây hoặc thêm điểm mới.
-              </p>
+              {canEdit && (
+                <p className="text-[11px] text-slate-500">
+                  Kéo thả địa điểm từ Kho lưu trữ vào đây hoặc thêm điểm mới.
+                </p>
+              )}
             </div>
           )}
 

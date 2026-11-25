@@ -78,6 +78,7 @@ export const ACTION_TYPE_MAP: Record<string, ActionMeta> = {
 
   CREATE_TRIP: { label: "Tạo lịch trình chuyến đi", category: "Trips", color: "emerald" },
   UPDATE_TRIP: { label: "Cập nhật lịch trình", category: "Trips", color: "sky" },
+  UPDATE_TRIP_PRIVACY: { label: "Đổi quyền riêng tư lịch trình", category: "Trips", color: "amber" },
   UPDATE_TRIP_STATUS: { label: "Đổi trạng thái lịch trình", category: "Trips", color: "amber" },
   DELETE_TRIP: { label: "Xóa lịch trình chuyến đi", category: "Trips", color: "rose" },
 
@@ -109,6 +110,7 @@ export const ACTION_TYPE_MAP: Record<string, ActionMeta> = {
 
   UPDATE_SYSTEM_SETTING: { label: "Cập nhật tham số hệ thống", category: "SystemSettings", color: "purple" },
   BATCH_UPDATE_SYSTEM_SETTINGS: { label: "Cập nhật cấu hình hệ thống", category: "SystemSettings", color: "purple" },
+  UPDATE_RANKING_GOVERNANCE: { label: "Cập nhật cấu hình bảng xếp hạng", category: "SystemSettings", color: "purple" },
 };
 
 export const getActionMeta = (

@@ -129,10 +129,8 @@ export const tripService = {
     data: PublishTripRequestDto
   ): Promise<ApiSuccessResponse<PublishTripResponseDto>> {
     const formData = new FormData()
-    formData.append('Description', data.description)
-    if (data.title?.trim()) {
-      formData.append('Title', data.title.trim())
-    }
+    formData.append('Description', data.description.trim())
+    formData.append('Title', (data.title ?? '').trim())
     if (data.coverImageFile) {
       formData.append('CoverImageFile', data.coverImageFile)
     }

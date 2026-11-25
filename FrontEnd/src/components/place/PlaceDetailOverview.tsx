@@ -30,74 +30,75 @@ export const PlaceDetailOverview = ({
 }: PlaceDetailOverviewProps) => {
   return (
     <div className="space-y-8">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4">
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="px-2.5 py-0.5 text-xs font-semibold bg-emerald-100 text-emerald-800 rounded-lg">
-              {place.categoryName || 'Địa điểm nổi bật'}
-            </span>
-            <span className="px-2.5 py-0.5 text-xs font-medium bg-gray-100 text-gray-700 rounded-lg">
-              {place.regionName || 'Việt Nam'}
+      <div className="space-y-2.5 pb-4">
+        <div className="flex items-center gap-2">
+          <span className="px-2.5 py-0.5 text-xs font-semibold bg-emerald-100 text-emerald-800 rounded-lg">
+            {place.categoryName || 'Địa điểm nổi bật'}
+          </span>
+          <span className="px-2.5 py-0.5 text-xs font-medium bg-gray-100 text-gray-700 rounded-lg">
+            {place.regionName || 'Việt Nam'}
+          </span>
+        </div>
+
+        <h1 className="w-full text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
+          {place.name}
+        </h1>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+          <div className="flex items-center gap-1.5 text-sm font-semibold text-gray-900">
+            <Star className="w-4 h-4 fill-amber-400 text-amber-400 shrink-0" />
+            <span>{Number(place.avgRating || 5).toFixed(1)}</span>
+            <span className="text-gray-500 font-normal underline cursor-pointer ml-0.5">
+              ({totalReviews} đánh giá)
             </span>
           </div>
 
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
-            {place.name}
-          </h1>
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+            <button type="button"
+              onClick={onShare}
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors shadow-2xs cursor-pointer"
+            >
+              <Share2 className="w-4 h-4" />
+              <span>Chia sẻ</span>
+            </button>
 
-          <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-gray-600">
-            <div className="flex items-center gap-1 font-semibold text-gray-900">
-              <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-              <span>{Number(place.avgRating || 5).toFixed(1)}</span>
-              <span className="text-gray-500 font-normal underline cursor-pointer ml-0.5">
-                ({totalReviews} đánh giá)
-              </span>
-            </div>
-            <span className="text-gray-600">{place.address}</span>
+            <button type="button"
+              onClick={onToggleVisit}
+              className={`inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-lg transition-colors shadow-2xs cursor-pointer ${isVisited
+                ? 'bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100 font-bold'
+                : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+                }`}
+              title={isVisited ? 'Bỏ ghi nhận điểm đến khỏi nhật ký hành trình' : 'Ghi nhận điểm đến vào nhật ký hành trình'}
+            >
+              <CalendarCheck className={`w-4 h-4 ${isVisited ? 'text-emerald-700' : 'text-gray-500'}`} />
+              <span>{isVisited ? 'Đã ghi nhận' : 'Ghi nhận điểm đến'}</span>
+            </button>
+
+            <button type="button"
+              onClick={onToggleSave}
+              className={`inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-lg transition-colors shadow-2xs cursor-pointer ${isSaved
+                ? 'bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 font-bold'
+                : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+                }`}
+              title={isSaved ? 'Bỏ yêu thích địa điểm này' : 'Yêu thích địa điểm này'}
+            >
+              <Heart className={`w-4 h-4 ${isSaved ? 'fill-rose-600 text-rose-600' : 'text-gray-600'}`} />
+              <span>{isSaved ? 'Đã yêu thích' : 'Yêu thích'}</span>
+            </button>
+
+            <button type="button"
+              onClick={onOpenReport}
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-200 rounded-lg hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50/50 transition-colors shadow-2xs cursor-pointer"
+              title="Báo cáo sai phạm"
+            >
+              <Flag className="w-4 h-4" />
+            </button>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-          <button type="button"
-            onClick={onShare}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors shadow-2xs cursor-pointer"
-          >
-            <Share2 className="w-4 h-4" />
-            <span>Chia sẻ</span>
-          </button>
-
-          <button type="button"
-            onClick={onToggleVisit}
-            className={`inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-lg transition-colors shadow-2xs cursor-pointer ${isVisited
-              ? 'bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100 font-bold'
-              : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
-              }`}
-            title={isVisited ? 'Đã ghi nhận vào nhật ký hành trình' : 'Ghi nhận điểm đến vào nhật ký hành trình'}
-          >
-            <CalendarCheck className={`w-4 h-4 ${isVisited ? 'text-emerald-700' : 'text-gray-500'}`} />
-            <span>{isVisited ? 'Đã ghi nhận' : 'Ghi nhận điểm đến'}</span>
-          </button>
-
-          <button type="button"
-            onClick={onToggleSave}
-            className={`inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-lg transition-colors shadow-2xs cursor-pointer ${isSaved
-              ? 'bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 font-bold'
-              : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
-              }`}
-            title={isSaved ? 'Bỏ yêu thích địa điểm này' : 'Yêu thích địa điểm này'}
-          >
-            <Heart className={`w-4 h-4 ${isSaved ? 'fill-rose-600 text-rose-600' : 'text-gray-600'}`} />
-            <span>{isSaved ? 'Đã yêu thích' : 'Yêu thích'}</span>
-          </button>
-
-          <button type="button"
-            onClick={onOpenReport}
-            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-200 rounded-lg hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50/50 transition-colors shadow-2xs cursor-pointer"
-            title="Báo cáo sai phạm"
-          >
-            <Flag className="w-4 h-4" />
-          </button>
-        </div>
+        {place.address && (
+          <p className="text-sm text-gray-600">{place.address}</p>
+        )}
       </div>
 
       <div className="bg-white p-6 sm:p-7 rounded-lg border border-gray-200/80 shadow-2xs">

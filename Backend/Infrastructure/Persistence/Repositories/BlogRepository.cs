@@ -1,4 +1,4 @@
-﻿using Application.Common;
+using Application.Common;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -65,7 +65,12 @@ public class BlogRepository : IBlogRepository
     {
         var connection = _dbContext.Database.GetDbConnection();
 
-        var conditions = new List<string> { "b.Status = 1" };
+        var conditions = new List<string>
+        {
+            "b.Status = 1",
+            "NULLIF(LTRIM(RTRIM(b.CoverImageUrl)), '') IS NOT NULL",
+            "NULLIF(LTRIM(RTRIM(b.Excerpt)), '') IS NOT NULL"
+        };
         var parameters = new DynamicParameters();
 
         if (!string.IsNullOrWhiteSpace(p.Category))
@@ -158,6 +163,8 @@ public class BlogRepository : IBlogRepository
             LEFT JOIN dbo.UserProfiles up ON b.AuthorId = up.UserId
             LEFT JOIN dbo.Categories c ON b.CategoryId = c.Id
             WHERE b.Status = 1
+              AND NULLIF(LTRIM(RTRIM(b.CoverImageUrl)), '') IS NOT NULL
+              AND NULLIF(LTRIM(RTRIM(b.Excerpt)), '') IS NOT NULL
             ORDER BY b.ViewCount DESC, b.CreatedAt DESC;";
 
         var row = await connection.QueryFirstOrDefaultAsync<RawBlogRow>(sql);

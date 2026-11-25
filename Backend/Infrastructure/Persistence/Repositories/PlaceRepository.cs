@@ -310,7 +310,14 @@ public class PlaceRepository : IPlaceRepository
         if (userId.HasValue && userId.Value > 0)
         {
             place.IsSaved = await IsPlaceSavedAsync(userId.Value, id, ct);
-            place.IsVisited = await IsPlaceVisitedAsync(userId.Value, id, ct);
+            var latestVisitLogId = await _dbContext.VisitLogs
+                .AsNoTracking()
+                .Where(v => v.UserId == userId.Value && v.PlaceId == id)
+                .OrderByDescending(v => v.Id)
+                .Select(v => (long?)v.Id)
+                .FirstOrDefaultAsync(ct);
+            place.VisitLogId = latestVisitLogId;
+            place.IsVisited = latestVisitLogId.HasValue;
         }
 
         return place;

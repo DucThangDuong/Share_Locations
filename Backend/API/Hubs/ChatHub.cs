@@ -1,4 +1,4 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Application.Common.Interfaces.Repositories;
 using Microsoft.AspNetCore.Authorization;
@@ -66,6 +66,9 @@ public class ChatHub : Hub<IChatClient>
     {
         var userId = GetCurrentUserId();
         if (!userId.HasValue) return;
+
+        var isMember = await _chatRepository.IsUserInRoomAsync(roomId, userId.Value);
+        if (!isMember) return;
 
         await Clients.OthersInGroup(GetRoomGroupName(roomId)).UserTyping(roomId, userId.Value, isTyping);
     }

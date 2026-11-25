@@ -192,10 +192,10 @@ export const BlogReaderView: React.FC<BlogReaderViewProps> = ({
                     setIsReportModalOpen(true)
                   }}
                   className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-white border border-slate-200/90 text-slate-600 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50/60 transition-all cursor-pointer shadow-2xs"
-                  title="Báo cáo bài viết"
+                  title="Báo cáo"
                 >
                   <Flag size={14} className="text-rose-500" />
-                  <span>Báo cáo bài viết</span>
+                  <span>Báo cáo</span>
                 </button>
               </div>
             </div>

@@ -144,6 +144,69 @@ public static class AdminScopeFilterHelper
 
         return await connection.QueryFirstOrDefaultAsync<(int CategoryId, int ProvinceId)?>(sql, new { Id = placeId });
     }
+    public static void ApplyTripScope(
+        ICurrentUserService currentUser,
+        List<string> whereClauses,
+        DynamicParameters parameters,
+        string tripAlias = "t")
+    {
+        if (currentUser.IsSystemAdmin) return;
+
+        var provScopes = currentUser.ProvinceScopes;
+        if (provScopes.Count == 0)
+        {
+            whereClauses.Add("1 = 0");
+            return;
+        }
+
+        whereClauses.Add($@"(
+            SELECT TOP 1 pl_sc.ProvinceId
+            FROM dbo.TripDays td_sc
+            INNER JOIN dbo.TripPlaces tp_sc ON td_sc.Id = tp_sc.TripDayId
+            INNER JOIN dbo.Places pl_sc ON tp_sc.PlaceId = pl_sc.Id
+            WHERE td_sc.TripId = {tripAlias}.Id AND pl_sc.IsDeleted = 0
+            GROUP BY pl_sc.ProvinceId
+            ORDER BY COUNT(1) DESC, pl_sc.ProvinceId ASC
+        ) IN @ScopeProvinceIds");
+        parameters.Add("ScopeProvinceIds", provScopes);
+    }
+
+    public static async Task<bool> EnsureTripInScopeAsync(
+        ICurrentUserService currentUser,
+        IDbConnection connection,
+        long tripId,
+        string? errorMessage = null)
+    {
+        if (currentUser.IsSystemAdmin) return true;
+
+        var exists = await connection.QueryFirstOrDefaultAsync<int?>(
+            "SELECT 1 FROM dbo.Trips WHERE Id = @Id AND Privacy IN (0, 2);",
+            new { Id = tripId });
+        if (!exists.HasValue) return false;
+
+        var provScopes = currentUser.ProvinceScopes;
+        const string primaryProvSql = @"
+            SELECT TOP 1 pl.ProvinceId
+            FROM dbo.TripDays td
+            INNER JOIN dbo.TripPlaces tp ON td.Id = tp.TripDayId
+            INNER JOIN dbo.Places pl ON tp.PlaceId = pl.Id
+            WHERE td.TripId = @Id AND pl.IsDeleted = 0
+            GROUP BY pl.ProvinceId
+            ORDER BY COUNT(1) DESC, pl.ProvinceId ASC;";
+
+        var primaryProvinceId = await connection.QueryFirstOrDefaultAsync<int?>(
+            primaryProvSql,
+            new { Id = tripId });
+
+        if (provScopes.Count == 0 || !primaryProvinceId.HasValue || !provScopes.Contains(primaryProvinceId.Value))
+        {
+            throw new UnauthorizedAccessException(
+                errorMessage ?? "Bạn không có quyền thao tác với chuyến đi ngoài phạm vi tỉnh/thành phố quản lý.");
+        }
+
+        return true;
+    }
+
     public static void ApplyCollectionScope(
         ICurrentUserService currentUser,
         List<string> whereClauses,

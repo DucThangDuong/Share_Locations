@@ -19,7 +19,13 @@ public class UpdateTripCommandHandler : IRequestHandler<UpdateTripCommand, Resul
 
     public async Task<Result> Handle(UpdateTripCommand request, CancellationToken ct)
     {
-        var trip = await _unitOfWork.Trips.GetByIdAsync(request.TripId, ct);
+        var dto = request.Dto;
+        var wantsPublic = dto.Privacy.HasValue && dto.Privacy.Value == (byte)TripPrivacy.Public;
+
+        var trip = wantsPublic
+            ? await _unitOfWork.Trips.GetByIdWithDetailsAsync(request.TripId, ct)
+            : await _unitOfWork.Trips.GetByIdAsync(request.TripId, ct);
+
         if (trip == null)
         {
             return Result.NotFound("Chuyến đi không tồn tại.");
@@ -36,8 +42,6 @@ public class UpdateTripCommandHandler : IRequestHandler<UpdateTripCommand, Resul
             }
         }
 
-        var dto = request.Dto;
-
         if (string.IsNullOrWhiteSpace(dto.Title))
         {
             return Result.Failure("Tiêu đề chuyến đi không được để trống.");
@@ -48,7 +52,45 @@ public class UpdateTripCommandHandler : IRequestHandler<UpdateTripCommand, Resul
             return Result.Failure("Ngày bắt đầu không được sau ngày kết thúc.");
         }
 
-        trip.UpdateInfo(dto.Title.Trim(), dto.Description?.Trim(), dto.CoverImageUrl?.Trim());
+        var nextTitle = dto.Title.Trim();
+        var nextDescription = dto.Description != null ? dto.Description.Trim() : trip.Description;
+        var nextCover = dto.CoverImageUrl != null ? dto.CoverImageUrl.Trim() : trip.CoverImageUrl;
+
+        if (wantsPublic)
+        {
+            if (!isOwner)
+            {
+                return Result.Forbidden("Chỉ chủ sở hữu chuyến đi mới có quyền thay đổi chế độ riêng tư.");
+            }
+
+            if (string.Equals(nextTitle, "Chuyến đi mới của tôi", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(nextTitle, "Chuyến đi của tôi", StringComparison.OrdinalIgnoreCase) ||
+                nextTitle.Length < 3)
+            {
+                return Result.Failure("Vui lòng đặt tên cụ thể cho chuyến đi trước khi công bố.");
+            }
+
+            if (string.IsNullOrWhiteSpace(nextDescription) || nextDescription.Length < 10)
+            {
+                return Result.Failure("Mô tả chuyến đi là bắt buộc (tối thiểu 10 ký tự) trước khi công bố.");
+            }
+
+            if (string.IsNullOrWhiteSpace(nextCover))
+            {
+                return Result.Failure("Ảnh bìa chuyến đi là bắt buộc khi công bố.");
+            }
+
+            var validStopsCount = trip.Days
+                .SelectMany(d => d.Places)
+                .Count(p => p.Place != null && !p.Place.IsDeleted);
+
+            if (validStopsCount == 0)
+            {
+                return Result.Failure("Chuyến đi phải có ít nhất 1 địa điểm tham quan trước khi công bố.");
+            }
+        }
+
+        trip.UpdateInfo(nextTitle, nextDescription, nextCover);
         trip.UpdateDates(dto.StartDate, dto.EndDate);
 
         if (dto.Privacy.HasValue && dto.Privacy.Value != (byte)trip.Privacy)

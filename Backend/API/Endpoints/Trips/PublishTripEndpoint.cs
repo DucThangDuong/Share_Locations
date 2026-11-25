@@ -1,4 +1,4 @@
-﻿using API.DTOs;
+using API.DTOs;
 using API.Extensions;
 using Application.Common;
 using Application.DTOs;
@@ -35,7 +35,10 @@ public class PublishTripRequestValidator : AbstractValidator<PublishTripRequest>
             .MaximumLength(2000).WithMessage("Mô tả chuyến đi không được vượt quá 2000 ký tự.");
 
         RuleFor(x => x.Title)
-            .MaximumLength(255).WithMessage("Tiêu đề không được vượt quá 255 ký tự.");
+            .NotEmpty().WithMessage("Tên chuyến đi là bắt buộc khi xuất bản.")
+            .MinimumLength(3).WithMessage("Tên chuyến đi phải có ít nhất 3 ký tự.")
+            .MaximumLength(255).WithMessage("Tiêu đề không được vượt quá 255 ký tự.")
+            .When(x => x.Title != null);
 
         RuleFor(x => x.CoverImageFile)
             .Must(f => f == null || f.Length <= MaxFileSize)

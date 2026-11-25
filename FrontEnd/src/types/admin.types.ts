@@ -7,6 +7,7 @@ export type AdminMainTab =
   | "reports"
   | "foods"
   | "collections"
+  | "trips"
   | "provinces"
   | "blogs"
   | "categories"
@@ -262,7 +263,7 @@ export interface AdminBlogItem {
   updatedAt?: string;
   updatedBy?: string;
   createdBy?: string;
-  status: "published" | "draft" | "hidden" | "archived";
+  status: "published" | "pending" | "draft" | "hidden" | "archived";
   coverImg: string;
   summary?: string;
   content?: string;
@@ -609,5 +610,97 @@ export interface AdminSystemSettingItem {
   updatedAt?: string;
   updatedBy?: number;
   updatedByName?: string;
+}
+
+export interface AdminTripStopItem {
+  id?: number;
+  placeId: number;
+  placeName: string;
+  categoryName?: string | null;
+  provinceName?: string | null;
+  address?: string | null;
+  coverImageUrl?: string | null;
+  visitOrder: number;
+  startTime?: string | null;
+  endTime?: string | null;
+  estimatedCost?: number | null;
+  transportMode?: string | null;
+  note?: string | null;
+}
+
+export interface AdminTripDayItem {
+  id?: number;
+  dayNumber: number;
+  dayTitle?: string | null;
+  date?: string | null;
+  stops: AdminTripStopItem[];
+}
+
+export interface AdminTripMemberItem {
+  userId: number;
+  fullName: string;
+  email?: string | null;
+  avatarUrl?: string | null;
+  role: string;
+  joinedAt?: string;
+}
+
+export interface AdminTripListItem {
+  id: number;
+  userId: number;
+  title: string;
+  slug?: string | null;
+  description?: string | null;
+  coverImageUrl?: string | null;
+  authorName: string;
+  authorAvatar?: string | null;
+  authorEmail?: string | null;
+  provinceId?: number | null;
+  provinceName?: string | null;
+  daysCount: number;
+  stopsCount: number;
+  membersCount: number;
+  estimatedBudget?: number | null;
+  privacy: number;
+  privacyText?: string;
+  status: number;
+  statusText?: string;
+  viewCount: number;
+  cloneCount: number;
+  startDate?: string | null;
+  endDate?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminTripDetail extends AdminTripListItem {
+  days: AdminTripDayItem[];
+  members: AdminTripMemberItem[];
+}
+
+export interface SaveAdminTripRequest {
+  title: string;
+  description?: string | null;
+  coverImageUrl?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  estimatedBudget?: number | null;
+  privacy: number;
+  status: number;
+  replaceSchedule?: boolean;
+  days: Array<{
+    dayNumber: number;
+    dayTitle?: string | null;
+    date?: string | null;
+    stops: Array<{
+      placeId: number;
+      visitOrder: number;
+      startTime?: string | null;
+      endTime?: string | null;
+      estimatedCost?: number | null;
+      transportMode?: string | null;
+      note?: string | null;
+    }>;
+  }>;
 }
 

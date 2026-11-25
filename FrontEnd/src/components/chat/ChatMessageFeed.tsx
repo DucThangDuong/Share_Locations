@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import {
   Info,
   Loader2,
@@ -63,17 +64,32 @@ export const ChatMessageFeed: React.FC<ChatMessageFeedProps> = ({
   const [isSavingEdit, setIsSavingEdit] = useState(false)
 
   const [activeMenuMessageId, setActiveMenuMessageId] = useState<number | null>(null)
+  const [menuPosition, setMenuPosition] = useState<{ left: number; top?: number; bottom?: number } | null>(null)
   const [copiedMessageId, setCopiedMessageId] = useState<number | null>(null)
 
   useEffect(() => {
-    const handleClickOutside = () => {
+    const handleClose = () => {
       setActiveMenuMessageId(null)
+      setMenuPosition(null)
     }
-    document.addEventListener('click', handleClickOutside)
-    return () => document.removeEventListener('click', handleClickOutside)
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') handleClose()
+    }
+    document.addEventListener('click', handleClose)
+    window.addEventListener('resize', handleClose)
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('click', handleClose)
+      window.removeEventListener('resize', handleClose)
+      window.removeEventListener('keydown', handleKeyDown)
+    }
   }, [])
 
   const handleScroll = () => {
+    if (activeMenuMessageId !== null) {
+      setActiveMenuMessageId(null)
+      setMenuPosition(null)
+    }
     const container = scrollRef.current
     if (!container || !hasMoreMessages || isLoadingMoreMessages) return
 
@@ -173,7 +189,7 @@ export const ChatMessageFeed: React.FC<ChatMessageFeedProps> = ({
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-2.5 scroll-smooth"
+        className="flex-1 overflow-y-auto overflow-x-hidden px-4 sm:px-6 py-4 space-y-2.5 scroll-smooth"
       >
         {hasMoreMessages && (
           <div className="py-2 flex justify-center sticky top-0 z-10">
@@ -229,7 +245,29 @@ export const ChatMessageFeed: React.FC<ChatMessageFeedProps> = ({
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation()
-                      setActiveMenuMessageId(isMenuOpen ? null : msg.id)
+                      if (isMenuOpen) {
+                        setActiveMenuMessageId(null)
+                        setMenuPosition(null)
+                        return
+                      }
+                      const btnRect = e.currentTarget.getBoundingClientRect()
+                      const containerRect = scrollRef.current?.getBoundingClientRect()
+                      const menuWidth = 164
+                      const estimatedHeight = isMe ? 168 : 92
+                      const minLeft = containerRect ? Math.max(8, containerRect.left + 8) : 8
+                      const maxLeft = containerRect
+                        ? Math.min(window.innerWidth - menuWidth - 8, containerRect.right - menuWidth - 8)
+                        : window.innerWidth - menuWidth - 8
+                      const preferredLeft = isMe ? btnRect.left : btnRect.right - menuWidth
+                      const clampedLeft = Math.max(minLeft, Math.min(preferredLeft, maxLeft))
+                      const spaceAbove = containerRect ? btnRect.top - containerRect.top : btnRect.top
+                      const openAbove = spaceAbove >= estimatedHeight + 8 || btnRect.bottom + estimatedHeight + 8 > window.innerHeight
+                      setMenuPosition(
+                        openAbove
+                          ? { left: clampedLeft, bottom: window.innerHeight - btnRect.top + 6 }
+                          : { left: clampedLeft, top: btnRect.bottom + 6 }
+                      )
+                      setActiveMenuMessageId(msg.id)
                     }}
                     className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors cursor-pointer ${isMenuOpen
                         ? 'bg-slate-200 text-slate-900 shadow-2xs'
@@ -240,15 +278,22 @@ export const ChatMessageFeed: React.FC<ChatMessageFeedProps> = ({
                     <MoreHorizontal size={15} />
                   </button>
 
-                  {isMenuOpen && (
+                  {isMenuOpen && menuPosition && createPortal(
                     <div
-                      className={`absolute bottom-full mb-1.5 w-40 bg-white rounded-2xl shadow-xl border border-slate-100 py-1.5 z-50 animate-in zoom-in-95 duration-150 ${isMe ? 'right-0' : 'left-0'
-                        }`}
+                      onClick={(e) => e.stopPropagation()}
+                      style={{
+                        position: 'fixed',
+                        left: menuPosition.left,
+                        top: menuPosition.top,
+                        bottom: menuPosition.bottom,
+                      }}
+                      className="w-40 bg-white rounded-2xl shadow-xl border border-slate-200 py-1.5 z-[9999] animate-in zoom-in-95 duration-150"
                     >
                       <button
                         type="button"
                         onClick={() => {
                           setActiveMenuMessageId(null)
+                          setMenuPosition(null)
                           onReplyToMessage({
                             id: msg.id,
                             senderName: isMe ? 'Chính bạn' : msg.senderName,
@@ -264,7 +309,10 @@ export const ChatMessageFeed: React.FC<ChatMessageFeedProps> = ({
                       {msg.content && (
                         <button
                           type="button"
-                          onClick={() => handleCopy(msg.id, msg.content || '')}
+                          onClick={() => {
+                            setMenuPosition(null)
+                            handleCopy(msg.id, msg.content || '')
+                          }}
                           className="w-full px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 transition-colors cursor-pointer text-left"
                         >
                           {copiedMessageId === msg.id ? (
@@ -288,6 +336,7 @@ export const ChatMessageFeed: React.FC<ChatMessageFeedProps> = ({
                             type="button"
                             onClick={() => {
                               setActiveMenuMessageId(null)
+                              setMenuPosition(null)
                               setEditingMessageId(msg.id)
                               setEditingText(msg.content || '')
                             }}
@@ -299,7 +348,10 @@ export const ChatMessageFeed: React.FC<ChatMessageFeedProps> = ({
 
                           <button
                             type="button"
-                            onClick={() => handleDelete(msg.id)}
+                            onClick={() => {
+                              setMenuPosition(null)
+                              handleDelete(msg.id)
+                            }}
                             className="w-full px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 flex items-center gap-2.5 transition-colors cursor-pointer text-left"
                           >
                             <Trash2 size={14} className="text-rose-500" />
@@ -307,7 +359,8 @@ export const ChatMessageFeed: React.FC<ChatMessageFeedProps> = ({
                           </button>
                         </>
                       )}
-                    </div>
+                    </div>,
+                    document.body
                   )}
                 </div>
 

@@ -607,11 +607,15 @@ public class AdminUserRepository : IAdminUserRepository
                 ISNULL(b.ViewCount, 0) AS Views,
                 0 AS Likes,
                 b.CreatedAt AS PublishedAt,
-                'published' AS Status
+                CASE
+                    WHEN b.Status = 1 THEN 'published'
+                    WHEN b.Status = 2 THEN 'pending'
+                    ELSE 'hidden'
+                END AS Status
             FROM dbo.Blogs b
             LEFT JOIN dbo.Categories c ON b.CategoryId = c.Id
             WHERE b.AuthorId = @UserId
-              AND b.Status = 1
+              AND b.Status IN (1, 2, 3)
             ORDER BY b.CreatedAt DESC;";
 
         result.Blogs = (await connection.QueryAsync<UserBlogActivityDto>(blogsSql, new { UserId = targetUserId })).ToList();

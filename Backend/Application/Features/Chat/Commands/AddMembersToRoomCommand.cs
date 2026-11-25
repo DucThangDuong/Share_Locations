@@ -1,4 +1,4 @@
-﻿using Application.Common;
+using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs;
@@ -71,7 +71,7 @@ public class AddMembersToRoomCommandHandler : IRequestHandler<AddMembersToRoomCo
                     Priority = 2,
                     EntityType = "CHAT_ROOM",
                     EntityId = request.RoomId,
-                    TargetUrl = $"/chat?room={request.RoomId}",
+                    TargetUrl = $"/chat?conversation={request.RoomId}",
                     GroupKey = $"CHAT_ROOM_{request.RoomId}"
                 }, ct);
 

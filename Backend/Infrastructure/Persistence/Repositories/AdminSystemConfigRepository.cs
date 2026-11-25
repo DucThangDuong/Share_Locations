@@ -1,4 +1,4 @@
-﻿using Application.Common.Interfaces;
+using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
 using Application.DTOs.Admin;
 using Dapper;
@@ -312,7 +312,7 @@ public class AdminSystemConfigRepository : IAdminSystemConfigRepository
                 actionType: "UPDATE_SYSTEM_SETTING",
                 targetTable: "SystemSettings",
                 targetId: 0,
-                reason: $"Cập nhật tham số hệ thống: {upperKey} = '{value}'",
+                reason: $"Cập nhật tham số hệ thống: {Domain.Constants.AdminDisplayNames.GetSettingName(upperKey)} = '{value}'",
                 oldData: old,
                 newData: new { SettingKey = upperKey, SettingValue = value },
                 customAdminId: adminId,

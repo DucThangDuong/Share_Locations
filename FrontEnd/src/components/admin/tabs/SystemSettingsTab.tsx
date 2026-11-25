@@ -22,6 +22,42 @@ import type {
   AdminAssignmentInfo,
 } from "@/types/admin.types";
 
+const SETTING_NAME_VI_MAP: Record<string, string> = {
+  MAINTENANCE_MODE: "Chế độ bảo trì toàn hệ thống",
+  SITE_NAME: "Tên hiển thị hệ thống",
+  SITE_EMAIL: "Email hỗ trợ khách hàng",
+  SITE_HOTLINE: "Đường dây nóng hỗ trợ du khách",
+  AUTO_APPROVE_PLACES: "Tự động duyệt địa điểm mới",
+  AUTO_APPROVE_REVIEWS: "Tự động duyệt bài đánh giá",
+  MAX_UPLOAD_PHOTOS: "Số lượng ảnh tối đa mỗi bài",
+  MAX_UPLOAD_SIZE_MB: "Dung lượng tối đa mỗi ảnh",
+  BLACKLIST_WORDS: "Danh sách từ khóa cấm & nhạy cảm",
+  SPAM_KEYWORDS: "Danh sách từ khóa spam & quảng cáo",
+  ALLOW_REGISTRATION: "Cho phép đăng ký tài khoản mới",
+  REQUIRE_EMAIL_VERIFICATION: "Yêu cầu xác thực Email khi đăng ký",
+  ENABLE_TWO_FACTOR: "Bật xác thực hai bước",
+  DEFAULT_USER_AVATAR: "Ảnh đại diện mặc định người dùng",
+  DEFAULT_GROUP_AVATAR: "Ảnh đại diện mặc định nhóm trò chuyện",
+  HOME_HERO_IMAGE: "Ảnh nền màn hình chính",
+  RANKING_GOVERNANCE_CONFIG: "Cấu hình quản trị bảng xếp hạng",
+  RANKING_SNAPSHOT_JSON: "Dữ liệu lưu vết thứ hạng kỳ trước",
+  RANKING_TITLE: "Tiêu đề trang bảng xếp hạng",
+  RANKING_SUBTITLE: "Mô tả trang bảng xếp hạng",
+  RANKING_BADGE: "Nhãn huy hiệu bảng xếp hạng",
+  RANKING_DESTINATIONS_TITLE: "Tiêu đề bảng xếp hạng điểm đến",
+  RANKING_DESTINATIONS_VN_TITLE: "Tiêu đề tiếng Việt bảng xếp hạng điểm đến",
+  RANKING_DESTINATIONS_TAGLINE: "Khẩu hiệu bảng xếp hạng điểm đến",
+  RANKING_DESTINATIONS_COVER: "Ảnh bìa bảng xếp hạng điểm đến",
+  RANKING_PLACES_TITLE: "Tiêu đề bảng xếp hạng địa điểm",
+  RANKING_PLACES_VN_TITLE: "Tiêu đề tiếng Việt bảng xếp hạng địa điểm",
+  RANKING_PLACES_TAGLINE: "Khẩu hiệu bảng xếp hạng địa điểm",
+  RANKING_PLACES_COVER: "Ảnh bìa bảng xếp hạng địa điểm",
+};
+
+const SETTING_DESCRIPTION_VI_OVERRIDES: Record<string, string> = {
+  RANKING_SNAPSHOT_JSON: "Dữ liệu lưu vết thứ hạng kỳ trước phục vụ tính biến động thứ hạng",
+};
+
 interface SystemSettingsTabProps {
   currentAdminInfo?: AdminAssignmentInfo;
   showToast?: (msg: string) => void;
@@ -73,6 +109,26 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
   });
 
   const cleanDisplay = (text?: string) => text ? text.replace(/\s*\([^)]*\)/g, "").trim() : "";
+
+  const getSettingDisplayName = (item?: Pick<AdminSystemSettingItem, "settingKey" | "settingName">) => {
+    if (!item) return "";
+    const normalizedKey = (item.settingKey || "").trim().toUpperCase();
+    const mapped = SETTING_NAME_VI_MAP[normalizedKey];
+    if (mapped) return mapped;
+    const rawName = cleanDisplay(item.settingName);
+    if (rawName && rawName.toUpperCase() !== normalizedKey) return rawName;
+    return cleanDisplay(item.settingKey);
+  };
+
+  const getSettingDescription = (item: Pick<AdminSystemSettingItem, "settingKey" | "description">) => {
+    const normalizedKey = (item.settingKey || "").trim().toUpperCase();
+    const cleaned = cleanDisplay(item.description);
+    const override = SETTING_DESCRIPTION_VI_OVERRIDES[normalizedKey];
+    if (override && (!cleaned || /snapshot/i.test(cleaned))) {
+      return override;
+    }
+    return cleaned;
+  };
 
   const notify = (msg: string) => {
     if (showToast) showToast(msg);
@@ -161,12 +217,13 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
   const handleSaveSingleSetting = async (key: string) => {
     const item = systemSettings.find((s) => s.settingKey === key);
     const value = settingValues[key] ?? "";
+    const displayName = getSettingDisplayName(item || { settingKey: key });
     try {
       await adminService.updateSystemSetting(key, {
         settingValue: value,
         description: item?.description,
       });
-      notify(`Đã lưu thiết lập '${key}' thành công!`);
+      notify(`Đã lưu thiết lập '${displayName}' thành công!`);
       fetchSystemSettings();
       refreshSettings();
     } catch (err: any) {
@@ -226,7 +283,7 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
       return;
     }
     if (!reportTypeForm.code.trim()) {
-      notify("Vui lòng nhập mã định danh (Code)!");
+      notify("Vui lòng nhập mã định danh!");
       return;
     }
 
@@ -330,7 +387,7 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
             </h3>
 
             <div>
-              <label className="block text-slate-700 font-bold mb-1.5">Mã định danh hệ thống (Code) *</label>
+              <label className="block text-slate-700 font-bold mb-1.5">Mã định danh hệ thống *</label>
               <input
                 type="text"
                 placeholder="Ví dụ: SPAM_ADVERTISING, INAPPROPRIATE_CONTENT, FAKE_LOCATION"
@@ -361,7 +418,7 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-slate-700 font-bold mb-1.5">Phạm vi áp dụng (Target Scope)</label>
+                <label className="block text-slate-700 font-bold mb-1.5">Phạm vi áp dụng</label>
                 <CustomSelect
                   value={reportTypeForm.targetScope}
                   onChange={(val) => setReportTypeForm({ ...reportTypeForm, targetScope: val })}
@@ -376,7 +433,7 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-700 font-bold mb-1.5">Thứ tự hiển thị (Display Order)</label>
+                <label className="block text-slate-700 font-bold mb-1.5">Thứ tự hiển thị</label>
                 <input
                   type="number"
                   min="1"
@@ -424,7 +481,7 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
                 </h4>
                 <div className="space-y-2 text-xs">
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Mã ID định danh:</span>
+                    <span className="text-slate-500">Mã định danh:</span>
                     <span className="font-mono font-bold text-slate-800">#{currentRt.id}</span>
                   </div>
                   <div className="flex items-center justify-between">
@@ -545,15 +602,16 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
       {activeSubTab === "systemSettings" && (
         <div className="space-y-4">
           <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="font-bold text-slate-700">Nhóm thiết lập:</span>
-              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+              <div className="flex items-center flex-wrap gap-1 bg-slate-100 p-1 rounded-xl">
                 {[
                   { id: "ALL", label: "Tất cả" },
                   { id: "GENERAL", label: "Cấu hình chung" },
-                  { id: "MODERATION", label: "Kiểm duyệt & SLA" },
+                  { id: "MODERATION", label: "Kiểm duyệt & Nội dung" },
                   { id: "SECURITY", label: "Bảo mật & Từ cấm" },
-                  { id: "MEDIA", label: "Hình ảnh & Media" },
+                  { id: "MEDIA", label: "Hình ảnh & Giao diện" },
+                  { id: "RANKING", label: "Bảng xếp hạng" },
                 ].map((g) => (
                   <button
                     key={g.id}
@@ -604,10 +662,10 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
                     <div className="space-y-1 md:w-1/3">
                       <div>
                         <span className="font-bold text-slate-900 text-xs">
-                          {cleanDisplay(item.settingName || item.settingKey)}
+                          {getSettingDisplayName(item)}
                         </span>
                       </div>
-                      <p className="text-xs text-slate-500">{cleanDisplay(item.description)}</p>
+                      <p className="text-xs text-slate-500">{getSettingDescription(item)}</p>
                       {item.updatedAt && (
                         <p className="text-[10px] text-slate-400">
                           Cập nhật: {new Date(item.updatedAt).toLocaleString("vi-VN")}{" "}
@@ -690,8 +748,8 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
                 onChange={(val) => setReportScopeFilter(val)}
                 options={[
                   { value: "ALL", label: "Tất cả phạm vi" },
-                  { value: "PLACE", label: "Chỉ áp dụng Địa điểm (PLACE)" },
-                  { value: "CONTENT", label: "Chỉ áp dụng Nội dung (CONTENT)" },
+                  { value: "PLACE", label: "Chỉ áp dụng Địa điểm" },
+                  { value: "CONTENT", label: "Chỉ áp dụng Nội dung" },
                 ]}
                 className="w-56"
               />
@@ -758,7 +816,7 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
                                 ? "Địa điểm"
                                 : rt.targetScope === "CONTENT"
                                 ? "Nội dung & Bài viết"
-                                : "Toàn bộ (ALL)")}
+                                : "Toàn bộ hệ thống")}
                           </span>
                         </td>
                         <td className="p-3.5 text-center font-bold text-slate-800">

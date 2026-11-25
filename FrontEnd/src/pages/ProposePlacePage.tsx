@@ -10,6 +10,7 @@ import {
   Navigation,
   Check,
   ShieldCheck,
+  ShieldAlert,
   Eye,
   FileText,
   Image as ImageIcon,
@@ -47,11 +48,12 @@ export const ProposePlacePage: React.FC = () => {
   const { isAuthenticated, isLoading } = useAuth()
 
   const viewId = searchParams.get('view') || searchParams.get('id')
-  const passedProposal = (location.state as any)?.proposal as ProposalItem | undefined
-  const isViewMode = Boolean(viewId || passedProposal)
+  const isViewMode = Boolean(viewId)
 
-  const [proposalData, setProposalData] = useState<ProposalItem | null>(passedProposal || null)
-  const [isLoadingProposal, setIsLoadingProposal] = useState(Boolean(viewId && !passedProposal))
+  const [proposalData, setProposalData] = useState<ProposalItem | null>(null)
+  const [isLoadingProposal, setIsLoadingProposal] = useState(Boolean(viewId))
+  const [loadedViewId, setLoadedViewId] = useState<string | null>(null)
+  const [proposalError, setProposalError] = useState<{ code: number; message: string } | null>(null)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSubmittedSuccess, setIsSubmittedSuccess] = useState(false)
@@ -60,20 +62,20 @@ export const ProposePlacePage: React.FC = () => {
   const [categories, setCategories] = useState<CategoryDto[]>([])
   const [provinces, setProvinces] = useState<ProvinceDto[]>([])
 
-  const [name, setName] = useState(passedProposal?.name || '')
-  const [categoryId, setCategoryId] = useState<number>(passedProposal?.categoryId || 1)
-  const [provinceId, setProvinceId] = useState<number>(passedProposal?.provinceId || 1)
-  const [address, setAddress] = useState(passedProposal?.address || '')
-  const [phone, setPhone] = useState(passedProposal?.phone || '')
-  const [website, setWebsite] = useState(passedProposal?.website || '')
+  const [name, setName] = useState('')
+  const [categoryId, setCategoryId] = useState<number>(1)
+  const [provinceId, setProvinceId] = useState<number>(1)
+  const [address, setAddress] = useState('')
+  const [phone, setPhone] = useState('')
+  const [website, setWebsite] = useState('')
 
   const [addressSuggestions, setAddressSuggestions] = useState<AddressSuggestion[]>([])
   const [isSearchingAddress, setIsSearchingAddress] = useState(false)
   const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false)
   const [isReverseGeocoding, setIsReverseGeocoding] = useState(false)
 
-  const [lat, setLat] = useState(passedProposal?.latitude ? String(passedProposal.latitude) : '21.028500')
-  const [lng, setLng] = useState(passedProposal?.longitude ? String(passedProposal.longitude) : '105.854200')
+  const [lat, setLat] = useState('21.028500')
+  const [lng, setLng] = useState('105.854200')
   const [isLocating, setIsLocating] = useState(false)
 
   const [openTime, setOpenTime] = useState('07:30')
@@ -82,17 +84,9 @@ export const ProposePlacePage: React.FC = () => {
   const [isFree, setIsFree] = useState(false)
   const [minPrice, setMinPrice] = useState('35000')
   const [maxPrice, setMaxPrice] = useState('120000')
-  const [description, setDescription] = useState(passedProposal?.description || '')
+  const [description, setDescription] = useState('')
 
-  const [imageItems, setImageItems] = useState<ProposalImageItem[]>(() => {
-    if (passedProposal?.mediaUrls && passedProposal.mediaUrls.length > 0) {
-      return passedProposal.mediaUrls.map((url, i) => ({ id: `init-${i}`, url }))
-    }
-    if (passedProposal?.coverImg) {
-      return [{ id: 'init-cover', url: passedProposal.coverImg }]
-    }
-    return []
-  })
+  const [imageItems, setImageItems] = useState<ProposalImageItem[]>([])
   const images = useMemo(() => imageItems.map((item) => item.url), [imageItems])
   const [activePreviewImgIndex, setActivePreviewImgIndex] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
@@ -170,50 +164,170 @@ export const ProposePlacePage: React.FC = () => {
   }, [])
 
   useEffect(() => {
-    const loadMetadata = async () => {
+    let active = true
+
+    const loadMetadataAndProposal = async () => {
       try {
         const [catRes, provRes] = await Promise.all([
           catalogService.getCategories(),
           geographyService.getProvinces()
         ])
+        if (!active) return
+
         const catList = (catRes.success && catRes.data) ? catRes.data : []
         const provList = (provRes.success && provRes.data) ? provRes.data : []
 
         if (catList.length > 0) {
           setCategories(catList)
-          if (!passedProposal) setCategoryId(catList[0].id)
         }
         if (provList.length > 0) {
           setProvinces(provList)
-          if (!passedProposal) setProvinceId(provList[0].id)
         }
 
-        if (passedProposal) {
-          applyProposalToState(passedProposal, catList, provList)
-        } else if (viewId) {
+        if (!viewId) {
+          setProposalData(null)
+          setProposalError(null)
+          setLoadedViewId(null)
+          setIsLoadingProposal(false)
+          setName('')
+          setAddress('')
+          setPhone('')
+          setWebsite('')
+          setDescription('')
+          setOpenTime('07:30')
+          setCloseTime('22:00')
+          setIs24Hours(false)
+          setIsFree(false)
+          setMinPrice('35000')
+          setMaxPrice('120000')
+          setLat('21.028500')
+          setLng('105.854200')
+          setImageItems([])
+          if (catList.length > 0) setCategoryId(catList[0].id)
+          if (provList.length > 0) setProvinceId(provList[0].id)
+          return
+        }
+
+        if (isLoading) {
           setIsLoadingProposal(true)
-          try {
-            const res = await userService.getMyProposals({ pageSize: 100 })
-            if (res.success && res.data) {
-              const items = Array.isArray(res.data)
-                ? res.data
-                : (res.data as PagedResultDto<ProposalItem>).items || []
-              const found = items.find((item) => String(item.id) === String(viewId))
+          return
+        }
+
+        if (!isAuthenticated) {
+          setProposalData(null)
+          setProposalError(null)
+          setLoadedViewId(null)
+          setIsLoadingProposal(false)
+          return
+        }
+
+        const trimmedId = viewId.trim()
+        const numericId = /^\d+$/.test(trimmedId) ? Number(trimmedId) : NaN
+        if (!Number.isSafeInteger(numericId) || numericId <= 0) {
+          setProposalData(null)
+          setProposalError({
+            code: 404,
+            message: 'Mã đề xuất địa điểm không hợp lệ hoặc không tồn tại.'
+          })
+          setLoadedViewId(viewId)
+          setIsLoadingProposal(false)
+          return
+        }
+
+        setIsLoadingProposal(true)
+        setProposalError(null)
+        setProposalData(null)
+
+        try {
+          const res = await userService.getMyProposalById(numericId)
+          if (!active) return
+          if (res.success && res.data) {
+            applyProposalToState(res.data, catList, provList)
+            setProposalError(null)
+          } else {
+            setProposalData(null)
+            setProposalError({
+              code: 403,
+              message: res.message || 'Bạn không có quyền xem đề xuất địa điểm này.'
+            })
+          }
+        } catch (err: any) {
+          if (!active) return
+          const status = err?.response?.status
+          const serverMsg = err?.response?.data?.message as string | undefined
+
+          if (status === 403) {
+            setProposalData(null)
+            setProposalError({
+              code: 403,
+              message: serverMsg || 'Bạn không có quyền xem đề xuất địa điểm của người khác.'
+            })
+          } else if (status === 404 && !serverMsg) {
+            try {
+              const listRes = await userService.getMyProposals({ pageSize: 100 })
+              if (!active) return
+              const items = listRes.success && listRes.data
+                ? (Array.isArray(listRes.data)
+                  ? listRes.data
+                  : (listRes.data as PagedResultDto<ProposalItem>).items || [])
+                : []
+              const found = items.find((item) => Number(item.id) === numericId)
               if (found) {
                 applyProposalToState(found, catList, provList)
+                setProposalError(null)
+              } else {
+                setProposalData(null)
+                setProposalError({
+                  code: 403,
+                  message: 'Bạn không có quyền xem hoặc không tìm thấy đề xuất địa điểm này.'
+                })
               }
+            } catch {
+              if (!active) return
+              setProposalData(null)
+              setProposalError({
+                code: 403,
+                message: 'Bạn không có quyền xem hoặc không tìm thấy đề xuất địa điểm này.'
+              })
             }
-          } catch {
-          } finally {
+          } else if (status === 404) {
+            setProposalData(null)
+            setProposalError({
+              code: 404,
+              message: serverMsg || 'Không tìm thấy đề xuất địa điểm yêu cầu.'
+            })
+          } else {
+            setProposalData(null)
+            setProposalError({
+              code: status || 500,
+              message: serverMsg || 'Không thể tải thông tin đề xuất địa điểm.'
+            })
+          }
+        } finally {
+          if (active) {
+            setLoadedViewId(viewId)
             setIsLoadingProposal(false)
           }
         }
       } catch {
+        if (active && viewId) {
+          setProposalData(null)
+          setProposalError({
+            code: 500,
+            message: 'Không thể tải thông tin đề xuất địa điểm.'
+          })
+          setLoadedViewId(viewId)
+          setIsLoadingProposal(false)
+        }
       }
     }
 
-    loadMetadata()
-  }, [viewId])
+    loadMetadataAndProposal()
+
+    return () => {
+      active = false
+    }
+  }, [viewId, isAuthenticated, isLoading])
 
   const handleReverseGeocode = async (targetLng: number, targetLat: number) => {
     if (reverseAbortControllerRef.current) {
@@ -241,7 +355,7 @@ export const ProposePlacePage: React.FC = () => {
   }
 
   useEffect(() => {
-    if (!isAuthenticated || !mapContainerRef.current) return
+    if (!isAuthenticated || isLoadingProposal || (isViewMode && (!proposalData || proposalError)) || !mapContainerRef.current) return
 
     try {
       mapboxgl.accessToken = mapboxToken
@@ -293,7 +407,7 @@ export const ProposePlacePage: React.FC = () => {
       }
     } catch {
     }
-  }, [isAuthenticated, isViewMode])
+  }, [isAuthenticated, isViewMode, isLoadingProposal, proposalData?.id, proposalError])
 
   const updateMapPosition = (newLatStr: string, newLngStr: string, zoomLevel?: number) => {
     const pLat = parseFloat(newLatStr)
@@ -551,11 +665,13 @@ export const ProposePlacePage: React.FC = () => {
     )
   }
 
-  if (isLoading || isLoadingProposal) {
+  const isPendingViewLoad = isViewMode && isAuthenticated && loadedViewId !== viewId
+
+  if (isLoading || (isAuthenticated && (isLoadingProposal || isPendingViewLoad))) {
     return (
       <div className="min-h-[65vh] flex flex-col items-center justify-center bg-slate-50 gap-2 font-sans">
         <div className="w-8 h-8 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
-        {isLoadingProposal && <span className="text-xs text-slate-500">Đang tải thông tin đề xuất địa điểm...</span>}
+        {(isLoadingProposal || isPendingViewLoad) && <span className="text-xs text-slate-500">Đang tải thông tin đề xuất địa điểm...</span>}
       </div>
     )
   }
@@ -573,13 +689,13 @@ export const ProposePlacePage: React.FC = () => {
               Yêu cầu đăng nhập tài khoản
             </h2>
             <p className="text-xs text-slate-500 leading-relaxed">
-              Bạn cần đăng nhập vào tài khoản LangThang để có thể gửi đề xuất địa điểm.
+              Bạn cần đăng nhập vào tài khoản LangThang để có thể gửi hoặc xem đề xuất địa điểm của mình.
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-2.5 pt-2">
             <button
               type="button"
-              onClick={() => navigate('/login', { state: { from: location.pathname } })}
+              onClick={() => navigate('/login', { state: { from: `${location.pathname}${location.search}` } })}
               className="flex-1 py-3 px-4 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs flex items-center justify-center gap-1.5"
             >
               <LogIn className="w-3.5 h-3.5" />
@@ -591,6 +707,45 @@ export const ProposePlacePage: React.FC = () => {
               className="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-all cursor-pointer"
             >
               Đăng ký tài khoản
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (isViewMode && (proposalError || !proposalData)) {
+    const isForbidden = proposalError?.code === 403
+    return (
+      <div className="min-h-screen bg-slate-50/70 py-16 px-4 sm:px-6 lg:px-8 flex items-center justify-center font-sans">
+        <div className="max-w-md w-full bg-white rounded-3xl p-8 border border-slate-200 shadow-xl text-center space-y-6 animate-in zoom-in-95">
+          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto shadow-inner border ${isForbidden ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
+            <ShieldAlert className="w-8 h-8" />
+          </div>
+
+          <div className="space-y-2">
+            <h2 className="text-xl font-extrabold text-slate-900">
+              {isForbidden ? 'Không có quyền truy cập đề xuất' : 'Không tìm thấy đề xuất địa điểm'}
+            </h2>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              {proposalError?.message || 'Đề xuất địa điểm này không thuộc tài khoản của bạn hoặc không tồn tại.'}
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-2.5 pt-2">
+            <button
+              type="button"
+              onClick={() => navigate('/profile?tab=proposals')}
+              className="flex-1 py-3 px-4 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs"
+            >
+              Đề xuất của tôi
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/propose-place', { replace: true })}
+              className="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-all cursor-pointer"
+            >
+              Tạo đề xuất mới
             </button>
           </div>
         </div>
@@ -647,7 +802,7 @@ export const ProposePlacePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50/70 pb-20 pt-6 font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-        {isViewMode && (
+        {isViewMode && proposalData && (
           <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in">
             <div className="flex items-center gap-3">
               <button
@@ -663,10 +818,10 @@ export const ProposePlacePage: React.FC = () => {
                   <h1 className="text-lg sm:text-xl font-black text-slate-900">
                     Chi tiết địa điểm đề xuất
                   </h1>
-                  {renderStatusBadge(proposalData?.status ?? 0)}
+                  {renderStatusBadge(proposalData.status)}
                 </div>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Mã đề xuất #{proposalData?.id || viewId} • Ngày gửi: {new Date(proposalData?.createdAt || Date.now()).toLocaleDateString('vi-VN')}
+                  Mã đề xuất #{proposalData.id} • Ngày gửi: {proposalData.createdAt ? new Date(proposalData.createdAt).toLocaleDateString('vi-VN') : '—'}
                 </p>
               </div>
             </div>

@@ -51,6 +51,7 @@ public static class DependencyInjection
         services.AddScoped<IAdminReviewRepository, AdminReviewRepository>();
         services.AddScoped<IAdminFoodRepository, AdminFoodRepository>();
         services.AddScoped<IAdminBlogRepository, AdminBlogRepository>();
+        services.AddScoped<IAdminTripRepository, AdminTripRepository>();
         services.AddScoped<IAdminDashboardRepository, AdminDashboardRepository>();
         services.AddScoped<IAdminUserRepository, AdminUserRepository>();
         services.AddScoped<IAdminAuditLogRepository, AdminAuditLogRepository>();
@@ -76,13 +77,6 @@ public static class DependencyInjection
         services.AddScoped<ITokenCacheService, TokenCacheService>();
         services.AddScoped<IBlobService, AzureBlobService>();
         services.AddScoped<IEmailService, EmailService>();
-        services.AddHttpClient("SentimentService", client =>
-        {
-            client.Timeout = TimeSpan.FromSeconds(3);
-        });
-        services.AddSingleton<IModerationKeywordStore, Infrastructure.Services.ContentModeration.RedisModerationKeywordStore>();
-        services.AddScoped<IContentModerationService, Infrastructure.Services.ContentModeration.ContentModerationService>();
-
         services.AddHttpClient("SentimentService", client =>
         {
             client.Timeout = TimeSpan.FromSeconds(3);

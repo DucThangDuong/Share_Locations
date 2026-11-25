@@ -154,7 +154,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
           )
         ) : (
           filteredInbox.map((item) => {
-            const isActive = item.roomId === activeRoomId
+            const isActive = activeRoomId !== null && Number(item.roomId) === Number(activeRoomId)
             const isUnread = item.unreadCount > 0
             const avatarUrl =
               item.avatarUrl ||

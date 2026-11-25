@@ -30,6 +30,7 @@ import { FoodsTab } from "@/components/admin/tabs/FoodsTab";
 import { BlogsTab } from "@/components/admin/tabs/BlogsTab";
 import {
   CollectionsTab,
+  TripsTab,
   ProvincesTab,
   CategoriesTab,
   SystemSettingsTab,
@@ -48,6 +49,7 @@ const TAB_SLUG_MAP: Record<AdminMainTab, string> = {
   reports: "reports",
   foods: "foods",
   collections: "collections",
+  trips: "trips",
   provinces: "provinces",
   blogs: "blogs",
   categories: "categories",
@@ -70,6 +72,9 @@ const SLUG_TO_TAB_MAP: Record<string, AdminMainTab> = {
   reports: "reports",
   foods: "foods",
   collections: "collections",
+  trips: "trips",
+  "lich-trinh": "trips",
+  itineraries: "trips",
   provinces: "provinces",
   regions: "provinces",
   blogs: "blogs",
@@ -1064,8 +1069,8 @@ export const AdminPage: React.FC = () => {
                       item.image ||
                       item.thumbnailUrl ||
                       "",
-                    status: String(item.status || "draft").toLowerCase(),
-                  } as AdminBlogItem))
+                    status: String(item.status || "published").toLowerCase(),
+                  } as AdminBlogItem)).filter((b: AdminBlogItem) => b.status !== "draft")
                 );
 
                 const meta = result?.meta || result?.pagination || {};
@@ -1631,6 +1636,7 @@ export const AdminPage: React.FC = () => {
                 />
               )}
               {mainTab === "collections" && <CollectionsTab showToast={showToast} />}
+              {mainTab === "trips" && <TripsTab showToast={showToast} />}
               {mainTab === "provinces" && isUserSystemAdmin() && <ProvincesTab showToast={showToast} />}
               {mainTab === "blogs" && (
                 <BlogsTab

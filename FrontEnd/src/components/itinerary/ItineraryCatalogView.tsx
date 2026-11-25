@@ -191,30 +191,38 @@ export const ItineraryCatalogView: React.FC<ItineraryCatalogViewProps> = ({
       return []
     }
 
-    return itineraries.map((item) => {
-      const cleanTitle = cleanTripTitle(item.title)
-      const destBadge = resolveDestinationBadge(item.destination)
-      const rawCover = (item.coverUrl || item.coverImageUrl || '').trim()
-      const cover = rawCover || null
-      const rawCost = String(item.estimatedCost ?? '')
-      const costNum = parseInt(rawCost.replace(/[^0-9]/g, '') || '0', 10)
-      const costPerPerson = costNum > 0 ? `${costNum.toLocaleString('vi-VN')}đ` : (rawCost.trim() ? rawCost : 'Linh hoạt')
+    return itineraries
+      .filter((item) => {
+        const stopsCount = (item.days || []).reduce((sum, d) => sum + (d.stops?.length || 0), 0)
+        const hasTitle = Boolean(cleanTripTitle(item.title))
+        const hasCover = Boolean((item.coverUrl || item.coverImageUrl || '').trim())
+        const hasDesc = Boolean((item.overview || '').trim())
+        return stopsCount > 0 && hasTitle && hasCover && hasDesc
+      })
+      .map((item) => {
+        const cleanTitle = cleanTripTitle(item.title)
+        const destBadge = resolveDestinationBadge(item.destination)
+        const rawCover = (item.coverUrl || item.coverImageUrl || '').trim()
+        const cover = rawCover || null
+        const rawCost = String(item.estimatedCost ?? '')
+        const costNum = parseInt(rawCost.replace(/[^0-9]/g, '') || '0', 10)
+        const costPerPerson = costNum > 0 ? `${costNum.toLocaleString('vi-VN')}đ` : 'Chưa dự kiến'
 
-      const postedDate = item.createdAt
-        ? new Date(item.createdAt).toLocaleDateString('vi-VN')
-        : 'Gần đây'
+        const postedDate = item.createdAt
+          ? new Date(item.createdAt).toLocaleDateString('vi-VN')
+          : 'Gần đây'
 
-      return {
-        ...item,
-        title: cleanTitle,
-        destinationBadge: destBadge,
-        coverUrl: cover,
-        coverImageUrl: cover,
-        postedDate,
-        costPerPerson,
-        daysCount: item.daysCount || item.days?.length || 1
-      }
-    })
+        return {
+          ...item,
+          title: cleanTitle,
+          destinationBadge: destBadge,
+          coverUrl: cover,
+          coverImageUrl: cover,
+          postedDate,
+          costPerPerson,
+          daysCount: item.daysCount || item.days?.length || 1
+        }
+      })
   }, [itineraries])
 
   const filteredItineraries = useMemo(() => {
@@ -321,7 +329,7 @@ export const ItineraryCatalogView: React.FC<ItineraryCatalogViewProps> = ({
           <div className="lg:col-span-4 space-y-4 pr-0 lg:pr-4">
             <div className="space-y-3">
               <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-tight">
-                Lịch trình sẵn sàng.
+                Chuyến đi sẵn sàng.
               </h2>
               <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
                 Tham khảo kế hoạch chuyến đi chi tiết theo từng ngày, cung đường và dự toán ngân sách từ cộng đồng.
@@ -575,17 +583,23 @@ export const ItineraryCatalogView: React.FC<ItineraryCatalogViewProps> = ({
                             {itinerary.duration || `${itinerary.daysCount} Ngày`}
                           </span>
                           <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block truncate mt-0.5">
-                            ({totalStops || 8} địa điểm tham quan)
+                            ({totalStops} địa điểm tham quan)
                           </span>
                         </div>
 
                         <div className="pl-3 sm:pl-4 min-w-0">
                           <span className="text-sm font-extrabold text-emerald-800 block truncate">
-                            ~ {costText}
-                            {!costText.includes('/ người') && (
-                              <span className="text-[11px] font-semibold text-slate-500 ml-0.5">
-                                / người
-                              </span>
+                            {costText === 'Chưa dự kiến' || costText === 'Linh hoạt' || costText === 'Miễn phí' ? (
+                              costText
+                            ) : (
+                              <>
+                                ~ {costText}
+                                {!costText.includes('/ người') && (
+                                  <span className="text-[11px] font-semibold text-slate-500 ml-0.5">
+                                    / người
+                                  </span>
+                                )}
+                              </>
                             )}
                           </span>
                           <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block truncate mt-0.5">

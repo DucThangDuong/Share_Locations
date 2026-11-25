@@ -147,6 +147,7 @@ export interface PlaceDetailDto {
   createdAt: string
   isSaved?: boolean
   isVisited?: boolean
+  visitLogId?: number | null
   isCheckedIn?: boolean
   foods?: FoodItemDto[]
 }

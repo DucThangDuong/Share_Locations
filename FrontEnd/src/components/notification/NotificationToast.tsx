@@ -17,7 +17,7 @@ export const NotificationToast: React.FC = () => {
       markAsRead(activeToast.id)
     }
     dismissToast()
-    const target = normalizeNotificationUrl(activeToast.targetUrl)
+    const target = normalizeNotificationUrl(activeToast.targetUrl, activeToast)
     if (target) {
       navigate(target)
     }

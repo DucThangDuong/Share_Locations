@@ -69,9 +69,21 @@ public class Trip
         UpdatedAt = DateTime.UtcNow;
     }
 
+    public void UpdateBudget(decimal? estimatedBudget)
+    {
+        EstimatedBudget = estimatedBudget;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
     public void ChangePrivacy(TripPrivacy privacy)
     {
         Privacy = privacy;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void ChangeStatus(TripStatus status)
+    {
+        Status = status;
         UpdatedAt = DateTime.UtcNow;
     }
 

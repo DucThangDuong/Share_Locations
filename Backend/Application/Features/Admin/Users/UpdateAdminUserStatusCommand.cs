@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Interfaces.Repositories;
@@ -101,7 +101,7 @@ public class UpdateAdminUserStatusCommandHandler : IRequestHandler<UpdateAdminUs
                     Content = content,
                     Type = Domain.Enums.NotificationType.Moderation,
                     Priority = isLocked ? (byte)1 : (byte)2,
-                    TargetUrl = "/account/status",
+                    TargetUrl = "/settings",
                     GroupKey = $"USER_STATUS_{request.UserId}"
                 }, ct);
 

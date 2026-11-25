@@ -315,10 +315,13 @@ export const ArticleEditorView = forwardRef<ArticleEditorRef, ArticleEditorViewP
   onToast
 }, ref) => {
   const navigate = useNavigate()
-  const isPendingApproval = initialStatus === 2
+  const isAlreadyPublished = !isManagerMode && initialStatus === 1
+  const isPendingApproval = initialStatus === 2 || isAlreadyPublished
+  const cleanInitialTitle =
+    initialTitle.trim().toLowerCase() === 'bản nháp chưa đặt tên' ? '' : initialTitle
   const [categoriesList, setCategoriesList] = useState<LookupItemDto[]>(categories || availableCategories || [])
   const [isLoadingCategories, setIsLoadingCategories] = useState(false)
-  const [title, setTitle] = useState(initialTitle)
+  const [title, setTitle] = useState(cleanInitialTitle)
   const [summary, setSummary] = useState(initialSummary)
   const [category, setCategory] = useState<string>(initialCategory || '')
   const [categoryId, setCategoryId] = useState<number | undefined>(initialCategoryId)
@@ -512,7 +515,9 @@ export const ArticleEditorView = forwardRef<ArticleEditorRef, ArticleEditorViewP
   }, [categoriesList, category, categoryId, articleId])
 
   useEffect(() => {
-    if (initialTitle !== undefined) setTitle(initialTitle)
+    if (initialTitle !== undefined) {
+      setTitle(initialTitle.trim().toLowerCase() === 'bản nháp chưa đặt tên' ? '' : initialTitle)
+    }
   }, [initialTitle])
 
   useEffect(() => {
@@ -562,26 +567,74 @@ export const ArticleEditorView = forwardRef<ArticleEditorRef, ArticleEditorViewP
   }
 
   const handlePublish = async () => {
-    if (!title.trim()) {
-      showNotification('Vui lòng nhập tiêu đề bài viết cẩm nang!', 'error')
+    if (!isManagerMode && (initialStatus === 1 || initialStatus === 2)) {
+      showNotification('Bài viết đã xuất bản hoặc đang chờ duyệt nên không thể chỉnh sửa.', 'error')
+      return
+    }
+
+    const normalizeSpaces = (s: string) => s.trim().replace(/\s+/g, ' ')
+    const splitWords = (s: string) => (s ? s.split(' ').filter(Boolean) : [])
+
+    const finalCoverImg = (coverImg || initialCoverImg || '').trim()
+    const trimmedTitle = normalizeSpaces(title)
+    const titleWords = splitWords(trimmedTitle)
+    const trimmedSummary = normalizeSpaces(summary)
+    const summaryWords = splitWords(trimmedSummary)
+    const matchedCat = categoriesList.find((c) => c.name === category || c.id === categoryId)
+    const resolvedCatId = matchedCat?.id || categoryId || categoriesList[0]?.id
+    const resolvedCatName = matchedCat?.name || category || categoriesList[0]?.name || ''
+    const plainText = normalizeSpaces(editor?.getText() || '')
+    const bodyWords = splitWords(plainText)
+
+    const issues: string[] = []
+    if (!finalCoverImg) {
+      issues.push('chưa chọn ảnh bìa')
+    }
+    if (
+      !trimmedTitle ||
+      trimmedTitle.toLowerCase() === 'bản nháp chưa đặt tên'
+    ) {
+      issues.push('chưa nhập tiêu đề')
+    } else if (trimmedTitle.length < 10 || titleWords.length < 2) {
+      issues.push('tiêu đề quá ngắn')
+    } else if (trimmedTitle.length > 255) {
+      issues.push('tiêu đề vượt quá 255 ký tự')
+    }
+
+    if (!trimmedSummary) {
+      issues.push('chưa nhập nội dung tóm tắt')
+    } else if (trimmedSummary.toLowerCase() === trimmedTitle.toLowerCase()) {
+      issues.push('tóm tắt không được trùng nguyên tiêu đề')
+    } else if (trimmedSummary.length < 20 || summaryWords.length < 4) {
+      issues.push('nội dung tóm tắt còn quá sơ sài')
+    }
+
+    if (!resolvedCatId) {
+      issues.push('chưa chọn danh mục')
+    }
+
+    if (!plainText) {
+      issues.push('chưa nhập nội dung bài viết')
+    } else if (plainText.length < 50 || bodyWords.length < 10) {
+      issues.push('nội dung bài viết còn quá ngắn')
+    }
+
+    if (issues.length > 0) {
+      showNotification(`Chưa đủ điều kiện gửi duyệt: ${issues.join(', ')}.`, 'error')
       return
     }
 
     setIsPublishing(true)
     try {
-      const matchedCat = categoriesList.find((c) => c.name === category || c.id === categoryId)
-      const resolvedCatId = matchedCat?.id || categoryId || categoriesList[0]?.id || 1
-      const resolvedCatName = matchedCat?.name || category || categoriesList[0]?.name || ''
-
-      const wordCount = editor?.getText().trim().split(/\s+/).filter(Boolean).length || 0
+      const wordCount = bodyWords.length
       const contentJsonStr = JSON.stringify(editor?.getJSON() || {})
 
       const data: EditorOutputData = {
-        title: title.trim(),
-        summary: summary.trim() || title.trim(),
+        title: trimmedTitle,
+        summary: trimmedSummary,
         category: resolvedCatName,
         categoryId: resolvedCatId,
-        coverImg: coverImg.trim() || initialCoverImg,
+        coverImg: finalCoverImg,
         authorName: propAuthor,
         content: editor?.getJSON() || {},
         htmlContent: editor?.getHTML() || '',
@@ -596,7 +649,7 @@ export const ArticleEditorView = forwardRef<ArticleEditorRef, ArticleEditorViewP
         await onSave(data)
       } else {
         if (articleId) {
-          await blogService.updateBlog(articleId, {
+          const res = await blogService.updateBlog(articleId, {
             title: data.title,
             categoryId: data.categoryId,
             coverImageUrl: data.coverImg,
@@ -605,8 +658,11 @@ export const ArticleEditorView = forwardRef<ArticleEditorRef, ArticleEditorViewP
             readTimeMinutes: data.readTimeMinutes,
             status: 2
           })
+          if (!res.success) {
+            throw new Error(res.message || 'Không thể gửi duyệt bài viết lúc này.')
+          }
         } else {
-          await blogService.createBlog({
+          const res = await blogService.createBlog({
             title: data.title,
             categoryId: data.categoryId,
             coverImageUrl: data.coverImg,
@@ -615,10 +671,13 @@ export const ArticleEditorView = forwardRef<ArticleEditorRef, ArticleEditorViewP
             readTimeMinutes: data.readTimeMinutes,
             status: 2
           })
+          if (!res.success) {
+            throw new Error(res.message || 'Không thể gửi duyệt bài viết lúc này.')
+          }
         }
       }
 
-      showNotification('Công bố bài viết thành công!', 'success')
+      showNotification(isManagerMode ? 'Đã lưu nội dung bài viết!' : 'Đã gửi bài viết chờ duyệt thành công!', 'success')
       setTimeout(() => {
         if (onCancel) {
           onCancel()
@@ -626,8 +685,12 @@ export const ArticleEditorView = forwardRef<ArticleEditorRef, ArticleEditorViewP
           navigate('/blog')
         }
       }, 400)
-    } catch {
-      showNotification('Có lỗi xảy ra khi xuất bản bài viết.', 'error')
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Có lỗi xảy ra khi gửi duyệt bài viết.'
+      showNotification(msg, 'error')
       setIsPublishing(false)
     }
   }
@@ -696,8 +759,8 @@ export const ArticleEditorView = forwardRef<ArticleEditorRef, ArticleEditorViewP
   }, [editor])
 
   const handleSaveDraft = async () => {
-    if (!title.trim()) {
-      showNotification('Vui lòng nhập tiêu đề để lưu bản nháp!', 'error')
+    if (!isManagerMode && (initialStatus === 1 || initialStatus === 2)) {
+      showNotification('Bài viết đã xuất bản hoặc đang chờ duyệt nên không thể chuyển về bản nháp.', 'error')
       return
     }
 
@@ -712,8 +775,8 @@ export const ArticleEditorView = forwardRef<ArticleEditorRef, ArticleEditorViewP
       const contentJsonStr = JSON.stringify(editor?.getJSON() || {})
 
       const data: EditorOutputData = {
-        title: title.trim(),
-        summary: summary.trim() || title.trim(),
+        title: title.trim() || 'Bản nháp chưa đặt tên',
+        summary: summary.trim(),
         category: resolvedCatName,
         categoryId: resolvedCatId,
         coverImg: coverImg.trim() || initialCoverImg,
@@ -731,7 +794,7 @@ export const ArticleEditorView = forwardRef<ArticleEditorRef, ArticleEditorViewP
         await onSave(data)
       } else {
         if (articleId) {
-          await blogService.updateBlog(articleId, {
+          const res = await blogService.updateBlog(articleId, {
             title: data.title,
             categoryId: data.categoryId,
             coverImageUrl: data.coverImg,
@@ -740,8 +803,11 @@ export const ArticleEditorView = forwardRef<ArticleEditorRef, ArticleEditorViewP
             readTimeMinutes: data.readTimeMinutes,
             status: 0
           })
+          if (!res.success) {
+            throw new Error(res.message || 'Không thể lưu bản nháp lúc này.')
+          }
         } else {
-          await blogService.createBlog({
+          const res = await blogService.createBlog({
             title: data.title,
             categoryId: data.categoryId,
             coverImageUrl: data.coverImg,
@@ -750,6 +816,9 @@ export const ArticleEditorView = forwardRef<ArticleEditorRef, ArticleEditorViewP
             readTimeMinutes: data.readTimeMinutes,
             status: 0
           })
+          if (!res.success) {
+            throw new Error(res.message || 'Không thể lưu bản nháp lúc này.')
+          }
         }
       }
 
@@ -761,8 +830,8 @@ export const ArticleEditorView = forwardRef<ArticleEditorRef, ArticleEditorViewP
           navigate('/blog')
         }
       }, 400)
-    } catch {
-      showNotification('Không thể lưu bản nháp lúc này.', 'error')
+    } catch (err: any) {
+      showNotification(err?.response?.data?.message || err?.message || 'Không thể lưu bản nháp lúc này.', 'error')
       setIsSaving(false)
     }
   }
@@ -801,7 +870,7 @@ export const ArticleEditorView = forwardRef<ArticleEditorRef, ArticleEditorViewP
       )}
 
       {localToast && (
-        <div className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-2.5 text-xs font-semibold animate-in slide-in-from-bottom-5 border ${localToast.type === 'error'
+        <div className={`fixed top-5 left-1/2 -translate-x-1/2 z-[100] max-w-xl px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-2.5 text-xs font-semibold animate-in fade-in slide-in-from-top-3 border ${localToast.type === 'error'
           ? 'bg-rose-900 text-white border-rose-700'
           : 'bg-slate-900 text-white border-slate-700'
           }`}>

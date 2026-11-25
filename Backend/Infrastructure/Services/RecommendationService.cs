@@ -483,8 +483,8 @@ public class RecommendationService : IRecommendationService
             }
         }
 
-        double userLat = lat ?? 10.76;
-        double userLng = lng ?? 106.66;
+        double userLat = lat ?? 21.0285;
+        double userLng = lng ?? 105.8542;
         double roundedLat = Math.Round(userLat, 2);
         double roundedLng = Math.Round(userLng, 2);
         string gridKey = $"lat_{roundedLat.ToString("F2", CultureInfo.InvariantCulture)}_lng_{roundedLng.ToString("F2", CultureInfo.InvariantCulture)}";
@@ -493,8 +493,8 @@ public class RecommendationService : IRecommendationService
             .Where(p => p.Latitude.HasValue && p.Longitude.HasValue)
             .OrderBy(p => KnnMathEngine.ComputeDistanceKm(userLat, userLng, p.Latitude!.Value, p.Longitude!.Value))
             .FirstOrDefault();
-        int physicalProvinceId = closestPlace?.ProvinceId ?? 27;
-        string physicalProvinceName = closestPlace?.ProvinceName ?? "TP Hồ Chí Minh";
+        int physicalProvinceId = closestPlace?.ProvinceId ?? 1;
+        string physicalProvinceName = closestPlace?.ProvinceName ?? "TP Hà Nội";
 
         if (isPersonalized)
         {

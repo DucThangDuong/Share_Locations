@@ -768,7 +768,7 @@ export const CategoriesTab: React.FC<CategoriesTabProps> = ({ showToast }) => {
                   >
                     <span className="text-slate-600 flex items-center gap-1.5 group-hover:text-blue-700 transition-colors font-medium">
                       <FileText size={13} className="text-blue-500" />
-                      Bài viết cẩm nang:
+                      Cẩm nang:
                     </span>
                     <span className="font-bold text-slate-800 group-hover:text-blue-600 group-hover:underline transition-colors flex items-center gap-1">
                       {categoryDetailStats.blogCount ?? currentCat?.blogCount ?? 0}

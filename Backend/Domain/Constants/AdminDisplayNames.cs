@@ -15,18 +15,49 @@ public static class AdminDisplayNames
         [nameof(SystemSettingKey.MAX_UPLOAD_PHOTOS)] = "Số lượng ảnh tối đa mỗi bài",
         [nameof(SystemSettingKey.MAX_UPLOAD_SIZE_MB)] = "Dung lượng tối đa mỗi ảnh",
         [nameof(SystemSettingKey.BLACKLIST_WORDS)] = "Danh sách từ khóa cấm & nhạy cảm",
+        [nameof(SystemSettingKey.SPAM_KEYWORDS)] = "Danh sách từ khóa spam & quảng cáo",
         [nameof(SystemSettingKey.ALLOW_REGISTRATION)] = "Cho phép đăng ký tài khoản mới",
         [nameof(SystemSettingKey.REQUIRE_EMAIL_VERIFICATION)] = "Yêu cầu xác thực Email khi đăng ký",
         [nameof(SystemSettingKey.ENABLE_TWO_FACTOR)] = "Bật xác thực hai bước",
         [nameof(SystemSettingKey.DEFAULT_USER_AVATAR)] = "Ảnh đại diện mặc định người dùng",
         [nameof(SystemSettingKey.DEFAULT_GROUP_AVATAR)] = "Ảnh đại diện mặc định nhóm trò chuyện",
-        [nameof(SystemSettingKey.HOME_HERO_IMAGE)] = "Ảnh nền màn hình chính"
+        [nameof(SystemSettingKey.HOME_HERO_IMAGE)] = "Ảnh nền màn hình chính",
+        [nameof(SystemSettingKey.RANKING_GOVERNANCE_CONFIG)] = "Cấu hình quản trị bảng xếp hạng",
+        [nameof(SystemSettingKey.RANKING_SNAPSHOT_JSON)] = "Dữ liệu lưu vết thứ hạng kỳ trước",
+        [nameof(SystemSettingKey.RANKING_TITLE)] = "Tiêu đề trang bảng xếp hạng",
+        [nameof(SystemSettingKey.RANKING_SUBTITLE)] = "Mô tả trang bảng xếp hạng",
+        [nameof(SystemSettingKey.RANKING_BADGE)] = "Nhãn huy hiệu bảng xếp hạng",
+        [nameof(SystemSettingKey.RANKING_DESTINATIONS_TITLE)] = "Tiêu đề bảng xếp hạng điểm đến",
+        [nameof(SystemSettingKey.RANKING_DESTINATIONS_VN_TITLE)] = "Tiêu đề tiếng Việt bảng xếp hạng điểm đến",
+        [nameof(SystemSettingKey.RANKING_DESTINATIONS_TAGLINE)] = "Khẩu hiệu bảng xếp hạng điểm đến",
+        [nameof(SystemSettingKey.RANKING_DESTINATIONS_COVER)] = "Ảnh bìa bảng xếp hạng điểm đến",
+        [nameof(SystemSettingKey.RANKING_PLACES_TITLE)] = "Tiêu đề bảng xếp hạng địa điểm",
+        [nameof(SystemSettingKey.RANKING_PLACES_VN_TITLE)] = "Tiêu đề tiếng Việt bảng xếp hạng địa điểm",
+        [nameof(SystemSettingKey.RANKING_PLACES_TAGLINE)] = "Khẩu hiệu bảng xếp hạng địa điểm",
+        [nameof(SystemSettingKey.RANKING_PLACES_COVER)] = "Ảnh bìa bảng xếp hạng địa điểm"
+    };
+
+    private static readonly Dictionary<string, string> SettingDescriptionOverrides = new(StringComparer.OrdinalIgnoreCase)
+    {
+        [nameof(SystemSettingKey.RANKING_SNAPSHOT_JSON)] = "Dữ liệu lưu vết thứ hạng kỳ trước phục vụ tính biến động thứ hạng"
     };
 
     public static string StripParentheses(string? text)
     {
         if (string.IsNullOrWhiteSpace(text)) return string.Empty;
         return System.Text.RegularExpressions.Regex.Replace(text, @"\s*\([^)]*\)", "").Trim();
+    }
+
+    public static string GetSettingDescription(string? key, string? rawDescription)
+    {
+        if (!string.IsNullOrWhiteSpace(key) &&
+            SettingDescriptionOverrides.TryGetValue(key.Trim(), out var overrideDesc) &&
+            (string.IsNullOrWhiteSpace(rawDescription) || rawDescription.Contains("Snapshot", StringComparison.OrdinalIgnoreCase)))
+        {
+            return overrideDesc;
+        }
+
+        return StripParentheses(rawDescription);
     }
 
     private static readonly Dictionary<string, string> SettingGroupNames = new(StringComparer.OrdinalIgnoreCase)
@@ -36,7 +67,8 @@ public static class AdminDisplayNames
         [nameof(SystemSettingGroup.SECURITY)] = "Bảo mật & An toàn",
         [nameof(SystemSettingGroup.SYSTEM)] = "Hệ thống & Vận hành",
         [nameof(SystemSettingGroup.NOTIFICATION)] = "Thông báo & Tin nhắn",
-        [nameof(SystemSettingGroup.MEDIA)] = "Hình ảnh & Giao diện"
+        [nameof(SystemSettingGroup.MEDIA)] = "Hình ảnh & Giao diện",
+        [nameof(SystemSettingGroup.RANKING)] = "Bảng xếp hạng"
     };
 
     public static string GetSettingName(SystemSettingKey key) => GetSettingName(key.ToString());
@@ -122,10 +154,15 @@ public static class AdminDisplayNames
         [nameof(AdminActionType.DELETE_FOOD)] = "Xóa món ăn đặc sản",
 
         [nameof(AdminActionType.UPDATE_TRIP)] = "Cập nhật lịch trình chuyến đi",
+        [nameof(AdminActionType.CREATE_TRIP)] = "Tạo lịch trình chuyến đi",
+        [nameof(AdminActionType.UPDATE_TRIP_PRIVACY)] = "Đổi quyền riêng tư lịch trình",
+        [nameof(AdminActionType.UPDATE_TRIP_STATUS)] = "Đổi trạng thái lịch trình",
+        [nameof(AdminActionType.DELETE_TRIP)] = "Xóa lịch trình chuyến đi",
 
         [nameof(AdminActionType.CREATE_COLLECTION)] = "Tạo bộ sưu tập mới",
         [nameof(AdminActionType.UPDATE_COLLECTION_PLACES)] = "Cập nhật địa điểm trong bộ sưu tập",
         [nameof(AdminActionType.UPDATE_COLLECTION_STATUS)] = "Đổi trạng thái bộ sưu tập",
+        [nameof(AdminActionType.DELETE_COLLECTION)] = "Xóa bộ sưu tập",
 
         [nameof(AdminActionType.LOCK_USER)] = "Khóa tài khoản người dùng",
         [nameof(AdminActionType.UNLOCK_USER)] = "Mở khóa tài khoản người dùng",
@@ -157,7 +194,8 @@ public static class AdminDisplayNames
         [nameof(AdminActionType.DELETE_REPORT_TYPE)] = "Xóa Lý do báo cáo vi phạm",
         [nameof(AdminActionType.CHANGE_REPORT_TYPE_STATUS)] = "Đổi trạng thái Lý do báo cáo",
         [nameof(AdminActionType.UPDATE_SYSTEM_SETTING)] = "Cập nhật tham số hệ thống",
-        [nameof(AdminActionType.BATCH_UPDATE_SYSTEM_SETTINGS)] = "Cập nhật đồng loạt cấu hình hệ thống"
+        [nameof(AdminActionType.BATCH_UPDATE_SYSTEM_SETTINGS)] = "Cập nhật đồng loạt cấu hình hệ thống",
+        [nameof(AdminActionType.UPDATE_RANKING_GOVERNANCE)] = "Cập nhật cấu hình bảng xếp hạng"
     };
 
     public static string GetActionTypeName(AdminActionType actionType) => GetActionTypeName(actionType.ToString());

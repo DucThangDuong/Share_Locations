@@ -309,103 +309,7 @@ public class UserPersonalizationRepository : IUserPersonalizationRepository
         })).ToList();
 
         long totalCount = rows.Count > 0 ? (long)rows[0].TotalCount : 0;
-        var items = new List<UserProposalItemDto>();
-
-        foreach (var r in rows)
-        {
-            DateTime created = (DateTime)r.CreatedAt;
-            DateTime? updated = r.UpdatedAt != null ? (DateTime)r.UpdatedAt : null;
-            string rawJson = (string)(r.ProposedDataJSON ?? "{}");
-
-            int? categoryId = (int?)r.CategoryId;
-            string? categoryName = (string?)r.CategoryName;
-            int? provinceId = (int?)r.ProvinceId;
-            string? provinceName = (string?)r.ProvinceName;
-            string name = string.Empty;
-            string address = string.Empty;
-            string? phone = null;
-            string? website = null;
-            string? openingHours = null;
-            decimal? minPrice = null;
-            decimal? maxPrice = null;
-            decimal? latitude = null;
-            decimal? longitude = null;
-            string? description = null;
-            string? coverImg = null;
-            var mediaUrls = new List<string>();
-
-            try
-            {
-                using var doc = JsonDocument.Parse(rawJson);
-                var root = doc.RootElement;
-
-                if (root.TryGetProperty("name", out var pName)) name = pName.GetString() ?? string.Empty;
-                if (root.TryGetProperty("categoryId", out var pCatId) && pCatId.TryGetInt32(out var cId)) categoryId ??= cId;
-                if (root.TryGetProperty("provinceId", out var pProvId) && pProvId.TryGetInt32(out var pvId)) provinceId ??= pvId;
-                if (root.TryGetProperty("address", out var pAddr)) address = pAddr.GetString() ?? string.Empty;
-                if (root.TryGetProperty("phone", out var pPhone)) phone = pPhone.GetString();
-                if (root.TryGetProperty("website", out var pWeb)) website = pWeb.GetString();
-                if (root.TryGetProperty("openingHours", out var pOpen)) openingHours = pOpen.GetString();
-                if (root.TryGetProperty("description", out var pDesc)) description = pDesc.GetString();
-                if (root.TryGetProperty("coverImg", out var pCover)) coverImg = pCover.GetString();
-
-                if (root.TryGetProperty("minPrice", out var pMin) && pMin.TryGetDecimal(out var dMin)) minPrice = dMin;
-                if (root.TryGetProperty("maxPrice", out var pMax) && pMax.TryGetDecimal(out var dMax)) maxPrice = dMax;
-                if (root.TryGetProperty("latitude", out var pLat) && pLat.TryGetDecimal(out var dLat)) latitude = dLat;
-                if (root.TryGetProperty("longitude", out var pLng) && pLng.TryGetDecimal(out var dLng)) longitude = dLng;
-
-                if (root.TryGetProperty("mediaUrls", out var pMedias) && pMedias.ValueKind == JsonValueKind.Array)
-                {
-                    foreach (var m in pMedias.EnumerateArray())
-                    {
-                        var u = m.GetString();
-                        if (!string.IsNullOrWhiteSpace(u)) mediaUrls.Add(u);
-                    }
-                }
-            }
-            catch
-            {
-            }
-
-            if (string.IsNullOrWhiteSpace(coverImg))
-            {
-                coverImg = (string?)r.PlaceCoverImageUrl;
-            }
-            if (string.IsNullOrWhiteSpace(address))
-            {
-                address = (string?)r.PlaceAddress ?? string.Empty;
-            }
-
-            items.Add(new UserProposalItemDto
-            {
-                Id = (long)r.Id,
-                Name = !string.IsNullOrWhiteSpace(name) ? name : $"Đề xuất #{r.Id}",
-                CategoryId = categoryId,
-                Category = categoryName,
-                CategoryName = categoryName,
-                ProvinceId = provinceId,
-                Province = provinceName,
-                ProvinceName = provinceName,
-                Address = address,
-                Phone = phone,
-                Website = website,
-                OpeningHours = openingHours,
-                MinPrice = minPrice,
-                MaxPrice = maxPrice,
-                Latitude = latitude,
-                Longitude = longitude,
-                Description = description,
-                CoverImg = coverImg,
-                MediaUrls = mediaUrls,
-                ProposalType = r.ProposalType != null ? (int)r.ProposalType : 0,
-                TargetPlaceId = (long?)r.TargetPlaceId,
-                Status = (int)r.Status,
-                AdminNote = (string?)r.AdminNote,
-                RejectReason = (string?)r.RejectReason,
-                CreatedAt = created.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
-                UpdatedAt = updated?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
-            });
-        }
+        var items = rows.Select(MapProposalRow).ToList();
 
         return new UserProposalPagedResultDto
         {
@@ -413,6 +317,151 @@ public class UserPersonalizationRepository : IUserPersonalizationRepository
             TotalCount = totalCount,
             Page = page,
             PageSize = pageSize
+        };
+    }
+
+    public async Task<(long OwnerUserId, UserProposalItemDto Proposal)?> GetProposalByIdAsync(
+        long proposalId,
+        CancellationToken ct = default)
+    {
+        using var connection = CreateConnection();
+
+        const string sql = @"
+            SELECT
+                pr.Id,
+                pr.UserId,
+                CAST(pr.ProposalType AS INT) AS ProposalType,
+                COALESCE(pr.TargetPlaceId, p.Id) AS TargetPlaceId,
+                pr.CategoryId,
+                CASE
+                    WHEN (cat.Id IS NOT NULL AND cat.Status = 1) THEN cat.Name
+                    WHEN (pCat.Id IS NOT NULL AND pCat.Status = 1) THEN pCat.Name
+                    ELSE N'Không khả dụng'
+                END AS CategoryName,
+                pr.ProvinceId,
+                COALESCE(prov.Name, pProv.Name) AS ProvinceName,
+                pr.ProposedDataJSON,
+                CAST(pr.Status AS INT) AS Status,
+                pr.AdminNote,
+                pr.RejectReason,
+                pr.CreatedAt,
+                pr.UpdatedAt,
+                p.CoverImageUrl AS PlaceCoverImageUrl,
+                p.Address AS PlaceAddress
+            FROM dbo.Proposals pr
+            LEFT JOIN dbo.Places p ON pr.TargetPlaceId = p.Id AND p.IsDeleted = 0 AND p.Status = 1
+            LEFT JOIN dbo.Categories cat ON (pr.CategoryId IS NOT NULL AND pr.CategoryId = cat.Id)
+                OR (pr.CategoryId IS NULL AND JSON_VALUE(pr.ProposedDataJSON, '$.categoryId') = CAST(cat.Id AS NVARCHAR(10)))
+            LEFT JOIN dbo.Categories pCat ON p.CategoryId = pCat.Id
+            LEFT JOIN dbo.Provinces prov ON (pr.ProvinceId IS NOT NULL AND pr.ProvinceId = prov.Id)
+                OR (pr.ProvinceId IS NULL AND JSON_VALUE(pr.ProposedDataJSON, '$.provinceId') = CAST(prov.Id AS NVARCHAR(10)))
+            LEFT JOIN dbo.Provinces pProv ON p.ProvinceId = pProv.Id
+            WHERE pr.Id = @ProposalId;";
+
+        var row = await connection.QueryFirstOrDefaultAsync(sql, new { ProposalId = proposalId });
+        if (row == null)
+        {
+            return null;
+        }
+
+        long ownerUserId = (long)row.UserId;
+        var proposal = MapProposalRow(row);
+        return (ownerUserId, proposal);
+    }
+
+    private static UserProposalItemDto MapProposalRow(dynamic r)
+    {
+        DateTime created = (DateTime)r.CreatedAt;
+        DateTime? updated = r.UpdatedAt != null ? (DateTime)r.UpdatedAt : null;
+        string rawJson = (string)(r.ProposedDataJSON ?? "{}");
+
+        int? categoryId = (int?)r.CategoryId;
+        string? categoryName = (string?)r.CategoryName;
+        int? provinceId = (int?)r.ProvinceId;
+        string? provinceName = (string?)r.ProvinceName;
+        string name = string.Empty;
+        string address = string.Empty;
+        string? phone = null;
+        string? website = null;
+        string? openingHours = null;
+        decimal? minPrice = null;
+        decimal? maxPrice = null;
+        decimal? latitude = null;
+        decimal? longitude = null;
+        string? description = null;
+        string? coverImg = null;
+        var mediaUrls = new List<string>();
+
+        try
+        {
+            using var doc = JsonDocument.Parse(rawJson);
+            var root = doc.RootElement;
+
+            if (root.TryGetProperty("name", out var pName)) name = pName.GetString() ?? string.Empty;
+            if (root.TryGetProperty("categoryId", out var pCatId) && pCatId.TryGetInt32(out var cId)) categoryId ??= cId;
+            if (root.TryGetProperty("provinceId", out var pProvId) && pProvId.TryGetInt32(out var pvId)) provinceId ??= pvId;
+            if (root.TryGetProperty("address", out var pAddr)) address = pAddr.GetString() ?? string.Empty;
+            if (root.TryGetProperty("phone", out var pPhone)) phone = pPhone.GetString();
+            if (root.TryGetProperty("website", out var pWeb)) website = pWeb.GetString();
+            if (root.TryGetProperty("openingHours", out var pOpen)) openingHours = pOpen.GetString();
+            if (root.TryGetProperty("description", out var pDesc)) description = pDesc.GetString();
+            if (root.TryGetProperty("coverImg", out var pCover)) coverImg = pCover.GetString();
+
+            if (root.TryGetProperty("minPrice", out var pMin) && pMin.TryGetDecimal(out var dMin)) minPrice = dMin;
+            if (root.TryGetProperty("maxPrice", out var pMax) && pMax.TryGetDecimal(out var dMax)) maxPrice = dMax;
+            if (root.TryGetProperty("latitude", out var pLat) && pLat.TryGetDecimal(out var dLat)) latitude = dLat;
+            if (root.TryGetProperty("longitude", out var pLng) && pLng.TryGetDecimal(out var dLng)) longitude = dLng;
+
+            if (root.TryGetProperty("mediaUrls", out var pMedias) && pMedias.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var m in pMedias.EnumerateArray())
+                {
+                    var u = m.GetString();
+                    if (!string.IsNullOrWhiteSpace(u)) mediaUrls.Add(u);
+                }
+            }
+        }
+        catch
+        {
+        }
+
+        if (string.IsNullOrWhiteSpace(coverImg))
+        {
+            coverImg = (string?)r.PlaceCoverImageUrl;
+        }
+        if (string.IsNullOrWhiteSpace(address))
+        {
+            address = (string?)r.PlaceAddress ?? string.Empty;
+        }
+
+        return new UserProposalItemDto
+        {
+            Id = (long)r.Id,
+            Name = !string.IsNullOrWhiteSpace(name) ? name : $"Đề xuất #{r.Id}",
+            CategoryId = categoryId,
+            Category = categoryName,
+            CategoryName = categoryName,
+            ProvinceId = provinceId,
+            Province = provinceName,
+            ProvinceName = provinceName,
+            Address = address,
+            Phone = phone,
+            Website = website,
+            OpeningHours = openingHours,
+            MinPrice = minPrice,
+            MaxPrice = maxPrice,
+            Latitude = latitude,
+            Longitude = longitude,
+            Description = description,
+            CoverImg = coverImg,
+            MediaUrls = mediaUrls,
+            ProposalType = r.ProposalType != null ? (int)r.ProposalType : 0,
+            TargetPlaceId = (long?)r.TargetPlaceId,
+            Status = (int)r.Status,
+            AdminNote = (string?)r.AdminNote,
+            RejectReason = (string?)r.RejectReason,
+            CreatedAt = created.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+            UpdatedAt = updated?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
         };
     }
 

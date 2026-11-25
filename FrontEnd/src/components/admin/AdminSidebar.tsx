@@ -20,6 +20,7 @@ import {
   Compass,
   Settings,
   Trophy,
+  Route,
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -272,6 +273,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                 ...(isSystemAdmin ? [{ id: "categories", label: "Danh mục", icon: Layers }] : []),
                 { id: "foods", label: "Món ăn", icon: Utensils },
                 { id: "collections", label: "Bộ sưu tập", icon: FolderHeart },
+                { id: "trips", label: "Chuyến đi", icon: Route },
                 { id: "blogs", label: "Cẩm nang", icon: BookOpen },
                 { id: "rankings", label: "Bảng xếp hạng", icon: Trophy },
                 ...(isSystemAdmin ? [{ id: "provinces", label: "Tỉnh thành", icon: Compass }] : []),
